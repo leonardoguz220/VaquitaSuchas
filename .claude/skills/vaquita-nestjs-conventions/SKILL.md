@@ -21,7 +21,11 @@ Stack acordado: NestJS + TypeScript, JWT con Passport, bcrypt, class-validator, 
 3. **Validación en el servidor, siempre** (`CLAUDE.md` §5): permisos, montos, estados. Cada entrada pasa por un DTO con `class-validator` y `ValidationPipe` con `whitelist: true` y `forbidNonWhitelisted: true`.
 4. **Permisos en dos niveles:**
    - Rol global (`admin` / usuario) con guard.
-   - **Pertenencia y rol dentro del grupo** (titular / miembro) comprobados en el servicio para cada recurso. Un usuario **solo ve datos de grupos a los que pertenece**. Responder `403` si el recurso existe pero no es suyo, o `404` si conviene no revelar su existencia (decídelo en el plan y sé consistente).
+   - **Pertenencia y rol dentro del grupo** (titular / miembro) comprobados en el servicio para cada recurso. Un usuario **solo ve datos de grupos a los que pertenece**. La regla de las specs (RNF-001-01, CA-001-10, CA-006-18, CA-007-12):
+   - **No es miembro del grupo → `404`** (no se revela que el grupo o recurso existe).
+   - **Es miembro pero no tiene el rol necesario → `403`** (CA-001-11, CA-002-12, CA-008-20).
+   - Rutas de administración o de catálogo sin rol `admin` → `403` (RF-009-01, CA-004-10).
+   - Único caso ambiguo: ver el comprobante de otro miembro (CA-002-13) dice `403`/`404`; está pendiente fijarlo en la spec 002.
 5. **Contraseñas** con bcrypt; nunca se guardan ni se registran en logs, tokens incluidos.
 6. **Errores:** código HTTP correcto (`400` validación, `401` sin sesión, `403` sin permiso, `404`, `409` conflicto o estado inválido) y mensaje claro en español (Bolivia), sin detalles internos ni trazas.
 7. **Contrato = Swagger.** Cada endpoint documenta ruta, DTO, respuestas y errores. El contrato se congela al aprobar el plan; cambiarlo requiere PR que avise a Frontend (`CLAUDE.md` §2.7).
