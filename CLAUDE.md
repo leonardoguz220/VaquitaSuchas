@@ -144,3 +144,4 @@ Si usas un asistente de IA para implementar:
 6. Debe escribir los tests ligados a los criterios `CA-xxx` antes o junto con el código.
 7. No debe modificar el modelo de datos ni el contrato de API aprobados sin proponer antes el cambio en `plan.md`.
 8. **Revisión humana obligatoria** de todo lo generado antes del merge.
+9. **Skills y agentes de terceros** (`.claude/skills/` no `speckit-*`, `.claude/agents/`, `references/`): son de apoyo. Si contradicen este archivo, la constitución, una spec o `CONTRIBUTING.md`, **mandan estos últimos**; en particular, la definición de "terminado" es la del §8 y no la de `references/definition-of-done.md`. Catálogo, motivos y MCPs recomendados en [`docs/herramientas-y-skills.md`](docs/herramientas-y-skills.md).

@@ -21,7 +21,7 @@ Todas las specs están en **borrador** y esperan la revisión por capa. Todavía
 | Despliegue | Vercel (frontend), Render (backend), PostgreSQL gestionado (por definir) |
 | Calidad | GitHub Actions, Playwright (E2E) |
 
-Detalle y justificación en [`CLAUDE.md`](CLAUDE.md) §4.
+Detalle y justificación en [`CLAUDE.md`](CLAUDE.md) §4. Skills, agentes y MCPs recomendados: [`docs/herramientas-y-skills.md`](docs/herramientas-y-skills.md).
 
 ## Specs
 
@@ -67,7 +67,10 @@ VaquitaSuchas/
 ├── CLAUDE.md                 # reglas del proyecto y stack
 ├── CONTRIBUTING.md           # roles por capa y flujo de equipo
 ├── .specify/                 # Spec Kit: constitución, plantillas, scripts
-├── .claude/skills/           # comandos /speckit-*
+├── .claude/skills/           # /speckit-* y skills de apoyo (agent-skills, MIT)
+├── .claude/agents/           # revisor de código, auditor de seguridad, ingeniero de pruebas
+├── references/               # listas de verificación (seguridad, rendimiento, accesibilidad, pruebas)
+├── docs/                     # herramientas, skills y MCPs; licencias de terceros
 ├── .github/                  # plantilla de PR
 └── specs/
     ├── 00-roadmap.md
