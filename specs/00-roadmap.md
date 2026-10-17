@@ -1,6 +1,6 @@
 # Roadmap de specs — Vaquita
 
-Mapa de los 10 módulos del proyecto hacia specs concretas, en orden de implementación. Cada spec es una porción **pequeña y entregable**.
+Mapa de los diez módulos del proyecto hacia specs concretas, en orden de implementación. Cada spec es una porción pequeña y entregable.
 
 ## Prioridades
 
@@ -14,26 +14,26 @@ Mapa de los 10 módulos del proyecto hacia specs concretas, en orden de implemen
 
 | # | Spec | Módulos | Prioridad | Depende de | Líder de spec (capa) | Estado |
 |---|---|---|---|---|---|---|
-| 000 | [Setup del proyecto (repo, CI, base de datos, estructura)](000-setup-del-proyecto/spec.md) | — | P0 | — | Todos (BD, BE y FE montan su parte) | 📝 borrador listo |
-| 003 | [Usuarios y autenticación](003-usuarios-y-autenticacion/spec.md) | 1 | P0 | 000 | Leonardo (BE) | 📝 borrador listo |
-| 004 | [Catálogo de servicios (seed inicial de plataformas y planes)](004-catalogo-de-servicios/spec.md) | 2 | P0 | 000 | Camila (BD) | 📝 borrador listo |
-| 001 | [Suscripciones compartidas (grupos, invitación, miembros, titular)](001-suscripciones-compartidas/spec.md) | 3, 4 | P0 | 003, 004 | Camila (BD) | 📝 borrador listo |
-| 002 | [Cobros y pagos (generación mensual, comprobantes, confirmación, historial)](002-cobros-y-pagos/spec.md) | 5 | P0 | 001 | Leonardo (BE) | 📝 borrador listo |
-| 005 | [Notificaciones (recordatorios, atrasos, invitaciones)](005-notificaciones/spec.md) | 6 | P1 | 002 | Leonardo (BE) | 📝 borrador listo |
-| 006 | [Panel y reportes (gasto mensual, ahorro, calendario, deudas)](006-panel-y-reportes/spec.md) | 7 | P1 | 002 | Adrian (FE) | 📝 borrador listo |
-| 007 | [Reputación (puntaje, insignias, ranking)](007-reputacion/spec.md) | 8 | P2 | 002 | Camila (BD) | 📝 borrador listo |
-| 008 | [Cupos libres (publicar y buscar cupos)](008-cupos-libres/spec.md) | 9 | P2 | 001 | Adrian (FE) | 📝 borrador listo |
-| 009 | [Administración (usuarios, catálogo, estadísticas)](009-administracion/spec.md) | 10 | P2 | 003, 004 | Adrian (FE) | 📝 borrador listo |
+| 000 | [Setup del proyecto (repo, CI, base de datos, estructura)](000-setup-del-proyecto/spec.md) | — | P0 | — | Todos (BD, BE y FE montan su parte) | borrador |
+| 003 | [Usuarios y autenticación](003-usuarios-y-autenticacion/spec.md) | 1 | P0 | 000 | Leonardo (BE) | borrador |
+| 004 | [Catálogo de servicios (seed inicial de plataformas y planes)](004-catalogo-de-servicios/spec.md) | 2 | P0 | 000 | Camila (BD) | borrador |
+| 001 | [Suscripciones compartidas (grupos, invitación, miembros, titular)](001-suscripciones-compartidas/spec.md) | 3, 4 | P0 | 003, 004 | Camila (BD) | borrador |
+| 002 | [Cobros y pagos (generación mensual, comprobantes, confirmación, historial)](002-cobros-y-pagos/spec.md) | 5 | P0 | 001 | Leonardo (BE) | borrador |
+| 005 | [Notificaciones (recordatorios, atrasos, invitaciones)](005-notificaciones/spec.md) | 6 | P1 | 002 | Leonardo (BE) | borrador |
+| 006 | [Panel y reportes (gasto mensual, ahorro, calendario, deudas)](006-panel-y-reportes/spec.md) | 7 | P1 | 002 | Adrian (FE) | borrador |
+| 007 | [Reputación (puntaje, insignias, ranking)](007-reputacion/spec.md) | 8 | P2 | 002 | Camila (BD) | borrador |
+| 008 | [Cupos libres (publicar y buscar cupos)](008-cupos-libres/spec.md) | 9 | P2 | 001 | Adrian (FE) | borrador |
+| 009 | [Administración (usuarios, catálogo, estadísticas)](009-administracion/spec.md) | 10 | P2 | 003, 004 | Adrian (FE) | borrador |
 
-> Todas las specs están en **borrador** y esperan la revisión por capa (BD, Backend, Frontend). La numeración es de identificación, no de orden de ejecución. El orden real es el de la tabla (de arriba hacia abajo).
->
-> **Líder de spec** = quien redacta y coordina la spec (según qué capa pesa más en esa feature). **Toda spec la aprueban las tres capas** (ver `CONTRIBUTING.md`). Las asignaciones son sugerencias.
+Todas las specs están en borrador y esperan la revisión por capa (base de datos, backend y frontend). La numeración identifica cada spec y no indica el orden de ejecución, que es el de la tabla de arriba hacia abajo.
+
+El líder de cada spec es quien la redacta y coordina, según la capa que más pesa en esa feature. Toda spec la aprueban las tres capas (ver `CONTRIBUTING.md`) y las asignaciones son sugerencias.
 
 ## Nota sobre el módulo 4 (División y moneda)
 
 Se incluye dentro de la spec 001 porque el cálculo de cuotas y la conversión USD→Bs ocurren al crear el grupo y al unirse miembros. Si la lógica crece, se puede extraer a una spec propia.
 
-## Hitos sugeridos
+## Hitos
 
 1. **Hito 1 — Base lista:** setup + autenticación + catálogo.
 2. **Hito 2 — Grupos funcionando:** crear suscripción, invitar, unirse, ver cuota.

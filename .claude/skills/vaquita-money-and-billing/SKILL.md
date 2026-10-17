@@ -5,8 +5,8 @@ description: Reglas y procedimiento de Vaquita para dinero, cuotas, conversión 
 
 # Vaquita — Dinero y cobros (Backend)
 
-Esta skill es **de apoyo**. Si contradice `CLAUDE.md` §5, la constitución o la spec 001/002, mandan ellos.
-Fuentes: `CLAUDE.md` §5, `specs/001-suscripciones-compartidas/spec.md` (RN-001-02, 03, 04, 06, 10, 11) y `specs/002-cobros-y-pagos/spec.md` (RF-002-01 a 04, RN-002-01 a 09).
+Esta skill es **de apoyo**. Si contradice `context/dominio.md`, la constitución o la spec 001/002, mandan ellos.
+Fuentes: `context/dominio.md`, `specs/001-suscripciones-compartidas/spec.md` (RN-001-02, 03, 04, 06, 10, 11) y `specs/002-cobros-y-pagos/spec.md` (RF-002-01 a 04, RN-002-01 a 09).
 
 ## Cuándo usarla
 

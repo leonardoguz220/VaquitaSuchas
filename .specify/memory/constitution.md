@@ -1,7 +1,6 @@
 # Constitución de Vaquita
 
-> Resumen de principios que Spec Kit usa para validar specs, planes y tareas.
-> Las reglas de dominio detalladas (dinero, fechas, roles, estados, seguridad) viven en `CLAUDE.md` §5 y **son parte de esta constitución**. Si hay contradicción, se corrige en el mismo PR.
+Principios que Spec Kit usa para validar specs, planes y tareas. Las reglas de dominio detalladas (dinero, fechas, roles, estados y seguridad) están en `context/dominio.md` y forman parte de esta constitución; si hay una contradicción, se corrige en el mismo PR.
 
 ## Core Principles
 
@@ -23,13 +22,16 @@ El modelo de datos (BD) y el contrato de API (Backend) se definen y se congelan 
 ### VI. Entrega por etapas y simplicidad
 Todos los módulos del proyecto están dentro del alcance. Se construyen por etapas: primero el MVP completo y funcionando de punta a punta (P0), luego lo importante (P1) y al final los extras (P2). Se prefiere la solución más simple que cumpla la spec; no se agrega funcionalidad fuera de alcance.
 
+### VII. Arquitectura por capas
+El código se organiza por capas, y cada capa solo depende de la inferior. El backend se divide por módulo en controladores, servicios, dominio y repositorios; el frontend en páginas, componentes, hooks, servicios de API y utilidades; la base de datos en migraciones, seeds y pruebas de integridad. El dominio son funciones puras sin dependencias del framework ni de la base de datos. La estructura detallada está en `context/arquitectura.md`.
+
 ## Restricciones adicionales
 
 - **Moneda y formato:** cobro en bolivianos (Bs); presentación `Bs 25,50`.
 - **Fechas:** se guardan en UTC y se muestran en America/La_Paz (UTC-4); el día de cobro se ajusta al último día del mes cuando el mes es más corto.
 - **Estados de un cobro:** `pendiente`, `en_revision`, `pagado`, `atrasado`, `cancelado`. Las transiciones válidas están en la spec 002 (RN-002-01); no se crean estados nuevos sin actualizar la spec.
 - **Idioma:** interfaz y documentación en español (Bolivia); código, ramas y commits en inglés.
-- **Stack:** definido en `CLAUDE.md` §4 (Next.js, NestJS, PostgreSQL, todo en TypeScript).
+- **Stack:** definido en `context/stack.md` (Next.js, NestJS, PostgreSQL, todo en TypeScript).
 
 ## Flujo de desarrollo y calidad
 
@@ -41,4 +43,4 @@ Todos los módulos del proyecto están dentro del alcance. Se construyen por eta
 
 Esta constitución prevalece sobre otras prácticas del proyecto. Enmendarla requiere un PR con aprobación de las tres personas del equipo y actualizar la versión. Todo PR debe verificar el cumplimiento de estos principios; la complejidad adicional debe justificarse en el plan. La guía operativa para trabajar con asistentes de IA está en `CLAUDE.md`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-17
+**Version**: 1.1.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-17

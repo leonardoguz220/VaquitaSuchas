@@ -2,7 +2,7 @@
 
 - **Estado:** borrador
 - **Líder de la spec:** Camila Fuentes (BD)
-- **Revisión por capa:** Leonardo Guzman (Backend) ⬜ · Adrian Vargas (Frontend) ⬜ · Camila Fuentes (BD) ⬜
+- **Revisión por capa:** Leonardo Guzman (Backend): pendiente · Adrian Vargas (Frontend): pendiente · Camila Fuentes (BD): pendiente
 - **Prioridad:** P2 (extra)
 - **Depende de:** 002 (datos de puntualidad), 001 (grupos)
 - **Módulo cubierto:** 8 (Reputación)

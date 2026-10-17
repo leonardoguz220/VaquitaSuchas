@@ -6,7 +6,7 @@ description: Convenciones de Vaquita para el frontend Next.js + React + TypeScri
 # Vaquita — Next.js (Frontend)
 
 Esta skill es **de apoyo**. Si contradice `CLAUDE.md`, la constitución o una spec, mandan ellos.
-Stack acordado: Next.js + React + TypeScript + Tailwind CSS, sobre el patrón de `proyectoFrontend1` (`CLAUDE.md` §4). Complementa a la skill genérica `frontend-ui-engineering`.
+Stack acordado: Next.js + React + TypeScript + Tailwind CSS, sobre el patrón de `proyectoFrontend1` (`context/stack.md`). Complementa a la skill genérica `frontend-ui-engineering`.
 
 ## Cuándo usarla
 
@@ -19,15 +19,16 @@ Stack acordado: Next.js + React + TypeScript + Tailwind CSS, sobre el patrón de
 1. **El frontend no calcula cuotas, montos ni estados** (`CLAUDE.md` §2.8). Solo muestra lo que entrega la API. Si falta un dato en la respuesta, se pide al Backend por PR sobre el contrato, no se reconstruye en el cliente.
 2. **Sesión y proxy:** las llamadas al backend pasan por la ruta `/api/[...path]` de Next, que reenvía y guarda el token en **cookie httpOnly**. El token nunca se lee desde JavaScript del navegador ni se guarda en `localStorage`.
 3. **Rutas por rol:** las pantallas de administración y de titular se protegen en el servidor (`proxy.ts` / layouts) y además la API responde `403`. Ocultar un menú **no** es seguridad.
-4. **Componentes `ui/` reutilizables** (button, card, modal, field, select, badge): se usan y se extienden antes de crear uno nuevo. Estilos con Tailwind, sin CSS suelto duplicado.
-5. **Celular primero.** Cada pantalla se diseña y prueba primero a ~360 px de ancho y luego se amplía (spec 000 y 003).
-6. **Cuatro estados en toda vista con datos:** cargando, vacío (con mensaje y siguiente acción), error (con reintento) y con datos. Las specs listan los casos borde de cada pantalla; cada uno es un caso de prueba.
-7. **Formato:** dinero como `Bs 25,50` (coma decimal) a partir de los centavos que entrega la API, con una única función de formato compartida. Fechas guardadas en UTC se muestran en **America/La_Paz (UTC-4)**.
-8. **Idioma de la interfaz:** español (Bolivia). Nombres de variables, componentes y ramas en inglés.
-9. **Accesibilidad:** etiquetas en campos, foco visible, contraste suficiente, y los estados (`pendiente`, `atrasado`...) **no dependen solo del color** (texto o ícono además). Los gráficos tienen alternativa en tabla (RF-006-10, RF-009-16).
-10. **Formularios:** validación de UX en el cliente (ayuda), pero el servidor valida siempre; muestra los errores que devuelve la API junto al campo.
-11. **Subida de comprobantes:** previsualización, avisos de tipo (JPG/PNG/PDF) y tamaño (5 MB) para ayudar al usuario; la validación real es del servidor (RF-002-06).
-12. **Sin datos sensibles en el cliente:** no se registran tokens ni datos personales en consola; sin `console.log` de depuración.
+4. **Capas del frontend** (`context/arquitectura.md`): `app` (páginas y rutas) → `components` → `hooks` → `services` (una función por endpoint) → `lib`. Los componentes no llaman a `fetch` directamente.
+5. **Componentes `ui/` reutilizables** (button, card, modal, field, select, badge): se usan y se extienden antes de crear uno nuevo. Estilos con Tailwind, sin CSS suelto duplicado.
+6. **Celular primero.** Cada pantalla se diseña y prueba primero a ~360 px de ancho y luego se amplía (spec 000 y 003).
+7. **Cuatro estados en toda vista con datos:** cargando, vacío (con mensaje y siguiente acción), error (con reintento) y con datos. Las specs listan los casos borde de cada pantalla; cada uno es un caso de prueba.
+8. **Formato:** dinero como `Bs 25,50` (coma decimal) a partir de los centavos que entrega la API, con una única función de formato compartida. Fechas guardadas en UTC se muestran en **America/La_Paz (UTC-4)**.
+9. **Idioma de la interfaz:** español (Bolivia). Nombres de variables, componentes y ramas en inglés.
+10. **Accesibilidad:** etiquetas en campos, foco visible, contraste suficiente, y los estados (`pendiente`, `atrasado`...) **no dependen solo del color** (texto o ícono además). Los gráficos tienen alternativa en tabla (RF-006-10, RF-009-16).
+11. **Formularios:** validación de UX en el cliente (ayuda), pero el servidor valida siempre; muestra los errores que devuelve la API junto al campo.
+12. **Subida de comprobantes:** previsualización, avisos de tipo (JPG/PNG/PDF) y tamaño (5 MB) para ayudar al usuario; la validación real es del servidor (RF-002-06).
+13. **Sin datos sensibles en el cliente:** no se registran tokens ni datos personales en consola; sin `console.log` de depuración.
 
 ## Procedimiento para cada pantalla
 

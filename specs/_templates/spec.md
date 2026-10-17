@@ -2,7 +2,7 @@
 
 - **Estado:** borrador | en revisión | aprobada | implementada
 - **Líder de la spec:** nombre (capa)
-- **Revisión por capa:** BD ⬜ · Backend ⬜ · Frontend ⬜
+- **Revisión por capa:** BD: pendiente · Backend: pendiente · Frontend: pendiente
 - **Prioridad:** P0 | P1 | P2
 - **Depende de:** specs NNN
 - **Última actualización:** AAAA-MM-DD

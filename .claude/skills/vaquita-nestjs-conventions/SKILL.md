@@ -6,7 +6,7 @@ description: Convenciones de Vaquita para el backend NestJS: estructura de módu
 # Vaquita — NestJS (Backend)
 
 Esta skill es **de apoyo**. Si contradice `CLAUDE.md`, la constitución o una spec, mandan ellos.
-Stack acordado: NestJS + TypeScript, JWT con Passport, bcrypt, class-validator, Swagger, `@nestjs/schedule`, Jest + supertest (`CLAUDE.md` §4).
+Stack acordado: NestJS + TypeScript, JWT con Passport, bcrypt, class-validator, Swagger, `@nestjs/schedule`, Jest + supertest (`context/stack.md`).
 
 ## Cuándo usarla
 
@@ -16,9 +16,9 @@ Stack acordado: NestJS + TypeScript, JWT con Passport, bcrypt, class-validator, 
 
 ## Reglas
 
-1. **Un módulo por feature** (`auth`, `users`, `catalog`, `subscriptions`, `billing`, `notifications`...). Una responsabilidad por módulo.
+1. **Un módulo por feature** (`auth`, `users`, `catalog`, `subscriptions`, `billing`, `notifications`...). Una responsabilidad por módulo. Dentro de cada módulo, cuatro capas: `controllers`, `services`, `domain` y `repositories` (`context/arquitectura.md`). Los controladores solo llaman a servicios; los servicios llaman a `domain` y `repositories`; `domain` no importa nada de NestJS ni de `pg`; solo los repositorios escriben SQL o hablan con Firebase y el correo.
 2. **Lógica de dominio fuera del framework:** cálculo de cuotas, conversión y transiciones viven en funciones puras (ver `vaquita-money-and-billing`). Los servicios las llaman; los controladores no tienen reglas.
-3. **Validación en el servidor, siempre** (`CLAUDE.md` §5): permisos, montos, estados. Cada entrada pasa por un DTO con `class-validator` y `ValidationPipe` con `whitelist: true` y `forbidNonWhitelisted: true`.
+3. **Validación en el servidor, siempre** (`context/dominio.md`): permisos, montos, estados. Cada entrada pasa por un DTO con `class-validator` y `ValidationPipe` con `whitelist: true` y `forbidNonWhitelisted: true`.
 4. **Permisos en dos niveles:**
    - Rol global (`admin` / usuario) con guard.
    - **Pertenencia y rol dentro del grupo** (titular / miembro) comprobados en el servicio para cada recurso. Un usuario **solo ve datos de grupos a los que pertenece**. La regla de las specs (RNF-001-01, CA-001-10, CA-006-18, CA-007-12):

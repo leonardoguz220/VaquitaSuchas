@@ -6,9 +6,9 @@
 
 | Capa | Responsable | Secciones | Visto bueno |
 |---|---|---|---|
-| Base de datos | Camila | §3 | ⬜ |
-| Backend | Leonardo | §4, §5, §7 | ⬜ |
-| Frontend | Adrian | §6 | ⬜ |
+| Base de datos | Camila | §3 | pendiente |
+| Backend | Leonardo | §4, §5, §7 | pendiente |
+| Frontend | Adrian | §6 | pendiente |
 
 ## 1. Resumen de la solución
 

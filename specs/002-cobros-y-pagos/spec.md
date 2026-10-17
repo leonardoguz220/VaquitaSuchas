@@ -2,7 +2,7 @@
 
 - **Estado:** borrador
 - **Líder de la spec:** Leonardo Guzman (Backend)
-- **Revisión por capa:** Camila Fuentes (BD) ⬜ · Adrian Vargas (Frontend) ⬜ · Leonardo Guzman (Backend) ⬜
+- **Revisión por capa:** Camila Fuentes (BD): pendiente · Adrian Vargas (Frontend): pendiente · Leonardo Guzman (Backend): pendiente
 - **Prioridad:** P0 (MVP)
 - **Depende de:** 001 (Suscripciones compartidas)
 - **Módulos cubiertos:** 5 (Cobros y pagos)

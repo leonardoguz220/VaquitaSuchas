@@ -2,7 +2,7 @@
 
 - **Estado:** borrador
 - **Líder de la spec:** Todos (cada capa define su parte)
-- **Revisión por capa:** Camila (BD) ⬜ · Leonardo (Backend) ⬜ · Adrian (Frontend) ⬜
+- **Revisión por capa:** Camila (BD): pendiente · Leonardo (Backend): pendiente · Adrian (Frontend): pendiente
 - **Prioridad:** P0 (base de todo)
 - **Depende de:** —
 - **Última actualización:** 2026-10-17
@@ -39,7 +39,7 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 ## 5. Requisitos funcionales
 
 ### Estructura y repositorio
-- **RF-000-01:** El repositorio contiene las carpetas `database/`, `backend/`, `frontend/`, `specs/` y los archivos de `CLAUDE.md`, `CONTRIBUTING.md` y `.github/`.
+- **RF-000-01:** El repositorio contiene las carpetas `database/`, `backend/`, `frontend/`, `specs/`, `context/`, `ia/` y `.claude/`, y los archivos `CLAUDE.md`, `CONTRIBUTING.md` y `.github/`. El código de `backend/`, `frontend/` y `database/` sigue la estructura por capas de `context/arquitectura.md`.
 - **RF-000-02:** `main` está protegida: no se permite push directo y los merges exigen al menos 1 aprobación y CI en verde.
 - **RF-000-03:** Existe `.env.example` en `backend/` y `frontend/` con todas las variables necesarias, sin valores reales. Los archivos `.env` están en `.gitignore`.
 
@@ -78,7 +78,7 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 
 ## 7. Reglas de negocio / técnicas
 
-- **RN-000-01:** Todo el sistema trabaja en UTC internamente; la conversión a America/La_Paz ocurre solo al mostrar (CLAUDE.md §5).
+- **RN-000-01:** Todo el sistema trabaja en UTC internamente; la conversión a America/La_Paz ocurre solo al mostrar (`context/dominio.md`).
 - **RN-000-02:** Ninguna migración ya aplicada en `main` se edita; los cambios se hacen con una migración nueva.
 - **RN-000-03:** Las migraciones deben poder aplicarse sobre una base vacía y sobre la base de staging sin perder datos.
 
@@ -124,3 +124,4 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 | Fecha | Cambio | Autor |
 |---|---|---|
 | 2026-10-17 | Primer borrador | Claude, a pedido del equipo |
+| 2026-10-17 | RF-000-01 incorpora `context/`, `ia/` y la estructura por capas | Equipo |

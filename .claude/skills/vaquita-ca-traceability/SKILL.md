@@ -37,9 +37,9 @@ Esta skill es **de apoyo**. La definición de "terminado" oficial es `CLAUDE.md`
 
    | Criterio | Test (archivo y nombre) | Nivel | Estado |
    |---|---|---|---|
-   | CA-002-05 | `billing.e2e-spec.ts` › "CA-002-05 ..." | Integración | ✅ / ❌ falta |
+   | CA-002-05 | `billing.e2e-spec.ts`, caso "CA-002-05 ..." | Integración | Cubierto / Falta |
 
-5. Para cada ❌: escribe el test, o corrige la spec si el criterio no se puede probar.
+5. Para cada criterio que falta: escribe el test, o corrige la spec si el criterio no se puede probar.
 6. Revisa también el sentido contrario: criterios de la spec que **deberían** estar afectados por el cambio y no aparecen en la tabla.
 7. Revisa el diff buscando secretos, datos reales y `console.log`:
 

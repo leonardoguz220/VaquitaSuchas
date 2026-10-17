@@ -2,7 +2,7 @@
 
 - **Estado:** borrador
 - **Líder de la spec:** Camila Fuentes (BD)
-- **Revisión por capa:** Leonardo Guzman (Backend) ⬜ · Adrian Vargas (Frontend) ⬜ · Camila Fuentes (BD) ⬜
+- **Revisión por capa:** Leonardo Guzman (Backend): pendiente · Adrian Vargas (Frontend): pendiente · Camila Fuentes (BD): pendiente
 - **Prioridad:** P0 (MVP)
 - **Depende de:** 000 (Setup del proyecto)
 - **Módulo cubierto:** 2 (Servicios)
@@ -63,7 +63,7 @@ Al crear una suscripción compartida, el titular no debería escribir a mano el 
 ## 8. Reglas de negocio
 
 - **RN-004-01:** El precio del catálogo es **solo una sugerencia**. El precio real de cada suscripción lo define el titular (spec 001).
-- **RN-004-02:** Los montos del catálogo se guardan en centavos enteros (CLAUDE.md §5).
+- **RN-004-02:** Los montos del catálogo se guardan en centavos enteros (`context/dominio.md`).
 - **RN-004-03:** Los cupos máximos de un plan son un número entero entre 2 y 20. La suscripción no puede definir más cupos que los del plan elegido [NECESITA ACLARACIÓN: ¿se puede superar?].
 - **RN-004-04:** Un `slug` de servicio y de plan es único, en minúsculas y sin espacios (ej. `netflix`, `netflix-premium`).
 - **RN-004-05:** Un servicio sin planes activos no aparece en el listado de creación.

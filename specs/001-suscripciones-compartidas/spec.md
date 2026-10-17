@@ -2,7 +2,7 @@
 
 - **Estado:** borrador
 - **Líder de la spec:** Camila Fuentes (BD)
-- **Revisión por capa:** Leonardo Guzman (Backend) ⬜ · Adrian Vargas (Frontend) ⬜ · Camila Fuentes (BD) ⬜
+- **Revisión por capa:** Leonardo Guzman (Backend): pendiente · Adrian Vargas (Frontend): pendiente · Camila Fuentes (BD): pendiente
 - **Prioridad:** P0 (MVP)
 - **Depende de:** 003 (Usuarios y autenticación), 004 (Catálogo de servicios)
 - **Módulos cubiertos:** 3 (Suscripciones compartidas) y 4 (División y moneda)
@@ -83,7 +83,7 @@ Esta spec define cómo se **crea una suscripción compartida**, cómo se **invit
 
 - **RNF-001-01 (Seguridad):** Todos los permisos se validan en el servidor. Un usuario nunca recibe datos de grupos ajenos (respuesta `404`, no `403`, para no revelar existencia).
 - **RNF-001-02 (Seguridad):** El código de invitación se genera con una fuente aleatoria criptográfica y la consulta de códigos tiene límite de intentos (máx. 10 intentos fallidos por usuario cada 15 minutos).
-- **RNF-001-03 (Precisión):** Todos los montos se almacenan en centavos enteros (ver `CLAUDE.md` §5).
+- **RNF-001-03 (Precisión):** Todos los montos se almacenan en centavos enteros (ver `context/dominio.md`).
 - **RNF-001-04 (Usabilidad):** El flujo de unirse con código debe completarse en máximo 3 pasos desde el celular.
 - **RNF-001-05 (Rendimiento):** Listar los grupos de un usuario responde en menos de 500 ms con hasta 50 grupos.
 

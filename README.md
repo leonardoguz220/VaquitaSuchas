@@ -1,14 +1,14 @@
 # Vaquita
 
-**Grupo Suchas** · Camila Fuentes (Base de datos) · Leonardo Guzman (Backend) · Adrian Vargas (Frontend)
+Grupo Suchas: Camila Fuentes (base de datos), Leonardo Guzman (backend) y Adrian Vargas (frontend).
 
-Vaquita es una aplicación web que ayuda a grupos de amigos, familias o compañeros de departamento a organizar las suscripciones que comparten (Netflix, Spotify, Disney+, YouTube Premium, etc.). Calcula cuánto le toca pagar a cada miembro, convierte los montos de dólares a bolivianos, genera los cobros de cada mes, envía recordatorios y deja un historial claro: cada miembro sube su comprobante y el titular lo confirma. Además ofrece un panel de gasto y ahorro, un sistema de reputación por puntualidad, cupos libres y administración.
+Vaquita es una aplicación web para organizar las suscripciones que comparten amigos, familias o compañeros de departamento (Netflix, Spotify, Disney+, YouTube Premium y similares). Calcula la cuota de cada miembro, convierte los montos de dólares a bolivianos, genera los cobros de cada mes, envía recordatorios y guarda un historial: cada miembro sube su comprobante y el titular lo confirma. Incluye además un panel de gasto y ahorro, reputación por puntualidad, cupos libres y administración.
 
-> Este proyecto se desarrolla con **Spec Driven Development (SDD)**: primero se escribe y se revisa la especificación, y el código se deriva de ella.
+El proyecto se desarrolla con Spec Driven Development: la especificación se escribe y se revisa primero, y el código se deriva de ella.
 
 ## Estado
 
-Todas las specs están en **borrador** y esperan la revisión por capa. Todavía no hay código.
+Las diez specs están en borrador y esperan la revisión por capa. Todavía no hay código; las carpetas `backend/`, `frontend/` y `database/` contienen solo su guía de capa.
 
 ## Stack
 
@@ -18,14 +18,38 @@ Todas las specs están en **borrador** y esperan la revisión por capa. Todavía
 | Backend (Leonardo) | NestJS, TypeScript, JWT, Swagger, Jest |
 | Base de datos (Camila) | PostgreSQL con migraciones SQL y seed |
 | Comprobantes y QR | Firebase Storage con URLs firmadas |
-| Despliegue | Vercel (frontend), Render (backend), PostgreSQL gestionado (por definir) |
-| Calidad | GitHub Actions, Playwright (E2E) |
+| Despliegue | Vercel (frontend), Render (backend) y PostgreSQL gestionado por definir |
+| Calidad | GitHub Actions y Playwright |
 
-Detalle y justificación en [`CLAUDE.md`](CLAUDE.md) §4. Skills, agentes y MCPs recomendados: [`docs/herramientas-y-skills.md`](docs/herramientas-y-skills.md).
+El código se organiza por capas en las tres partes del sistema. El detalle está en [`context/stack.md`](context/stack.md) y [`context/arquitectura.md`](context/arquitectura.md).
+
+## Estructura del repositorio
+
+```
+VaquitaSuchas/
+├── CLAUDE.md             principios del proyecto y reglas para agentes de IA
+├── CONTRIBUTING.md       roles por capa, ramas y PRs
+├── .claude/              skills, agentes y listas de referencia para Claude Code
+├── .specify/             Spec Kit y constitución
+├── .github/              plantilla de PR
+├── context/              proyecto, dominio, stack, arquitectura y decisiones
+├── ia/                   herramientas, skills y MCPs, licencias de terceros
+├── specs/                una carpeta por feature con spec, plan y tareas
+├── database/             migraciones, seeds y pruebas de integridad
+├── backend/              API NestJS por capas
+└── frontend/             aplicación Next.js por capas
+```
+
+| Carpeta | Contenido |
+|---|---|
+| [`context/`](context/) | Qué es el proyecto ([`proyecto.md`](context/proyecto.md)), reglas de dominio ([`dominio.md`](context/dominio.md)), stack ([`stack.md`](context/stack.md)), arquitectura por capas ([`arquitectura.md`](context/arquitectura.md)) y decisiones registradas ([`decisiones/`](context/decisiones/)) |
+| [`.specify/memory/constitution.md`](.specify/memory/constitution.md) | Constitución del proyecto, que Spec Kit usa para validar specs, planes y tareas |
+| [`ia/`](ia/) | Skills, agentes y MCPs que usa el equipo, con su origen y licencia ([`herramientas-y-skills.md`](ia/herramientas-y-skills.md)) |
+| [`specs/`](specs/) | Roadmap, banco de preguntas y las specs de cada módulo |
 
 ## Specs
 
-El orden de construcción es P0 → P1 → P2. **Los 10 módulos entran en el alcance.**
+El orden de construcción es P0, P1 y P2, y los diez módulos entran en el alcance.
 
 | # | Spec | Prioridad | Líder |
 |---|---|---|---|
@@ -40,43 +64,20 @@ El orden de construcción es P0 → P1 → P2. **Los 10 módulos entran en el al
 | 008 | [Cupos libres](specs/008-cupos-libres/spec.md) | P2 | Adrian (FE) |
 | 009 | [Administración](specs/009-administracion/spec.md) | P2 | Adrian (FE) |
 
-- Mapa y orden: [`specs/00-roadmap.md`](specs/00-roadmap.md)
-- Preguntas pendientes de decidir: [`specs/00-preguntas-abiertas.md`](specs/00-preguntas-abiertas.md)
+El mapa de módulos está en [`specs/00-roadmap.md`](specs/00-roadmap.md) y las preguntas por decidir en [`specs/00-preguntas-abiertas.md`](specs/00-preguntas-abiertas.md).
 
-## Cómo revisar una spec
+## Revisión por capa
 
-Toda spec necesita el visto bueno de **las tres capas** antes de pasar al plan. Cada quien revisa lo suyo:
+Cada spec necesita el visto bueno de las tres capas antes de pasar al plan:
 
-- **Base de datos (Camila):** ¿se puede garantizar la integridad (unicidades, estados finales, copias de datos históricos)? ¿hay consultas costosas?
-- **Backend (Leonardo):** ¿las reglas de negocio están completas y sin contradicciones? ¿los permisos y la concurrencia están definidos? ¿cada criterio se puede probar?
-- **Frontend (Adrian):** ¿se entiende qué ve y qué puede hacer cada rol? ¿están los estados vacíos, los errores y el uso en celular? ¿la API ofrece lo que la pantalla necesita?
+- Base de datos (Camila) revisa la integridad (unicidades, estados finales, copias de datos históricos) y las consultas costosas.
+- Backend (Leonardo) revisa que las reglas de negocio estén completas y sin contradicciones, y que los permisos, la concurrencia y los criterios de aceptación se puedan probar.
+- Frontend (Adrian) revisa qué ve y qué puede hacer cada rol, los estados vacíos y de error, el uso en celular y que la API ofrezca lo que las pantallas necesitan.
 
-Al terminar, se marca ✅ en la línea **Revisión por capa** de la spec, y las marcas `[NECESITA ACLARACIÓN]` se resuelven o se confirman.
+La revisión se registra en la línea "Revisión por capa" de cada spec, y las marcas `[NECESITA ACLARACIÓN]` se resuelven o se confirman.
 
 ## Flujo de trabajo
 
-`/speckit-specify` → `/speckit-clarify` → revisión por capa → `/speckit-plan` → `/speckit-tasks` → `/speckit-analyze` → implementación por capa → `/speckit-converge`
+`/speckit-specify`, `/speckit-clarify`, revisión por capa, `/speckit-plan`, `/speckit-tasks`, `/speckit-analyze`, implementación por capa y `/speckit-converge`.
 
-Roles, ramas, PRs y reglas del equipo: [`CONTRIBUTING.md`](CONTRIBUTING.md). Principios y reglas de dominio (dinero, fechas, estados, seguridad): [`CLAUDE.md`](CLAUDE.md) y [`.specify/memory/constitution.md`](.specify/memory/constitution.md).
-
-## Estructura del repositorio
-
-```
-VaquitaSuchas/
-├── README.md
-├── CLAUDE.md                 # reglas del proyecto y stack
-├── CONTRIBUTING.md           # roles por capa y flujo de equipo
-├── .specify/                 # Spec Kit: constitución, plantillas, scripts
-├── .claude/skills/           # /speckit-*, skills propias (vaquita-*) y de apoyo (agent-skills, MIT)
-├── .claude/agents/           # revisor de código, auditor de seguridad, ingeniero de pruebas
-├── references/               # listas de verificación (seguridad, rendimiento, accesibilidad, pruebas)
-├── docs/                     # herramientas, skills y MCPs; licencias de terceros
-├── .github/                  # plantilla de PR
-└── specs/
-    ├── 00-roadmap.md
-    ├── 00-preguntas-abiertas.md
-    ├── _templates/           # plantillas de spec, plan y tareas
-    └── NNN-nombre/spec.md    # una carpeta por feature
-```
-
-Las carpetas `database/`, `backend/` y `frontend/` se crean al implementar la spec 000.
+Los roles, las ramas y los PRs están en [`CONTRIBUTING.md`](CONTRIBUTING.md). Los principios y las reglas de dominio están en [`CLAUDE.md`](CLAUDE.md) y en la [constitución](.specify/memory/constitution.md).

@@ -2,7 +2,7 @@
 
 - **Estado:** borrador
 - **Líder de la spec:** Leonardo Guzman (Backend)
-- **Revisión por capa:** Camila Fuentes (BD) ⬜ · Adrian Vargas (Frontend) ⬜ · Leonardo Guzman (Backend) ⬜
+- **Revisión por capa:** Camila Fuentes (BD): pendiente · Adrian Vargas (Frontend): pendiente · Leonardo Guzman (Backend): pendiente
 - **Prioridad:** P1 (importante)
 - **Depende de:** 000 (servicio de correo y tareas programadas), 001, 002, 003
 - **Módulo cubierto:** 6 (Notificaciones)
