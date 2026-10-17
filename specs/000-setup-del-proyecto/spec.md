@@ -123,5 +123,5 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 
 | Fecha | Cambio | Autor |
 |---|---|---|
-| 2026-10-17 | Primer borrador | Claude, a pedido del equipo |
+| 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | RF-000-01 incorpora `context/`, `ia/` y la estructura por capas | Equipo |

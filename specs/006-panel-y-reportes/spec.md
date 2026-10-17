@@ -145,4 +145,4 @@ Quien comparte varias suscripciones pierde de vista cuánto gasta al mes, cuánt
 
 | Fecha | Cambio | Autor |
 |---|---|---|
-| 2026-10-17 | Primer borrador | Claude, a pedido del equipo |
+| 2026-10-17 | Primer borrador | Equipo |

@@ -134,4 +134,4 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 
 | Fecha | Cambio | Autor |
 |---|---|---|
-| 2026-10-17 | Primer borrador | Claude, a pedido del equipo |
+| 2026-10-17 | Primer borrador | Equipo |

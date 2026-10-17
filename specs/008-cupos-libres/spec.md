@@ -146,4 +146,4 @@ Muchos grupos tienen lugares vacíos: un plan familiar de 6 personas con 4 ocupa
 
 | Fecha | Cambio | Autor |
 |---|---|---|
-| 2026-10-17 | Primer borrador | Claude, a pedido del equipo |
+| 2026-10-17 | Primer borrador | Equipo |

@@ -108,4 +108,4 @@ Al crear una suscripción compartida, el titular no debería escribir a mano el 
 
 | Fecha | Cambio | Autor |
 |---|---|---|
-| 2026-10-17 | Primer borrador | Claude, a pedido del equipo |
+| 2026-10-17 | Primer borrador | Equipo |

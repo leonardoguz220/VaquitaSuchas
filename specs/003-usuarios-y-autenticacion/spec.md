@@ -143,4 +143,4 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 
 | Fecha | Cambio | Autor |
 |---|---|---|
-| 2026-10-17 | Primer borrador | Claude, a pedido del equipo |
+| 2026-10-17 | Primer borrador | Equipo |

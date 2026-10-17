@@ -154,4 +154,4 @@ Nadie puede ver las notificaciones de otra persona.
 
 | Fecha | Cambio | Autor |
 |---|---|---|
-| 2026-10-17 | Primer borrador | Claude, a pedido del equipo |
+| 2026-10-17 | Primer borrador | Equipo |

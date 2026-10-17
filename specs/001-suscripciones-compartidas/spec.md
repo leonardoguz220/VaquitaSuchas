@@ -160,5 +160,5 @@ Esta spec define cómo se **crea una suscripción compartida**, cómo se **invit
 | Fecha | Cambio | Autor |
 |---|---|---|
 | 2026-10-17 | Primer borrador | Camila Fuentes |
-| 2026-10-17 | Se agregan RN-001-12 y RN-001-13 por el catálogo (spec 004) | Claude, a pedido del equipo |
+| 2026-10-17 | Se agregan RN-001-12 y RN-001-13 por el catálogo (spec 004) | Equipo |
 | 2026-10-17 | Se resuelven: titular sin cobro propio, alta a mitad de mes y datos de pago (RN-001-10, RN-001-11, RF-001-20, CA-001-21 a 23) | Equipo (ronda 1 de preguntas) |

@@ -143,4 +143,4 @@ Una vez que la app tiene usuarios reales, alguien debe poder mantener el catálo
 
 | Fecha | Cambio | Autor |
 |---|---|---|
-| 2026-10-17 | Primer borrador | Claude, a pedido del equipo |
+| 2026-10-17 | Primer borrador | Equipo |
