@@ -45,7 +45,21 @@ Ejemplo: `references/definition-of-done.md` es una guía general; la definición
 
 `security-checklist.md`, `performance-checklist.md`, `accessibility-checklist.md`, `testing-patterns.md` y `definition-of-done.md` (esta última es solo de apoyo; manda `CLAUDE.md` §8).
 
-## 3. Lo que NO se instaló, y por qué
+## 3. Skills propias de Vaquita
+
+Escritas por el equipo (con ayuda de Claude) a partir de `CLAUDE.md` y las specs. No inventan reglas: citan las que ya existen. Si una regla cambia en la spec, se actualiza también la skill en el mismo PR.
+
+| Skill | Capa | Qué hace |
+|---|---|---|
+| `vaquita-money-and-billing` | BE | Centavos, reparto de cuotas con el resto al titular, conversión, fechas de corte y vencimiento, generación idempotente y máquina de estados (RN-002-01) |
+| `vaquita-postgres-migrations` | BD | Migraciones numeradas, restricciones de integridad, tipos para dinero y fechas, seed y un test de integridad por restricción |
+| `vaquita-nestjs-conventions` | BE | Módulos, DTO, permisos por rol y por grupo, errores, Swagger, tareas programadas, subida de comprobantes y tests con supertest |
+| `vaquita-nextjs-conventions` | FE | Proxy `/api` con cookie httpOnly, rutas por rol, componentes `ui/`, los cuatro estados de una vista, celular primero, formato `Bs` y hora de La Paz |
+| `vaquita-ca-traceability` | Todas | Tabla CA → test, definición de terminado y revisión cruzada de PR |
+
+Revisión pendiente de cada capa: Camila revisa `vaquita-postgres-migrations`, Adrian `vaquita-nextjs-conventions` y Leonardo las otras tres.
+
+## 4. Lo que NO se instaló, y por qué
 
 | Elemento | Motivo |
 |---|---|
@@ -54,11 +68,11 @@ Ejemplo: `references/definition-of-done.md` es una guía general; la definición
 | `git-workflow-and-versioning` | Choca con las ramas, PR y squash merge definidos en `CONTRIBUTING.md`. |
 | `context-engineering`, `constraint-driven-development`, `doubt-driven-development` | Útiles pero opcionales; su contenido ya está cubierto por `CLAUDE.md` §9. Se pueden sumar por PR si el equipo los pide. |
 | `code-simplification`, `deprecation-and-migration`, `shipping-and-launch`, `observability-and-instrumentation` | Se pueden agregar más adelante (lanzamiento, observabilidad); hoy no hay código ni producción. |
-| `browser-testing-with-devtools` | Depende de un MCP externo (Chrome DevTools). Se evalúa junto con ese MCP (§4). |
+| `browser-testing-with-devtools` | Depende de un MCP externo (Chrome DevTools). Se evalúa junto con ese MCP (§5). |
 | `using-agent-skills` | Es un meta-skill de la librería. |
 | `commands/*.toml` y `hooks/*.sh` | Los comandos duplican `/speckit-*`. Los hooks ejecutan scripts en la máquina de cada integrante: no se instalan sin revisión del equipo. |
 
-## 4. MCPs recomendados
+## 5. MCPs recomendados
 
 Un MCP conecta a Claude con un servicio externo. **Ninguno está conectado todavía**: cada integrante decide si lo activa, y nadie comparte credenciales ni tokens por el repositorio (`CLAUDE.md` §5).
 
@@ -93,7 +107,7 @@ Un MCP conecta a Claude con un servicio externo. **Ninguno está conectado todav
 3. Los tokens viven en variables de entorno o en la configuración local de cada persona, **nunca** en el repositorio. `.claude/settings.local.json` ya está ignorado por Git.
 4. Todo MCP nuevo se propone por PR editando esta tabla.
 
-## 5. Cómo actualizar los skills
+## 6. Cómo actualizar los skills
 
 1. Revisar los cambios en el repositorio de origen (`git log`/`git diff` desde el commit `aeac41d`).
 2. Leer los archivos modificados; no copiar scripts sin revisión.

@@ -67,7 +67,7 @@ VaquitaSuchas/
 ├── CLAUDE.md                 # reglas del proyecto y stack
 ├── CONTRIBUTING.md           # roles por capa y flujo de equipo
 ├── .specify/                 # Spec Kit: constitución, plantillas, scripts
-├── .claude/skills/           # /speckit-* y skills de apoyo (agent-skills, MIT)
+├── .claude/skills/           # /speckit-*, skills propias (vaquita-*) y de apoyo (agent-skills, MIT)
 ├── .claude/agents/           # revisor de código, auditor de seguridad, ingeniero de pruebas
 ├── references/               # listas de verificación (seguridad, rendimiento, accesibilidad, pruebas)
 ├── docs/                     # herramientas, skills y MCPs; licencias de terceros
