@@ -147,7 +147,8 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - **CA-002-10:** Dado un cobro `en_revision` vencido, cuando corre el proceso de atrasos, entonces permanece `en_revision`.
 - **CA-002-11:** Dado un cobro `pagado`, cuando alguien intenta subir un comprobante o cambiar su estado, entonces recibe error y no hay cambios.
 - **CA-002-12:** Dado un miembro, cuando intenta confirmar su propio cobro, entonces recibe `403`.
-- **CA-002-13:** Dado un miembro, cuando intenta ver el comprobante de otro miembro, entonces recibe `403`/`404`.
+- **CA-002-13:** Dado un miembro del grupo, cuando intenta ver el comprobante de otro miembro, entonces recibe `403`.
+- **CA-002-23:** Dado un usuario que no pertenece al grupo, cuando intenta ver un cobro o un comprobante de ese grupo, entonces recibe `404`.
 - **CA-002-14:** Dado un titular, cuando registra un pago manual sobre un cobro `pendiente`, entonces pasa a `pagado` con la nota y la marca "manual".
 - **CA-002-15:** Dado un titular, cuando cancela un cobro `atrasado` con motivo, entonces pasa a `cancelado` y deja de contar como deuda.
 - **CA-002-16:** Dado un cobro ya generado, cuando el titular cambia el tipo de cambio de la suscripción, entonces el monto del cobro no cambia.
@@ -171,3 +172,4 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 |---|---|---|
 | 2026-10-17 | Primer borrador | Leonardo Guzman |
 | 2026-10-17 | Se resuelven: 3 días de gracia y datos de pago en la suscripción | Equipo (ronda 1 de preguntas) |
+| 2026-10-17 | Se fija `403` (miembro sin permiso) y `404` (no pertenece al grupo) para comprobantes ajenos: CA-002-13 y CA-002-23 | Equipo |

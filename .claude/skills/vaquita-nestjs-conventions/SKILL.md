@@ -25,7 +25,7 @@ Stack acordado: NestJS + TypeScript, JWT con Passport, bcrypt, class-validator, 
    - **No es miembro del grupo → `404`** (no se revela que el grupo o recurso existe).
    - **Es miembro pero no tiene el rol necesario → `403`** (CA-001-11, CA-002-12, CA-008-20).
    - Rutas de administración o de catálogo sin rol `admin` → `403` (RF-009-01, CA-004-10).
-   - Único caso ambiguo: ver el comprobante de otro miembro (CA-002-13) dice `403`/`404`; está pendiente fijarlo en la spec 002.
+   - Comprobante de otro miembro: `403` si es miembro del grupo (CA-002-13) y `404` si no pertenece (CA-002-23).
 5. **Contraseñas** con bcrypt; nunca se guardan ni se registran en logs, tokens incluidos.
 6. **Errores:** código HTTP correcto (`400` validación, `401` sin sesión, `403` sin permiso, `404`, `409` conflicto o estado inválido) y mensaje claro en español (Bolivia), sin detalles internos ni trazas.
 7. **Contrato = Swagger.** Cada endpoint documenta ruta, DTO, respuestas y errores. El contrato se congela al aprobar el plan; cambiarlo requiere PR que avise a Frontend (`CLAUDE.md` §2.7).
