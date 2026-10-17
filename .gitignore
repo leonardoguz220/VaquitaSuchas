@@ -1,0 +1,27 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno (nunca se suben; usar .env.example)
+.env
+.env.*
+!.env.example
+
+# Builds
+dist/
+build/
+.next/
+out/
+coverage/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Archivos locales de Claude Code
+.claude/settings.local.json
