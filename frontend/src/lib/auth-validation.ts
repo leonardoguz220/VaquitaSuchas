@@ -68,11 +68,13 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /**
  * Estado de cada regla de contraseña de RF-003-03, para la lista en vivo.
  * Una contraseña vacía no cumple ninguna regla.
+ *
+ * Sin `email` (pantalla `/recuperar/[token]`, donde no se conoce el correo) se omite la regla
+ * "Distinta de tu correo": no se puede evaluar y marcarla como cumplida sería engañoso. La
+ * comprueba el servidor (`WEAK_PASSWORD`).
  */
-export function evaluatePasswordRules(password: string, email: string): PasswordRuleResult[] {
-  const hasPassword = password.length > 0;
-  const sameAsEmail = password.trim().toLowerCase() === email.trim().toLowerCase();
-  return [
+export function evaluatePasswordRules(password: string, email?: string): PasswordRuleResult[] {
+  const rules: PasswordRuleResult[] = [
     {
       id: 'minLength',
       label: `Al menos ${PASSWORD_MIN_LENGTH} caracteres`,
@@ -80,6 +82,12 @@ export function evaluatePasswordRules(password: string, email: string): Password
     },
     { id: 'letter', label: 'Al menos una letra', met: /\p{L}/u.test(password) },
     { id: 'number', label: 'Al menos un número', met: /\d/.test(password) },
+  ];
+  if (email === undefined) return rules;
+  const hasPassword = password.length > 0;
+  const sameAsEmail = password.trim().toLowerCase() === email.trim().toLowerCase();
+  return [
+    ...rules,
     { id: 'notEmail', label: 'Distinta de tu correo', met: hasPassword && !sameAsEmail },
   ];
 }
@@ -160,4 +168,68 @@ export function validateLoginForm(values: LoginFormValues): LoginFieldErrors {
 /** Primer campo de `/ingresar` con error según el orden de la pantalla. */
 export function firstLoginFieldWithError(errors: LoginFieldErrors): LoginField | undefined {
   return LOGIN_FIELDS.find((field) => errors[field] !== undefined);
+}
+
+/* ---------- Recuperación de contraseña (spec 003 T035) ---------- */
+
+export interface ForgotPasswordFormValues {
+  email: string;
+}
+
+export type ForgotPasswordFieldErrors = Partial<Record<keyof ForgotPasswordFormValues, string>>;
+
+/** Validación de ayuda de `/recuperar`: solo la forma del correo (RNF-003-04). */
+export function validateForgotPasswordForm(
+  values: ForgotPasswordFormValues,
+): ForgotPasswordFieldErrors {
+  const email = values.email.trim();
+  if (email === '') return { email: LOGIN_MESSAGES.emailRequired };
+  if (!EMAIL_PATTERN.test(email)) return { email: LOGIN_MESSAGES.emailInvalid };
+  return {};
+}
+
+export interface ResetPasswordFormValues {
+  newPassword: string;
+  newPasswordConfirmation: string;
+}
+
+export type ResetPasswordField = keyof ResetPasswordFormValues;
+
+/** Orden de los campos de `/recuperar/[token]`; decide a cuál va el foco tras un error. */
+export const RESET_PASSWORD_FIELDS: readonly ResetPasswordField[] = [
+  'newPassword',
+  'newPasswordConfirmation',
+];
+
+export type ResetPasswordFieldErrors = Partial<Record<ResetPasswordField, string>>;
+
+export const EMPTY_RESET_PASSWORD_VALUES: ResetPasswordFormValues = {
+  newPassword: '',
+  newPasswordConfirmation: '',
+};
+
+/**
+ * Validación de ayuda de `/recuperar/[token]` (RNF-003-04): las reglas evaluables sin conocer
+ * el correo y que la confirmación coincida. La regla "distinta del correo" la decide el servidor.
+ */
+export function validateResetPasswordForm(
+  values: ResetPasswordFormValues,
+): ResetPasswordFieldErrors {
+  const errors: ResetPasswordFieldErrors = {};
+  if (!evaluatePasswordRules(values.newPassword).every((rule) => rule.met)) {
+    errors.newPassword = REGISTER_MESSAGES.passwordRules;
+  }
+  if (values.newPasswordConfirmation === '') {
+    errors.newPasswordConfirmation = REGISTER_MESSAGES.confirmationRequired;
+  } else if (values.newPasswordConfirmation !== values.newPassword) {
+    errors.newPasswordConfirmation = REGISTER_MESSAGES.passwordMismatch;
+  }
+  return errors;
+}
+
+/** Primer campo de `/recuperar/[token]` con error según el orden de la pantalla. */
+export function firstResetPasswordFieldWithError(
+  errors: ResetPasswordFieldErrors,
+): ResetPasswordField | undefined {
+  return RESET_PASSWORD_FIELDS.find((field) => errors[field] !== undefined);
 }

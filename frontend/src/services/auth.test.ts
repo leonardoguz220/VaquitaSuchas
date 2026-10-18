@@ -1,7 +1,11 @@
 import {
+  forgotPassword,
   getMe,
   login,
   register,
+  resetPassword,
+  type ForgotPasswordResponse,
+  type ResetPasswordRequest,
   type LoginResponse,
   type RegisterRequest,
   type RegisterResponse,
@@ -84,5 +88,53 @@ describe('services/auth (contrato 003, sesión)', () => {
     const error = new ApiError(401, 'UNAUTHENTICATED', 'Inicia sesión.');
     mockedRequest.mockRejectedValue(error);
     await expect(getMe()).rejects.toBe(error);
+  });
+});
+
+describe('services/auth (contrato 003, recuperación de contraseña)', () => {
+  it('RF-003-10: forgotPassword hace POST /api/auth/password/forgot con { email } y devuelve { message }', async () => {
+    const response: ForgotPasswordResponse = {
+      message: 'Si el correo está registrado, recibirás un enlace en unos minutos.',
+    };
+    mockedRequest.mockResolvedValue(response);
+
+    await expect(forgotPassword({ email: 'ana.quispe@gmail.com' })).resolves.toEqual(response);
+    expect(mockedRequest).toHaveBeenCalledWith('/api/auth/password/forgot', {
+      method: 'POST',
+      body: { email: 'ana.quispe@gmail.com' },
+    });
+  });
+
+  it('CA-003-13: forgotPassword propaga el 429 RATE_LIMITED sin transformarlo', async () => {
+    const error = new ApiError(429, 'RATE_LIMITED', 'Demasiados pedidos.', {
+      retryAfterSeconds: 1200,
+    });
+    mockedRequest.mockRejectedValue(error);
+    await expect(forgotPassword({ email: 'ana.quispe@gmail.com' })).rejects.toBe(error);
+  });
+
+  it('RF-003-12: resetPassword hace POST /api/auth/password/reset con el cuerpo exacto y resuelve sin valor (204)', async () => {
+    mockedRequest.mockResolvedValue(undefined);
+    const input: ResetPasswordRequest = {
+      token: 'q3Vx9kPz-token-de-prueba',
+      newPassword: 'nuevaclave2026',
+      newPasswordConfirmation: 'nuevaclave2026',
+    };
+
+    await expect(resetPassword(input)).resolves.toBeUndefined();
+    expect(mockedRequest).toHaveBeenCalledWith('/api/auth/password/reset', {
+      method: 'POST',
+      body: input,
+    });
+  });
+
+  it('CA-003-11: resetPassword propaga el 410 RESET_TOKEN_INVALID con sus details', async () => {
+    const error = new ApiError(410, 'RESET_TOKEN_INVALID', 'Este enlace venció o ya se usó.', {
+      canRequestNew: true,
+    });
+    mockedRequest.mockRejectedValue(error);
+    await expect(
+      resetPassword({ token: 't', newPassword: 'a', newPasswordConfirmation: 'a' }),
+    ).rejects.toBe(error);
   });
 });
