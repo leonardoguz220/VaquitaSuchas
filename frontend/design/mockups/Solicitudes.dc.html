@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Mis solicitudes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid #D9DDD7; background: #FFFFFF">
+    <a href="Grupos.dc.html" style="display: flex; align-items: center; gap: 10px; color: #17201C; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#1E6B4E"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#F5F6F2" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#F5F6F2"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">vaquita</span>
+    </a>
+    <nav aria-label="Principal" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="Grupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis suscripciones</a>
+      <a href="Cobro.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
+      <a href="Solicitudes.dc.html" aria-current="page" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border-radius: 10px; background: #E3F1EA; color: #14503A; font-weight: 700; text-decoration: none">Mis solicitudes<span aria-label="2 mensajes sin leer" style="min-width: 22px; height: 22px; border-radius: 999px; background: #B42318; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span></a>
+      <a href="#" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Cupos libres</a>
+    </nav>
+    <a href="#" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1080px; margin: 0 auto; padding: 40px 32px 48px; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 40px; letter-spacing: -1px">Mis solicitudes</h1>
+        <p style="margin: 0; font-size: 17px; color: #4F5A55">Tienes 2 activas de un máximo de 5.</p>
+      </div>
+      <a href="Unirse.dc.html" style="height: 48px; padding: 0 20px; display: flex; align-items: center; background: #1E6B4E; color: #FFFFFF; border-radius: 12px; font-weight: 700; text-decoration: none">Unirme con un código</a>
+    </div>
+    <div role="tablist" aria-label="Filtrar solicitudes" style="display: flex; gap: 8px">
+      <button type="button" role="tab" aria-selected="true" style="min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid #17201C; background: #17201C; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">Activas · 2</button>
+      <button type="button" role="tab" aria-selected="false" style="min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; cursor: pointer">Historial · 1</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <sc-for list="{{requests}}" as="r" hint-placeholder-count="3">
+        <a href="{{r.href}}" style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; padding: 20px 22px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; color: #17201C; text-decoration: none; opacity: {{r.opacity}}">
+          <span aria-hidden="true" style="width: 52px; height: 52px; border-radius: 14px; background: {{r.tile}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px">{{r.initial}}</span>
+          <div style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+              <span style="font-weight: 700; font-size: 18px">{{r.name}}</span>
+              <span style="border-radius: 999px; padding: 3px 12px; font-size: 14px; font-weight: 700; background: {{r.bg}}; color: {{r.fg}}">{{r.status}}</span>
+            </div>
+            <span style="font-size: 15px; color: #4F5A55">{{r.detail}}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 150px">
+            <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 22px">{{r.amount}}</span>
+            <span style="font-size: 14px; color: #4F5A55">{{r.amountLabel}}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 150px">
+            <span style="font-weight: 700; font-size: 16px; color: {{r.timeColor}}">{{r.time}}</span>
+            <sc-if value="{{r.hasUnread}}" hint-placeholder-val="{{ false }}">
+              <span style="border-radius: 999px; padding: 3px 10px; font-size: 13px; font-weight: 700; background: #B42318; color: #FFFFFF">{{r.unread}}</span>
+            </sc-if>
+          </div>
+        </a>
+      </sc-for>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      requests: [
+        { href: 'Solicitud.dc.html', initial: 'M', tile: '#4B2A8C', name: 'Max de amigos', status: 'Esperando tu pago', bg: '#FCEBC7', fg: '#7A4B00', detail: 'Titular: Rodrigo Salazar ★ 4,5 · Rodrigo te envió sus datos de pago', amount: 'Bs 21,00', amountLabel: 'Cuota de ingreso fijada', time: 'Quedan 12:34', timeColor: '#9B1C12', hasUnread: true, unread: '2 mensajes nuevos', opacity: '1' },
+        { href: '#', initial: 'P', tile: '#0F5E8C', name: 'Prime Video casa', status: 'Abierta', bg: '#DCE6FB', fg: '#1C3F94', detail: 'Titular: Valeria Choque ★ 5 · Esperando que la titular te envíe los datos de pago', amount: 'Bs 9,30', amountLabel: 'Cuota estimada', time: 'Vence en 21 h', timeColor: '#4F5A55', hasUnread: false, unread: '', opacity: '1' },
+        { href: '#', initial: 'S', tile: '#14743A', name: 'Spotify depa', status: 'Aceptada', bg: '#D7EFE2', fg: '#17573F', detail: 'Titular: Marco Vargas · Entraste el 18 sep. 2026', amount: 'Bs 19,80', amountLabel: 'Pagado al ingresar', time: 'Chat en solo lectura', timeColor: '#4F5A55', hasUnread: false, unread: '', opacity: '0.8' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
