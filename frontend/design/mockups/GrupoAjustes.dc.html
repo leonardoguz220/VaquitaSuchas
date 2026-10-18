@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Netflix de la familia · Ajustes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid #D9DDD7; background: #FFFFFF">
+    <a href="Grupos.dc.html" style="display: flex; align-items: center; gap: 10px; color: #17201C; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#1E6B4E"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#F5F6F2" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#F5F6F2"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">vaquita</span>
+    </a>
+    <nav aria-label="Principal" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="Grupos.dc.html" aria-current="page" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; background: #E3F1EA; color: #14503A; font-weight: 700; text-decoration: none">Mis suscripciones</a>
+      <a href="MisCobros.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
+      <a href="Solicitudes.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis solicitudes</a>
+      <a href="Cupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Cupos libres</a>
+    </nav>
+    <a href="Perfil.dc.html" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1180px; margin: 0 auto; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 22px">
+    <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap">
+      <span aria-hidden="true" style="width: 56px; height: 56px; border-radius: 14px; background: #A4161A; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 26px">N</span>
+      <div style="flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 2px">
+        <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; letter-spacing: -0.6px">Netflix de la familia</h1>
+        <span style="font-size: 15px; color: #4F5A55">Eres titular · 4 de 4 cupos</span>
+      </div>
+    </div>
+    <div role="tablist" aria-label="Secciones del grupo" style="display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid #D9DDD7">
+      <a href="Grupo.dc.html" role="tab" aria-selected="false" style="min-height: 48px; padding: 0 18px; display: flex; align-items: center; border-bottom: 3px solid transparent; color: #4F5A55; font-weight: 700; text-decoration: none">Resumen</a>
+      <a href="GrupoMiembros.dc.html" role="tab" aria-selected="false" style="min-height: 48px; padding: 0 18px; display: flex; align-items: center; border-bottom: 3px solid transparent; color: #4F5A55; font-weight: 700; text-decoration: none">Miembros</a>
+      <a href="Grupo.dc.html" role="tab" aria-selected="false" style="min-height: 48px; padding: 0 18px; display: flex; align-items: center; border-bottom: 3px solid transparent; color: #4F5A55; font-weight: 700; text-decoration: none">Cobros</a>
+      <a href="GrupoSolicitudes.dc.html" role="tab" aria-selected="false" style="min-height: 48px; padding: 0 18px; display: flex; align-items: center; border-bottom: 3px solid transparent; color: #4F5A55; font-weight: 700; text-decoration: none">Solicitudes</a>
+      <a href="GrupoAjustes.dc.html" role="tab" aria-selected="true" style="min-height: 48px; padding: 0 18px; display: flex; align-items: center; border-bottom: 3px solid #1E6B4E; color: #14503A; font-weight: 700; text-decoration: none">Ajustes</a>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <form aria-labelledby="datos" style="flex: 999 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; padding: 24px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px">
+        <h2 id="datos" style="grid-column: 1 / -1; margin: 0; font-size: 18px">Datos del grupo</h2>
+        <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px"><label for="nombre" style="font-weight: 700; font-size: 15px">Nombre</label><input id="nombre" type="text" value="Netflix de la familia" style="height: 48px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 16px; color: #17201C"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="precio" style="font-weight: 700; font-size: 15px">Precio (USD)</label><input id="precio" type="text" value="14,66" style="height: 48px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 16px; color: #17201C"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="tc" style="font-weight: 700; font-size: 15px">Tipo de cambio</label><input id="tc" type="text" value="6,96" style="height: 48px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 16px; color: #17201C"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="dia" style="font-weight: 700; font-size: 15px">Día de cobro</label><select id="dia" style="height: 48px; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 12px; font: inherit; font-size: 16px; background: #FFFFFF; color: #17201C"><option selected>Día 1</option></select></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="cupos" style="font-weight: 700; font-size: 15px">Cupos</label><input id="cupos" type="number" value="4" min="4" max="4" aria-describedby="cupos-ayuda" style="height: 48px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 16px; color: #17201C"><span id="cupos-ayuda" style="font-size: 14px; color: #4F5A55">No puede ser menor que los 4 miembros actuales.</span></div>
+        <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px"><label for="pago" style="font-weight: 700; font-size: 15px">Datos de pago (texto y QR)</label><textarea id="pago" rows="2" style="box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 10px 14px; font: inherit; font-size: 16px; color: #17201C; resize: vertical">Banco Unión · Caja de ahorro 1000-2345678 · Ana Quispe Mamani</textarea><a href="#" style="font-size: 15px; font-weight: 700">Cambiar QR</a></div>
+        <p style="grid-column: 1 / -1; margin: 0; font-size: 14px; color: #4F5A55">Los cambios de precio, tipo de cambio o cupos se aplican desde el siguiente cobro; los cobros ya emitidos no cambian.</p>
+        <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end"><button type="button" style="height: 48px; padding: 0 24px; border: 0; border-radius: 12px; background: #1E6B4E; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">Guardar cambios</button></div>
+      </form>
+      <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+        <section style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+          <h2 style="margin: 0; font-size: 17px">Nuevos miembros</h2>
+          <label style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; font-size: 15px"><span>Recibir solicitudes con el código</span><input type="checkbox" role="switch" checked="" style="width: 44px; height: 24px; accent-color: #1E6B4E"></label>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 2px">K7M2Q9PX</span><button type="button" style="min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; font-weight: 700; cursor: pointer">Regenerar código</button></div>
+          <p style="margin: 0; font-size: 14px; color: #4F5A55">Pausar o regenerar no afecta a las solicitudes ya abiertas.</p>
+        </section>
+        <section style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+          <h2 style="margin: 0; font-size: 17px">Transferir titularidad</h2>
+          <label for="nuevo" style="font-size: 15px; color: #4F5A55">Solo a un miembro habilitado como titular</label>
+          <select id="nuevo" style="height: 46px; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 12px; font: inherit; background: #FFFFFF; color: #17201C"><option>Carla Rojas · habilitada</option><option disabled="">Diego Flores · no habilitado</option><option disabled="">Luis Mamani · no habilitado</option></select>
+          <button type="button" style="min-height: 46px; border-radius: 12px; border: 1.5px solid #1E6B4E; background: #FFFFFF; color: #1E6B4E; font: inherit; font-weight: 700; cursor: pointer">Transferir</button>
+        </section>
+        <section style="background: #FFFFFF; border: 1.5px solid #E7B6B0; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+          <h2 style="margin: 0; font-size: 17px; color: #9B1C12">Cerrar el grupo</h2>
+          <p style="margin: 0; font-size: 14px; color: #4F5A55">El grupo queda en solo lectura y no genera más cobros. No se puede cerrar ni transferir mientras haya solicitudes esperando pago o con pago informado.</p>
+          <button type="button" style="min-height: 46px; border-radius: 12px; border: 0; background: #9B1C12; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">Cerrar grupo</button>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

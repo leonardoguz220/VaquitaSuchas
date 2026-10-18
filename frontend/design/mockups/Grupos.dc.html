@@ -23,15 +23,15 @@ a{color:#1E6B4E}a:hover{color:#14503A}
     </a>
     <nav aria-label="Principal" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
       <a href="Grupos.dc.html" aria-current="page" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; background: #E3F1EA; color: #14503A; font-weight: 700; text-decoration: none">Mis suscripciones</a>
-      <a href="Cobro.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
+      <a href="MisCobros.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
       <a href="Solicitudes.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border-radius: 10px; color: #17201C; text-decoration: none">Mis solicitudes<span aria-label="2 mensajes sin leer" style="min-width: 22px; height: 22px; border-radius: 999px; background: #B42318; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span></a>
-      <a href="#" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Cupos libres</a>
+      <a href="Cupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Cupos libres</a>
     </nav>
-    <a href="#" aria-label="Notificaciones" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; color: #17201C; position: relative">
+    <a href="Notificaciones.dc.html" aria-label="Notificaciones" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; color: #17201C; position: relative">
       <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16 V11 A6 6 0 0 1 18 11 V16 L20 18 H4 Z M10 21 H14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path></svg>
       <span style="position: absolute; top: 8px; right: 8px; width: 9px; height: 9px; border-radius: 999px; background: #B42318"></span>
     </a>
-    <a href="#" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
+    <a href="Perfil.dc.html" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
   </header>
   <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1180px; margin: 0 auto; padding: 40px 32px; display: flex; flex-direction: column; gap: 28px">
     <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap">
@@ -88,7 +88,7 @@ class Component extends DCLogic {
     return {
       groups: [
         { href: 'Grupo.dc.html', initial: 'N', tile: '#A4161A', name: 'Netflix de la familia', plan: 'Netflix · Estándar', role: 'Titular', ...titular, quotaLabel: 'Cuota de referencia', quota: 'Bs 25,50', members: '4 de 4 cupos', next: 'Próximo corte: 1 nov.', opacity: '1', hasStatus: true, status: '1 comprobante por revisar', statusBg: '#DCE6FB', statusFg: '#1C3F94' },
-        { href: 'Cobro.dc.html', initial: 'S', tile: '#14743A', name: 'Spotify depa', plan: 'Spotify · Familiar', role: 'Miembro', ...miembro, quotaLabel: 'Tu cuota', quota: 'Bs 19,80', members: '6 de 6 cupos', next: 'Próximo corte: 18 nov.', opacity: '1', hasStatus: true, status: 'Pendiente · vence el 21 oct.', statusBg: '#FCEBC7', statusFg: '#7A4B00' },
+        { href: 'GrupoMiembro.dc.html', initial: 'S', tile: '#14743A', name: 'Spotify depa', plan: 'Spotify · Familiar', role: 'Miembro', ...miembro, quotaLabel: 'Tu cuota', quota: 'Bs 19,80', members: '6 de 6 cupos', next: 'Próximo corte: 18 nov.', opacity: '1', hasStatus: true, status: 'Pendiente · vence el 21 oct.', statusBg: '#FCEBC7', statusFg: '#7A4B00' },
         { href: '#', initial: 'D', tile: '#1D3A8A', name: 'Disney+ primos', plan: 'Disney+ · Premium', role: 'Miembro', ...miembro, quotaLabel: 'Tu cuota', quota: 'Bs 22,10', members: '4 de 4 cupos', next: 'Próximo corte: 12 nov.', opacity: '1', hasStatus: true, status: 'Pagado', statusBg: '#D7EFE2', statusFg: '#17573F' },
         { href: '#', initial: 'Y', tile: '#5B5F66', name: 'YouTube de la U', plan: 'YouTube Premium · Familiar', role: 'Miembro', ...miembro, quotaLabel: 'Tu cuota', quota: 'Bs 16,40', members: '3 de 5 cupos', next: 'Grupo cerrado el 30 sep.', opacity: '0.72', hasStatus: true, status: 'Cerrado', statusBg: '#E6E7E9', statusFg: '#3F4650' }
       ]

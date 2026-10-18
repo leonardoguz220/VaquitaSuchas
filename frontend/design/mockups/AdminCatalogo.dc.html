@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita Admin · Catálogo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; background: #17201C; color: #F5F6F2">
+    <a href="AdminPanel.dc.html" style="display: flex; align-items: center; gap: 10px; color: #F5F6F2; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#F5F6F2"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#1E6B4E" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#1E6B4E"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 22px">vaquita <span style="font-size: 14px; font-weight: 600; color: #C5CEC9">admin</span></span>
+    </a>
+    <nav aria-label="Administración" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="AdminUsuarios.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Usuarios</a>
+      <a href="AdminReclamo.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Reclamos</a>
+      <a href="AdminTitulares.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Titulares</a>
+      <a href="AdminAuditoria.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Auditoría</a>
+      <a href="AdminCatalogo.dc.html" aria-current="page" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; background: #2E3A35; color: #FFFFFF; font-weight: 700; text-decoration: none">Catálogo</a>
+      <a href="AdminModeracion.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Moderación</a>
+    </nav>
+    <span aria-label="Administradora: Camila Fuentes" style="width: 44px; height: 44px; border-radius: 999px; background: #E3F1EA; color: #14503A; display: flex; align-items: center; justify-content: center; font-weight: 700">CF</span>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1240px; margin: 0 auto; padding: 32px 32px 48px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+      <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 36px; letter-spacing: -0.8px">Catálogo de servicios</h1>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap">
+        <button type="button" style="min-height: 46px; padding: 0 16px; border-radius: 12px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; font-weight: 700; cursor: pointer">Importar CSV</button>
+        <button type="button" style="min-height: 46px; padding: 0 16px; border-radius: 12px; border: 0; background: #1E6B4E; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">Nuevo servicio</button>
+      </div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <section style="flex: 999 1 600px; min-width: 0; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 16px; overflow-x: auto">
+        <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 15px">
+          <thead><tr style="text-align: left; color: #4F5A55; font-size: 14px"><th scope="col" style="padding: 12px 18px">Servicio y plan</th><th scope="col" style="padding: 12px 18px">Categoría</th><th scope="col" style="padding: 12px 18px; text-align: right">Precio ref.</th><th scope="col" style="padding: 12px 18px; text-align: right">Cupos</th><th scope="col" style="padding: 12px 18px">Estado</th></tr></thead>
+          <tbody>
+            <sc-for list="{{plans}}" as="p" hint-placeholder-count="7">
+              <tr style="border-top: 1px solid #E6E9E4; background: {{p.rowBg}}"><td style="padding: 12px 18px"><strong>{{p.service}}</strong> · {{p.plan}}</td><td style="padding: 12px 18px; color: #4F5A55">{{p.cat}}</td><td style="padding: 12px 18px; text-align: right; font-variant-numeric: tabular-nums">{{p.price}}</td><td style="padding: 12px 18px; text-align: right">{{p.slots}}</td><td style="padding: 12px 18px"><span style="border-radius: 999px; padding: 3px 12px; font-size: 14px; font-weight: 700; background: {{p.bg}}; color: {{p.fg}}">{{p.status}}</span></td></tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </section>
+      <form aria-labelledby="editar" style="flex: 1 1 340px; min-width: 0; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+        <h2 id="editar" style="margin: 0; font-size: 18px">Editar Netflix · Estándar</h2>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+          <div style="display: flex; flex-direction: column; gap: 6px"><label for="precio" style="font-weight: 700; font-size: 15px">Precio de referencia</label><input id="precio" type="text" value="14,66" style="height: 46px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; color: #17201C"></div>
+          <div style="display: flex; flex-direction: column; gap: 6px"><label for="moneda" style="font-weight: 700; font-size: 15px">Moneda</label><select id="moneda" style="height: 46px; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 12px; font: inherit; background: #FFFFFF; color: #17201C"><option selected>USD</option><option>Bs</option></select></div>
+          <div style="display: flex; flex-direction: column; gap: 6px"><label for="cupos" style="font-weight: 700; font-size: 15px">Cupos máximos</label><input id="cupos" type="number" value="4" style="height: 46px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; color: #17201C"></div>
+          <div style="display: flex; flex-direction: column; gap: 6px"><label for="indiv" style="font-weight: 700; font-size: 15px">Precio individual</label><input id="indiv" type="text" value="14,66" aria-describedby="indiv-ayuda" style="height: 46px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; color: #17201C"><span id="indiv-ayuda" style="font-size: 13px; color: #4F5A55">Para estimar el ahorro</span></div>
+        </div>
+        <p role="note" style="margin: 0; font-size: 14px; color: #5C3900; background: #FCEBC7; border-radius: 12px; padding: 10px 12px">Cambiar el catálogo no modifica las suscripciones que ya existen: cada una guarda su propia copia del plan.</p>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap"><button type="button" style="flex: 1; min-height: 46px; border-radius: 12px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; font-weight: 700; cursor: pointer">Desactivar plan</button><button type="button" style="flex: 1; min-height: 46px; border: 0; border-radius: 12px; background: #1E6B4E; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">Guardar</button></div>
+        <div style="border-top: 1px solid #EEF0EC; padding-top: 12px; display: flex; flex-direction: column; gap: 8px">
+          <h3 style="margin: 0; font-size: 16px">Última importación: 12 filas</h3>
+          <span style="font-size: 14px; color: #17573F">✓ 10 filas válidas</span>
+          <span style="font-size: 14px; color: #9B1C12">! Fila 7: el precio no puede ser negativo</span>
+          <span style="font-size: 14px; color: #9B1C12">! Fila 11: falta la moneda</span>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const act = { status: 'Activo', bg: '#D7EFE2', fg: '#17573F' };
+    const ver = { status: 'Precio por verificar', bg: '#FCEBC7', fg: '#7A4B00' };
+    const off = { status: 'Inactivo', bg: '#E6E7E9', fg: '#3F4650' };
+    return {
+      plans: [
+        { service: 'Netflix', plan: 'Estándar', cat: 'Video', price: 'USD 14,66', slots: '4', ...act, rowBg: '#F3F8F5' },
+        { service: 'Netflix', plan: 'Premium', cat: 'Video', price: 'USD 22,99', slots: '4', ...ver, rowBg: '#FFFFFF' },
+        { service: 'Spotify', plan: 'Familiar', cat: 'Música', price: 'USD 17,07', slots: '6', ...act, rowBg: '#FFFFFF' },
+        { service: 'Disney+', plan: 'Premium', cat: 'Video', price: 'USD [precio]', slots: '4', ...ver, rowBg: '#FFFFFF' },
+        { service: 'YouTube Premium', plan: 'Familiar', cat: 'Video', price: 'USD [precio]', slots: '6', ...ver, rowBg: '#FFFFFF' },
+        { service: 'Max', plan: 'Estándar', cat: 'Video', price: 'Bs 84,00', slots: '4', ...act, rowBg: '#FFFFFF' },
+        { service: 'Prime Video', plan: 'Con anuncios', cat: 'Video', price: 'USD [precio]', slots: '3', ...off, rowBg: '#FFFFFF' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

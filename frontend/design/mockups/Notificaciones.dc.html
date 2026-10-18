@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Notificaciones</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid #D9DDD7; background: #FFFFFF">
+    <a href="Grupos.dc.html" style="display: flex; align-items: center; gap: 10px; color: #17201C; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#1E6B4E"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#F5F6F2" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#F5F6F2"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">vaquita</span>
+    </a>
+    <nav aria-label="Principal" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="Panel.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Panel</a>
+      <a href="Grupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis suscripciones</a>
+      <a href="MisCobros.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
+      <a href="Solicitudes.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis solicitudes</a>
+    </nav>
+    <a href="Notificaciones.dc.html" aria-current="page" aria-label="Notificaciones, 3 sin leer" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #E3F1EA; color: #14503A; position: relative">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16 V11 A6 6 0 0 1 18 11 V16 L20 18 H4 Z M10 21 H14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path></svg>
+      <span style="position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; border-radius: 999px; background: #B42318; color: #FFFFFF; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center">3</span>
+    </a>
+    <a href="Perfil.dc.html" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 900px; margin: 0 auto; padding: 36px 32px 48px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+      <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 40px; letter-spacing: -1px">Notificaciones</h1>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap">
+        <a href="AjustesAvisos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; font-weight: 700; text-decoration: none; border: 1.5px solid #C9CFC8">Ajustes de avisos</a>
+        <button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1.5px solid #1E6B4E; background: #FFFFFF; color: #1E6B4E; font: inherit; font-weight: 700; cursor: pointer">Marcar todas como leídas</button>
+      </div>
+    </div>
+    <div role="tablist" aria-label="Filtrar" style="display: flex; gap: 8px">
+      <button type="button" role="tab" aria-selected="true" style="min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid #17201C; background: #17201C; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">Todas</button>
+      <button type="button" role="tab" aria-selected="false" style="min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; cursor: pointer">No leídas · 3</button>
+    </div>
+    <ul style="margin: 0; padding: 0; list-style: none; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; overflow: hidden">
+      <sc-for list="{{items}}" as="n" hint-placeholder-count="6">
+        <li style="border-top: 1px solid #E6E9E4; background: {{n.bg}}">
+          <a href="{{n.href}}" style="display: flex; gap: 14px; align-items: flex-start; padding: 16px 20px; color: #17201C; text-decoration: none">
+            <span aria-hidden="true" style="flex: none; width: 40px; height: 40px; border-radius: 12px; background: {{n.iconBg}}; color: {{n.iconFg}}; display: flex; align-items: center; justify-content: center; font-weight: 700">{{n.icon}}</span>
+            <span style="flex: 1; display: flex; flex-direction: column; gap: 3px">
+              <span style="font-weight: 700; font-size: 16px">{{n.title}}</span>
+              <span style="font-size: 15px; color: #4F5A55">{{n.text}}</span>
+            </span>
+            <span style="flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; font-size: 13px; color: #4F5A55">{{n.when}}<sc-if value="{{n.unread}}" hint-placeholder-val="{{ false }}"><span style="border-radius: 999px; padding: 2px 8px; background: #1E6B4E; color: #FFFFFF; font-weight: 700">No leída</span></sc-if></span>
+          </a>
+        </li>
+      </sc-for>
+    </ul>
+    <p style="margin: 0; font-size: 14px; color: #4F5A55">Las notificaciones de la app no se desactivan y se guardan 90 días. Los correos y los avisos por Telegram se eligen en Ajustes de avisos.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const unread = { unread: true, bg: '#F3F8F5' };
+    const read = { unread: false, bg: '#FFFFFF' };
+    return {
+      items: [
+        { href: 'Solicitud.dc.html', icon: '@', iconBg: '#DCE6FB', iconFg: '#1C3F94', title: 'Rodrigo te envió los datos de pago', text: 'Max de amigos · Cuota de ingreso Bs 21,00. Tienes 15 minutos para pagar.', when: 'Hoy 14:41', ...unread },
+        { href: 'Cobro.dc.html', icon: 'Bs', iconBg: '#FCEBC7', iconFg: '#7A4B00', title: 'Se generó tu cobro de octubre', text: 'Spotify depa · Bs 19,80 · vence el 21 oct.', when: 'Hoy 00:00', ...unread },
+        { href: 'Grupo.dc.html', icon: '↑', iconBg: '#DCE6FB', iconFg: '#1C3F94', title: 'Luis Mamani subió un comprobante', text: 'Netflix de la familia · lleva más de 48 horas sin revisar.', when: '5 oct.', ...unread },
+        { href: '#', icon: '✓', iconBg: '#D7EFE2', iconFg: '#17573F', title: 'Tu pago fue confirmado', text: 'Disney+ primos · octubre · Bs 22,10', when: '13 oct.', ...read },
+        { href: '#', icon: '+', iconBg: '#E3F1EA', iconFg: '#14503A', title: 'Diego Flores entró a tu grupo', text: 'Netflix de la familia ya tiene 4 de 4 cupos.', when: '3 jun.', ...read },
+        { href: 'MisCobros.dc.html', icon: '!', iconBg: '#FBDCD8', iconFg: '#9B1C12', title: 'Te retiraron por falta de pago', text: 'Paramount+ del curso · tu cobro de septiembre quedó como deuda.', when: '12 sep.', ...read }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

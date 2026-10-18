@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Recuperar contraseña</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid #D9DDD7; background: #FFFFFF">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; color: #17201C; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#1E6B4E"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#F5F6F2" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#F5F6F2"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">vaquita</span>
+    </a>
+    <a href="Main.dc.html" style="font-weight: 700">Volver a ingresar</a>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1080px; margin: 0 auto; padding: 48px 24px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+    <section aria-labelledby="pedir" style="flex: 1 1 420px; min-width: 0; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 20px; padding: 32px; display: flex; flex-direction: column; gap: 18px">
+      <span style="font-size: 14px; font-weight: 700; color: #4F5A55">/recuperar</span>
+      <h1 id="pedir" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 32px; letter-spacing: -0.6px">¿Olvidaste tu contraseña?</h1>
+      <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #4F5A55">Escribe tu correo y te enviaremos un enlace para crear una nueva. El enlace sirve una sola vez y vence en 30 minutos.</p>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="correo" style="font-weight: 700; font-size: 15px">Correo</label>
+        <input id="correo" type="email" value="ana.quispe@gmail.com" style="height: 50px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 17px; color: #17201C">
+      </div>
+      <button type="button" style="height: 52px; border: 0; border-radius: 12px; background: #1E6B4E; color: #FFFFFF; font: inherit; font-weight: 700; font-size: 17px; cursor: pointer">Enviar enlace</button>
+      <div role="status" style="display: flex; gap: 12px; background: #D7EFE2; color: #17573F; border-radius: 14px; padding: 14px 16px; font-size: 15px; line-height: 1.45">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="12" r="10" fill="currentColor"></circle><path d="M7.5 12.5 L10.5 15.5 L16.5 9" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <span>Si el correo está registrado, te enviamos un enlace. Revisa también tu carpeta de spam.</span>
+      </div>
+      <p style="margin: 0; font-size: 14px; color: #4F5A55">Puedes pedir hasta 3 enlaces por hora.</p>
+    </section>
+    <section aria-labelledby="nueva" style="flex: 1 1 420px; min-width: 0; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 20px; padding: 32px; display: flex; flex-direction: column; gap: 18px">
+      <span style="font-size: 14px; font-weight: 700; color: #4F5A55">/recuperar/[token] · desde el enlace del correo</span>
+      <h2 id="nueva" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 32px; letter-spacing: -0.6px">Crea una nueva contraseña</h2>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="clave" style="font-weight: 700; font-size: 15px">Nueva contraseña</label>
+        <input id="clave" type="password" value="nuevaclave2026" style="height: 50px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 17px; color: #17201C">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="clave2" style="font-weight: 700; font-size: 15px">Confirma la contraseña</label>
+        <input id="clave2" type="password" value="nuevaclave2026" style="height: 50px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 17px; color: #17201C">
+      </div>
+      <ul aria-live="polite" style="margin: 0; padding: 14px 16px; list-style: none; background: #F5F6F2; border-radius: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; font-size: 15px">
+        <li>✓ Al menos 10 caracteres</li>
+        <li>✓ Al menos una letra</li>
+        <li>✓ Al menos un número</li>
+        <li>✓ Distinta de tu correo</li>
+      </ul>
+      <a href="Main.dc.html" style="height: 52px; display: flex; align-items: center; justify-content: center; background: #1E6B4E; color: #FFFFFF; border-radius: 12px; font-weight: 700; font-size: 17px; text-decoration: none">Guardar contraseña</a>
+      <div role="alert" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: #FBDCD8; color: #7E1710; border-radius: 14px; padding: 14px 16px; font-size: 15px">
+        <span style="flex: 1; min-width: 200px"><strong>Si el enlace falla:</strong> «Este enlace venció o ya se usó.»</span>
+        <a href="#" style="color: #7E1710; font-weight: 700">Pedir otro enlace</a>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

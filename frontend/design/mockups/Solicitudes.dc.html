@@ -23,11 +23,11 @@ a{color:#1E6B4E}a:hover{color:#14503A}
     </a>
     <nav aria-label="Principal" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
       <a href="Grupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis suscripciones</a>
-      <a href="Cobro.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
+      <a href="MisCobros.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
       <a href="Solicitudes.dc.html" aria-current="page" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border-radius: 10px; background: #E3F1EA; color: #14503A; font-weight: 700; text-decoration: none">Mis solicitudes<span aria-label="2 mensajes sin leer" style="min-width: 22px; height: 22px; border-radius: 999px; background: #B42318; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span></a>
-      <a href="#" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Cupos libres</a>
+      <a href="Cupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Cupos libres</a>
     </nav>
-    <a href="#" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
+    <a href="Perfil.dc.html" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
   </header>
   <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1080px; margin: 0 auto; padding: 40px 32px 48px; display: flex; flex-direction: column; gap: 24px">
     <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap">
@@ -75,7 +75,7 @@ class Component extends DCLogic {
       requests: [
         { href: 'Solicitud.dc.html', initial: 'M', tile: '#4B2A8C', name: 'Max de amigos', status: 'Esperando tu pago', bg: '#FCEBC7', fg: '#7A4B00', detail: 'Titular: Rodrigo Salazar ★ 4,5 · Rodrigo te envió sus datos de pago', amount: 'Bs 21,00', amountLabel: 'Cuota de ingreso fijada', time: 'Quedan 12:34', timeColor: '#9B1C12', hasUnread: true, unread: '2 mensajes nuevos', opacity: '1' },
         { href: '#', initial: 'P', tile: '#0F5E8C', name: 'Prime Video casa', status: 'Abierta', bg: '#DCE6FB', fg: '#1C3F94', detail: 'Titular: Valeria Choque ★ 5 · Esperando que la titular te envíe los datos de pago', amount: 'Bs 9,30', amountLabel: 'Cuota estimada', time: 'Vence en 21 h', timeColor: '#4F5A55', hasUnread: false, unread: '', opacity: '1' },
-        { href: '#', initial: 'S', tile: '#14743A', name: 'Spotify depa', status: 'Aceptada', bg: '#D7EFE2', fg: '#17573F', detail: 'Titular: Marco Vargas · Entraste el 18 sep. 2026', amount: 'Bs 19,80', amountLabel: 'Pagado al ingresar', time: 'Chat en solo lectura', timeColor: '#4F5A55', hasUnread: false, unread: '', opacity: '0.8' }
+        { href: 'GrupoMiembro.dc.html', initial: 'S', tile: '#14743A', name: 'Spotify depa', status: 'Aceptada', bg: '#D7EFE2', fg: '#17573F', detail: 'Titular: Marco Vargas · Entraste el 18 sep. 2026', amount: 'Bs 19,80', amountLabel: 'Pagado al ingresar', time: 'Chat en solo lectura', timeColor: '#4F5A55', hasUnread: false, unread: '', opacity: '0.8' }
       ]
     };
   }
