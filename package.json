@@ -1,0 +1,31 @@
+{
+  "name": "vaquita",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Vaquita: suscripciones compartidas (monorepo con npm workspaces)",
+  "workspaces": [
+    "backend",
+    "frontend",
+    "database"
+  ],
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "dev": "concurrently --names backend,frontend --kill-others-on-fail \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run db:migrate -w database --if-present",
+    "db:seed": "npm run db:seed -w database --if-present",
+    "db:reset": "npm run db:reset -w database --if-present",
+    "db:dump": "npm run db:dump -w database --if-present",
+    "db:restore": "npm run db:restore -w database --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "10.0.6"
+  }
+}
