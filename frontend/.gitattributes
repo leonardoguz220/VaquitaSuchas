@@ -1,0 +1,6 @@
+# Fin de línea LF en el frontend, aunque Git esté con core.autocrlf=true (Prettier exige lf).
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
