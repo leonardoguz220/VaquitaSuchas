@@ -50,6 +50,12 @@ export const SENSITIVE_KEYS = [
   'x-registration-secret',
   'x-telegram-bot-api-secret-token',
   'buffer',
+  // Claves de los contratos de las specs 001, 002 y 003 que llevan un secreto o un enlace con secreto.
+  'passwordConfirmation',
+  'newPasswordConfirmation',
+  'inviteCode',
+  'telegramUrl',
+  'qrUrl',
 ] as const;
 
 const capitalize = (word: string): string => word.charAt(0).toUpperCase() + word.slice(1);

@@ -41,7 +41,12 @@ const QUERY_TOKEN = 'query-centinela-6060';
 const FILE_CONTENT = 'CONTENIDO-DE-COMPROBANTE-CENTINELA';
 const DEEP_PASSWORD = 'Cl4ve-Honda-5Zz1';
 
+const JWT_SECRET = 'secreto-e2e-de-al-menos-treinta-y-dos-caracteres';
+const JOBS_TOKEN = 'j'.repeat(64);
+
 const ALL_SENTINELS = [
+  JWT_SECRET,
+  JOBS_TOKEN,
   PASSWORD,
   NESTED_PASSWORD,
   CI,
@@ -58,8 +63,6 @@ const ALL_SENTINELS = [
   DEEP_PASSWORD,
 ];
 
-const JWT_SECRET = 'secreto-e2e-de-al-menos-treinta-y-dos-caracteres';
-const JOBS_TOKEN = 'j'.repeat(64);
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 interface LogLine {
