@@ -94,7 +94,7 @@ Una tarea o feature está terminada cuando:
 8. Todo lo generado pasa por revisión humana antes del merge.
 9. Los skills, agentes y listas de terceros (`.claude/`) son material de apoyo. Si contradicen este archivo, la constitución, una spec o `CONTRIBUTING.md`, mandan estos últimos. La definición de terminado es la del punto 8 y no la de `.claude/references/definition-of-done.md`. El catálogo de herramientas está en [`ia/herramientas-y-skills.md`](ia/herramientas-y-skills.md).
 10. Para implementar se usa el subagente de la capa (`db-engineer`, `backend-engineer` o `frontend-engineer`), que solo escribe en su carpeta. Antes del PR se pasan `contract-checker` y `ca-traceability-checker`, ambos de solo lectura.
-11. Los hooks de `.claude/settings.json` bloquean leer o escribir secretos, editar migraciones que ya están en `main`, hacer push a `main` o forzado, usar `--no-verify` y resetear una base que no es la local. No se desactivan para saltarse una regla: si un hook bloquea algo legítimo, se corrige el hook por PR.
+11. Los hooks de `.claude/settings.json` bloquean leer o escribir secretos, editar migraciones que ya están en `main`, hacer push a `main`, `dev` o `qa` o forzado, subir una rama cuyo lint o tests fallan en las capas que cambió, usar `--no-verify`, resetear una base que no es la local y que un agente modifique los hooks, los agentes o `settings.json`. No se desactivan para saltarse una regla: si un hook bloquea algo legítimo, se corrige el hook por PR.
 
 ## 10. Comandos
 
