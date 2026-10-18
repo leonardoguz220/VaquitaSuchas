@@ -52,6 +52,33 @@ Detalle en [`data-model.md`](data-model.md): `users`, `phone_verification_tokens
 
 Seed: ningún usuario. El administrador de desarrollo lo crea `npm run seed:admin -w backend` (§5).
 
+### Propuesta de cambio al modelo (pendiente de aprobación de las tres capas, 2026-10-18)
+
+> Detectado por `/speckit-analyze` antes de implementar T003 (hallazgo A1, CRITICAL). Mientras no se apruebe, T003 y T020 quedan detenidas. `data-model.md` no se toca hasta que este PR se apruebe.
+
+**Problema.** `data-model.md` §1 define en `phone_verification_tokens` el `CHECK (purpose <> 'registro' OR registration_secret_hash IS NOT NULL)`. El §5 de este plan (sondeo) y T020 marcan el secreto como canjeado **poniendo `registration_secret_hash = NULL`** en esa misma fila. La base rechazaría ese `UPDATE` (23514), y el sondeo nunca entregaría la sesión: CA-003-01 y CA-003-27 no se podrían cumplir.
+
+**Problemas relacionados (HIGH y MEDIUM, mismo análisis):**
+- **A2:** el secreto dura 24 h y sobrevive a `POST /auth/register/link` (`contracts/api.md`), pero el modelo lo guarda en cada fila de token, que dura 10 min. No está definido si el hash se copia al token nuevo.
+- **A4:** el sondeo busca por `registration_secret_hash` y no hay índice para esa consulta.
+
+**Opción recomendada (BD).** Sacar el secreto de los tokens y guardarlo una vez por registro, en la cuenta sin verificar:
+
+| Cambio | Detalle |
+|---|---|
+| `users.registration_secret_hash text NULL UNIQUE` | SHA-256 del secreto de sondeo. Solo existe mientras `verified_at IS NULL` o mientras la sesión no se canjeó. |
+| `users.registration_secret_expires_at timestamptz NULL` | creación + 24 h (`contracts/api.md`: `401` si venció). |
+| `users.registration_secret_redeemed_at timestamptz NULL` | Se marca al entregar el `sessionToken` una sola vez (CA-003-27). Después de eso el sondeo responde `401`. |
+| `CHECK ((registration_secret_hash IS NULL) = (registration_secret_expires_at IS NULL))` | Hash y vigencia van juntos. |
+| `phone_verification_tokens` | Se quita `registration_secret_hash` y su `CHECK`. Pedir un enlace nuevo crea otro token sin copiar secretos. |
+| Índice | El `UNIQUE` de `users.registration_secret_hash` sirve al sondeo (A4). |
+
+El sondeo, en una transacción, haría: buscar el usuario por el hash del secreto (vigente y no canjeado) → si `verified_at` no es nulo, emitir la sesión y marcar `registration_secret_redeemed_at` → si no, devolver el estado del token más reciente.
+
+**Alternativa mínima.** Dejar el modelo de tokens como está, agregar `phone_verification_tokens.secret_redeemed_at timestamptz NULL`, cambiar el plan y T020 para marcar esa columna en lugar de borrar el hash, y copiar el hash al token nuevo en `POST /auth/register/link` (sin `UNIQUE` en el hash, con un índice parcial `WHERE used_at IS NULL`). Cambia menos, pero duplica el secreto en cada token.
+
+**Si se aprueba:** actualizar `data-model.md` §1 y §4, las tareas T001 (pruebas nuevas: vigencia del secreto y un solo canje), T002 o T003 y T020, y avisar a frontend (el contrato no cambia).
+
 ## 4. Contratos de API — _Leonardo (Backend)_
 
 Detalle en [`contracts/api.md`](contracts/api.md): `POST /auth/register`, `GET /auth/register/status`, `POST /auth/register/link`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/password/forgot`, `POST /auth/password/reset`, `POST /auth/password/change`, `PATCH /users/me`, `POST /users/me/phone-change`, `GET /users/me/phone-change/status`, `GET /auth/policy`.
