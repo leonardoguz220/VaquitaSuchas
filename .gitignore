@@ -34,3 +34,7 @@ npm-debug.log*
 serviceAccount*.json
 *-service-account*.json
 *-firebase-adminsdk-*.json
+
+# Almacen local de archivos (FileStorage en modo local) y artefactos de TypeScript
+.storage/
+*.tsbuildinfo
