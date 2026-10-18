@@ -1,12 +1,12 @@
 # Spec 002 — Cobros y pagos
 
-- **Estado:** borrador
+- **Estado:** aprobada
 - **Líder de la spec:** Leonardo Guzman (Backend)
-- **Revisión por capa:** Camila Fuentes (BD): pendiente · Adrian Vargas (Frontend): pendiente · Leonardo Guzman (Backend): pendiente
+- **Revisión por capa:** Camila Fuentes (BD): aprobada · Adrian Vargas (Frontend): aprobada · Leonardo Guzman (Backend): aprobada
 - **Prioridad:** P0 (MVP)
 - **Depende de:** 001 (Suscripciones compartidas)
 - **Módulos cubiertos:** 5 (Cobros y pagos)
-- **Última actualización:** 2026-10-17
+- **Última actualización:** 2026-10-18
 
 ## 1. Contexto y problema
 
@@ -199,3 +199,4 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 | 2026-10-17 | Ronda 2 de decisiones: referencia obligatoria y única (RF-002-07), retiro automático por atraso (RF-002-14, RN-002-11), retención de 2 meses (RN-002-06), CA-002-26 a 33; se resuelve P33 | Equipo |
 | 2026-10-18 | Se confirma el tratamiento de la deuda del miembro retirado (RN-002-11) | Equipo |
 | 2026-10-18 | Se aprueban la emisión tardía (RF-002-03: vencimiento = mayor entre corte + 3 días y emisión + 3 días) y el tratamiento de grupos cerrados y congelados (`research.md` R5) | Equipo |
+| 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |

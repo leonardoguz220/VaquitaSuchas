@@ -6,7 +6,7 @@ description: Convenciones de Vaquita para el backend NestJS: estructura de módu
 # Vaquita — NestJS (Backend)
 
 Esta skill es **de apoyo**. Si contradice `CLAUDE.md`, la constitución o una spec, mandan ellos.
-Stack acordado: NestJS + TypeScript, JWT con Passport, bcrypt, class-validator, Swagger, `@nestjs/schedule`, Jest + supertest (`context/stack.md`).
+Stack acordado: NestJS + TypeScript, JWT con Passport, argon2id (spec 000, `research.md` R5), class-validator, Swagger, `@nestjs/schedule`, Jest + supertest (`context/stack.md`).
 
 ## Cuándo usarla
 
@@ -16,7 +16,7 @@ Stack acordado: NestJS + TypeScript, JWT con Passport, bcrypt, class-validator, 
 
 ## Reglas
 
-1. **Un módulo por feature** (`auth`, `users`, `catalog`, `subscriptions`, `billing`, `notifications`...). Una responsabilidad por módulo. Dentro de cada módulo, cuatro capas: `controllers`, `services`, `domain` y `repositories` (`context/arquitectura.md`). Los controladores solo llaman a servicios; los servicios llaman a `domain` y `repositories`; `domain` no importa nada de NestJS ni de `pg`; solo los repositorios escriben SQL o hablan con Firebase y el correo.
+1. **Un módulo por feature** (`auth`, `users`, `catalog`, `subscriptions`, `billing`, `notifications`...). Una responsabilidad por módulo. Dentro de cada módulo, cuatro capas: `controllers`, `services`, `domain` y `repositories` (`context/arquitectura.md`). Los controladores solo llaman a servicios; los servicios llaman a `domain` y `repositories`; `domain` no importa nada de NestJS ni de `pg`; solo los repositorios escriben SQL o hablan con el almacén de archivos (Supabase Storage, detrás de `FileStorage`), el bot de Telegram y el correo.
 2. **Lógica de dominio fuera del framework:** cálculo de cuotas, conversión y transiciones viven en funciones puras (ver `vaquita-money-and-billing`). Los servicios las llaman; los controladores no tienen reglas.
 3. **Validación en el servidor, siempre** (`context/dominio.md`): permisos, montos, estados. Cada entrada pasa por un DTO con `class-validator` y `ValidationPipe` con `whitelist: true` y `forbidNonWhitelisted: true`.
 4. **Permisos en dos niveles:**
@@ -26,7 +26,7 @@ Stack acordado: NestJS + TypeScript, JWT con Passport, bcrypt, class-validator, 
    - **Es miembro pero no tiene el rol necesario → `403`** (CA-001-11, CA-002-12, CA-008-20).
    - Rutas de administración o de catálogo sin rol `admin` → `403` (RF-009-01, CA-004-10).
    - Comprobante de otro miembro: `403` si es miembro del grupo (CA-002-13) y `404` si no pertenece (CA-002-23).
-5. **Contraseñas** con bcrypt; nunca se guardan ni se registran en logs, tokens incluidos.
+5. **Contraseñas** con argon2id (bcrypt solo si la medición de T053 lo exige); nunca se guardan ni se registran en logs, tokens incluidos.
 6. **Errores:** código HTTP correcto (`400` validación, `401` sin sesión, `403` sin permiso, `404`, `409` conflicto o estado inválido) y mensaje claro en español (Bolivia), sin detalles internos ni trazas.
 7. **Contrato = Swagger.** Cada endpoint documenta ruta, DTO, respuestas y errores. El contrato se congela al aprobar el plan; cambiarlo requiere PR que avise a Frontend (`CLAUDE.md` §2.7).
 8. **Configuración:** variables de entorno validadas al arrancar; secretos nunca en el repositorio. Mantén un `.env.example`.

@@ -1,12 +1,12 @@
 # Spec 009 — Administración
 
-- **Estado:** borrador
+- **Estado:** aprobada
 - **Líder de la spec:** Adrian Vargas (Frontend)
-- **Revisión por capa:** Camila Fuentes (BD): pendiente · Leonardo Guzman (Backend): pendiente · Adrian Vargas (Frontend): pendiente
+- **Revisión por capa:** Camila Fuentes (BD): aprobada · Leonardo Guzman (Backend): aprobada · Adrian Vargas (Frontend): aprobada
 - **Prioridad:** P2 (extra)
 - **Depende de:** 003 (usuarios), 004 (catálogo), 008 (reportes de cupos), 002 (para estadísticas), 010 (reclamos de ingreso)
 - **Módulo cubierto:** 10 (Administración)
-- **Última actualización:** 2026-10-17
+- **Última actualización:** 2026-10-18
 
 ## 1. Contexto y problema
 
@@ -188,3 +188,4 @@ Una vez que la app tiene usuarios reales, alguien debe poder mantener el catálo
 | 2026-10-18 | Al revertir un baneo se descongelan los grupos que congeló (RF-009-23, CA-009-37) | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: el baneo bloquea correo, celular y cédula y recae también en solicitantes (RF-009-19, 20), efectos en el grupo (RF-009-22), revisión, apelación y titular suspendido (RF-009-11, 23, 24), CA-009-30 a 36; se aceptan las propuestas de la sección 11 | Equipo |
 | 2026-10-18 | Se confirman los cobros congelados de un titular baneado, la transferencia por un administrador y el bloqueo de la cuenta de Telegram | Equipo |
+| 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |

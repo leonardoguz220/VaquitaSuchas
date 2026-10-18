@@ -1,12 +1,12 @@
 # Spec 006 — Panel y reportes
 
-- **Estado:** borrador
+- **Estado:** aprobada
 - **Líder de la spec:** Adrian Vargas (Frontend)
-- **Revisión por capa:** Camila Fuentes (BD): pendiente · Leonardo Guzman (Backend): pendiente · Adrian Vargas (Frontend): pendiente
+- **Revisión por capa:** Camila Fuentes (BD): aprobada · Leonardo Guzman (Backend): aprobada · Adrian Vargas (Frontend): aprobada
 - **Prioridad:** P1 (importante)
 - **Depende de:** 001, 002, 004
 - **Módulo cubierto:** 7 (Panel y reportes)
-- **Última actualización:** 2026-10-17
+- **Última actualización:** 2026-10-18
 
 ## 1. Contexto y problema
 
@@ -147,3 +147,4 @@ Quien comparte varias suscripciones pierde de vista cuánto gasta al mes, cuánt
 |---|---|---|
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: se aceptan las propuestas de la sección 11 | Equipo |
+| 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |

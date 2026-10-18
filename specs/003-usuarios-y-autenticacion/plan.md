@@ -7,9 +7,9 @@
 
 | Capa | Responsable | Secciones | Visto bueno |
 |---|---|---|---|
-| Base de datos | Camila | §3 (y `data-model.md`) | pendiente |
-| Backend | Leonardo | §4, §5, §7 (y `contracts/api.md`) | pendiente |
-| Frontend | Adrian | §6 | pendiente |
+| Base de datos | Camila | §3 (y `data-model.md`) | aprobado |
+| Backend | Leonardo | §4, §5, §7 (y `contracts/api.md`) | aprobado |
+| Frontend | Adrian | §6 | aprobado |
 
 ## Constitución: verificación
 

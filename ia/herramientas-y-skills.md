@@ -41,6 +41,16 @@ Por ejemplo, `.claude/references/definition-of-done.md` es una guía general, mi
 - `security-auditor`: auditoría de vulnerabilidades en autenticación, comprobantes y permisos por grupo.
 - `test-engineer`: diseño de la estrategia y de los casos de prueba a partir de los criterios `CA-xxx`.
 
+Agentes propios de Vaquita, escritos por el equipo (en español y limitados a su capa):
+
+| Agente | Capa | Qué hace | Escribe |
+|---|---|---|---|
+| `db-engineer` | BD | Implementa una tarea `[BD]`: migraciones, seeds y pruebas de integridad | Solo `database/` y `tasks.md` |
+| `backend-engineer` | BE | Implementa una tarea `[BE]`: módulos NestJS por capas y tests | Solo `backend/` y `tasks.md` |
+| `frontend-engineer` | FE | Implementa una tarea `[FE]`: pantallas, componentes, proxy y tests | Solo `frontend/` y `tasks.md` |
+| `contract-checker` | Todas | Compara el código con `contracts/api.md` y `data-model.md` | Nada (solo lectura) |
+| `ca-traceability-checker` | Todas | Verifica que cada `CA-xxx` tenga su test y la definición de terminado | Nada (solo lectura) |
+
 ### Listas de referencia (`.claude/references/`)
 
 `security-checklist.md`, `performance-checklist.md`, `accessibility-checklist.md`, `testing-patterns.md` y `definition-of-done.md`. Esta última es de apoyo; la definición vigente es la de `CLAUDE.md` §8.
@@ -70,7 +80,7 @@ La revisión de cada una corresponde a Camila para `vaquita-postgres-migrations`
 | `code-simplification`, `deprecation-and-migration`, `shipping-and-launch`, `observability-and-instrumentation` | Se agregan más adelante, cuando haya código y producción |
 | `browser-testing-with-devtools` | Depende de un MCP externo (Chrome DevTools) y se evalúa junto con él (§5) |
 | `using-agent-skills` | Es una skill de la propia librería |
-| `commands/*.toml` y `hooks/*.sh` | Los comandos duplican los `/speckit-*`. Los hooks ejecutan scripts en la máquina de cada integrante y requieren revisión del equipo |
+| `commands/*.toml` y `hooks/*.sh` | Los comandos duplican los `/speckit-*`. Los hooks de agent-skills no se copian: el proyecto tiene hooks propios, revisados por el equipo (§7) |
 
 ## 5. MCPs recomendados
 
@@ -89,7 +99,7 @@ Un MCP conecta a Claude con un servicio externo. Ninguno está conectado todaví
 
 | MCP | Uso | Capa | Nota |
 |---|---|---|---|
-| Firebase (oficial, `firebase-tools`) | Reglas de Storage y URLs de descarga de comprobantes y QR | BE | `claude mcp add firebase npx -- -y firebase-tools@latest mcp --only storage` limita las herramientas expuestas a Storage |
+| Supabase (oficial, `supabase-community/supabase-mcp`) | Buckets privados y URLs firmadas de comprobantes y QR (decisión del 2026-10-18: Supabase Storage en lugar de Firebase) | BE | Usar el modo de solo lectura y limitarlo al proyecto de staging; nunca con datos reales |
 | Vercel | Proyectos, despliegues y logs del frontend | FE | Conector disponible en el registro de claude.ai |
 | Render | Despliegues, logs y métricas del backend | BE | Conector disponible en el registro de claude.ai |
 | Figma | Lectura de diseños y variables | FE | Solo si el equipo diseña en Figma |
@@ -110,3 +120,17 @@ Un MCP conecta a Claude con un servicio externo. Ninguno está conectado todaví
 ## 6. Actualización de las skills de terceros
 
 Se revisan los cambios del repositorio de origen desde el commit `aeac41d`, se leen los archivos modificados, se copia solo lo que cambió y se actualiza el commit fijado en este documento. El PR lo revisan dos capas. Los scripts no se copian sin revisión.
+
+## 7. Hooks y permisos del proyecto
+
+Están en `.claude/settings.json` (compartido por Git) y los scripts en `.claude/hooks/`. Son scripts de Node sin dependencias, para que funcionen igual en Windows, macOS y Linux. En Windows, Claude Code los ejecuta con Git Bash. Cada persona puede ajustar lo suyo en `.claude/settings.local.json`, que Git ignora.
+
+| Hook | Evento | Qué hace |
+|---|---|---|
+| `guard-files.mjs` | Antes de leer o escribir un archivo | Bloquea `.env` (salvo `.env.example`), claves y credenciales. Bloquea editar una migración que ya está en `main` (RN-000-02). Avisa, sin bloquear, al tocar una spec, un contrato, un modelo, la constitución, `CLAUDE.md`, `context/` o un test existente |
+| `guard-bash.mjs` | Antes de un comando de terminal | Bloquea push a `main`, push forzado, `--no-verify`, leer secretos con `cat` o similares, y `db:reset`, `db:restore`, `db:migrate` o `db:seed` contra una base que no es la local (RF-000-21) |
+| `post-edit.mjs` | Después de editar código en `backend/`, `frontend/` o `database/` | Formatea con Prettier y corre los tests unitarios relacionados (Jest o Vitest). Si fallan, se lo devuelve a Claude para que lo corrija. No hace nada hasta que exista el código. `VAQUITA_HOOK_TESTS=0` desactiva los tests |
+
+Permisos: se permiten sin preguntar lint, build, tests, `db:up`, `db:migrate`, `db:seed` y los comandos de Git de lectura. Se pregunta antes de `git push`, `git reset --hard`, `git clean`, `db:reset`, `db:restore` y `npm install`. Se prohíben `rm -rf`, el push forzado y `--no-verify`.
+
+Para probar un hook a mano: `echo '{"tool_name":"Bash","tool_input":{"command":"git push origin main"}}' | node .claude/hooks/guard-bash.mjs`. Un cambio en los hooks se hace por PR revisado por dos capas, como las skills (§6).

@@ -93,3 +93,21 @@ Una tarea o feature está terminada cuando:
 7. No modifican el modelo de datos ni el contrato de API aprobados sin proponer antes el cambio en `plan.md`.
 8. Todo lo generado pasa por revisión humana antes del merge.
 9. Los skills, agentes y listas de terceros (`.claude/`) son material de apoyo. Si contradicen este archivo, la constitución, una spec o `CONTRIBUTING.md`, mandan estos últimos. La definición de terminado es la del punto 8 y no la de `.claude/references/definition-of-done.md`. El catálogo de herramientas está en [`ia/herramientas-y-skills.md`](ia/herramientas-y-skills.md).
+10. Para implementar se usa el subagente de la capa (`db-engineer`, `backend-engineer` o `frontend-engineer`), que solo escribe en su carpeta. Antes del PR se pasan `contract-checker` y `ca-traceability-checker`, ambos de solo lectura.
+11. Los hooks de `.claude/settings.json` bloquean leer o escribir secretos, editar migraciones que ya están en `main`, hacer push a `main` o forzado, usar `--no-verify` y resetear una base que no es la local. No se desactivan para saltarse una regla: si un hook bloquea algo legítimo, se corrige el hook por PR.
+
+## 10. Comandos
+
+Los scripts se crean en la tarea T001 de la spec 000 (`package.json` raíz con npm workspaces `database`, `backend` y `frontend`); hasta entonces estos comandos no existen.
+
+| Para | Comando |
+|---|---|
+| Instalar todo | `npm install` (Node 22 LTS, ver `.nvmrc`) |
+| Levantar PostgreSQL y Mailpit | `npm run db:up` / `npm run db:down` |
+| Migrar, sembrar y recrear la base local | `npm run db:migrate`, `npm run db:seed`, `npm run db:reset` |
+| Backend y frontend en desarrollo | `npm run dev` (backend en :3001, frontend en :3000) |
+| Lint, build y tests de todo | `npm run lint`, `npm run build`, `npm run test` |
+| Solo una capa | Agregar `-w database`, `-w backend` o `-w frontend`, por ejemplo `npm run test -w backend` |
+| E2E | `npx playwright test` dentro de `frontend/` |
+
+En Windows, los scripts de Spec Kit y los hooks de Claude Code necesitan Git Bash. La guía completa está en `specs/000-setup-del-proyecto/quickstart.md`.
