@@ -66,7 +66,7 @@ Vaquita no custodia dinero. En una operación entre pares con custodia, la plata
 ## 6. Requisitos funcionales
 
 ### Apertura de la solicitud
-- **RF-010-01:** Ingresar un código de invitación válido (spec 001, RF-001-07) **abre una solicitud de ingreso**; no une a la persona al grupo. Se exige que el grupo esté activo y reciba nuevos miembros, que la ventana de ingreso esté abierta (RN-010-12), que haya un cupo disponible (RN-010-02), que la persona no sea ya miembro y que no tenga un cobro atrasado en ese grupo (RN-010-13).
+- **RF-010-01:** Ingresar un código de invitación válido (spec 001, RF-001-07) **abre una solicitud de ingreso**; no une a la persona al grupo. Se exige que el grupo esté activo y reciba nuevos miembros, que la ventana de ingreso esté abierta (RN-010-12), que haya un cupo disponible (RN-010-02), que la persona no sea ya miembro y que no tenga un cobro abierto en ese grupo (RN-010-13).
 - **RF-010-02:** Una persona puede tener **una** solicitud activa por grupo y **hasta 5** solicitudes activas en total. Son activas las que están en `abierta`, `esperando_pago` o `pago_informado`.
 - **RF-010-03:** Al abrir la solicitud, el solicitante ve el servicio, el plan, la cuota estimada, el día de cobro, el nombre del titular con su calificación (spec 007) y hasta cuándo está abierta la ventana de ingreso. No ve nombres de los miembros ni datos de pago.
 - **RF-010-04:** Al abrirse, se crea el chat de la solicitud y el titular recibe un aviso dentro de la app.
@@ -150,7 +150,7 @@ Vaquita no custodia dinero. En una operación entre pares con custodia, la plata
 - **RN-010-10:** Si cambia el número de miembros durante una solicitud, la cuota ya cotizada se mantiene.
 - **RN-010-11:** Pausar la recepción de nuevos miembros (spec 001, RF-001-09) o regenerar el código no afecta a las solicitudes ya abiertas; solo impide abrir nuevas.
 - **RN-010-12 (Ventana de ingreso):** una solicitud solo puede abrirse, y los datos de pago solo pueden enviarse, durante la ventana de ingreso del grupo: los 3 primeros días de cada período de cobro, contando el día de corte como día 1 y hasta las 23:59:59 de La Paz del día 3 (spec 001, RF-001-22). Una solicitud que ya está en `esperando_pago` o `pago_informado` cuando termina la ventana puede completarse con sus plazos normales.
-- **RN-010-13 (Deuda en el grupo):** quien fue retirado de un grupo por falta de pago (spec 002, RF-002-14) no puede abrir una solicitud a ese grupo mientras tenga un cobro `atrasado` en él.
+- **RN-010-13 (Deuda en el grupo):** quien fue retirado de un grupo por falta de pago (spec 002, RF-002-14) no puede abrir una solicitud a ese grupo mientras tenga un cobro abierto (`pendiente`, `en_revision` o `atrasado`) en él _(ampliada 2026-10-18 para no chocar con el cobro único del período)_.
 - **RN-010-14 (Referencia única):** la referencia de un comprobante no puede repetirse en otro comprobante del mismo grupo, ya sea de una solicitud de ingreso o de un cobro mensual. La referencia de un comprobante rechazado puede volver a usarse. La misma referencia en otro grupo es válida.
 
 ## 9. Casos borde y errores
@@ -182,7 +182,7 @@ Vaquita no custodia dinero. En una operación entre pares con custodia, la plata
 | La confirmación llega con el grupo ya lleno por otra aceptación | No puede ocurrir: el cupo estaba reservado (RN-010-02); si ocurriera, se rechaza la confirmación y no cambia nada |
 | Dos acciones simultáneas sobre la misma solicitud (por ejemplo confirmar y vencer) | Solo una se aplica; la otra recibe error de estado |
 | La persona ya fue aceptada por otra solicitud al mismo grupo | La otra solicitud no existe: solo hay una activa por grupo (RF-010-02) |
-| Quien fue retirado por falta de pago intenta volver al mismo grupo con deuda | Se rechaza hasta que el cobro atrasado se pague o el titular lo cancele (RN-010-13) |
+| Quien fue retirado por falta de pago intenta volver al mismo grupo con deuda | Se rechaza hasta que el cobro abierto se pague o el titular lo cancele (RN-010-13) |
 | Pasan 2 meses desde el estado final con un reclamo abierto | El chat y los comprobantes no se eliminan hasta 2 meses después de resolver el reclamo |
 
 ## 10. Criterios de aceptación
@@ -259,3 +259,4 @@ Vaquita no custodia dinero. En una operación entre pares con custodia, la plata
 | 2026-10-17 | Primer borrador a partir de la decisión del equipo de cobrar el ingreso antes de unir a la persona, con chat por solicitud | Equipo |
 | 2026-10-17 | Se incorporan las decisiones de la ronda 2: ventana de ingreso de 3 días, reclamo de ambas partes, referencia obligatoria y única, prórroga, retención de 2 meses y bloqueo de correo, celular y cédula (RF-010-28, RN-010-12 a RN-010-14, CA-010-37 a CA-010-47) | Equipo |
 | 2026-10-18 | Se confirman la ventana desde el corte de cada grupo, la ventana inicial de un grupo nuevo y la deuda del retirado | Equipo |
+| 2026-10-18 | RN-010-13 se amplía a cualquier cobro abierto del solicitante en el grupo (RF-010-01, CA-010-45) | Equipo |

@@ -17,7 +17,7 @@ Las once specs están en borrador y esperan la revisión por capa. Todavía no h
 | Frontend (Adrian) | Next.js, React, TypeScript, Tailwind CSS |
 | Backend (Leonardo) | NestJS, TypeScript, JWT, Swagger, Jest |
 | Base de datos (Camila) | PostgreSQL con migraciones SQL y seed |
-| Comprobantes y QR | Firebase Storage con URLs firmadas |
+| Comprobantes y QR | Supabase Storage con URLs firmadas |
 | Despliegue | Vercel (frontend); Render (backend y PostgreSQL) |
 | Calidad | GitHub Actions y Playwright |
 
