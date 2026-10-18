@@ -1,4 +1,10 @@
-import { LOGIN_PATH, PUBLIC_ROUTES, buildLoginRedirect, isPublicPath } from './routes';
+import {
+  LOGIN_PATH,
+  PUBLIC_ROUTES,
+  buildAuthLink,
+  buildLoginRedirect,
+  isPublicPath,
+} from './routes';
 
 describe('routes (RF-000-15, RF-000-16)', () => {
   it('RF-000-15: la lista de rutas públicas es la del plan §6', () => {
@@ -36,5 +42,22 @@ describe('routes (RF-000-15, RF-000-16)', () => {
 
   it('RF-000-15: buildLoginRedirect no agrega next= para la raíz', () => {
     expect(buildLoginRedirect('/', '')).toBe('/ingresar');
+  });
+});
+
+describe('buildAuthLink (plan 003 §6)', () => {
+  it('RF-003-01: sin parámetros devuelve la ruta sola', () => {
+    expect(buildAuthLink('/ingresar')).toBe('/ingresar');
+    expect(buildAuthLink('/ingresar', { otro: 'x' })).toBe('/ingresar');
+  });
+
+  it('RF-003-01: conserva codigo y next para el invitado que llega con un código', () => {
+    expect(buildAuthLink('/ingresar', { codigo: 'AB12CD', next: '/unirse?codigo=AB12CD' })).toBe(
+      '/ingresar?codigo=AB12CD&next=%2Funirse%3Fcodigo%3DAB12CD',
+    );
+  });
+
+  it('RF-003-01: con valores repetidos toma solo el primero', () => {
+    expect(buildAuthLink('/ingresar', { codigo: ['A1', 'B2'] })).toBe('/ingresar?codigo=A1');
   });
 });
