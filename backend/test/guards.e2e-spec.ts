@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { jest } from '@jest/globals';
 import {
   Controller,
@@ -189,13 +190,26 @@ describe('Guards compartidos (RF-000-11)', () => {
       expect(res.body).toEqual(unauthenticatedBody);
     });
 
-    it('RF-000-11: un token con alg none responde 401', async () => {
+    it.each([
+      ['none sin firma', 'none', false],
+      ['none con la firma HMAC-SHA256 del servidor', 'none', true],
+      ['HS512 con la firma HMAC-SHA256 del servidor', 'HS512', true],
+    ])('RF-000-11: un token con alg %s responde 401', async (_name, alg, signed) => {
       const part = (value: unknown): string =>
         Buffer.from(JSON.stringify(value)).toString('base64url');
-      const unsigned = `${part({ alg: 'none', typ: 'JWT' })}.${part({ sub: ADMIN_ID, sv: 1, iat: NOW_S, exp: NOW_S + 3600 })}.`;
+      const signingInput = `${part({ alg, typ: 'JWT' })}.${part({ sub: MEMBER_ID, sv: 1, iat: NOW_S, exp: NOW_S + 3600 })}`;
+      const signature = signed
+        ? createHmac('sha256', JWT_SECRET).update(signingInput).digest('base64url')
+        : '';
 
-      const res = await http().get('/guarded/me').set('Authorization', bearer(unsigned));
+      // Control: el mismo payload con alg HS256 y la misma clave sí entra; así el 401 de abajo
+      // solo puede deberse al algoritmo del encabezado.
+      const control = await http().get('/guarded/me').set('Authorization', bearer(token()));
+      const res = await http()
+        .get('/guarded/me')
+        .set('Authorization', bearer(`${signingInput}.${signature}`));
 
+      expect(control.status).toBe(200);
       expect(res.status).toBe(401);
       expect(res.body).toEqual(unauthenticatedBody);
     });
@@ -245,6 +259,8 @@ describe('Guards compartidos (RF-000-11)', () => {
 
       const res = await http().get('/guarded/me').set('Authorization', bearer(jwt));
 
+      // El logger sí recibió llamadas: sin esto la comprobación de abajo pasaría con logs vacíos.
+      expect(loggers.reduce((total, spy) => total + spy.mock.calls.length, 0)).toBeGreaterThan(0);
       expect(res.text).not.toContain(jwt);
       expect(JSON.stringify(loggers.map((spy) => spy.mock.calls))).not.toContain(jwt);
       expect(Object.keys(res.body).sort()).toEqual(['code', 'message', 'statusCode']);

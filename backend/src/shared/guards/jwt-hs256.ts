@@ -9,6 +9,8 @@ import { constantTimeEquals } from './constant-time.js';
 const SEGMENT = /^[A-Za-z0-9_-]+$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ALGORITHM = 'HS256';
+// Un JWT de sesión HS256 real mide ~200 caracteres; el tope evita trabajar con entradas enormes.
+const MAX_TOKEN_LENGTH = 1024;
 
 const encode = (value: unknown): string => Buffer.from(JSON.stringify(value)).toString('base64url');
 
@@ -41,6 +43,7 @@ const isNonNegativeInteger = (value: unknown): value is number =>
  * nunca lanza ni informa del motivo. `nowMs` lo aporta el llamador (viene del `Clock`).
  */
 export function verifyHs256Jwt(token: string, secret: string, nowMs: number): SessionClaims | null {
+  if (token.length > MAX_TOKEN_LENGTH) return null;
   const segments = token.split('.');
   if (segments.length !== 3 || !segments.every((segment) => SEGMENT.test(segment))) return null;
   const [headerPart, payloadPart, signaturePart] = segments as [string, string, string];
@@ -58,7 +61,9 @@ export function verifyHs256Jwt(token: string, secret: string, nowMs: number): Se
   if (!isNonNegativeInteger(sv) || !isNonNegativeInteger(iat) || !isNonNegativeInteger(exp)) {
     return null;
   }
-  if (exp <= Math.floor(nowMs / 1000)) return null;
+  // Comprobación en positivo: si el reloj no es un número finito, falla cerrado.
+  const nowSec = Math.floor(nowMs / 1000);
+  if (!Number.isFinite(nowSec) || !(exp > nowSec)) return null;
 
   return { sub, sv, iat, exp };
 }

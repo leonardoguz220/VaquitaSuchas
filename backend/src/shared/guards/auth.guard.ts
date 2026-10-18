@@ -5,7 +5,7 @@ import { Clock } from '../clock/clock.js';
 import { DomainError } from '../errors/domain-error.js';
 import { DEFAULT_MESSAGES, ErrorCode } from '../errors/error-codes.js';
 import { AUTH_SESSION_PORT } from '../ports/auth-session.port.js';
-import type { AuthSessionPort } from '../ports/auth-session.port.js';
+import type { AuthSessionPort, AuthenticatedUser } from '../ports/auth-session.port.js';
 import type { AuthenticatedRequest } from './authenticated-request.js';
 import { verifyHs256Jwt } from './jwt-hs256.js';
 
@@ -38,6 +38,10 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    // Defensa en profundidad: nada anterior (un middleware futuro) puede dejar una identidad
+    // poblada si esta autenticación falla.
+    delete request.user;
+    delete request.sessionClaims;
 
     const token = BEARER.exec(headerValue(request.headers?.authorization))?.[1];
     if (!token) throw unauthenticated();
@@ -46,12 +50,19 @@ export class AuthGuard implements CanActivate {
     if (!claims) throw unauthenticated();
 
     const user = await this.sessions.resolveSession(claims);
-    if (!user) throw unauthenticated();
+    // Se valida lo que devuelve el puerto: un valor malformado nunca llega a `request.user`.
+    if (!isConsistentUser(user, claims.sub)) throw unauthenticated();
 
     request.user = user;
     request.sessionClaims = claims;
     return true;
   }
+}
+
+function isConsistentUser(user: unknown, subject: string): user is AuthenticatedUser {
+  if (typeof user !== 'object' || user === null) return false;
+  const { id, role } = user as Record<string, unknown>;
+  return id === subject && (role === 'usuario' || role === 'admin');
 }
 
 /** Una cabecera repetida o ausente no se interpreta: se trata como vacía. */

@@ -52,6 +52,38 @@ describe('verifyHs256Jwt (RF-000-11)', () => {
     expect(verifyHs256Jwt(lastSecond, SECRET, NOW_MS)).not.toBeNull();
   });
 
+  it.each([
+    ['NaN', Number.NaN],
+    ['Infinity', Number.POSITIVE_INFINITY],
+    ['-Infinity', Number.NEGATIVE_INFINITY],
+  ])(
+    'RF-000-11: si el reloj entrega %s un token por lo demás válido se rechaza (falla cerrado)',
+    (_name, brokenNowMs) => {
+      const token = signHs256Jwt(validClaims(), SECRET);
+
+      expect(verifyHs256Jwt(token, SECRET, NOW_MS)).not.toBeNull();
+      expect(verifyHs256Jwt(token, SECRET, brokenNowMs)).toBeNull();
+    },
+  );
+
+  it('RF-000-11: un token de más de 1024 caracteres se rechaza sin lanzar', () => {
+    const oversized = signHs256Jwt({ ...validClaims(), padding: 'a'.repeat(2000) }, SECRET);
+    const justOver = 'a'.repeat(1025);
+
+    expect(oversized.length).toBeGreaterThan(1024);
+    expect(() => verifyHs256Jwt(oversized, SECRET, NOW_MS)).not.toThrow();
+    expect(verifyHs256Jwt(oversized, SECRET, NOW_MS)).toBeNull();
+    expect(verifyHs256Jwt(justOver, SECRET, NOW_MS)).toBeNull();
+    expect(verifyHs256Jwt('.'.repeat(5000), SECRET, NOW_MS)).toBeNull();
+  });
+
+  it('RF-000-11: un token de sesión normal mide bastante menos del límite y sigue pasando', () => {
+    const token = signHs256Jwt(validClaims(), SECRET);
+
+    expect(token.length).toBeLessThan(400);
+    expect(verifyHs256Jwt(token, SECRET, NOW_MS)).not.toBeNull();
+  });
+
   it('RF-000-11: un payload alterado con la firma original se rechaza', () => {
     const [header, , signature] = signHs256Jwt(validClaims(), SECRET).split('.');
     const forged = `${header}.${b64url({ ...validClaims(), sub: 'ffffffff-ffff-4fff-8fff-ffffffffffff' })}.${signature}`;
