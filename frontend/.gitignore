@@ -1,0 +1,6 @@
+# Generados por Next.js y Playwright (.next/ y .env* ya están en el .gitignore raíz)
+next-env.d.ts
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
