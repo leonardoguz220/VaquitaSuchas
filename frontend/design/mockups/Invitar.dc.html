@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Invitar a Netflix de la familia</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; position: relative; display: flex; flex-direction: column">
+  <div aria-hidden="true" style="flex: 1; display: flex; flex-direction: column; filter: blur(1px); opacity: 0.55">
+    <div style="height: 72px; background: #FFFFFF; border-bottom: 1px solid #D9DDD7"></div>
+    <div style="width: 100%; max-width: 1180px; margin: 0 auto; padding: 28px 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px">
+      <div style="height: 56px; width: 420px; max-width: 100%; border-radius: 14px; background: #E2E6E0"></div>
+      <div style="height: 48px; border-bottom: 1px solid #D9DDD7"></div>
+      <div style="height: 260px; border-radius: 18px; background: #FFFFFF; border: 1px solid #D9DDD7"></div>
+      <div style="height: 180px; border-radius: 18px; background: #FFFFFF; border: 1px solid #D9DDD7"></div>
+    </div>
+  </div>
+  <div style="position: absolute; inset: 0; background: rgba(23,32,28,0.45); display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box">
+    <section role="dialog" aria-modal="true" aria-labelledby="titulo" style="width: 100%; max-width: 520px; background: #FFFFFF; border-radius: 22px; padding: 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 24px 60px rgba(0,0,0,0.25)">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <h1 id="titulo" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px">Invitar a Netflix de la familia</h1>
+          <span style="font-size: 15px; color: #4F5A55">Con el código abren una solicitud; entran cuando confirmas su pago.</span>
+        </div>
+        <a href="GrupoMiembros.dc.html" aria-label="Cerrar" style="flex: none; width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #17201C"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 L18 18 M18 6 L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg></a>
+      </div>
+      <div style="background: #F5F6F2; border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+        <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; color: #4F5A55">Enlace de invitación</span><span style="font-weight: 700; word-break: break-all">…/unirse?codigo=K7M2Q9PX</span></div>
+        <button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1.5px solid #1E6B4E; background: #FFFFFF; color: #1E6B4E; font: inherit; font-weight: 700; cursor: pointer">Copiar enlace</button>
+      </div>
+      <a href="#" style="min-height: 50px; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: 12px; background: #17573F; color: #FFFFFF; font-weight: 700; text-decoration: none">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 L5.3 16.2 A8 8 0 1 1 8 19 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg>
+        Compartir por WhatsApp
+      </a>
+      <form style="display: flex; flex-direction: column; gap: 8px">
+        <label for="correo" style="font-weight: 700; font-size: 15px">O envíale una invitación por correo</label>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap">
+          <input id="correo" type="email" placeholder="correo@ejemplo.com" style="flex: 1; min-width: 200px; height: 48px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 16px; color: #17201C">
+          <button type="button" style="height: 48px; padding: 0 18px; border: 0; border-radius: 12px; background: #1E6B4E; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">Enviar</button>
+        </div>
+        <span style="font-size: 14px; color: #4F5A55">Puedes enviar hasta 10 invitaciones por hora. Te quedan 8.</span>
+      </form>
+      <p role="note" style="margin: 0; font-size: 14px; color: #5C3900; background: #FCEBC7; border-radius: 12px; padding: 10px 14px">El grupo está completo (4 de 4) y la ventana de ingreso se abre el 1 nov. Quien reciba el código podrá abrir su solicitud solo entonces y si se libera un cupo.</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

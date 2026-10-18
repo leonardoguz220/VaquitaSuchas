@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Crear suscripción: servicio y plan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid #D9DDD7; background: #FFFFFF">
+    <a href="Grupos.dc.html" style="display: flex; align-items: center; gap: 10px; color: #17201C; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#1E6B4E"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#F5F6F2" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#F5F6F2"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">vaquita</span>
+    </a>
+    <nav aria-label="Principal" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="Grupos.dc.html" aria-current="page" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; background: #E3F1EA; color: #14503A; font-weight: 700; text-decoration: none">Mis suscripciones</a>
+      <a href="MisCobros.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
+      <a href="Solicitudes.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis solicitudes</a>
+      <a href="Cupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Cupos libres</a>
+    </nav>
+    <a href="Perfil.dc.html" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1180px; margin: 0 auto; padding: 32px 32px 48px; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 36px; letter-spacing: -0.8px">Crear suscripción</h1>
+      <ol aria-label="Pasos" style="margin: 0; padding: 0; list-style: none; display: flex; gap: 10px; flex-wrap: wrap; font-size: 15px">
+        <li style="display: flex; align-items: center; gap: 8px; color: #17573F; font-weight: 700"><span style="width: 26px; height: 26px; border-radius: 999px; background: #D7EFE2; display: flex; align-items: center; justify-content: center">✓</span>Servicio: Netflix</li>
+        <li aria-hidden="true" style="color: #A9B1AC">—</li>
+        <li aria-current="step" style="display: flex; align-items: center; gap: 8px; font-weight: 700"><span style="width: 26px; height: 26px; border-radius: 999px; background: #1E6B4E; color: #FFFFFF; display: flex; align-items: center; justify-content: center">2</span>Plan</li>
+        <li aria-hidden="true" style="color: #A9B1AC">—</li>
+        <li style="display: flex; align-items: center; gap: 8px; color: #4F5A55"><span style="width: 26px; height: 26px; border-radius: 999px; border: 2px solid #A9B1AC; box-sizing: border-box; display: flex; align-items: center; justify-content: center">3</span>Datos del grupo</li>
+      </ol>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <section aria-labelledby="servicio" style="flex: 999 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+        <h2 id="servicio" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px">1. Elige el servicio</h2>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap">
+          <label for="buscar" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Buscar servicio</label>
+          <input id="buscar" type="search" placeholder="Buscar por nombre" style="flex: 1; min-width: 200px; height: 46px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 16px; color: #17201C">
+          <div role="group" aria-label="Categoría" style="display: flex; gap: 6px">
+            <button type="button" aria-pressed="true" style="min-height: 46px; padding: 0 14px; border-radius: 999px; border: 1.5px solid #17201C; background: #17201C; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">Todos</button>
+            <button type="button" aria-pressed="false" style="min-height: 46px; padding: 0 14px; border-radius: 999px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; cursor: pointer">Video</button>
+            <button type="button" aria-pressed="false" style="min-height: 46px; padding: 0 14px; border-radius: 999px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; cursor: pointer">Música</button>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px">
+          <sc-for list="{{services}}" as="s" hint-placeholder-count="7">
+            <button type="button" aria-pressed="{{s.selected}}" style="min-height: 104px; border-radius: 16px; border: {{s.border}}; background: {{s.bg}}; color: #17201C; font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; padding: 12px">
+              <span aria-hidden="true" style="width: 44px; height: 44px; border-radius: 12px; background: {{s.tile}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px">{{s.initial}}</span>
+              <span style="font-weight: 700; font-size: 15px">{{s.name}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </section>
+      <section aria-labelledby="plan" style="flex: 1 1 360px; min-width: 0; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+        <h2 id="plan" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px">2. Elige el plan de Netflix</h2>
+        <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 10px">
+          <legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Plan</legend>
+          <sc-for list="{{plans}}" as="p" hint-placeholder-count="3">
+            <label style="display: flex; align-items: center; gap: 14px; border-radius: 14px; border: {{p.border}}; background: {{p.bg}}; padding: 14px 16px; cursor: pointer; min-height: 44px">
+              <input type="radio" name="plan" checked="{{p.checked}}" style="width: 20px; height: 20px; margin: 0; accent-color: #1E6B4E">
+              <span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 16px">{{p.name}}</strong><span style="font-size: 14px; color: #4F5A55">Hasta {{p.slots}} cupos</span></span>
+              <span style="font-weight: 700">{{p.price}}</span>
+            </label>
+          </sc-for>
+        </fieldset>
+        <p style="margin: 0; font-size: 14px; color: #4F5A55">Precios de referencia del catálogo; en el paso 3 puedes ajustarlos. ¿No está tu servicio? Elige <strong>Personalizado</strong> y escribe el nombre.</p>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap">
+          <a href="Grupos.dc.html" style="flex: 1; min-height: 50px; display: flex; align-items: center; justify-content: center; border: 1.5px solid #C9CFC8; color: #17201C; border-radius: 12px; font-weight: 700; text-decoration: none">Cancelar</a>
+          <a href="NuevoGrupo.dc.html" style="flex: 2; min-height: 50px; display: flex; align-items: center; justify-content: center; background: #1E6B4E; color: #FFFFFF; border-radius: 12px; font-weight: 700; text-decoration: none">Siguiente: datos del grupo</a>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const svc = (name, initial, tile, selected) => ({ name, initial, tile, selected: selected ? 'true' : 'false', border: selected ? '2px solid #1E6B4E' : '1.5px solid #D9DDD7', bg: selected ? '#E3F1EA' : '#FFFFFF' });
+    const plan = (name, slots, price, checked) => ({ name, slots, price, checked, border: checked ? '2px solid #1E6B4E' : '1.5px solid #D9DDD7', bg: checked ? '#F3F8F5' : '#FFFFFF' });
+    return {
+      services: [
+        svc('Netflix', 'N', '#A4161A', true),
+        svc('Spotify', 'S', '#14743A', false),
+        svc('Disney+', 'D', '#1D3A8A', false),
+        svc('YouTube Premium', 'Y', '#B42318', false),
+        svc('Max', 'M', '#4B2A8C', false),
+        svc('Prime Video', 'P', '#0F5E8C', false),
+        svc('Personalizado', '+', '#4F5A55', false)
+      ],
+      plans: [
+        plan('Básico con anuncios', '2', 'USD 7,99', false),
+        plan('Estándar', '4', 'USD 14,66', true),
+        plan('Premium', '4', 'USD 22,99', false)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
