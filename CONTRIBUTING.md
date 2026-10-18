@@ -71,6 +71,7 @@ El líder de la spec es quien tiene la capa más cargada en esa feature. Redacta
 | 007 Reputación | Camila (BD) | Cálculo sobre datos históricos |
 | 008 Cupos libres | Adrian (FE) | Búsqueda y publicaciones |
 | 009 Administración | Adrian (FE) | Panel de gestión |
+| 010 Solicitudes de ingreso y chat | Leonardo (BE) | Máquina de estados con plazos, chat y reserva de cupos |
 
 ## 4. Trabajo en paralelo
 

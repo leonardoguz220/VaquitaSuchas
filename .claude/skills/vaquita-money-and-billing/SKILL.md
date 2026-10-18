@@ -25,7 +25,7 @@ Fuentes: `context/dominio.md`, `specs/001-suscripciones-compartidas/spec.md` (RN
 5. **Snapshot:** cada cobro guarda monto, precio original y moneda, tipo de cambio, nº de miembros, período `AAAA-MM`, emisión y vencimiento (RF-002-02). El monto es **inmutable** (RN-002-02). Cambiar la suscripción después no altera cobros ya generados.
 6. **Vencimiento = fecha de corte + 3 días** (RF-002-03).
 7. **Día de cobro 29, 30 o 31** en un mes más corto se ajusta al último día del mes (RN-001-06). La fecha de corte es a las 00:00 **America/La_Paz**; en base de datos se guarda en **UTC**.
-8. **Alta a mitad de mes (RN-001-11):** quien entra después de generado el cobro del período no paga ese período.
+8. **Ingreso con pago previo (RN-001-11, spec 010):** quien entra paga primero la cuota del período en curso, `floor(total / (miembros_actuales + 1))`, que queda registrada como su cobro de ese período en estado `pagado` y origen `ingreso` (RN-010-01 y RN-010-03). Desde el siguiente corte recibe cobros regulares. La generación no duplica ese cobro (RF-002-04).
 9. **Generación idempotente (RF-002-04):** a lo más un cobro por (grupo, miembro, período). Debe soportar que el proceso corra dos veces, y la base de datos refuerza esto con una restricción única.
 10. **Grupos cerrados no generan cobros** (RF-002-05).
 
@@ -36,6 +36,7 @@ Estados: `pendiente`, `en_revision`, `pagado`, `atrasado`, `cancelado`. `pagado`
 | Desde | Hacia | Quién |
 |---|---|---|
 | (nuevo) | pendiente | Sistema |
+| (nuevo) | pagado | Sistema (el titular confirma una solicitud de ingreso, spec 010) |
 | pendiente / atrasado | en_revision | Miembro (sube comprobante) |
 | pendiente | atrasado | Sistema (pasa el vencimiento) |
 | en_revision | pagado | Titular (confirma) |
@@ -56,7 +57,8 @@ Cualquier otra transición se rechaza. **No se inventan estados** sin actualizar
    - Precio en Bs (sin conversión) y en USD.
    - Día de cobro 31 en febrero, año bisiesto y no bisiesto, y paso de mes.
    - Cambio de horario: la fecha de corte a las 00:00 de La Paz se guarda en UTC correctamente.
-   - Miembro que entra el mismo día del corte, después de generados los cobros.
+   - Miembro que ingresa el mismo día del corte, antes o después de generados los cobros: el cobro del período no se duplica.
+   - Cuota de ingreso con centavos sobrantes: la persona paga `cuota_base` y el titular absorbe la diferencia.
    - Generación ejecutada dos veces: no duplica.
    - Cambiar el precio o el tipo de cambio después: los cobros ya generados no cambian.
    - **Transiciones:** test exhaustivo sobre todas las combinaciones estado × acción × actor; todo lo no listado se rechaza (CA-002-21).

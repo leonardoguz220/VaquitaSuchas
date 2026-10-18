@@ -14,7 +14,7 @@ Grupo Suchas. Los roles son fijos y corresponden a una capa del sistema. El deta
 
 ## Objetivo del MVP
 
-Un titular crea una suscripción compartida, invita a los miembros y gestiona los pagos mensuales. Cada miembro ve su cuota y sube su comprobante; el titular confirma o rechaza el pago; el historial queda disponible para todo el grupo.
+Un titular crea una suscripción compartida, invita a los miembros y gestiona los pagos mensuales. Quien quiere entrar abre una solicitud con el código, conversa con el titular en un chat, paga y entra cuando el titular confirma su pago. Cada miembro ve su cuota y sube su comprobante; el titular confirma o rechaza el pago; el historial queda disponible para todo el grupo.
 
 ## Alcance
 
@@ -26,6 +26,7 @@ Entran los diez módulos del proyecto. La prioridad define el orden de construcc
 | Catálogo de servicios | 004 |
 | Suscripciones compartidas, división y moneda | 001 |
 | Cobros y pagos | 002 |
+| Solicitudes de ingreso y chat (parte del módulo de suscripciones compartidas) | 010 |
 | Notificaciones | 005 |
 | Panel y reportes | 006 |
 | Reputación | 007 |
@@ -39,7 +40,8 @@ La spec 000 cubre la preparación del proyecto (repositorio, integración contin
 - Pasarela de pago real: los pagos se hacen por QR o transferencia fuera de la app, y la app solo registra comprobantes.
 - Obtención automática del tipo de cambio desde una API externa: lo ingresa el titular.
 - Aplicación móvil nativa: la aplicación es web con diseño adaptable a celular.
-- Chat entre miembros.
+- Chat de grupo entre miembros. El chat por solicitud de ingreso, entre el solicitante y el titular, sí entra (spec 010).
+- Custodia o devolución de dinero por parte de la app.
 
 ## Documentos relacionados
 

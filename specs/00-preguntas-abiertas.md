@@ -24,7 +24,7 @@ Capas afectadas: BD (Camila), BE (Leonardo) y FE (Adrian).
 | # | Pregunta | Capas | Estado |
 |---|---|---|---|
 | P1 | ¿El titular tiene cobro propio? | BD, BE | Decidida. No (spec 001, RN-001-10) |
-| P2 | ¿Cuándo empieza a pagar quien entra a mitad de mes? | BE, BD | Decidida. Desde el siguiente cobro (spec 001, RN-001-11) |
+| P2 | ¿Cuándo empieza a pagar quien entra a mitad de mes? | BE, BD | Decidida y reemplazada el 2026-10-17. Paga la cuota del período en curso al ingresar y desde el siguiente corte recibe cobros regulares (spec 001, RN-001-11; spec 010, RN-010-01 y RN-010-03) |
 | P3 | ¿Cuántos días de gracia hay antes de marcar atrasado? | BE | Decidida. 3 días (spec 002, RF-002-03) |
 | P4 | ¿Cómo comparte el titular sus datos de pago? | BD, BE, FE | Decidida. Texto + imagen de QR (spec 001, RF-001-20) |
 | P15 | ¿Una persona puede ser titular de varias suscripciones? ¿Hay límite de grupos por usuario? | BE | Pendiente (la spec 001 no define límite) |
@@ -56,8 +56,23 @@ Capas afectadas: BD (Camila), BE (Leonardo) y FE (Adrian).
 | P24 | ¿Cómo se calcula el ahorro? | BD, BE | Propuesta. Precio individual de referencia del catálogo vs. cuota (spec 006) |
 | P25 | ¿Qué gráficos son imprescindibles? | FE | Propuesta. Gasto 12 meses, gasto por servicio y ahorro acumulado (spec 006) |
 | P26 | ¿Cómo se calcula la reputación y quién la ve? | BD, BE | Propuesta. Calificación de 0 a 5 estrellas según pagos puntuales sobre total en 12 meses; ranking visible en el grupo (spec 007) |
-| P27 | ¿Cupos libres: quién ve, cómo se pide unirse y quién aprueba? | BD, BE, FE | Propuesta. Usuarios autenticados; solicitud con aprobación del titular (spec 008) |
+| P27 | ¿Cupos libres: quién ve, cómo se pide unirse y quién aprueba? | BD, BE, FE | Propuesta. Usuarios autenticados; la solicitud sigue el flujo de la spec 010 con pago previo y confirmación del titular (spec 008) |
 | P28 | ¿Quién administra el sistema y qué necesita? | BE, FE | Propuesta. El equipo; catálogo, usuarios, moderación y estadísticas (spec 009) |
+
+## Ingreso con pago previo, chat y sanciones (spec 010)
+
+| # | Pregunta | Capas | Estado |
+|---|---|---|---|
+| P34 | ¿Cómo entra una persona a un grupo? | BD, BE, FE | Decidida el 2026-10-17. Solicitud con chat, pago previo y confirmación del titular (spec 010) |
+| P35 | ¿Cuánto paga al ingresar? | BE, BD | Decidida el 2026-10-17. La cuota del mes dividida entre los miembros del grupo, contando a la persona (spec 010, RN-010-01) |
+| P36 | ¿Qué plazos hay? | BE, FE | Decidida el 2026-10-17. 15 minutos para pagar y 60 para que el titular confirme, con recordatorio a los 30 (spec 010, RF-010-17) |
+| P37 | ¿Qué admite el chat? | BE, FE | Decidida el 2026-10-17. Texto y fotos, por solicitud (spec 010, RF-010-05) |
+| P38 | ¿Cuántos tipos de reclamo hay? | BE | Decidida el 2026-10-17. Uno solo por ahora (spec 010, RF-010-21) |
+| P39 | ¿Se pagan por adelantado los meses siguientes? | BE | Decidida el 2026-10-17. No; se mantienen los cobros de la spec 002 |
+| P40 | ¿Qué pasa con el titular que estafa? | BE, BD | Decidida el 2026-10-17 en lo general: baneo de la cuenta sin poder crear otra con los mismos datos. Falta definir qué datos se bloquean y cómo se revisa (specs 003 y 009) |
+| P41 | ¿Quién puede ser titular? | BE, BD | Decidida el 2026-10-17 en lo general: usuarios con muy buena reputación. Falta el umbral y cómo arrancan los primeros titulares (spec 001, RF-001-21; spec 007) |
+| P42 | ¿Cómo se define el período en curso del pago de ingreso y qué pasa si se ingresa cerca del corte? | BE, BD | Propuesta. La fecha de creación del grupo cuenta como corte inicial; aceptar el doble pago cercano al corte y avisarlo (spec 010, sección 11) |
+| P43 | ¿Hay prórroga del plazo de pago, referencia obligatoria y única, y reclamo del titular contra un comprobante falso? | BE | Propuesta. Una prórroga de 15 minutos; referencia obligatoria y única por grupo; sin reclamo del titular por ahora (spec 010, sección 11) |
 
 ## Calidad y operación
 

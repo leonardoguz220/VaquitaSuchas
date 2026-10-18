@@ -28,6 +28,7 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - Envío de recordatorios y avisos por correo/push (spec 005; aquí solo los estados).
 - Multas, intereses o recargos por atraso.
 - Pagos parciales o adelantados de varios meses.
+- El pago de ingreso de un nuevo miembro: lo gestiona la spec 010 y aquí solo queda registrado como un cobro `pagado` de origen `ingreso`.
 - Calificación de reputación (spec 007; esta spec expone los datos que ese módulo necesitará: fecha de pago vs. fecha de vencimiento).
 - Reembolsos.
 
@@ -56,7 +57,7 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - **RF-002-02:** Cada cobro guarda un **snapshot**: monto en centavos de Bs, precio original y moneda, tipo de cambio usado, nº de miembros, período (`AAAA-MM`), fecha de emisión y **fecha de vencimiento**.
 - **RF-002-03:** Fecha de vencimiento = fecha de corte + **3 días** de gracia _(decidido 2026-10-17)_.
 - **RF-002-04:** La generación es **idempotente**: no puede existir más de un cobro por (grupo, miembro, período), aunque el proceso se ejecute varias veces.
-- **RF-002-05:** Los grupos cerrados no generan cobros. Pausar la recepción de nuevos miembros (RF-001-09) no afecta la generación de cobros. Un miembro que ingresó después de la generación del período no recibe cobro de ese período.
+- **RF-002-05:** Los grupos cerrados no generan cobros. Pausar la recepción de nuevos miembros (RF-001-09) no afecta la generación de cobros. Un miembro que ingresó después de la generación del período no recibe un cobro regular de ese período: ya pagó su cuota de ingreso, que figura como su cobro de ese período (spec 010, RN-010-03).
 
 ### Pago y comprobante
 - **RF-002-06:** El miembro puede subir un comprobante (imagen JPG/PNG o PDF, máximo 5 MB) a un cobro `pendiente` o `atrasado`; el cobro pasa a `en_revision`.
@@ -79,6 +80,9 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - **RF-002-17:** Todos los miembros ven el **historial** del grupo (cobros pasados, estados, fechas de pago). Cada cobro registra una línea de tiempo de eventos (generado, comprobante subido, rechazado, confirmado, atrasado, cancelado) con fecha y autor.
 - **RF-002-18:** El titular ve un resumen: total esperado, total cobrado, total pendiente y total atrasado del período.
 
+### Cobro de ingreso
+- **RF-002-19:** Cuando el titular confirma una solicitud de ingreso (spec 010), el sistema crea el cobro del período en curso del nuevo miembro directamente en estado `pagado`, con origen `ingreso`, el snapshot de la cuota cotizada y el comprobante de la solicitud. Aparece en el historial y en el resumen del mes como cualquier otro cobro pagado, pero no cuenta para la calificación de puntualidad (spec 007, RN-007-09).
+
 ## 7. Requisitos no funcionales
 
 - **RNF-002-01 (Seguridad):** Los comprobantes se almacenan en un espacio **privado**; el acceso es por URL firmada de corta duración (≤ 10 min), solo para el titular y el miembro dueño del cobro.
@@ -96,6 +100,7 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
   | Desde | Hacia | Quién | Condición |
   |---|---|---|---|
   | _(nuevo)_ | `pendiente` | Sistema | Fecha de corte |
+  | _(nuevo)_ | `pagado` | Sistema | El titular confirma una solicitud de ingreso (spec 010) |
   | `pendiente` | `en_revision` | Miembro | Sube comprobante |
   | `atrasado` | `en_revision` | Miembro | Sube comprobante |
   | `pendiente` | `atrasado` | Sistema | Pasa fecha de vencimiento |
@@ -114,6 +119,7 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - **RN-002-06:** Los comprobantes de cobros `pagado` o `cancelado` se conservan mientras exista el grupo.
 - **RN-002-08 (Datos para reputación):** cada cobro registra `primera_subida_en` (primera vez que el miembro subió un comprobante) y `pagado_en` (momento en que pasó a `pagado`; en un pago manual, la fecha indicada por el titular, por defecto la actual). La spec 007 los usa para medir la puntualidad.
 - **RN-002-09 (Ciclo de cobro):** al generar los cobros de un período, el sistema registra un **ciclo** del grupo con: período, total en Bs, tipo de cambio, número de miembros, cuota base, cuota del titular (referencia) y fecha de corte. Los cobros de los miembros referencian ese ciclo. El panel (spec 006) y la reputación (spec 007) leen de aquí.
+- **RN-002-10 (Origen del cobro):** cada cobro tiene un origen: `ciclo` (generado en la fecha de corte) o `ingreso` (pago previo de un nuevo miembro, spec 010). El origen no cambia las reglas de visibilidad ni de historial. Los cobros de origen `ingreso` no cuentan para la calificación de puntualidad (spec 007, RN-007-09).
 - **RN-002-07:** Si un miembro es quitado o abandona, sus cobros históricos se conservan; los no pagados pasan a `cancelado` solo por decisión del titular (RF-002-13).
 
 ## 9. Casos borde y errores
@@ -128,7 +134,8 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 | Rechazo sin motivo | Error de validación |
 | Dos acciones simultáneas sobre el mismo cobro (ej. cancelar y confirmar) | Solo una se aplica; la otra recibe error de estado (control optimista de concurrencia) |
 | El tipo de cambio cambia después de generar el cobro | El cobro conserva su monto original |
-| Miembro se une el mismo día de la fecha de corte, después de la generación | Primer cobro en el siguiente período |
+| Una persona ingresa después de generados los cobros del período | Su cuota de ingreso queda como su cobro de ese período y el primer cobro regular llega en el siguiente corte |
+| Una persona ingresa el mismo día del corte, antes de generados los cobros | La generación no crea un segundo cobro para ese período (RF-002-04) |
 | Miembro con cobro `atrasado` sube comprobante | Pasa a `en_revision`; si el titular rechaza, vuelve a `atrasado` |
 | Grupo cerrado en la fecha de corte | No se generan cobros ese período |
 | Falla en el almacenamiento del archivo | El cobro no cambia de estado; se informa y se permite reintentar |
@@ -158,6 +165,8 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - **CA-002-20:** Dado el resumen del titular, cuando hay 2 `pagado`, 1 `en_revision` y 1 `atrasado`, entonces los totales esperado/cobrado/pendiente/atrasado coinciden con la suma de montos.
 - **CA-002-21:** Dada cualquier transición no listada en RN-002-01, cuando se intenta, entonces la función de transición la rechaza (test unitario exhaustivo sobre todas las combinaciones estado × acción).
 - **CA-002-22:** Dado un servidor caído en la fecha de corte, cuando se reinicia, entonces se generan los cobros faltantes sin duplicar.
+- **CA-002-24:** Dado un miembro cuyo ingreso fue confirmado en un período, cuando corre la generación de cobros de ese período, entonces no se crea un segundo cobro para él y el cobro de ingreso figura `pagado`.
+- **CA-002-25:** Dada una solicitud de ingreso confirmada, cuando se consulta el historial del grupo, entonces el cobro de ingreso aparece como `pagado` con su línea de tiempo y el comprobante, visible solo para el titular y el miembro.
 
 ## 11. Preguntas abiertas
 
@@ -165,6 +174,7 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - [RESUELTO 2026-10-17] Datos de pago: texto + imagen de QR en la suscripción (RF-002-09, spec 001 RF-001-20).
 - [NECESITA ACLARACIÓN] ¿El titular debe poder ver el comprobante de un miembro ya quitado del grupo? (propuesta: sí).
 - [NECESITA ACLARACIÓN] ¿Cuánto tiempo se conservan los comprobantes tras cerrar el grupo? (propuesta: 12 meses).
+- [NECESITA ACLARACIÓN] **Período en curso del cobro de ingreso** y doble pago cerca del corte: ver la spec 010, sección 11.
 - [NECESITA ACLARACIÓN] **Atrasos prolongados y cobros que nunca se pagan** (P33). La spec no fija un plazo máximo: un cobro `atrasado` sigue así hasta que se paga, el titular registra el pago manual o lo cancela, y cada mes se genera un cobro nuevo mientras la persona siga en el grupo. **Propuesta:** sin acciones automáticas sobre la cuenta ni los cobros; la decisión es del titular. El titular recibe un aviso cuando un miembro cumple 30 días de atraso o acumula 2 cobros atrasados, con la sugerencia de cancelar o quitar al miembro; el resumen del grupo muestra el total adeudado por miembro; al quitar a un miembro, sus cobros sin pagar siguen visibles como deuda hasta que se paguen o el titular los cancele.
 
 ## 12. Historial de cambios
@@ -175,3 +185,4 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 | 2026-10-17 | Se resuelven: 3 días de gracia y datos de pago en la suscripción | Equipo (ronda 1 de preguntas) |
 | 2026-10-17 | Se fija `403` (miembro sin permiso) y `404` (no pertenece al grupo) para comprobantes ajenos: CA-002-13 y CA-002-23 | Equipo |
 | 2026-10-17 | Se registra la pregunta abierta sobre atrasos prolongados y cobros impagos | Equipo |
+| 2026-10-17 | Se agrega el cobro de ingreso por la spec 010: RF-002-19, RN-002-10, nueva transición en RN-002-01, CA-002-24 y CA-002-25 | Equipo |

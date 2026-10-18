@@ -4,7 +4,7 @@
 - **Líder de la spec:** Adrian Vargas (Frontend)
 - **Revisión por capa:** Camila Fuentes (BD): pendiente · Leonardo Guzman (Backend): pendiente · Adrian Vargas (Frontend): pendiente
 - **Prioridad:** P2 (extra)
-- **Depende de:** 003 (usuarios), 004 (catálogo), 008 (reportes de cupos), 002 (para estadísticas)
+- **Depende de:** 003 (usuarios), 004 (catálogo), 008 (reportes de cupos), 002 (para estadísticas), 010 (reclamos de ingreso)
 - **Módulo cubierto:** 10 (Administración)
 - **Última actualización:** 2026-10-17
 
@@ -17,11 +17,13 @@ Una vez que la app tiene usuarios reales, alguien debe poder mantener el catálo
 - Gestionar el catálogo (servicios y planes) sin cambiar código.
 - Suspender o reactivar cuentas con criterio y con registro de lo hecho.
 - Moderar publicaciones de cupos reportadas.
+- Revisar los reclamos de ingreso y banear a quienes estafen.
+- Habilitar manualmente a los primeros titulares.
 - Ver estadísticas generales del sistema sin acceder a datos privados.
 
 ## 3. Fuera de alcance
 
-- Ver comprobantes de pago, contraseñas o correos de otros usuarios sin necesidad.
+- Ver comprobantes de pago, chats, contraseñas o correos de otros usuarios sin necesidad. La única excepción es la evidencia de un reclamo abierto (spec 010), y cada acceso queda registrado.
 - Modificar cobros, montos o estados de pago.
 - Roles intermedios (moderador, soporte); solo existe `admin`.
 - Facturación o métricas de ingresos.
@@ -31,7 +33,7 @@ Una vez que la app tiene usuarios reales, alguien debe poder mantener el catálo
 
 | Actor | Puede | No puede |
 |---|---|---|
-| Administrador | Todo lo descrito en esta spec | Ver comprobantes; cambiar montos o estados de cobros; ver contraseñas |
+| Administrador | Todo lo descrito en esta spec | Ver comprobantes o chats fuera de un reclamo; cambiar montos o estados de cobros; ver contraseñas |
 | Usuario normal | Nada de esto | Acceder a las rutas de administración (`403`) |
 
 ## 5. Historias de usuario
@@ -42,6 +44,8 @@ Una vez que la app tiene usuarios reales, alguien debe poder mantener el catálo
 - **HU-009-04:** Como administrador, quiero ver estadísticas generales del uso de la app.
 - **HU-009-05:** Como administrador, quiero un registro de mis acciones para rendir cuentas.
 - **HU-009-06:** Como administrador, quiero promover a otro administrador.
+- **HU-009-07:** Como administrador, quiero revisar un reclamo con toda su evidencia y banear al titular que estafó, para proteger a los usuarios.
+- **HU-009-08:** Como administrador, quiero habilitar manualmente a un usuario como titular, para que el sistema pueda arrancar con titulares de confianza.
 
 ## 6. Requisitos funcionales
 
@@ -62,18 +66,25 @@ Una vez que la app tiene usuarios reales, alguien debe poder mantener el catálo
 - **RF-009-10:** El administrador puede **suspender** a un usuario indicando un motivo obligatorio, y **reactivarlo**. Un usuario suspendido no puede iniciar sesión (RN-003-02) y sus sesiones activas se cierran.
 - **RF-009-11:** Al suspender, el usuario recibe un correo con el motivo y la forma de apelar [NECESITA ACLARACIÓN: canal de apelación].
 
+### Baneo, reclamos y titulares
+- **RF-009-19 (Baneo):** el administrador puede **banear** a un usuario con un motivo obligatorio y, si corresponde, el reclamo que lo origina. El estado pasa a `baneado`, se cierran sus sesiones y se bloquean su correo y su celular (spec 003, RF-003-19). La acción de reactivar de la suspensión no deshace un baneo.
+- **RF-009-20 (Reclamos):** el administrador ve la cola de reclamos de ingreso (los abiertos primero) con la evidencia que define la spec 010 (RF-010-23) y los resuelve como `estafa_confirmada` o `sin_falta`. Resolver como `estafa_confirmada` banea al titular en la misma acción.
+- **RF-009-21 (Habilitar titulares):** el administrador puede habilitar o quitar la habilitación manual de un usuario como titular, con un motivo (spec 001, RF-001-21).
+- **RF-009-22 (Efectos del baneo de un titular):** sus solicitudes activas pasan a `rechazada` (spec 010), sus grupos pasan a solo lectura, sus miembros reciben un aviso y sus cobros abiertos se cancelan con el motivo "titular baneado". [NECESITA ACLARACIÓN: confirmar estos efectos]
+- **RF-009-23 (Revisión del baneo):** otro administrador puede revertir un baneo en forma excepcional, con un motivo, y queda en auditoría. [NECESITA ACLARACIÓN: canal y condiciones]
+
 ### Moderación
 - **RF-009-12:** El administrador ve la cola de **publicaciones reportadas u ocultas** (spec 008) con los motivos y comentarios de los reportes.
 - **RF-009-13:** Por cada publicación puede **restaurarla**, **eliminarla** (cierre definitivo) o **eliminarla y suspender** al titular. Todo queda con motivo.
 - **RF-009-14:** Se notifica al titular de la decisión (spec 005).
 
 ### Estadísticas
-- **RF-009-15:** El tablero muestra: usuarios totales, nuevos del mes y activos (con algún ingreso en 30 días); grupos activos y cerrados; cobros del mes por estado; monto gestionado en el mes (en Bs); tasa de puntualidad global; servicios más compartidos (top 5); publicaciones de cupos activas y solicitudes del mes.
+- **RF-009-15:** El tablero muestra: usuarios totales, nuevos del mes y activos (con algún ingreso en 30 días); grupos activos y cerrados; cobros del mes por estado; monto gestionado en el mes (en Bs); tasa de puntualidad global; servicios más compartidos (top 5); publicaciones de cupos activas, solicitudes de ingreso del mes y reclamos abiertos.
 - **RF-009-16:** Los gráficos tienen alternativa en tabla y no dependen solo del color.
 - **RF-009-17:** Las estadísticas son **agregadas**: no permiten ver el detalle de cobros o comprobantes de usuarios concretos.
 
 ### Auditoría
-- **RF-009-18:** Cada acción de administración (crear o editar catálogo, suspender, reactivar, promover, moderar) se registra en un **log de auditoría** con quién, qué, sobre qué, motivo y fecha. El log es de solo anexado y consultable por los administradores con filtros.
+- **RF-009-18:** Cada acción de administración (crear o editar catálogo, suspender, reactivar, banear, habilitar titulares, promover, moderar, resolver reclamos y abrir su evidencia) se registra en un **log de auditoría** con quién, qué, sobre qué, motivo y fecha. El log es de solo anexado y consultable por los administradores con filtros.
 
 ## 7. Requisitos no funcionales
 
@@ -92,6 +103,9 @@ Una vez que la app tiene usuarios reales, alguien debe poder mantener el catálo
 - **RN-009-04:** Toda suspensión, eliminación de publicación o cambio de rol requiere un **motivo** de 10 a 300 caracteres.
 - **RN-009-05:** Los cambios del catálogo no alteran suscripciones existentes (RN-004-01).
 - **RN-009-06:** Las estadísticas usan siempre los datos persistidos (copias y ciclos), igual que los reportes de la spec 006.
+- **RN-009-07:** Un baneo requiere un motivo de 10 a 300 caracteres y queda en auditoría. Un administrador no puede banearse a sí mismo ni a otro administrador sin antes quitarle el rol (RN-009-02).
+- **RN-009-08:** El administrador solo accede al chat y al comprobante de una solicitud cuando existe un reclamo abierto sobre ella, y cada acceso se registra.
+- **RN-009-09:** Un reclamo por sí solo no banea a nadie: el baneo es una decisión del administrador (spec 010, RN-010-08).
 
 ## 9. Casos borde y errores
 
@@ -104,6 +118,9 @@ Una vez que la app tiene usuarios reales, alguien debe poder mantener el catálo
 | Importación de catálogo con una fila inválida | No se aplica nada y se muestra el error por fila |
 | Dos administradores editan el mismo plan a la vez | Gana el último guardado y la edición anterior queda en auditoría (o se avisa del conflicto) |
 | Se desactiva un servicio con grupos activos | Los grupos no cambian; el servicio deja de ofrecerse |
+| Se banea al titular de un grupo con cobros abiertos y miembros activos | Se aplican los efectos de RF-009-22 y se avisa a los miembros |
+| Un administrador intenta abrir el chat de una solicitud sin reclamo | Se rechaza con `403` |
+| Se resuelve un reclamo ya resuelto | Error de estado; no cambia nada |
 | Búsqueda de usuario sin resultados | Mensaje claro |
 | Se intenta borrar el log de auditoría | No existe esa acción en la app |
 | Estadísticas con cero datos | Valores en cero, sin errores |
@@ -131,6 +148,14 @@ Una vez que la app tiene usuarios reales, alguien debe poder mantener el catálo
 - **CA-009-19:** Dado el log de auditoría, cuando se busca una forma de editarlo o borrarlo desde la API, entonces no existe esa operación.
 - **CA-009-20:** Dado el primer despliegue, cuando se ejecuta el comando de creación del admin con variables de entorno, entonces se crea un administrador y no se guardan credenciales en el repositorio.
 - **CA-009-21:** Dado el tablero con 10.000 usuarios de prueba, cuando se carga, entonces responde en menos de 2 segundos.
+- **CA-009-22:** Dado un baneo con motivo, cuando se aplica, entonces el usuario no puede iniciar sesión, sus sesiones se cierran y su correo y celular quedan bloqueados para nuevos registros.
+- **CA-009-23:** Dado un baneo sin motivo o de menos de 10 caracteres, cuando se envía, entonces se rechaza.
+- **CA-009-24:** Dado un usuario baneado, cuando un administrador usa la acción de reactivar, entonces no se deshace el baneo.
+- **CA-009-25:** Dado un reclamo, cuando el administrador lo resuelve como `estafa_confirmada`, entonces el titular queda baneado, sus solicitudes activas se rechazan y sus miembros reciben un aviso.
+- **CA-009-26:** Dado un reclamo resuelto como `sin_falta`, cuando se aplica, entonces ninguna cuenta cambia de estado.
+- **CA-009-27:** Dado un administrador, cuando abre la evidencia de un reclamo, entonces ve línea de tiempo, chat y comprobante y queda en el log de auditoría; sin reclamo abierto no puede ver el chat de una solicitud.
+- **CA-009-28:** Dado un administrador que habilita manualmente a un usuario como titular, cuando ese usuario crea una suscripción, entonces se permite aunque su calificación sea menor al umbral.
+- **CA-009-29:** Dado un administrador, cuando intenta banear a otro administrador, entonces se rechaza hasta que le quite el rol.
 
 ## 11. Preguntas abiertas
 
@@ -138,9 +163,12 @@ Una vez que la app tiene usuarios reales, alguien debe poder mantener el catálo
 - [NECESITA ACLARACIÓN] **Importación masiva de catálogo** (RF-009-06). **Propuesta:** dejarla como última tarea de la spec; el seed cubre la carga inicial.
 - [NECESITA ACLARACIÓN] **Qué pasa con un grupo cuyo titular fue suspendido.** **Propuesta:** los cobros siguen, pero se avisa a los miembros y se permite transferir la titularidad.
 - [NECESITA ACLARACIÓN] **Canal de apelación de una suspensión.** **Propuesta:** un correo de contacto definido por el equipo.
+- [NECESITA ACLARACIÓN] **Qué datos se bloquean con un baneo** (RF-009-19). **Propuesta:** correo y celular, y cédula solo para titulares si el equipo la confirma. Ver la spec 003, sección 11.
+- [NECESITA ACLARACIÓN] **Efectos del baneo sobre el grupo** (RF-009-22) y **revisión de un baneo** (RF-009-23).
 
 ## 12. Historial de cambios
 
 | Fecha | Cambio | Autor |
 |---|---|---|
 | 2026-10-17 | Primer borrador | Equipo |
+| 2026-10-17 | Se agregan el baneo, la cola de reclamos y la habilitación manual de titulares (RF-009-19 a RF-009-23, RN-009-07 a RN-009-09, CA-009-22 a CA-009-29) | Equipo |

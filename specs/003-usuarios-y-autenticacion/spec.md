@@ -75,6 +75,10 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 - **RF-003-17:** Tras 5 intentos fallidos de inicio de sesión en 15 minutos para un mismo correo, se bloquea el inicio de sesión de ese correo por 15 minutos. También hay un límite por dirección IP.
 - **RF-003-18:** Los pedidos de recuperación de contraseña tienen límite: máximo 3 por correo cada hora.
 
+### Cuentas baneadas
+- **RF-003-19:** Cuando se banea una cuenta (spec 009), el sistema guarda una huella irreversible (hash con una clave del servidor) de su correo normalizado y de su celular. El registro rechaza cualquier correo o celular cuya huella esté bloqueada, con el mensaje genérico "No es posible crear la cuenta con estos datos", sin indicar cuál dato fue el bloqueado.
+- **RF-003-20:** Una cuenta baneada no puede iniciar sesión ni recuperar su contraseña, y sus sesiones activas se cierran. El mensaje es el mismo genérico de acceso no disponible.
+
 ## 7. Requisitos no funcionales
 
 - **RNF-003-01 (Seguridad):** contraseñas con hash `argon2id` (o `bcrypt` con costo mínimo 12), nunca registradas en logs ni devueltas en respuestas.
@@ -87,7 +91,7 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 ## 8. Reglas de negocio
 
 - **RN-003-01:** Cada usuario tiene un rol de sistema: `usuario` (por defecto) o `admin`. Nadie se registra como admin; los administradores se crean con el seed o por otro admin (spec 009).
-- **RN-003-02:** Un usuario puede tener estado `activo` o `suspendido` (spec 009). Un usuario suspendido no puede iniciar sesión.
+- **RN-003-02:** Un usuario puede tener estado `activo`, `suspendido` o `baneado` (spec 009). Un usuario suspendido o baneado no puede iniciar sesión. La suspensión es reversible; el baneo es permanente y bloquea además los datos de la cuenta (RF-003-19).
 - **RN-003-03 (Visibilidad entre usuarios):** dentro de un grupo, todos ven el **nombre** de los demás miembros; el titular y los miembros se ven mutuamente el **celular** solo si fue ingresado, para poder coordinar pagos. El correo no se comparte.
 - **RN-003-04:** El nombre en la app es el nombre del perfil; el titular puede pedir al miembro que lo coloque tal como figura en su banco, pero la app no lo exige.
 - **RN-003-05:** Las fechas de sesión y de tokens se manejan en UTC.
@@ -107,6 +111,8 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 | Dos registros simultáneos con el mismo correo | Solo uno se crea (restricción única en base de datos) |
 | Falla el envío del correo de recuperación | Se registra el error y se reintenta; el usuario ve el mensaje genérico |
 | Celular con formato inválido | Error de validación en el campo |
+| Registro con el correo o el celular de una cuenta baneada | Se rechaza con el mensaje genérico, también si el correo cambia solo en mayúsculas o espacios |
+| Registro con un correo y un celular nuevos de una persona baneada | No se puede detectar con solo estos datos; ver la pregunta abierta sobre identidad |
 
 ## 10. Criterios de aceptación
 
@@ -130,10 +136,15 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 - **CA-003-18:** Dado un usuario suspendido, cuando intenta iniciar sesión, entonces no puede entrar.
 - **CA-003-19:** Dados dos registros simultáneos con el mismo correo, entonces exactamente uno tiene éxito.
 - **CA-003-20:** Dado un JWT manipulado, cuando se envía, entonces la petición se rechaza con `401`.
+- **CA-003-21:** Dada una cuenta baneada, cuando alguien se registra con su correo (aunque con otras mayúsculas o espacios), entonces se rechaza con el mensaje genérico.
+- **CA-003-22:** Dada una cuenta baneada, cuando alguien se registra con un correo distinto pero con el mismo celular, entonces se rechaza con el mismo mensaje genérico.
+- **CA-003-23:** Dada una cuenta baneada, cuando intenta iniciar sesión o recuperar su contraseña, entonces no puede y el mensaje no revela el baneo.
+- **CA-003-24:** Dado el bloqueo de datos, cuando se inspecciona la tabla de bloqueos, entonces solo contiene huellas y no el correo ni el celular en claro.
 
 ## 11. Preguntas abiertas
 
-- [NECESITA ACLARACIÓN] **Verificación del correo.** **Propuesta:** sin verificación obligatoria en esta etapa; el correo se valida solo por formato. Riesgo: cuentas con correos ajenos.
+- [NECESITA ACLARACIÓN] **Verificación del correo.** **Propuesta:** sin verificación obligatoria en esta etapa; el correo se valida solo por formato. Riesgo: cuentas con correos ajenos y, con el baneo (RF-003-19), facilidad para abrir otra cuenta con otro correo.
+- [NECESITA ACLARACIÓN] **Identidad de una persona baneada.** Hoy el bloqueo usa el correo y el celular, y una persona puede conseguir otros nuevos. Dos medidas lo dificultan y tienen costo: verificar el celular con un código por SMS o WhatsApp (cuesta por mensaje y depende de un proveedor) y pedir la cédula de identidad a quien quiera ser titular (es un dato personal sensible; se guardaría solo su huella y hay que revisar la normativa de protección de datos). **Propuesta:** en el MVP bloquear correo y celular, y decidir en equipo si se suma la cédula solo para titulares. Los alias de Gmail (`nombre+1@gmail.com` o con puntos distintos) apuntan a la misma casilla; **propuesta:** que la huella del bloqueo se calcule sobre el correo sin alias en esos dominios. Ninguna medida garantiza que la persona no cree otra cuenta con datos nuevos.
 - [NECESITA ACLARACIÓN] **Mensaje de registro con correo repetido:** revelar que existe (mejor experiencia) o respuesta neutra (más privado). **Propuesta:** revelarlo, con límite de intentos por IP.
 - [NECESITA ACLARACIÓN] **Eliminar cuenta.** **Propuesta:** fuera de alcance por ahora; si se agrega, solo sin deudas ni titularidad y anonimizando datos para conservar el historial de los grupos.
 - [NECESITA ACLARACIÓN] **Revocación de tokens:** lista de tokens revocados en base de datos o versión de sesión por usuario. **Propuesta:** versión de sesión por usuario (columna `session_version`) para simplificar.
@@ -144,3 +155,4 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 | Fecha | Cambio | Autor |
 |---|---|---|
 | 2026-10-17 | Primer borrador | Equipo |
+| 2026-10-17 | Se agrega el estado `baneado` y el bloqueo de correo y celular de cuentas baneadas (RN-003-02, RF-003-19, RF-003-20, CA-003-21 a CA-003-24) | Equipo |

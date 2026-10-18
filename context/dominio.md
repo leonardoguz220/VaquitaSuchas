@@ -29,12 +29,14 @@ Los estados son `pendiente`, `en_revision`, `pagado`, `atrasado` y `cancelado`.
 - `en_revision` pasa a `pagado` cuando el titular confirma. Si rechaza, vuelve a `pendiente` o a `atrasado` según la fecha de vencimiento.
 - `pendiente` y `atrasado` pasan a `cancelado` por decisión del titular, con motivo.
 - `pagado` y `cancelado` son estados finales.
+- El cobro de ingreso de un nuevo miembro nace directamente en `pagado` cuando el titular confirma su solicitud de ingreso (spec 010). Ese pago es la cuota del mes dividida entre los miembros que tendrá el grupo con la persona incluida.
 
 La tabla completa de transiciones está en `specs/002-cobros-y-pagos/spec.md` (RN-002-01). No se crean estados nuevos sin actualizar antes la spec.
 
 ## Privacidad y seguridad
 
 - Un usuario solo ve los datos de los grupos a los que pertenece.
+- El chat y el comprobante de una solicitud de ingreso los ven solo el solicitante y el titular. Un administrador los ve únicamente cuando hay un reclamo abierto, y cada acceso queda registrado.
 - Las contraseñas se guardan con un hash seguro (bcrypt o argon2) y nunca se registran en logs, igual que los tokens.
 - Los comprobantes los ven solo el titular y el miembro que los subió, salvo que una spec indique otra cosa.
 - Los permisos, los montos y los estados se validan siempre en el servidor. El frontend solo ayuda a la experiencia de uso.
