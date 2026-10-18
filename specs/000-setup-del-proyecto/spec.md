@@ -1,11 +1,11 @@
 # Spec 000 — Setup del proyecto
 
-- **Estado:** borrador
+- **Estado:** aprobada
 - **Líder de la spec:** Todos (cada capa define su parte)
-- **Revisión por capa:** Camila (BD): pendiente · Leonardo (Backend): pendiente · Adrian (Frontend): pendiente
+- **Revisión por capa:** Camila (BD): aprobada · Leonardo (Backend): aprobada · Adrian (Frontend): aprobada
 - **Prioridad:** P0 (base de todo)
 - **Depende de:** —
-- **Última actualización:** 2026-10-17
+- **Última actualización:** 2026-10-18
 
 ## 1. Contexto y problema
 
@@ -134,3 +134,4 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 | 2026-10-17 | Se decide Render como proveedor de PostgreSQL y se registran sus límites del plan gratuito | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: servicio de mensajería al celular (RF-000-22), Resend, gitleaks, hooks opcionales y carga esperada; RF-000-14 menciona la spec 010 | Equipo |
 | 2026-10-18 | La mensajería al celular pasa a ser un bot de Telegram sin costo (RF-000-22, CA-000-17) | Equipo |
+| 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |

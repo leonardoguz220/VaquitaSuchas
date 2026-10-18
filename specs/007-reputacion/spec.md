@@ -1,12 +1,12 @@
 # Spec 007 — Reputación
 
-- **Estado:** borrador
+- **Estado:** aprobada
 - **Líder de la spec:** Camila Fuentes (BD)
-- **Revisión por capa:** Leonardo Guzman (Backend): pendiente · Adrian Vargas (Frontend): pendiente · Camila Fuentes (BD): pendiente
+- **Revisión por capa:** Leonardo Guzman (Backend): aprobada · Adrian Vargas (Frontend): aprobada · Camila Fuentes (BD): aprobada
 - **Prioridad:** P2 (extra). La calificación básica (RF-007-01 a RF-007-05, RF-007-12, RF-007-13 y RF-007-15 a RF-007-17) se construye junto con el MVP, porque la spec 001 la usa para habilitar titulares (RF-001-21); las insignias y el ranking quedan en P2
 - **Depende de:** 002 (datos de puntualidad), 001 (grupos)
 - **Módulo cubierto:** 8 (Reputación)
-- **Última actualización:** 2026-10-17
+- **Última actualización:** 2026-10-18
 
 ## 1. Contexto y problema
 
@@ -157,3 +157,4 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 | 2026-10-17 | El puntaje de 0 a 100 pasa a una calificación de 0 a 5 estrellas en pasos de media estrella; se agregan CA-007-18 y CA-007-19 | Equipo |
 | 2026-10-17 | La calificación básica se adelanta al MVP y se agrega la habilitación para ser titular y la exclusión de los cobros de ingreso (RF-007-15 a RF-007-17, RN-007-09, CA-007-20 a CA-007-23) | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: umbral de 4,5 estrellas con 6 cobros, rechazo como «comprobante inválido» (RF-007-12), miembro retirado por mora, CA-007-24 y 25; se aceptan las propuestas de la sección 11 | Equipo |
+| 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |

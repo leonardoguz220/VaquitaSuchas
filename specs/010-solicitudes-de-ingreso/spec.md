@@ -1,12 +1,12 @@
 # Spec 010 — Solicitudes de ingreso y chat
 
-- **Estado:** borrador
+- **Estado:** aprobada
 - **Líder de la spec:** Leonardo Guzman (Backend)
-- **Revisión por capa:** Camila Fuentes (BD): pendiente · Adrian Vargas (Frontend): pendiente · Leonardo Guzman (Backend): pendiente
+- **Revisión por capa:** Camila Fuentes (BD): aprobada · Adrian Vargas (Frontend): aprobada · Leonardo Guzman (Backend): aprobada
 - **Prioridad:** P0 (MVP)
 - **Depende de:** 001 (Suscripciones compartidas), 002 (Cobros y pagos), 003 (Usuarios y autenticación)
 - **Módulos cubiertos:** 3 (ingreso al grupo); amplía el módulo de suscripciones compartidas
-- **Última actualización:** 2026-10-17
+- **Última actualización:** 2026-10-18
 
 ## 1. Contexto y problema
 
@@ -260,3 +260,4 @@ Vaquita no custodia dinero. En una operación entre pares con custodia, la plata
 | 2026-10-17 | Se incorporan las decisiones de la ronda 2: ventana de ingreso de 3 días, reclamo de ambas partes, referencia obligatoria y única, prórroga, retención de 2 meses y bloqueo de correo, celular y cédula (RF-010-28, RN-010-12 a RN-010-14, CA-010-37 a CA-010-47) | Equipo |
 | 2026-10-18 | Se confirman la ventana desde el corte de cada grupo, la ventana inicial de un grupo nuevo y la deuda del retirado | Equipo |
 | 2026-10-18 | RN-010-13 se amplía a cualquier cobro abierto del solicitante en el grupo (RF-010-01, CA-010-45) | Equipo |
+| 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |

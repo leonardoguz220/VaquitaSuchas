@@ -25,3 +25,12 @@ npm-debug.log*
 
 # Archivos locales de Claude Code
 .claude/settings.local.json
+
+# Credenciales y claves (nunca se suben)
+*.pem
+*.key
+*.p12
+*.pfx
+serviceAccount*.json
+*-service-account*.json
+*-firebase-adminsdk-*.json

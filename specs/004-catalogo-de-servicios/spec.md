@@ -1,12 +1,12 @@
 # Spec 004 — Catálogo de servicios
 
-- **Estado:** borrador
+- **Estado:** aprobada
 - **Líder de la spec:** Camila Fuentes (BD)
-- **Revisión por capa:** Leonardo Guzman (Backend): pendiente · Adrian Vargas (Frontend): pendiente · Camila Fuentes (BD): pendiente
+- **Revisión por capa:** Leonardo Guzman (Backend): aprobada · Adrian Vargas (Frontend): aprobada · Camila Fuentes (BD): aprobada
 - **Prioridad:** P0 (MVP)
 - **Depende de:** 000 (Setup del proyecto)
 - **Módulo cubierto:** 2 (Servicios)
-- **Última actualización:** 2026-10-17
+- **Última actualización:** 2026-10-18
 
 ## 1. Contexto y problema
 
@@ -110,3 +110,4 @@ Al crear una suscripción compartida, el titular no debería escribir a mano el 
 |---|---|---|
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: se aceptan las propuestas de la sección 11 | Equipo |
+| 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |

@@ -4,7 +4,8 @@ Pasos para comprobar que la base del proyecto funciona de punta a punta. No cont
 
 ## Requisitos previos
 
-- Node.js 22 LTS (archivo `.nvmrc` en la raíz) y npm.
+- Node.js 22 LTS (archivo `.nvmrc` en la raíz) y npm. En Windows, `nvm-windows` permite tener la 22 junto a otras versiones.
+- En Windows, Git Bash: los scripts de Spec Kit (`.specify/scripts/bash/`) y los hooks de Claude Code se ejecutan con bash.
 - Docker con Compose.
 - Git. Opcional: `gh` para ver el estado de CI.
 

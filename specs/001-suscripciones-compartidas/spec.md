@@ -1,12 +1,12 @@
 # Spec 001 — Suscripciones compartidas
 
-- **Estado:** borrador
+- **Estado:** aprobada
 - **Líder de la spec:** Camila Fuentes (BD)
-- **Revisión por capa:** Leonardo Guzman (Backend): pendiente · Adrian Vargas (Frontend): pendiente · Camila Fuentes (BD): pendiente
+- **Revisión por capa:** Leonardo Guzman (Backend): aprobada · Adrian Vargas (Frontend): aprobada · Camila Fuentes (BD): aprobada
 - **Prioridad:** P0 (MVP)
 - **Depende de:** 003 (Usuarios y autenticación), 004 (Catálogo de servicios)
 - **Módulos cubiertos:** 3 (Suscripciones compartidas) y 4 (División y moneda)
-- **Última actualización:** 2026-10-17
+- **Última actualización:** 2026-10-18
 
 ## 1. Contexto y problema
 
@@ -187,3 +187,4 @@ Esta spec define cómo se **crea una suscripción compartida**, cómo se **invit
 | 2026-10-17 | El ingreso pasa a una solicitud con pago previo y chat (spec 010): cambian RF-001-07, RN-001-11, CA-001-06, 12, 19 y 22; se agrega el requisito de ser titular habilitado (RF-001-21, CA-001-24 y 25) | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: ventana de ingreso (RF-001-22), retiro por falta de pago (RF-001-23), límite de 5 grupos como titular (RN-001-14), umbral para ser titular, destinatario de la transferencia habilitado (RF-001-17), CA-001-26 a 30 | Equipo |
 | 2026-10-18 | Se confirma que la ventana de ingreso se cuenta desde el corte de cada grupo | Equipo |
+| 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |

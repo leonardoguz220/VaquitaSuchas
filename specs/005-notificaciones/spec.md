@@ -1,12 +1,12 @@
 # Spec 005 — Notificaciones
 
-- **Estado:** borrador
+- **Estado:** aprobada
 - **Líder de la spec:** Leonardo Guzman (Backend)
-- **Revisión por capa:** Camila Fuentes (BD): pendiente · Adrian Vargas (Frontend): pendiente · Leonardo Guzman (Backend): pendiente
+- **Revisión por capa:** Camila Fuentes (BD): aprobada · Adrian Vargas (Frontend): aprobada · Leonardo Guzman (Backend): aprobada
 - **Prioridad:** P1 (importante)
 - **Depende de:** 000 (servicio de correo, bot de Telegram y tareas programadas), 001, 002, 003 (cuenta de Telegram verificada), 010 (solicitudes de ingreso)
 - **Módulo cubierto:** 6 (Notificaciones)
-- **Última actualización:** 2026-10-17
+- **Última actualización:** 2026-10-18
 
 ## 1. Contexto y problema
 
@@ -181,3 +181,4 @@ Nadie puede ver las notificaciones de otra persona.
 | 2026-10-17 | Se agregan los avisos de las solicitudes de ingreso y de los reclamos (RF-005-22 a RF-005-25, CA-005-25 a CA-005-29); el chat de grupo sigue fuera de alcance | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: el atraso pasa a retiro del grupo y se eliminan los recordatorios repetidos (RF-005-07, 09, 13, RN-005-06), el celular siempre existe (RF-005-16), canal opcional de Telegram en P1 (RF-005-26 a 28, CA-005-30 a 34); se aceptan las propuestas de la sección 11 | Equipo |
 | 2026-10-18 | La cuenta de Telegram se vincula en el registro por la verificación del celular (RF-005-26 a 28, CA-005-30, 31 y 33) | Equipo |
+| 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |

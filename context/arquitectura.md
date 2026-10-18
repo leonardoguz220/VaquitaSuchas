@@ -1,6 +1,6 @@
 # Arquitectura por capas
 
-- **Estado:** propuesta, pendiente de revisión por capa (Camila, Leonardo y Adrian)
+- **Estado:** aprobada por las tres capas (Camila, Leonardo y Adrian) junto con los planes, 2026-10-18
 - **Decisión registrada en:** [`decisiones/0002-arquitectura-por-capas.md`](decisiones/0002-arquitectura-por-capas.md)
 
 El código de Vaquita se organiza por capas. Cada capa tiene una responsabilidad y solo depende de la capa que tiene debajo. El sistema completo se reparte además entre tres partes (base de datos, backend y frontend), cada una con su propia estructura interna.

@@ -1,12 +1,12 @@
 # Spec 008 — Cupos libres
 
-- **Estado:** borrador
+- **Estado:** aprobada
 - **Líder de la spec:** Adrian Vargas (Frontend)
-- **Revisión por capa:** Camila Fuentes (BD): pendiente · Leonardo Guzman (Backend): pendiente · Adrian Vargas (Frontend): pendiente
+- **Revisión por capa:** Camila Fuentes (BD): aprobada · Leonardo Guzman (Backend): aprobada · Adrian Vargas (Frontend): aprobada
 - **Prioridad:** P2 (extra)
 - **Depende de:** 001 (grupos), 003 (usuarios), 005 (notificaciones), 007 (reputación, para mostrar puntualidad), 010 (solicitudes de ingreso)
 - **Módulo cubierto:** 9 (Cupos libres)
-- **Última actualización:** 2026-10-17
+- **Última actualización:** 2026-10-18
 
 ## 1. Contexto y problema
 
@@ -152,3 +152,4 @@ Muchos grupos tienen lugares vacíos: un plan familiar de 6 personas con 4 ocupa
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | Las solicitudes pasan a ser las de la spec 010 (chat, pago previo y confirmación); cambian RF-008-10 a RF-008-15, RNF-008-03, RN-008-01 y CA-008-10 a CA-008-15 | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: ventana de ingreso en la publicación y en la solicitud (RF-008-03, 10, 15), cancelación de otras solicitudes al mismo servicio (RN-008-05, CA-008-23 y 24); se aceptan las propuestas de la sección 11 | Equipo |
+| 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |

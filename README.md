@@ -8,7 +8,7 @@ El proyecto se desarrolla con Spec Driven Development: la especificación se esc
 
 ## Estado
 
-Las once specs están en borrador y esperan la revisión por capa. Todavía no hay código; las carpetas `backend/`, `frontend/` y `database/` contienen solo su guía de capa.
+Las once specs y sus planes están aprobados por las tres capas (2026-10-18). La implementación empieza por la spec 000 (`specs/000-setup-del-proyecto/tasks.md`). Todavía no hay código; las carpetas `backend/`, `frontend/` y `database/` contienen solo su guía de capa.
 
 ## Stack
 

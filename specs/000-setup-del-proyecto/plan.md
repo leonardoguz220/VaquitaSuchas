@@ -7,9 +7,9 @@
 
 | Capa | Responsable | Secciones | Visto bueno |
 |---|---|---|---|
-| Base de datos | Camila | §3 (y `data-model.md`) | pendiente |
-| Backend | Leonardo | §4, §5, §7 (y `contracts/api.md`) | pendiente |
-| Frontend | Adrian | §6 | pendiente |
+| Base de datos | Camila | §3 (y `data-model.md`) | aprobado |
+| Backend | Leonardo | §4, §5, §7 (y `contracts/api.md`) | aprobado |
+| Frontend | Adrian | §6 | aprobado |
 
 ## Contexto técnico
 
@@ -114,7 +114,7 @@ backend/
 - **Puertos (RF-000-12, RF-000-22, R3):**
   - `MailService.send({ to, subject, html, text })` → `dev`: SMTP a Mailpit (`localhost:1025`); `prod`: `POST https://api.resend.com/emails`.
   - `TelegramGateway`: `sendMessage(chatId, text, options?)`, `parseUpdate(raw)`; implementación `dev` (guarda en memoria el *outbox*, se consulta en `GET /dev/telegram/outbox`) e implementación `prod` (llamadas HTTPS a `api.telegram.org`, con el token por variable de entorno).
-  - `FileStorage.put/copy/signedUrl/delete/exists` → `local`, `supabase`, `firebase`. `copy` lo necesita la spec 010 (copia del QR de pago a la solicitud).
+  - `FileStorage.put/copy/signedUrl/delete/exists` → `local` (dev y CI) y `supabase` (staging y demo); `firebase` no se implementa en el MVP (`research.md` R3). `copy` lo necesita la spec 010 (copia del QR de pago a la solicitud).
   - Cada puerto tiene un módulo dinámico elegido por su variable de modo; **ningún** servicio de negocio importa la implementación concreta.
 - **Tareas programadas (RF-000-14, R1):** `JobsModule` define `ScheduledJob { name; intervalSeconds; run(ctx): Promise<number> }`. Un registro central recibe las tareas de cada spec. `JobRunner.runAll(trigger)`:
   1. Para cada tarea toma `pg_try_advisory_lock(hashtext(name))`; si no lo consigue, devuelve `skipped`.

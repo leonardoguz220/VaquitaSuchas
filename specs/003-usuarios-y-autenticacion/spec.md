@@ -1,12 +1,12 @@
 # Spec 003 — Usuarios y autenticación
 
-- **Estado:** borrador
+- **Estado:** aprobada
 - **Líder de la spec:** Leonardo Guzman (Backend)
-- **Revisión por capa:** Camila Fuentes (BD): pendiente · Adrian Vargas (Frontend): pendiente · Leonardo Guzman (Backend): pendiente
+- **Revisión por capa:** Camila Fuentes (BD): aprobada · Adrian Vargas (Frontend): aprobada · Leonardo Guzman (Backend): aprobada
 - **Prioridad:** P0 (MVP)
 - **Depende de:** 000 (Setup del proyecto, incluidos el servicio de correo y el bot de Telegram)
 - **Módulo cubierto:** 1 (Usuarios y autenticación)
-- **Última actualización:** 2026-10-17
+- **Última actualización:** 2026-10-18
 
 ## 1. Contexto y problema
 
@@ -182,3 +182,4 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 | 2026-10-17 | Se agrega el estado `baneado` y el bloqueo de correo y celular de cuentas baneadas (RN-003-02, RF-003-19, RF-003-20, CA-003-21 a CA-003-24) | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: celular obligatorio y verificado, CI obligatoria y única, política de datos, bloqueo de correo, celular y CI, versión de sesión (RF-003-01, 05, 07, 14, 19, 21, 22, 24; RN-003-03; CA-003-25 a 34) | Equipo |
 | 2026-10-18 | La verificación del celular pasa a ser por Telegram, sin SMS (RF-003-01, 04, 05, 14, 19, 21; CA-003-25 a 30, 32 y 35); se resuelven el formato de la CI y los alias de correo | Equipo |
+| 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |
