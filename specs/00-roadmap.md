@@ -21,7 +21,7 @@ Mapa de los diez módulos del proyecto hacia specs concretas, en orden de implem
 | 002 | [Cobros y pagos (generación mensual, comprobantes, confirmación, historial)](002-cobros-y-pagos/spec.md) | 5 | P0 | 001 | Leonardo (BE) | borrador |
 | 005 | [Notificaciones (recordatorios, atrasos, invitaciones)](005-notificaciones/spec.md) | 6 | P1 | 002 | Leonardo (BE) | borrador |
 | 006 | [Panel y reportes (gasto mensual, ahorro, calendario, deudas)](006-panel-y-reportes/spec.md) | 7 | P1 | 002 | Adrian (FE) | borrador |
-| 007 | [Reputación (puntaje, insignias, ranking)](007-reputacion/spec.md) | 8 | P2 | 002 | Camila (BD) | borrador |
+| 007 | [Reputación (calificación en estrellas, insignias, ranking)](007-reputacion/spec.md) | 8 | P2 | 002 | Camila (BD) | borrador |
 | 008 | [Cupos libres (publicar y buscar cupos)](008-cupos-libres/spec.md) | 9 | P2 | 001 | Adrian (FE) | borrador |
 | 009 | [Administración (usuarios, catálogo, estadísticas)](009-administracion/spec.md) | 10 | P2 | 003, 004 | Adrian (FE) | borrador |
 

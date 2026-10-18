@@ -54,7 +54,7 @@ Capas afectadas: BD (Camila), BE (Leonardo) y FE (Adrian).
 | P22 | ¿Cuántos días antes se avisa y cada cuánto si hay atraso? | BE | Propuesta. 2 días antes del corte, 1 antes del vencimiento, cada 3 días hasta 3 veces (spec 005) |
 | P24 | ¿Cómo se calcula el ahorro? | BD, BE | Propuesta. Precio individual de referencia del catálogo vs. cuota (spec 006) |
 | P25 | ¿Qué gráficos son imprescindibles? | FE | Propuesta. Gasto 12 meses, gasto por servicio y ahorro acumulado (spec 006) |
-| P26 | ¿Cómo se calcula la reputación y quién la ve? | BD, BE | Propuesta. Pagos puntuales / total en 12 meses; ranking visible en el grupo (spec 007) |
+| P26 | ¿Cómo se calcula la reputación y quién la ve? | BD, BE | Propuesta. Calificación de 0 a 5 estrellas según pagos puntuales sobre total en 12 meses; ranking visible en el grupo (spec 007) |
 | P27 | ¿Cupos libres: quién ve, cómo se pide unirse y quién aprueba? | BD, BE, FE | Propuesta. Usuarios autenticados; solicitud con aprobación del titular (spec 008) |
 | P28 | ¿Quién administra el sistema y qué necesita? | BE, FE | Propuesta. El equipo; catálogo, usuarios, moderación y estadísticas (spec 009) |
 

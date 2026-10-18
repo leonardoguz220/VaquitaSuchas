@@ -89,7 +89,7 @@ Resumen por mes con el gasto propio, el ahorro estimado, lo que el usuario debe,
 
 ### Reputación (spec 007)
 
-Puntaje de puntualidad de 0 a 100: cobros puntuales sobre cobros considerados en los últimos 12 meses. Un cobro es puntual si el miembro subió su comprobante antes del vencimiento, aunque el titular lo rechace después. Con menos de 3 cobros el nivel es "Nuevo"; luego Excelente (95 a 100), Bueno (80 a 94), Regular (60 a 79) o En riesgo (menos de 60). Incluye insignias (primer pago, rachas de 3, 6 y 12 pagos puntuales, seis meses sin atrasos y otras), un ranking dentro del grupo sin montos ni comprobantes y la posibilidad de reportar un cobro mal calificado para que el titular lo revise.
+Calificación de puntualidad de 0 a 5 estrellas, en pasos de media estrella: 5 por la proporción de cobros puntuales sobre cobros considerados en los últimos 12 meses. Un cobro es puntual si el miembro subió su comprobante antes del vencimiento, aunque el titular lo rechace después. Con menos de 3 cobros el nivel es "Nuevo"; luego Excelente (5 estrellas), Bueno (4 a 4,5), Regular (3 a 3,5) o En riesgo (2,5 o menos). Incluye insignias (primer pago, rachas de 3, 6 y 12 pagos puntuales, seis meses sin atrasos y otras), un ranking dentro del grupo sin montos ni comprobantes y la posibilidad de reportar un cobro mal calificado para que el titular lo revise.
 
 ### Cupos libres (spec 008)
 
@@ -111,7 +111,7 @@ Repositorio con las tres capas, `docker-compose` con PostgreSQL y una bandeja de
 | Marca de atrasos | Al pasar el vencimiento | Pasa a `atrasado` los cobros `pendiente` |
 | Avisos programados | Diario, 08:00 de La Paz | Aviso previo, recordatorio de vencimiento, recordatorios de atraso y revisión pendiente |
 | Envío de correos | Cada 5 minutos | Envía los correos pendientes y reintenta los fallidos |
-| Reconciliación de reputación | Diario | Verifica y corrige puntajes |
+| Reconciliación de reputación | Diario | Verifica y corrige calificaciones |
 | Vencimientos | Diario | Expira publicaciones (30 días), solicitudes (14 días) y notificaciones (90 días) |
 
 Todos los procesos son idempotentes y calculan lo que falta según los datos, de modo que se pueden ejecutar dos veces o con retraso (por ejemplo, tras un reinicio del servidor) sin duplicar cobros ni avisos.

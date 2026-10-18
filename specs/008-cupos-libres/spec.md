@@ -63,7 +63,7 @@ Muchos grupos tienen lugares vacíos: un plan familiar de 6 personas con 4 ocupa
 
 ### Solicitudes
 - **RF-008-10:** Un usuario puede enviar una solicitud a una publicación con un mensaje de hasta 200 caracteres. Máximo 5 solicitudes pendientes por usuario y una por publicación.
-- **RF-008-11:** El titular ve las solicitudes con nombre del solicitante, mensaje, su nivel de puntualidad y su puntaje (spec 007).
+- **RF-008-11:** El titular ve las solicitudes con nombre del solicitante, mensaje, su nivel de puntualidad y su calificación en estrellas (spec 007).
 - **RF-008-12:** El titular puede **aceptar** o **rechazar** (con un motivo opcional). Al aceptar, el usuario se une al grupo aplicando las reglas de la spec 001 (RN-001-11 y cupos).
 - **RF-008-13:** El solicitante puede retirar su solicitud mientras esté pendiente.
 - **RF-008-14:** Al aceptar la última cupo ofrecido, la publicación se cierra y las demás solicitudes pendientes pasan a `rechazada` por falta de cupo.
@@ -131,7 +131,7 @@ Muchos grupos tienen lugares vacíos: un plan familiar de 6 personas con 4 ocupa
 - **CA-008-18:** Dado un usuario que ya reportó una publicación, cuando reporta otra vez, entonces se rechaza.
 - **CA-008-19:** Dado un texto con `<script>`, cuando se muestra, entonces aparece como texto plano.
 - **CA-008-20:** Dado un usuario que no es titular, cuando intenta aceptar una solicitud, entonces recibe `403`.
-- **CA-008-21:** Dado el titular, cuando ve una solicitud, entonces ve el nivel y puntaje de puntualidad del solicitante.
+- **CA-008-21:** Dado el titular, cuando ve una solicitud, entonces ve el nivel y la calificación en estrellas del solicitante.
 - **CA-008-22:** Dado un usuario suspendido, cuando intenta publicar o solicitar, entonces se rechaza.
 
 ## 11. Preguntas abiertas

@@ -28,7 +28,7 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - Envío de recordatorios y avisos por correo/push (spec 005; aquí solo los estados).
 - Multas, intereses o recargos por atraso.
 - Pagos parciales o adelantados de varios meses.
-- Puntaje de reputación (spec 007; esta spec expone los datos que ese módulo necesitará: fecha de pago vs. fecha de vencimiento).
+- Calificación de reputación (spec 007; esta spec expone los datos que ese módulo necesitará: fecha de pago vs. fecha de vencimiento).
 - Reembolsos.
 
 ## 4. Actores y permisos
