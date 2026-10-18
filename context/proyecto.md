@@ -43,6 +43,7 @@ La spec 000 cubre la preparación del proyecto (repositorio, integración contin
 
 ## Documentos relacionados
 
+- Funcionamiento completo del sistema: [`funcionamiento-del-sistema.md`](funcionamiento-del-sistema.md)
 - Reglas de dominio: [`dominio.md`](dominio.md)
 - Stack técnico: [`stack.md`](stack.md)
 - Arquitectura por capas: [`arquitectura.md`](arquitectura.md)

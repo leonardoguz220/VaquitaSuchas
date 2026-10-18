@@ -15,7 +15,7 @@ Capas afectadas: BD (Camila), BE (Leonardo) y FE (Adrian).
 | # | Pregunta | Capas | Estado |
 |---|---|---|---|
 | P5 | ¿Qué stack usa cada capa? | BD, BE, FE | Decidida. Stack final en `context/stack.md` (Next.js, NestJS, PostgreSQL, TypeScript) |
-| P6 | ¿Dónde se despliega la demo? | BE | Propuesta. Frontend Vercel, backend Render, PostgreSQL gestionado por definir (spec 000) |
+| P6 | ¿Dónde se despliega la demo? | BE | Decidida en parte. Frontend en Vercel, backend y PostgreSQL en Render; falta definir cómo se cubren los límites del plan gratuito (spec 000) |
 | P7 | ¿Plazo y alcance? | Todos | Decidida. Sin recorte por tiempo: entran los 10 módulos, en orden P0 → P1 → P2 |
 | P8 | ¿La materia pide diagramas o documentos específicos (ER, casos de uso, UML)? | Todos | Pendiente: confirmar con el profesor |
 

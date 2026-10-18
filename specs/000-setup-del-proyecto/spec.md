@@ -114,7 +114,7 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 
 ## 10. Preguntas abiertas
 
-- [NECESITA ACLARACIÓN] **Proveedor de PostgreSQL gestionado** para staging (Neon, Supabase, Render u otro). **Propuesta:** el que permita plan gratuito sin caducidad; verificar límites vigentes antes de decidir.
+- [RESUELTO 2026-10-17] **Proveedor de PostgreSQL gestionado:** Render, el mismo proveedor del backend. Riesgos por verificar antes de cerrar el plan (según la documentación de Render al 2026-10-17): la base gratuita caduca a los 30 días de crearse, con 14 días de gracia antes de borrarse; tiene 1 GB de almacenamiento, sin copias de seguridad y sin pool de conexiones. El servicio web gratuito se duerme tras 15 minutos sin tráfico, lo que afecta a las tareas programadas de las specs 002 y 005. El plan debe definir cómo se cubre esto (instancia de pago, recrear la base con `db:reset` y el seed cerca de la fecha de la demo, o un disparador externo para las tareas).
 - [NECESITA ACLARACIÓN] **Proveedor de correo en `prod`** (Resend, Brevo, SMTP de Gmail u otro). **Propuesta:** un proveedor con plan gratuito suficiente para la demo.
 - [NECESITA ACLARACIÓN] **Herramienta de escaneo de secretos** (por ejemplo, gitleaks en CI). **Propuesta:** gitleaks.
 - [NECESITA ACLARACIÓN] ¿Usarán hooks de Claude Code para proteger specs y tests? **Propuesta:** sí, como mejora opcional posterior al setup.
@@ -125,3 +125,4 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 |---|---|---|
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | RF-000-01 incorpora `context/`, `ia/` y la estructura por capas | Equipo |
+| 2026-10-17 | Se decide Render como proveedor de PostgreSQL y se registran sus límites del plan gratuito | Equipo |

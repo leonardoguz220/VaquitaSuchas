@@ -18,7 +18,7 @@ Las diez specs están en borrador y esperan la revisión por capa. Todavía no h
 | Backend (Leonardo) | NestJS, TypeScript, JWT, Swagger, Jest |
 | Base de datos (Camila) | PostgreSQL con migraciones SQL y seed |
 | Comprobantes y QR | Firebase Storage con URLs firmadas |
-| Despliegue | Vercel (frontend), Render (backend) y PostgreSQL gestionado por definir |
+| Despliegue | Vercel (frontend); Render (backend y PostgreSQL) |
 | Calidad | GitHub Actions y Playwright |
 
 El código se organiza por capas en las tres partes del sistema. El detalle está en [`context/stack.md`](context/stack.md) y [`context/arquitectura.md`](context/arquitectura.md).
@@ -42,7 +42,7 @@ VaquitaSuchas/
 
 | Carpeta | Contenido |
 |---|---|
-| [`context/`](context/) | Qué es el proyecto ([`proyecto.md`](context/proyecto.md)), reglas de dominio ([`dominio.md`](context/dominio.md)), stack ([`stack.md`](context/stack.md)), arquitectura por capas ([`arquitectura.md`](context/arquitectura.md)) y decisiones registradas ([`decisiones/`](context/decisiones/)) |
+| [`context/`](context/) | Qué es el proyecto ([`proyecto.md`](context/proyecto.md)), cómo funciona el sistema completo ([`funcionamiento-del-sistema.md`](context/funcionamiento-del-sistema.md)), reglas de dominio ([`dominio.md`](context/dominio.md)), stack ([`stack.md`](context/stack.md)), arquitectura por capas ([`arquitectura.md`](context/arquitectura.md)) y decisiones registradas ([`decisiones/`](context/decisiones/)) |
 | [`.specify/memory/constitution.md`](.specify/memory/constitution.md) | Constitución del proyecto, que Spec Kit usa para validar specs, planes y tareas |
 | [`ia/`](ia/) | Skills, agentes y MCPs que usa el equipo, con su origen y licencia ([`herramientas-y-skills.md`](ia/herramientas-y-skills.md)) |
 | [`specs/`](specs/) | Roadmap, banco de preguntas y las specs de cada módulo |
