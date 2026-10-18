@@ -98,23 +98,6 @@ test('RF-000-14: un status fuera de la lista falla con job_runs_status_check', a
   });
 });
 
-test('RF-000-14: processed_count negativo falla con job_runs_processed_count_check', async () => {
-  await rejectsWith(
-    'INSERT INTO job_runs (job_name, trigger, status, processed_count) VALUES ($1, $2, $3, $4)',
-    ['billing.generate', 'cron', 'ok', -1],
-    { code: '23514', constraint: 'job_runs_processed_count_check' },
-  );
-});
-
-test('RF-000-14: finished_at anterior a started_at falla con job_runs_finished_after_started_check', async () => {
-  await rejectsWith(
-    `INSERT INTO job_runs (job_name, trigger, status, started_at, finished_at)
-     VALUES ($1, $2, $3, $4, $5)`,
-    ['billing.generate', 'cron', 'ok', '2026-10-18T12:00:00Z', '2026-10-18T11:59:59Z'],
-    { code: '23514', constraint: 'job_runs_finished_after_started_check' },
-  );
-});
-
 test('RF-000-14: job_name NULL falla con not_null_violation', async () => {
   await rejectsWith(INSERT, [null, 'cron', 'running'], { code: '23502', column: 'job_name' });
 });

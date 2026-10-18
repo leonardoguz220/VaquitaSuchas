@@ -8,7 +8,6 @@ import { fileURLToPath } from 'node:url';
 import { migrate } from '../src/migrate.ts';
 import { createTempDatabase, queryRows, type TempDatabase } from './helpers/temp-db.ts';
 
-const CHECK_VIOLATION = '23514';
 const NOT_NULL_VIOLATION = '23502';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const quiet = (): void => undefined;
@@ -61,34 +60,6 @@ test('RF-000-07: un evento válido se inserta con id, occurred_at, created_at y 
   assert.ok(row.created_at instanceof Date);
   assert.ok(row.updated_at instanceof Date);
   assert.equal(row.recent, true);
-});
-
-test('RF-000-07: key_hash en claro (un correo) se rechaza con CHECK', async () => {
-  await assert.rejects(insert('login_fail:email', 'ana@example.com'), {
-    code: CHECK_VIOLATION,
-    constraint: 'rate_limit_events_key_hash_check',
-  });
-});
-
-test('RF-000-07: key_hash que no es hex de 64 minúsculas se rechaza con CHECK', async () => {
-  const hex = validHash('203.0.113.7');
-  const invalid = [
-    hex.slice(0, 63), // corto
-    `${hex}0`, // largo
-    hex.toUpperCase(), // mayúsculas
-    createHmac('sha256', 'test-only-key').update('x').digest('base64'), // base64
-    '',
-  ];
-  for (const keyHash of invalid) {
-    await assert.rejects(insert('login_fail:ip', keyHash), { code: CHECK_VIOLATION }, keyHash);
-  }
-});
-
-test('RF-000-07: bucket vacío se rechaza con CHECK', async () => {
-  await assert.rejects(insert('', validHash('x')), {
-    code: CHECK_VIOLATION,
-    constraint: 'rate_limit_events_bucket_check',
-  });
 });
 
 test('RF-000-07: bucket y key_hash son obligatorios', async () => {

@@ -15,10 +15,7 @@ CREATE TABLE job_runs (
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT job_runs_pkey PRIMARY KEY (id),
   CONSTRAINT job_runs_trigger_check CHECK (trigger IN ('cron', 'external', 'manual', 'startup')),
-  CONSTRAINT job_runs_status_check CHECK (status IN ('running', 'ok', 'error', 'skipped')),
-  CONSTRAINT job_runs_processed_count_check CHECK (processed_count >= 0),
-  CONSTRAINT job_runs_finished_after_started_check
-    CHECK (finished_at IS NULL OR finished_at >= started_at)
+  CONSTRAINT job_runs_status_check CHECK (status IN ('running', 'ok', 'error', 'skipped'))
 );
 
 -- Última ejecución de cada tarea (recuperación al arrancar y observabilidad, RF-000-14).

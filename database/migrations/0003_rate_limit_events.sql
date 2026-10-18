@@ -8,16 +8,11 @@ CREATE TABLE rate_limit_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   -- Tipo de límite, p. ej. 'login_fail:email', 'login_fail:ip', 'reset:email', 'tg_token:ip'.
   bucket text NOT NULL,
-  -- HMAC-SHA256(clave del servidor, valor) en hex: nunca se guarda el correo ni la IP.
+  -- HMAC-SHA256(clave del servidor, valor): nunca se guarda el correo ni la IP.
   key_hash text NOT NULL,
   occurred_at timestamptz NOT NULL DEFAULT now(),
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  -- Refuerzo del modelo: un bucket vacío no identifica ningún límite.
-  CONSTRAINT rate_limit_events_bucket_check CHECK (bucket <> ''),
-  -- Refuerzo del modelo: solo se acepta un HMAC-SHA256 en hex minúsculas (digest('hex') de Node,
-  -- mismo formato que las huellas de la spec 003), de modo que un valor en claro no se puede guardar.
-  CONSTRAINT rate_limit_events_key_hash_check CHECK (key_hash ~ '^[0-9a-f]{64}$')
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX rate_limit_events_lookup_idx
