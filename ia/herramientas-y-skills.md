@@ -33,7 +33,7 @@ Por ejemplo, `.claude/references/definition-of-done.md` es una guía general, mi
 | `debugging-and-error-recovery` | Búsqueda de la causa raíz cuando algo falla | Todas | Tests o builds que fallan |
 | `performance-optimization` | Consultas SQL, índices y tiempos de carga (requisitos de las specs 006 y 009) | BD, BE, FE | Specs 006 y 009 |
 | `documentation-and-adrs` | Registro de decisiones de arquitectura | Todas | Decisiones técnicas |
-| `source-driven-development` | Verificación contra la documentación oficial antes de implementar | Todas | Uso de NestJS, Next.js, `pg` y Firebase |
+| `source-driven-development` | Verificación contra la documentación oficial antes de implementar | Todas | Uso de NestJS, Next.js, `pg` y Supabase |
 
 ### Agentes (`.claude/agents/`)
 

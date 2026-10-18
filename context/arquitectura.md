@@ -21,7 +21,7 @@ El frontend nunca habla con la base de datos ni calcula reglas de negocio. El ba
 
 ## Backend
 
-Cada módulo del backend (`auth`, `users`, `catalog`, `subscriptions`, `billing`, `notifications`, `reports`, `reputation`, `listings`, `admin`) se divide en cuatro capas.
+Cada módulo del backend (`auth`, `users`, `catalog`, `subscriptions`, `billing`, `notifications`, `reports`, `reputation`, `listings`, `join-requests`, `admin`) se divide en cuatro capas.
 
 ```
 backend/src/
@@ -31,6 +31,7 @@ backend/src/
 │       ├── services/        capa de aplicación: casos de uso, permisos por grupo, transacciones
 │       ├── domain/          capa de dominio: funciones puras (cuotas, conversión, estados, fechas)
 │       └── repositories/    capa de acceso a datos: consultas SQL con `pg`, almacenamiento, correo
+├── app-adapters/            adaptadores que implementan puertos de un módulo con datos de otro
 ├── shared/                  configuración, errores, guards comunes, utilidades
 └── main.ts
 ```
@@ -40,7 +41,7 @@ backend/src/
 | Presentación (`controllers`) | Rutas, DTO con class-validator, guards de rol, Swagger | `services` | Tener reglas de negocio ni consultar la base de datos |
 | Aplicación (`services`) | Casos de uso, comprobación de pertenencia al grupo, transacciones | `domain`, `repositories` | Escribir SQL ni conocer detalles de HTTP |
 | Dominio (`domain`) | Cálculo de cuotas, conversión USD a Bs, redondeo, fechas de cobro, transiciones de estado | Nada del framework ni de la base de datos | Importar NestJS, `pg` ni ningún servicio |
-| Acceso a datos (`repositories`) | Consultas SQL, Firebase Storage, envío de correo | La base de datos y los servicios externos | Aplicar reglas de negocio |
+| Acceso a datos (`repositories`) | Consultas SQL, almacén de archivos (Supabase Storage), bot de Telegram, envío de correo | La base de datos y los servicios externos | Aplicar reglas de negocio |
 
 Las tareas programadas (generación de cobros, marca de atrasos, recordatorios) viven en `services` y se disparan con `@nestjs/schedule`. La lógica que calculan sale de `domain`.
 

@@ -44,7 +44,7 @@ Stack acordado: NestJS + TypeScript, JWT con Passport, bcrypt, class-validator, 
 ## Subida de comprobantes y QR (spec 002, RF-002-06)
 
 - Aceptar solo JPG, PNG o PDF, máximo **5 MB**. Validar tipo real por contenido (no solo por extensión) y tamaño **en el servidor**.
-- Guardar en el almacenamiento privado (Firebase Storage) con nombre generado por el sistema, nunca el nombre original.
+- Guardar en el almacenamiento privado (Supabase Storage, detrás de la interfaz `FileStorage`) con nombre generado por el sistema, nunca el nombre original.
 - Entregar **URL firmada de corta duración**, y solo al titular y al miembro que lo subió.
 - Conservar versiones anteriores del comprobante en el historial del cobro (RF-002-08).
 
