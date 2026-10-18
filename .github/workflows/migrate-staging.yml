@@ -24,6 +24,8 @@ jobs:
   migrate:
     name: db:migrate en staging
     runs-on: ubuntu-latest
+    # Solo desde main: staging nunca recibe migraciones que todavía no están fusionadas.
+    if: github.ref == 'refs/heads/main'
     environment: staging
     timeout-minutes: 10
     steps:

@@ -149,11 +149,11 @@ Las migraciones nunca corren al arrancar el backend. Staging se migra con el wor
 Configuración, una sola vez (la hace una persona con permisos de administración en GitHub):
 
 1. En **Settings → Environments**, crear el entorno `staging` con **Required reviewers** (al menos una persona de otra capa).
-2. En ese entorno, agregar el secreto `STAGING_DATABASE_URL` con la URL **externa** de PostgreSQL de Render (Dashboard → la base → Connect → External Database URL). Nunca se copia en el repositorio.
+2. En ese entorno, agregar el secreto `STAGING_DATABASE_URL` con la URL **externa** de PostgreSQL de Render (Dashboard → la base → Connect → External Database URL), agregando al final `?sslmode=require` porque Render exige TLS en las conexiones externas. Nunca se copia en el repositorio.
 
 Para migrar:
 
-1. **Actions → Migrate staging → Run workflow** sobre `main` (o la rama que se despliega), con `seed` marcado si hace falta cargar el catálogo.
+1. **Actions → Migrate staging → Run workflow** sobre `main` (el workflow se niega a correr desde otra rama), con `seed` marcado si hace falta cargar el catálogo.
 2. Aprobar la ejecución en el entorno `staging`.
 3. Revisar el registro: cada migración aplicada aparece como `Aplicada NNNN_nombre.sql` y el paso de la segunda ejecución debe terminar en verde.
 
