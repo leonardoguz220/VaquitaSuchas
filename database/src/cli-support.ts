@@ -75,6 +75,7 @@ export function libpqEnv(connectionString: string): NodeJS.ProcessEnv {
   const parts = connectionParts(connectionString);
   const env: NodeJS.ProcessEnv = { ...process.env };
   delete env.PGSERVICE;
+  delete env.PGHOSTADDR; // psql usaría esta dirección aunque la URL diga localhost
   env.PGHOST = parts.host || 'localhost';
   env.PGPORT = parts.port;
   if (parts.user) env.PGUSER = parts.user;

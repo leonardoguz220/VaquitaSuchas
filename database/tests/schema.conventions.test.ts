@@ -292,6 +292,13 @@ test('RF-000-07: la prueba revisa las tablas del modelo (no pasa en vacío)', as
   }
 });
 
+test('RN-000-01: la base trabaja en UTC y now() se guarda como el instante UTC', async () => {
+  const [setting] = await rows<{ tz: string }>(client, "SELECT current_setting('TimeZone') AS tz");
+  assert.ok(['UTC', 'Etc/UTC'].includes(setting?.tz ?? ''), `TimeZone es ${setting?.tz}`);
+  const [sample] = await rows<{ offset: string }>(client, "SELECT to_char(now(), 'OF') AS offset");
+  assert.equal(sample?.offset, '+00');
+});
+
 test('RF-000-07: toda tabla tiene PK id uuid DEFAULT gen_random_uuid(), salvo las de clave natural', async () => {
   assert.deepEqual(await primaryKeyViolations(client), []);
 });
