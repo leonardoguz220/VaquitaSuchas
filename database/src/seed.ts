@@ -176,7 +176,12 @@ async function main(): Promise<void> {
       seedsDir: defaultSeedsDir(),
       log: (line) => process.stdout.write(`${line}\n`),
     });
-    process.stdout.write(`Seed: ${result.applied.length} archivos aplicados.\n`);
+    const catalog = result.catalog
+      ? `${result.catalog.services} servicios, ${result.catalog.plans} planes`
+      : 'sin catalog.json';
+    process.stdout.write(
+      `Seed: ${result.applied.length} archivos aplicados; catálogo: ${catalog}.\n`,
+    );
   } catch (error) {
     if (error instanceof SeedError) {
       process.stderr.write(`Error en ${error.file}: ${error.message}\n`);
