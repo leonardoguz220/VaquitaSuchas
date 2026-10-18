@@ -14,12 +14,29 @@ export const PUBLIC_ROUTES = ['/ingresar', '/registro', '/recuperar', '/estado']
 
 export type PublicRoute = (typeof PUBLIC_ROUTES)[number];
 
+/** Pantalla de desarrollo del bot de Telegram (plan 003 §6, spec 003 T024). */
+export const DEV_TELEGRAM_PATH = '/dev/telegram';
+
+/**
+ * Indica si el bot corre en modo de desarrollo (`NEXT_PUBLIC_TELEGRAM_MODE=dev`). Next.js
+ * reemplaza la variable al compilar; se lee en cada llamada para poder probar ambos casos.
+ */
+export function isTelegramDevMode(): boolean {
+  return process.env.NEXT_PUBLIC_TELEGRAM_MODE === 'dev';
+}
+
+function matchesRoute(pathname: string, route: string): boolean {
+  return pathname === route || pathname.startsWith(`${route}/`);
+}
+
 /**
  * Indica si `pathname` es una ruta pública o una subruta de ella
  * (`/registro/verificar`, `/recuperar/<token>`), sin aceptar prefijos falsos (`/registrox`).
+ * `/dev/telegram` es pública solo en modo de desarrollo del bot; no está en `PUBLIC_ROUTES`.
  */
 export function isPublicPath(pathname: string): boolean {
-  return PUBLIC_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+  if (PUBLIC_ROUTES.some((route) => matchesRoute(pathname, route))) return true;
+  return isTelegramDevMode() && matchesRoute(pathname, DEV_TELEGRAM_PATH);
 }
 
 /**
@@ -31,6 +48,9 @@ export function buildLoginRedirect(pathname: string, search: string): string {
   const params = new URLSearchParams({ [NEXT_PARAM]: `${pathname}${search}` });
   return `${LOGIN_PATH}?${params.toString()}`;
 }
+
+/** Paso 1 del registro: los datos de la cuenta (spec 003 T023). */
+export const REGISTER_PATH = '/registro';
 
 /** Paso 2 del registro: verificar el celular con Telegram (spec 003 T024). */
 export const REGISTER_VERIFY_PATH = '/registro/verificar';
