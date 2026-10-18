@@ -1,6 +1,6 @@
 import { formatDateLaPaz, formatDateTimeLaPaz, lapazDayOf } from './dates';
 
-describe('formatDateTimeLaPaz', () => {
+describe('formatDateTimeLaPaz (RF-000-17)', () => {
   it('CA-000-12 muestra las 02:00 UTC del día 1 como las 22:00 del día anterior en La Paz', () => {
     expect(formatDateTimeLaPaz('2026-02-01T02:00:00Z')).toBe('31 ene 2026, 22:00');
   });

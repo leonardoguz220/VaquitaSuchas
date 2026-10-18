@@ -1,6 +1,6 @@
 import { formatBs, formatUsd, parse, parseBsToCents } from './money';
 
-describe('formatBs', () => {
+describe('formatBs (RF-000-17)', () => {
   it('CA-000-11 formatea 250050 centavos como Bs 2.500,50', () => {
     expect(formatBs(250050)).toBe('Bs 2.500,50');
   });
@@ -45,20 +45,20 @@ describe('formatBs', () => {
 });
 
 describe('formatUsd', () => {
-  it('CA-000-11 formatea centavos de dólar con el mismo formato boliviano', () => {
+  it('RF-000-17 formatea centavos de dólar con el mismo formato boliviano', () => {
     expect(formatUsd(1799)).toBe('USD 17,99');
     expect(formatUsd(0)).toBe('USD 0,00');
     expect(formatUsd(123456)).toBe('USD 1.234,56');
   });
 
-  it('CA-000-11 rechaza montos en dólares no enteros o negativos', () => {
+  it('RF-000-17 rechaza montos en dólares no enteros o negativos', () => {
     expect(() => formatUsd(17.99)).toThrow(RangeError);
     expect(() => formatUsd(-1)).toThrow(RangeError);
   });
 });
 
 describe('parseBsToCents', () => {
-  it('CA-000-11 convierte un texto en formato boliviano a centavos enteros', () => {
+  it('RF-000-17 convierte un texto en formato boliviano a centavos enteros', () => {
     expect(parseBsToCents('25,50')).toBe(2550);
     expect(parseBsToCents('2.500,50')).toBe(250050);
     expect(parseBsToCents('1.234,5')).toBe(123450);
@@ -68,19 +68,19 @@ describe('parseBsToCents', () => {
     expect(parseBsToCents('1.234.567,89')).toBe(123456789);
   });
 
-  it('CA-000-11 acepta el prefijo Bs y espacios alrededor', () => {
+  it('RF-000-17 acepta el prefijo Bs y espacios alrededor', () => {
     expect(parseBsToCents('Bs 25,50')).toBe(2550);
     expect(parseBsToCents('bs25,50')).toBe(2550);
     expect(parseBsToCents('  Bs 2.500,50  ')).toBe(250050);
   });
 
-  it('CA-000-11 es inverso de formatBs', () => {
+  it('RF-000-17 es inverso de formatBs', () => {
     for (const cents of [0, 5, 2550, 100000, 250050, 123456789]) {
       expect(parseBsToCents(formatBs(cents))).toBe(cents);
     }
   });
 
-  it('CA-000-11 devuelve null para textos inválidos', () => {
+  it('RF-000-17 devuelve null para textos inválidos', () => {
     const invalid = [
       '',
       '   ',
@@ -104,7 +104,7 @@ describe('parseBsToCents', () => {
     }
   });
 
-  it('CA-000-11 exporta parse como alias de parseBsToCents (plan §6)', () => {
+  it('RF-000-17 exporta parse como alias de parseBsToCents (plan §6)', () => {
     expect(parse).toBe(parseBsToCents);
   });
 });
