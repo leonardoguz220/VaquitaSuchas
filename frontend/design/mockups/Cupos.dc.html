@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Cupos libres</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid #D9DDD7; background: #FFFFFF">
+    <a href="Grupos.dc.html" style="display: flex; align-items: center; gap: 10px; color: #17201C; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#1E6B4E"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#F5F6F2" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#F5F6F2"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">vaquita</span>
+    </a>
+    <nav aria-label="Principal" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="Grupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis suscripciones</a>
+      <a href="MisCobros.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
+      <a href="Solicitudes.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis solicitudes</a>
+      <a href="Cupos.dc.html" aria-current="page" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; background: #E3F1EA; color: #14503A; font-weight: 700; text-decoration: none">Cupos libres</a>
+    </nav>
+    <a href="Perfil.dc.html" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1180px; margin: 0 auto; padding: 36px 32px 48px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 40px; letter-spacing: -1px">Cupos libres</h1>
+      <p style="margin: 0; font-size: 17px; color: #4F5A55">Grupos que buscan miembros. Solo puedes pedir un cupo durante su ventana de ingreso.</p>
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end">
+      <select aria-label="Servicio" style="height: 46px; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 12px; font: inherit; background: #FFFFFF; color: #17201C"><option selected>Todos los servicios</option><option>Netflix</option><option>Spotify</option><option>Prime Video</option><option>YouTube Premium</option></select>
+      <select aria-label="Categoría" style="height: 46px; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 12px; font: inherit; background: #FFFFFF; color: #17201C"><option selected>Todas las categorías</option><option>Video</option><option>Música</option></select>
+      <select aria-label="Cuota" style="height: 46px; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 12px; font: inherit; background: #FFFFFF; color: #17201C"><option selected>Cualquier cuota</option><option>Hasta Bs 15</option><option>Hasta Bs 25</option></select>
+      <select aria-label="Ordenar" style="height: 46px; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 12px; font: inherit; background: #FFFFFF; color: #17201C"><option selected>Menor cuota primero</option><option>Ventana más próxima</option><option>Más recientes</option></select>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px">
+      <sc-for list="{{listings}}" as="l" hint-placeholder-count="4">
+        <a href="Cupo.dc.html" style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 14px; color: #17201C; text-decoration: none">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <span aria-hidden="true" style="width: 46px; height: 46px; border-radius: 12px; background: {{l.tile}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px">{{l.initial}}</span>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><strong style="font-size: 17px">{{l.service}}</strong><span style="font-size: 14px; color: #4F5A55">{{l.slots}} · cobro el día {{l.day}}</span></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 14px; color: #4F5A55">Cuota estimada</span><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px">{{l.quota}}</span></div>
+          <div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14px; padding-top: 12px; border-top: 1px solid #EEF0EC">
+            <span>Titular: <strong>{{l.host}}</strong> · {{l.level}}</span>
+            <span style="border-radius: 999px; padding: 2px 10px; font-weight: 700; background: {{l.wbg}}; color: {{l.wfg}}">{{l.window}}</span>
+          </div>
+        </a>
+      </sc-for>
+    </div>
+    <div style="display: flex; justify-content: center"><button type="button" style="min-height: 46px; padding: 0 22px; border-radius: 12px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; font-weight: 700; cursor: pointer">Cargar más</button></div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const open = (t) => ({ window: t, wbg: '#D7EFE2', wfg: '#17573F' });
+    const later = (t) => ({ window: t, wbg: '#E6E7E9', wfg: '#3F4650' });
+    return {
+      listings: [
+        { initial: 'P', tile: '#0F5E8C', service: 'Prime Video · Estándar', slots: '2 cupos', day: '18', quota: 'Bs 9,30', host: 'Valeria Choque', level: '★ 5 Excelente', ...open('Abierta hasta el 20 oct.') },
+        { initial: 'S', tile: '#14743A', service: 'Spotify · Familiar', slots: '1 cupo', day: '17', quota: 'Bs 19,40', host: 'Rodrigo Salazar', level: '★ 4,5 Bueno', ...open('Abierta hasta el 19 oct.') },
+        { initial: 'Y', tile: '#B42318', service: 'YouTube Premium · Familiar', slots: '3 cupos', day: '1', quota: 'Bs 14,60', host: 'Marco Vargas', level: '★ 5 Excelente', ...later('Se abre el 1 nov.') },
+        { initial: 'N', tile: '#A4161A', service: 'Netflix · Premium', slots: '1 cupo', day: '10', quota: 'Bs 32,00', host: 'Sofía Mamani', level: '★ 4 Bueno', ...later('Se abre el 10 nov.') }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

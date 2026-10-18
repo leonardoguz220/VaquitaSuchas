@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita Admin · Reclamo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; background: #17201C; color: #F5F6F2">
+    <a href="AdminPanel.dc.html" style="display: flex; align-items: center; gap: 10px; color: #F5F6F2; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#F5F6F2"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#1E6B4E" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#1E6B4E"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 22px">vaquita <span style="font-size: 14px; font-weight: 600; color: #C5CEC9">admin</span></span>
+    </a>
+    <nav aria-label="Administración" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="AdminUsuarios.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Usuarios</a>
+      <a href="AdminReclamo.dc.html" aria-current="page" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; gap: 8px; border-radius: 10px; background: #2E3A35; color: #FFFFFF; font-weight: 700; text-decoration: none">Reclamos <span style="min-width: 22px; height: 22px; border-radius: 999px; background: #B42318; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span></a>
+      <a href="AdminTitulares.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Titulares</a>
+      <a href="AdminAuditoria.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Auditoría</a>
+      <a href="AdminCatalogo.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Catálogo</a>
+      <a href="AdminModeracion.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Moderación</a>
+    </nav>
+    <span aria-label="Administradora: Camila Fuentes" style="width: 44px; height: 44px; border-radius: 999px; background: #E3F1EA; color: #14503A; display: flex; align-items: center; justify-content: center; font-weight: 700">CF</span>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1240px; margin: 0 auto; padding: 28px 32px 48px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+    <nav aria-label="Cola de reclamos" style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+      <h1 style="margin: 0 0 6px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 28px">Reclamos</h1>
+      <sc-for list="{{queue}}" as="q" hint-placeholder-count="3">
+        <a href="#" aria-current="{{q.current}}" style="background: {{q.bg}}; border: {{q.border}}; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 4px; color: #17201C; text-decoration: none">
+          <span style="display: flex; justify-content: space-between; gap: 8px"><strong style="font-size: 15px">{{q.type}}</strong><span style="font-size: 13px; font-weight: 700; color: {{q.statusColor}}">{{q.status}}</span></span>
+          <span style="font-size: 14px; color: #4F5A55">{{q.parties}}</span>
+          <span style="font-size: 13px; color: #4F5A55">{{q.date}}</span>
+        </a>
+      </sc-for>
+    </nav>
+    <div style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+      <section style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap"><h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px">Pago sin ingreso · Crunchyroll anime</h2><span style="border-radius: 999px; padding: 3px 12px; font-size: 14px; font-weight: 700; background: #FCEBC7; color: #7A4B00">Abierto</span></div>
+        <p style="margin: 0; font-size: 15px; color: #4F5A55">Abrió <strong style="color: #17201C">Ana Quispe</strong> (solicitante) contra <strong style="color: #17201C">Kevin Rojas</strong> (titular) · 17 oct. 09:12 · Cuota cotizada Bs 12,00 · Ref. TRF-554210</p>
+        <div role="note" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #FCEBC7; color: #5C3900; border-radius: 12px; padding: 10px 14px; font-size: 14px"><span style="flex: 1; min-width: 200px">Ver la evidencia abre el chat y el comprobante privados. <strong>Esta apertura queda registrada en auditoría.</strong></span><span style="font-weight: 700">Evidencia abierta por ti · 10:04</span></div>
+      </section>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+        <section aria-labelledby="chat" style="flex: 1 1 340px; min-width: 0; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+          <h3 id="chat" style="margin: 0; font-size: 16px">Chat (solo lectura)</h3>
+          <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px">
+            <li><strong>Ana · 19:41</strong> Hola, ¿tienes cupo en Crunchyroll?</li>
+            <li><strong>Kevin · 20:01</strong> Sí, te paso el QR.</li>
+            <li style="color: #4F5A55">— Kevin envió los datos de pago · 20:02 —</li>
+            <li><strong>Ana · 20:11</strong> Listo, ya pagué y subí el comprobante.</li>
+            <li style="color: #4F5A55">— Expirada: el titular no respondió · 21:10 —</li>
+          </ol>
+        </section>
+        <section aria-labelledby="pruebas" style="flex: 1 1 300px; min-width: 0; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+          <h3 id="pruebas" style="margin: 0; font-size: 16px">Comprobante y evidencia</h3>
+          <div style="display: flex; gap: 10px">
+            <div role="img" aria-label="Comprobante de pago de Ana" style="flex: 1; height: 120px; border-radius: 10px; background: #E9ECE7; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; color: #4F5A55; padding: 8px">Comprobante · 16 oct. 20:10</div>
+            <div role="img" aria-label="Captura del banco adjunta por Ana" style="flex: 1; height: 120px; border-radius: 10px; background: #E9ECE7; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; color: #4F5A55; padding: 8px">Captura del banco (Ana)</div>
+          </div>
+          <p style="margin: 0; font-size: 14px"><strong>Ana:</strong> «Le pagué Bs 12,00 por QR el 16 de octubre y subí el comprobante a tiempo. No confirmó ni respondió…»</p>
+          <p style="margin: 0; font-size: 14px"><strong>Respuesta de Kevin:</strong> «No vi el aviso a tiempo. Reviso mi banco y no encuentro ese pago.»</p>
+        </section>
+      </div>
+      <form aria-labelledby="resolver" style="background: #FFFFFF; border: 1.5px solid #17201C; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+        <h3 id="resolver" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px">Resolver</h3>
+        <fieldset style="margin: 0; padding: 0; border: 0; display: flex; gap: 12px; flex-wrap: wrap">
+          <legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Resultado</legend>
+          <label style="flex: 1 1 240px; display: flex; gap: 12px; align-items: flex-start; border: 1.5px solid #D9DDD7; border-radius: 14px; padding: 14px; cursor: pointer"><input type="radio" name="res" style="width: 20px; height: 20px; margin: 2px 0 0; accent-color: #9B1C12"><span><strong>Estafa confirmada</strong><br><span style="font-size: 14px; color: #4F5A55">Se banea a Kevin (titular) y se bloquean su correo, celular, CI y Telegram. Sus grupos quedan en solo lectura.</span></span></label>
+          <label style="flex: 1 1 240px; display: flex; gap: 12px; align-items: flex-start; border: 2px solid #1E6B4E; background: #F3F8F5; border-radius: 14px; padding: 14px; cursor: pointer"><input type="radio" name="res" checked="" style="width: 20px; height: 20px; margin: 2px 0 0; accent-color: #1E6B4E"><span><strong>Sin falta</strong><br><span style="font-size: 14px; color: #4F5A55">No se sanciona a nadie. Las dos partes ven la decisión y el motivo.</span></span></label>
+        </fieldset>
+        <label for="motivo" style="font-weight: 700; font-size: 15px">Motivo (de 10 a 300 caracteres, lo verán ambas partes)</label>
+        <textarea id="motivo" rows="2" style="box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 10px 14px; font: inherit; font-size: 15px; color: #17201C; resize: vertical"></textarea>
+        <div style="display: flex; justify-content: flex-end"><button type="button" style="min-height: 50px; padding: 0 26px; border: 0; border-radius: 12px; background: #17201C; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">Resolver reclamo</button></div>
+      </form>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      queue: [
+        { type: 'Pago sin ingreso', status: 'Abierto', statusColor: '#7A4B00', parties: 'Ana Quispe contra Kevin Rojas', date: '17 oct. · Crunchyroll anime', current: 'page', bg: '#FFFFFF', border: '2px solid #17201C' },
+        { type: 'Comprobante falso', status: 'Abierto', statusColor: '#7A4B00', parties: 'Valeria Choque contra Jorge Calle', date: '15 oct. · Prime Video casa', current: 'false', bg: '#FFFFFF', border: '1px solid #D9DDD7' },
+        { type: 'Pago sin ingreso', status: 'Resuelto', statusColor: '#4F5A55', parties: 'Bruno Paz contra Iván Céspedes', date: '2 oct. · sin falta', current: 'false', bg: '#F5F6F2', border: '1px solid #D9DDD7' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

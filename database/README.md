@@ -122,7 +122,9 @@ Cada restricción tiene una prueba que intenta violarla, y cada prueba cita en s
 | `schema.conventions.test.ts`            | Toda tabla salvo `schema_migrations` tiene `id uuid`, `created_at` y `updated_at`; ninguna columna `float`, `real`, `double precision` ni `timestamp without time zone`; los estados usan `text` + `CHECK` (RF-000-07, RN-000-01) |
 | `append_only.triggers.test.ts`          | `UPDATE` y `DELETE` sobre `rate_limit_events` fallan (RF-000-07)                                                                                                                                                                  |
 | `numbering.check`                       | Prefijos únicos y de 4 dígitos, nombres válidos y ninguna migración editada respecto de `main` (RN-000-02, spec 000 §8)                                                                                                           |
-| `seed` y `reset`                        | El seed es idempotente y no trae contraseñas; `db:reset` recrea el esquema y siembra (RF-000-06)                                                                                                                                  |
+| `seed.test.ts`                          | El seed se aplica en orden y en una transacción, es idempotente, nombra el archivo que falla y rechaza contraseñas (RF-000-06, RF-009-02)                                                                                         |
+| `reset.test.ts`                         | `db:reset` recrea el esquema, migra y siembra, y se niega con un host remoto o en producción (RF-000-06)                                                                                                                          |
+| `backup.test.ts`                        | `db:dump` y `db:restore` llevan una base migrada con datos a otra, restore es todo o nada y se niega con un host remoto (RF-000-06)                                                                                               |
 
 ## 6. Seed
 
@@ -130,6 +132,15 @@ Cada restricción tiene una prueba que intenta violarla, y cada prueba cita en s
 - Es idempotente: correr `npm run db:seed` dos veces deja el mismo resultado.
 - No hay contraseñas en el repositorio. El administrador de desarrollo se crea con `npm run seed:admin -w backend` (T027), que reutiliza el hash del backend y solo funciona si `NODE_ENV` no es `production` y existen `SEED_ADMIN_EMAIL` y `SEED_ADMIN_PASSWORD` (RF-009-02).
 - Los precios del catálogo se verifican con fuentes oficiales.
+- `npm run db:seed` ejecuta `seeds/NNNN_nombre.sql` en orden numérico y todos en una sola transacción: si uno falla no queda nada sembrado y el error nombra el archivo. Antes de ejecutar rechaza cualquier archivo que mencione `password` fuera de comentarios. Las reglas para escribir seeds están en [`seeds/README.md`](seeds/README.md).
+
+### Reinicio y respaldo
+
+- `npm run db:reset` borra y recrea el esquema `public` (dueño `pg_database_owner` y `USAGE` para `PUBLIC`, como lo deja PostgreSQL 15+), aplica las migraciones (`0001_init.sql` vuelve a crear `unaccent`) y siembra. Se niega si el host no es `localhost`, `127.0.0.1`, `::1`, `db` o `postgres`, o si `NODE_ENV=production`.
+- `npm run db:dump [-- backups/archivo.sql]` escribe un respaldo en SQL plano (`--no-owner --no-privileges --clean --if-exists`), por defecto en `database/backups/vaquita-<fecha UTC>.sql`. La carpeta `backups/` no se sube. Sirve también para respaldar staging antes de que caduque la base gratuita de Render (riesgo R-01), con su `DATABASE_URL` solo en el entorno de la terminal.
+- `npm run db:restore -- backups/archivo.sql` lo aplica con `psql -v ON_ERROR_STOP=1 --single-transaction` (todo o nada), sobre una base vacía o ya migrada. Si el destino es PostgreSQL 16 se quita la línea `SET transaction_timeout = 0;` que escribe `pg_dump` 17 o posterior.
+- `db:restore` se niega contra un host que no es local. Staging lo restaura a mano una persona del equipo: exporta la `DATABASE_URL` de staging solo en su terminal (nunca en el repositorio) y agrega `--allow-remote`.
+- Si `pg_dump` o `psql` no están en el PATH y la base es local, se usan los del contenedor `db` (`docker compose exec -T db ...`), que respaldan y restauran la base de ese contenedor.
 
 ## 7. Migrar staging (T044, RF-000-21)
 
