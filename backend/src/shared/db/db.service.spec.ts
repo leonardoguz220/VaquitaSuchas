@@ -168,7 +168,7 @@ describe('DbService', () => {
         return Promise.resolve();
       });
 
-      expect(() => leaked?.query('SELECT 1')).toThrow(/finalizó/);
+      await expect(leaked?.query('SELECT 1')).rejects.toThrow(/finalizó/);
       expect(queriesOf(client)).toEqual(['BEGIN', 'COMMIT']);
     });
 

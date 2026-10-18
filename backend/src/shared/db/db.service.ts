@@ -29,7 +29,8 @@ class ClientTransaction implements DbTransaction {
 
   constructor(private readonly client: PoolClient) {}
 
-  query<R extends QueryResultRow = QueryResultRow>(
+  // `async` para que el uso tardío sea un rechazo de la promesa y no una excepción síncrona.
+  async query<R extends QueryResultRow = QueryResultRow>(
     text: string,
     params?: unknown[],
   ): Promise<QueryResult<R>> {
