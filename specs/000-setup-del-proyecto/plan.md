@@ -92,10 +92,10 @@ backend/
 │   │   ├── config/                  # env.validation.ts (RF-000-08), config.service
 │   │   ├── errors/                  # DomainError, AllExceptionsFilter (RF-000-11)
 │   │   ├── logging/                 # pino + request-id + redacción (RF-000-13)
-│   │   ├── guards/                  # AuthGuard, AdminGuard, JobsTokenGuard (los de grupo viven en modulo subscriptions)
+│   │   ├── guards/                  # AuthGuard, AdminGuard, JobsTokenGuard, verificador JWT HS256 y comparación en tiempo constante (los de grupo viven en modulo subscriptions)
 │   │   ├── clock/                   # Clock (system / fake)
 │   │   ├── db/                      # DbService (pool pg, transacciones, helpers)
-│   │   ├── ports/                   # MailService, TelegramGateway, FileStorage (interfaces + dev/prod)
+│   │   ├── ports/                   # MailService, TelegramGateway, FileStorage (interfaces + dev/prod) y AuthSessionPort (lo implementa la spec 003)
 │   │   └── jobs/                    # JobsModule, registro de tareas, tick, bloqueo asesor, job_runs
 │   ├── modules/
 │   │   ├── health/                  # GET /health
@@ -109,6 +109,7 @@ backend/
 
 - **Validación de entorno (RF-000-08, CA-000-05):** clase `EnvVars` con `class-validator`; `validateEnv()` reúne **todos** los errores y falla en el arranque con un mensaje que lista las variables faltantes. Variables obligatorias: `NODE_ENV`, `PORT`, `DATABASE_URL`, `JWT_SECRET`, `FINGERPRINT_KEY` (huellas de baneo y límites), `CI_ENCRYPTION_KEY`, `JOBS_TOKEN`, `MAIL_MODE`, `TELEGRAM_MODE`, `STORAGE_DRIVER`, y las del modo `prod` correspondiente (`RESEND_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, credenciales del almacén). `.env.example` las lista sin valores reales (RF-000-03).
 - **`/health` (RF-000-09):** consulta `SELECT 1` con tiempo máximo de 2 s; nunca lanza; no devuelve texto de errores de la base.
+- **Guards (RF-000-11, `contracts/api.md` A.4; T032):** `AuthGuard` verifica el JWT HS256 (`Authorization: Bearer`; claims `sub`, `sv`, `iat`, `exp`) con `node:crypto`, fijando el algoritmo en el código, y delega en el puerto `AuthSessionPort` (`shared/ports/`, token `AUTH_SESSION_PORT`) la comprobación de `session_version` vigente y usuario `activo` y verificado, porque `users` llega con la spec 003, que aporta el adaptador y `SessionService.issue`. `AdminGuard` va **después** de `AuthGuard` (`@UseGuards(AuthGuard, AdminGuard)`): sin usuario responde `401`, con otro rol `403`. `JobsTokenGuard` compara `X-Jobs-Token` en tiempo constante y responde `401`. Todo fallo de autenticación devuelve el mismo `401` sin decir el motivo. **Pendiente de acordar entre las tres capas:** `context/stack.md` y el plan de 003 mencionan Passport, y esta implementación no lo usa (JWT propio con `node:crypto`); no se editan aquí porque cambian el stack acordado.
 - **Filtro de errores (RF-000-11):** convierte `DomainError(code, httpStatus, message, details)`, excepciones de `class-validator` (→ `VALIDATION_ERROR`), violaciones de unicidad de PostgreSQL (código `23505` → `CONFLICT`) y cualquier otra en `INTERNAL_ERROR` genérico. Registra la traza **solo en el log**, nunca en la respuesta.
 - **Logs (RF-000-13):** `nestjs-pino`; `reqId` por petición; redacción de `req.headers.authorization`, `req.headers.cookie`, `*.password`, `*.token`, `*.ci`, `*.phone`, `*.reference` y cuerpos `multipart`.
 - **Puertos (RF-000-12, RF-000-22, R3):**
