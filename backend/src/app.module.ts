@@ -6,6 +6,7 @@ import { validateEnv } from './shared/config/env.validation.js';
 import { DbModule } from './shared/db/db.module.js';
 import { ErrorsModule } from './shared/errors/errors.module.js';
 import { EventsModule } from './shared/events/events.module.js';
+import { JobsModule } from './shared/jobs/jobs.module.js';
 
 @Module({
   imports: [
@@ -14,6 +15,8 @@ import { EventsModule } from './shared/events/events.module.js';
     ClockModule,
     DbModule,
     EventsModule,
+    // Tareas programadas: registro, runner y cron interno opcional (RF-000-14).
+    JobsModule,
     // Filtro global de errores y ValidationPipe (RF-000-11).
     ErrorsModule,
     HealthModule,
