@@ -33,6 +33,7 @@ Capas afectadas: BD (Camila), BE (Leonardo) y FE (Adrian).
 | P18 | ¿Cuotas desiguales entre miembros? | BE, FE | Propuesta. No en esta versión: división equitativa (spec 001, fuera de alcance) |
 | P19 | ¿Cuánto tiempo se guardan los comprobantes? | BD, BE | Propuesta. 12 meses tras cerrar el grupo (spec 002, §11) |
 | P20 | ¿Se puede pagar por adelantado o en partes? | BE | Propuesta. No (spec 002, fuera de alcance) |
+| P33 | ¿Hay un plazo máximo de atraso y qué pasa si un miembro nunca paga? | BE, BD, FE | Propuesta. Sin acciones automáticas; aviso al titular a los 30 días o con 2 cobros atrasados, y total adeudado por miembro visible (spec 002, sección 11) |
 | P23 | ¿El titular ve el historial de miembros que ya salieron? | BD | Propuesta. Sí (spec 002, §11) |
 
 ## Usuarios y catálogo (specs 003 y 004)

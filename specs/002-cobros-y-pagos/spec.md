@@ -165,6 +165,7 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - [RESUELTO 2026-10-17] Datos de pago: texto + imagen de QR en la suscripción (RF-002-09, spec 001 RF-001-20).
 - [NECESITA ACLARACIÓN] ¿El titular debe poder ver el comprobante de un miembro ya quitado del grupo? (propuesta: sí).
 - [NECESITA ACLARACIÓN] ¿Cuánto tiempo se conservan los comprobantes tras cerrar el grupo? (propuesta: 12 meses).
+- [NECESITA ACLARACIÓN] **Atrasos prolongados y cobros que nunca se pagan** (P33). La spec no fija un plazo máximo: un cobro `atrasado` sigue así hasta que se paga, el titular registra el pago manual o lo cancela, y cada mes se genera un cobro nuevo mientras la persona siga en el grupo. **Propuesta:** sin acciones automáticas sobre la cuenta ni los cobros; la decisión es del titular. El titular recibe un aviso cuando un miembro cumple 30 días de atraso o acumula 2 cobros atrasados, con la sugerencia de cancelar o quitar al miembro; el resumen del grupo muestra el total adeudado por miembro; al quitar a un miembro, sus cobros sin pagar siguen visibles como deuda hasta que se paguen o el titular los cancele.
 
 ## 12. Historial de cambios
 
@@ -173,3 +174,4 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 | 2026-10-17 | Primer borrador | Leonardo Guzman |
 | 2026-10-17 | Se resuelven: 3 días de gracia y datos de pago en la suscripción | Equipo (ronda 1 de preguntas) |
 | 2026-10-17 | Se fija `403` (miembro sin permiso) y `404` (no pertenece al grupo) para comprobantes ajenos: CA-002-13 y CA-002-23 | Equipo |
+| 2026-10-17 | Se registra la pregunta abierta sobre atrasos prolongados y cobros impagos | Equipo |
