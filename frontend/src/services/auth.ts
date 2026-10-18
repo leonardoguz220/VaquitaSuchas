@@ -86,3 +86,44 @@ export function login(input: LoginRequest): Promise<LoginResponse> {
 export function getMe(): Promise<UserSelf> {
   return apiRequest<UserSelf>('/api/auth/me');
 }
+
+/** Códigos de `rejected` en `GET /auth/register/status`. */
+export type RegisterRejectedCode =
+  | 'REGISTRATION_NOT_ALLOWED'
+  | 'PHONE_NOT_BOLIVIAN'
+  | 'PHONE_ALREADY_REGISTERED'
+  | 'TELEGRAM_ALREADY_REGISTERED';
+
+/**
+ * Respuesta 200 de `GET /auth/register/status` tal como llega al navegador. En `verified` el
+ * proxy ya guardó `sessionToken` en la cookie `vq_session` y lo quitó del cuerpo (contrato 000 C).
+ */
+export type RegisterStatusResponse =
+  | { status: 'pending'; expiresAt: string }
+  | { status: 'expired' }
+  | { status: 'rejected'; code: RegisterRejectedCode }
+  | { status: 'verified'; user: UserSelf };
+
+/**
+ * `GET /auth/register/status` (RF-003-21). El proxy agrega `X-Registration-Secret` desde la
+ * cookie `vq_reg`. Lanza `ApiError` `401` si no hay registro activo.
+ */
+export function getRegisterStatus(): Promise<RegisterStatusResponse> {
+  return apiRequest<RegisterStatusResponse>('/api/auth/register/status');
+}
+
+/** Respuesta 200 de `POST /auth/register/link`. */
+export interface RegisterLinkResponse {
+  verification: RegisterVerification;
+}
+
+/** Códigos de error propios de `POST /auth/register/link`. */
+export type RegisterLinkErrorCode = 'RATE_LIMITED' | 'UNAUTHENTICATED' | 'ALREADY_VERIFIED';
+
+/**
+ * `POST /auth/register/link` (RF-003-21): pide un enlace nuevo; los anteriores dejan de servir.
+ * Lanza `ApiError` `429 RATE_LIMITED`, `401` o `409 ALREADY_VERIFIED`.
+ */
+export function requestRegisterLink(): Promise<RegisterLinkResponse> {
+  return apiRequest<RegisterLinkResponse>('/api/auth/register/link', { method: 'POST' });
+}

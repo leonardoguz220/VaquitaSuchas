@@ -1,10 +1,14 @@
 import {
   getMe,
+  getRegisterStatus,
   login,
   register,
+  requestRegisterLink,
   type LoginResponse,
+  type RegisterLinkResponse,
   type RegisterRequest,
   type RegisterResponse,
+  type RegisterStatusResponse,
   type UserSelf,
 } from './auth';
 import { ApiError, apiRequest } from './http';
@@ -31,6 +35,8 @@ const user: UserSelf = {
 beforeEach(() => mockedRequest.mockReset());
 
 describe('services/auth (contrato 003, POST /auth/register)', () => {
+  beforeEach(() => mockedRequest.mockReset());
+
   it('RF-003-01: register hace POST /api/auth/register con el cuerpo exacto del contrato', async () => {
     // Lo que llega al navegador: el proxy ya quitó registrationSecret (contrato 000 C).
     const response: RegisterResponse = {
@@ -84,5 +90,33 @@ describe('services/auth (contrato 003, sesión)', () => {
     const error = new ApiError(401, 'UNAUTHENTICATED', 'Inicia sesión.');
     mockedRequest.mockRejectedValue(error);
     await expect(getMe()).rejects.toBe(error);
+  });
+});
+
+describe('services/auth (contrato 003, verificación por Telegram)', () => {
+  beforeEach(() => mockedRequest.mockReset());
+
+  it.each<RegisterStatusResponse>([
+    { status: 'pending', expiresAt: '2026-10-18T17:10:00.000Z' },
+    { status: 'expired' },
+    { status: 'rejected', code: 'PHONE_NOT_BOLIVIAN' },
+    // Lo que llega al navegador: el proxy ya quitó sessionToken (contrato 000 C).
+    { status: 'verified', user },
+  ])('RF-003-21: getRegisterStatus hace GET /api/auth/register/status ($status)', async (body) => {
+    mockedRequest.mockResolvedValue(body);
+    await expect(getRegisterStatus()).resolves.toEqual(body);
+    expect(mockedRequest).toHaveBeenCalledWith('/api/auth/register/status');
+  });
+
+  it('RF-003-21: requestRegisterLink hace POST /api/auth/register/link sin cuerpo', async () => {
+    const response: RegisterLinkResponse = {
+      verification: {
+        telegramUrl: 'https://t.me/vaquita_bot?start=nuevo456',
+        expiresAt: '2026-10-18T17:20:00.000Z',
+      },
+    };
+    mockedRequest.mockResolvedValue(response);
+    await expect(requestRegisterLink()).resolves.toEqual(response);
+    expect(mockedRequest).toHaveBeenCalledWith('/api/auth/register/link', { method: 'POST' });
   });
 });
