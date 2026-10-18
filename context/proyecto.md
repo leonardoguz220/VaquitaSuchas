@@ -14,7 +14,7 @@ Grupo Suchas. Los roles son fijos y corresponden a una capa del sistema. El deta
 
 ## Objetivo del MVP
 
-Un titular crea una suscripción compartida, invita a los miembros y gestiona los pagos mensuales. Quien quiere entrar abre una solicitud con el código, conversa con el titular en un chat, paga y entra cuando el titular confirma su pago. Cada miembro ve su cuota y sube su comprobante; el titular confirma o rechaza el pago; el historial queda disponible para todo el grupo.
+Un titular crea una suscripción compartida, invita a los miembros y gestiona los pagos mensuales. Quien quiere entrar abre una solicitud con el código durante los 3 primeros días del período de cobro, conversa con el titular en un chat, paga y entra cuando el titular confirma su pago. Quien no paga a tiempo es retirado del grupo. Cada miembro ve su cuota y sube su comprobante; el titular confirma o rechaza el pago; el historial queda disponible para todo el grupo.
 
 ## Alcance
 

@@ -25,9 +25,11 @@ Fuentes: `context/dominio.md`, `specs/001-suscripciones-compartidas/spec.md` (RN
 5. **Snapshot:** cada cobro guarda monto, precio original y moneda, tipo de cambio, nº de miembros, período `AAAA-MM`, emisión y vencimiento (RF-002-02). El monto es **inmutable** (RN-002-02). Cambiar la suscripción después no altera cobros ya generados.
 6. **Vencimiento = fecha de corte + 3 días** (RF-002-03).
 7. **Día de cobro 29, 30 o 31** en un mes más corto se ajusta al último día del mes (RN-001-06). La fecha de corte es a las 00:00 **America/La_Paz**; en base de datos se guarda en **UTC**.
-8. **Ingreso con pago previo (RN-001-11, spec 010):** quien entra paga primero la cuota del período en curso, `floor(total / (miembros_actuales + 1))`, que queda registrada como su cobro de ese período en estado `pagado` y origen `ingreso` (RN-010-01 y RN-010-03). Desde el siguiente corte recibe cobros regulares. La generación no duplica ese cobro (RF-002-04).
-9. **Generación idempotente (RF-002-04):** a lo más un cobro por (grupo, miembro, período). Debe soportar que el proceso corra dos veces, y la base de datos refuerza esto con una restricción única.
-10. **Grupos cerrados no generan cobros** (RF-002-05).
+8. **Ingreso con pago previo (RN-001-11, spec 010):** quien entra, siempre durante la ventana de ingreso de los 3 primeros días del período (RF-001-22), paga primero la cuota del período que acaba de empezar, `floor(total / (miembros_actuales + 1))`, que queda registrada como su cobro de ese período en estado `pagado` y origen `ingreso` (RN-010-01 y RN-010-03). Desde el siguiente corte recibe cobros regulares. La generación no duplica ese cobro (RF-002-04).
+9. **Retiro por mora (RF-002-14):** al vencer el plazo, el cobro `pendiente` pasa a `atrasado` y el miembro es retirado del grupo; el cobro queda como deuda. Un cobro `en_revision` no se marca ni retira a nadie. Los grupos de un titular baneado se congelan (spec 009, RF-009-22).
+   La referencia del comprobante es obligatoria y única por grupo (RN-010-14).
+10. **Generación idempotente (RF-002-04):** a lo más un cobro por (grupo, miembro, período). Debe soportar que el proceso corra dos veces, y la base de datos refuerza esto con una restricción única.
+11. **Grupos cerrados no generan cobros** (RF-002-05).
 
 ## Máquina de estados (RN-002-01)
 
@@ -58,6 +60,8 @@ Cualquier otra transición se rechaza. **No se inventan estados** sin actualizar
    - Día de cobro 31 en febrero, año bisiesto y no bisiesto, y paso de mes.
    - Cambio de horario: la fecha de corte a las 00:00 de La Paz se guarda en UTC correctamente.
    - Miembro que ingresa el mismo día del corte, antes o después de generados los cobros: el cobro del período no se duplica.
+   - Retiro por mora: cobro `pendiente` vencido pasa a `atrasado` y retira al miembro; `en_revision` no; rechazo tardío deja `atrasado` sin retiro.
+   - Ventana de ingreso: el día 3 a las 23:59:59 de La Paz admite solicitudes y el día 4 a las 00:00 no.
    - Cuota de ingreso con centavos sobrantes: la persona paga `cuota_base` y el titular absorbe la diferencia.
    - Generación ejecutada dos veces: no duplica.
    - Cambiar el precio o el tipo de cambio después: los cobros ya generados no cambian.

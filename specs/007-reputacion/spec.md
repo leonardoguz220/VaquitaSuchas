@@ -63,12 +63,12 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 - **RF-007-11:** El titular aparece en el ranking solo si tiene cobros como miembro en otros grupos; en su propio grupo no tiene cobros (RN-001-10).
 
 ### Correcciones
-- **RF-007-12:** Si el titular **rechaza** un comprobante, la puntualidad se mide con la fecha de la **primera** subida (RN-007-02), de modo que un rechazo no penaliza a quien pagó a tiempo.
+- **RF-007-12:** Si el titular **rechaza** un comprobante, la puntualidad se mide con la fecha de la **primera** subida (RN-007-02), de modo que un rechazo no penaliza a quien pagó a tiempo. Excepción: si el titular marca el rechazo como **«comprobante inválido»** (spec 002, RF-002-11), el cobro se mide con la fecha de la **última** subida, para que nadie "congele" su puntualidad con comprobantes falsos.
 - **RF-007-13:** Un cobro `cancelado` no cuenta. Si el titular cancela un cobro atrasado porque el miembro salió, no afecta su calificación.
 - **RF-007-14:** El usuario puede **reportar** un cobro que cree mal calificado; el titular del grupo lo revisa y puede marcar el cobro como "excluido de reputación" con un motivo. Queda registrado quién y cuándo.
 
 ### Habilitación para ser titular
-- **RF-007-15:** Un usuario queda **habilitado como titular** (spec 001, RF-001-21) cuando su calificación mostrada alcanza el umbral y tiene la cantidad mínima de cobros considerados. [NECESITA ACLARACIÓN: umbral] **Propuesta:** 4,5 estrellas o más y al menos 6 cobros considerados.
+- **RF-007-15:** Un usuario queda **habilitado como titular** (spec 001, RF-001-21) cuando su calificación mostrada alcanza el umbral y tiene la cantidad mínima de cobros considerados. El umbral es de **4,5 estrellas o más y al menos 6 cobros considerados** _(decidido 2026-10-17)_.
 - **RF-007-16:** Si la calificación baja del umbral, el usuario deja de poder crear nuevas suscripciones. Los grupos que ya tiene no cambian.
 - **RF-007-17:** La habilitación manual que hace un administrador (spec 009, RF-009-21) es independiente de la calificación y no se pierde al bajar de ella.
 
@@ -100,8 +100,9 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 | Usuario con 2 cobros | Nivel "Nuevo", sin estrellas |
 | Pagó 1 minuto después de las 23:59:59 del vencimiento | No puntual |
 | Subió a tiempo, el titular rechazó y volvió a subir tarde | Puntual (fecha de la primera subida) |
-| Subió un comprobante inválido a propósito para ganar tiempo | El titular puede excluir el cobro o reportar [NECESITA ACLARACIÓN] |
+| Subió un comprobante inválido a propósito para ganar tiempo | El titular rechaza marcando «comprobante inválido»; el cobro se mide con la fecha de la última subida (RF-007-12) |
 | Cobro cancelado por salida del miembro | No cuenta |
+| Miembro retirado por falta de pago (spec 002, RF-002-14) | Su cobro sigue `atrasado` y cuenta como no puntual mientras el titular no lo cancele; si lo paga después, sigue siendo no puntual |
 | Cobro `atrasado` que sigue sin pagarse | Cuenta como no puntual |
 | Cambian las reglas de insignias | Se recalcula a todos con el proceso de reconciliación |
 | Miembro con calificación alta en un grupo y baja en otro | La calificación es única por usuario; el ranking compara dentro de cada grupo |
@@ -134,17 +135,19 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 - **CA-007-21:** Dado un titular habilitado cuya calificación baja del umbral, cuando intenta crear una suscripción nueva, entonces se rechaza y sus grupos existentes no cambian.
 - **CA-007-22:** Dado un usuario cuyo único cobro pagado es un cobro de ingreso, cuando se calcula su calificación, entonces ese cobro no cuenta y su nivel es "Nuevo".
 - **CA-007-23:** Dado un usuario habilitado manualmente por un administrador, cuando su calificación está por debajo del umbral, entonces puede crear suscripciones.
+- **CA-007-24:** Dado un miembro retirado por falta de pago, cuando se calcula su calificación, entonces su cobro `atrasado` cuenta como no puntual y, si lo paga después, sigue sin contar como puntual.
+- **CA-007-25:** Dado un rechazo marcado como «comprobante inválido», cuando el miembro vuelve a subir y es confirmado, entonces el cobro se mide con la fecha de la última subida.
 
 ## 11. Preguntas abiertas
 
-- [NECESITA ACLARACIÓN] **Visibilidad de la calificación** (P26). **Propuesta:** ranking visible para los miembros del grupo; calificación y nivel de un solicitante visibles para el titular al que solicita (spec 008).
-- [NECESITA ACLARACIÓN] **Abuso del rechazo.** ¿Cómo evitar que un miembro suba comprobantes falsos a tiempo solo para "congelar" su puntualidad? **Propuesta:** el titular puede marcar un rechazo como "comprobante inválido" y en ese caso el cobro se mide con la fecha de la última subida.
-- [NECESITA ACLARACIÓN] **Estrellas calculadas o votadas.** **Propuesta:** calculadas a partir de los pagos, sin votos entre usuarios, para evitar represalias y que la nota sea objetiva.
-- [NECESITA ACLARACIÓN] **Pasos y cortes de las estrellas.** **Propuesta:** pasos de media estrella y niveles según RN-007-03 (los cortes pasan de 80 % y 60 % a 75 % y 55 % respecto al puntaje de 0 a 100 anterior).
-- [NECESITA ACLARACIÓN] **Ventana de cálculo.** **Propuesta:** 12 meses.
-- [NECESITA ACLARACIÓN] **Catálogo final de insignias.** **Propuesta:** las del RF-007-06, ampliable.
-- [NECESITA ACLARACIÓN] **Umbral para ser titular y arranque del sistema** (RF-007-15). El equipo pidió "muy buena reputación". Al inicio nadie tiene cobros, así que la habilitación manual del administrador cubre a los primeros titulares. **Propuesta:** 4,5 estrellas y 6 cobros considerados como mínimo. Ver también la spec 001, sección 11.
-- [NECESITA ACLARACIÓN] **Cobros de ingreso fuera de la calificación** (RN-007-09). **Propuesta:** confirmar que no cuentan.
+- [RESUELTO 2026-10-17] **Visibilidad de la calificación** (P26). **Decidido:** ranking visible para los miembros del grupo; calificación y nivel de un solicitante visibles para el titular al que solicita (spec 008).
+- [RESUELTO 2026-10-17] **Abuso del rechazo.** ¿Cómo evitar que un miembro suba comprobantes falsos a tiempo solo para "congelar" su puntualidad? **Decidido:** el titular puede marcar un rechazo como "comprobante inválido" y en ese caso el cobro se mide con la fecha de la última subida.
+- [RESUELTO 2026-10-17] **Estrellas calculadas o votadas.** **Decidido:** calculadas a partir de los pagos, sin votos entre usuarios, para evitar represalias y que la nota sea objetiva.
+- [RESUELTO 2026-10-17] **Pasos y cortes de las estrellas.** **Decidido:** pasos de media estrella y niveles según RN-007-03 (los cortes pasan de 80 % y 60 % a 75 % y 55 % respecto al puntaje de 0 a 100 anterior).
+- [RESUELTO 2026-10-17] **Ventana de cálculo.** **Decidido:** 12 meses.
+- [RESUELTO 2026-10-17] **Catálogo final de insignias.** **Decidido:** las del RF-007-06, ampliable.
+- [RESUELTO 2026-10-17] **Umbral para ser titular y arranque del sistema** (RF-007-15). El equipo pidió "muy buena reputación". Al inicio nadie tiene cobros, así que la habilitación manual del administrador cubre a los primeros titulares. **Decidido:** 4,5 estrellas y 6 cobros considerados como mínimo. Ver también la spec 001, sección 11.
+- [RESUELTO 2026-10-17] **Cobros de ingreso fuera de la calificación** (RN-007-09). **Decidido:** confirmar que no cuentan.
 
 ## 12. Historial de cambios
 
@@ -153,3 +156,4 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | El puntaje de 0 a 100 pasa a una calificación de 0 a 5 estrellas en pasos de media estrella; se agregan CA-007-18 y CA-007-19 | Equipo |
 | 2026-10-17 | La calificación básica se adelanta al MVP y se agrega la habilitación para ser titular y la exclusión de los cobros de ingreso (RF-007-15 a RF-007-17, RN-007-09, CA-007-20 a CA-007-23) | Equipo |
+| 2026-10-17 | Ronda 2 de decisiones: umbral de 4,5 estrellas con 6 cobros, rechazo como «comprobante inválido» (RF-007-12), miembro retirado por mora, CA-007-24 y 25; se aceptan las propuestas de la sección 11 | Equipo |

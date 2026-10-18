@@ -19,18 +19,18 @@ Vaquita resuelve un problema concreto: una persona paga una suscripción compart
 
 ## 2. Recorrido de un grupo
 
-1. Una persona se registra con correo y contraseña (spec 003) y queda con la sesión iniciada.
+1. Una persona se registra con nombre, correo, celular, cédula de identidad (CI) y contraseña (spec 003). Verifica su celular con un código de 6 dígitos y recién entonces queda con la sesión iniciada.
 2. Si está habilitado como titular, crea una suscripción (spec 001). Está habilitado quien tiene una muy buena calificación de puntualidad (spec 007) o quien un administrador habilitó. Elige un servicio y plan del catálogo (spec 004) o escribe un servicio propio, e indica el precio, la moneda (USD o Bs), el tipo de cambio si el precio está en dólares, el día de cobro y los cupos totales. El sistema le genera un código de invitación de 8 caracteres.
-3. Comparte el código, por correo o por un mensaje de WhatsApp prellenado (spec 005). Cada invitado se registra o inicia sesión y, con el código, abre una solicitud de ingreso (spec 010) mientras haya un cupo disponible. El código no une a nadie por sí solo.
-4. En el chat de la solicitud, el titular le envía sus datos de pago (por ejemplo su QR). El sistema fija la cuota de ingreso: el precio del mes dividido entre los miembros que tendrá el grupo con la persona incluida. La persona tiene 15 minutos para pagar fuera de la app y subir el comprobante.
-5. El titular verifica en su banco que el dinero llegó y confirma. Tiene 60 minutos, con un recordatorio a los 30. Solo entonces la persona es miembro, y su pago queda como su cobro del período en curso. Si el titular no responde, la solicitud expira y quien pagó puede abrir un reclamo.
+3. Comparte el código, por correo o por un mensaje de WhatsApp prellenado (spec 005). Nadie entra a mitad de un período: solo se puede abrir una solicitud durante los 3 primeros días de cada período de cobro, contando el día de corte como día 1 (la ventana de ingreso, spec 001, RF-001-22). Cada invitado se registra o inicia sesión y, con el código, abre una solicitud de ingreso (spec 010) dentro de esa ventana y mientras haya un cupo disponible. El código no une a nadie por sí solo.
+4. En el chat de la solicitud, el titular le envía sus datos de pago (por ejemplo su QR). El sistema fija la cuota de ingreso: el precio del mes dividido entre los miembros que tendrá el grupo con la persona incluida. La persona tiene 15 minutos para pagar fuera de la app y subir el comprobante con la referencia de la transacción, que es obligatoria y no puede repetirse en el grupo. El titular puede prorrogar ese plazo una vez, por 15 minutos.
+5. El titular verifica en su banco que el dinero llegó y confirma. Tiene 60 minutos, con un recordatorio a los 30. Solo entonces la persona es miembro, y su pago queda como su cobro del período que acaba de empezar. Si el titular no responde, la solicitud expira y quien pagó puede abrir un reclamo.
 6. Cada vez que cambia el número de miembros, el precio o el tipo de cambio, el sistema recalcula la cuota y cada miembro ve su monto estimado en Bs con el desglose.
-7. En la fecha de corte del mes (spec 002), el sistema genera un cobro para cada miembro, excepto el titular y quien ya pagó ese período al ingresar. Cada cobro vence 3 días después de la fecha de corte.
+7. En la fecha de corte del mes (spec 002), el sistema genera un cobro para cada miembro, excepto el titular y quien ya pagó ese período al ingresar. Cada cobro vence 3 días después de la fecha de corte. La referencia del comprobante es obligatoria y única por grupo.
 8. El miembro paga fuera de la app (QR o transferencia) usando los datos de pago que configuró el titular, y sube el comprobante. El cobro pasa a `en_revision`.
 9. El titular revisa el comprobante y lo confirma, con lo que el cobro pasa a `pagado`, o lo rechaza con un motivo, con lo que vuelve a `pendiente` o a `atrasado` y el miembro puede subir otro.
-10. Si el vencimiento pasa sin pago, el cobro pasa a `atrasado` y el sistema recuerda al miembro cada 3 días, hasta 3 veces.
+10. Si el vencimiento pasa sin pago, el cobro pasa a `atrasado` y el miembro es **retirado del grupo automáticamente**. Su cobro queda como deuda visible, cuenta como no puntual y no puede volver a ese grupo hasta saldarla. Así la pérdida máxima del titular es una cuota. Un cobro en revisión no retira a nadie.
 11. Todo el grupo ve el resumen del mes y el historial. Cada pago puntual suma a la reputación del miembro (spec 007).
-12. Si un titular recibe el dinero y no agrega a la persona, ella abre un reclamo. Un administrador revisa el chat, el comprobante y la línea de tiempo, y si confirma la estafa banea la cuenta del titular y bloquea su correo y su celular (specs 009 y 003).
+12. Si un titular recibe el dinero y no agrega a la persona, ella abre un reclamo; si un solicitante presenta un comprobante falso, el titular lo abre contra él. Cada parte puede adjuntar una imagen de evidencia y la otra puede responder. Un administrador (el equipo del proyecto) revisa el chat, el comprobante y la línea de tiempo, y si confirma la estafa banea la cuenta de quien la cometió y bloquea su correo, su celular y su CI (specs 009 y 003). Si el titular es baneado, su grupo queda en solo lectura con el texto "titular baneado" y la opción de buscar otro grupo.
 13. Cuando el titular quiere salir, transfiere la titularidad o cierra el grupo. Un grupo cerrado queda en solo lectura.
 
 ## 3. Reglas que atraviesan todo el sistema
@@ -69,21 +69,21 @@ cualquier estado activo -> rechazada o cancelada
 cualquier estado activo -> expirada (vence el plazo)
 ```
 
-`aceptada`, `rechazada`, `cancelada` y `expirada` son finales. Los plazos se evalúan con la hora del servidor al consultar o actuar. La tabla completa está en la spec 010 (RN-010-05).
+`aceptada`, `rechazada`, `cancelada` y `expirada` son finales. Una solicitud `abierta` también expira a las 24 horas o cuando termina la ventana de ingreso. Los plazos se evalúan con la hora del servidor al consultar o actuar. La tabla completa está en la spec 010 (RN-010-05).
 
 ### Fechas y zona horaria
 
-Las fechas se guardan en UTC y se muestran en America/La_Paz. Si el día de cobro no existe en un mes (por ejemplo el 31 en febrero), se usa el último día de ese mes. Quien entra a un grupo paga primero la cuota del período en curso; ese pago queda como su cobro de ese período y desde el siguiente corte recibe los cobros regulares.
+Las fechas se guardan en UTC y se muestran en America/La_Paz. Si el día de cobro no existe en un mes (por ejemplo el 31 en febrero), se usa el último día de ese mes. Quien entra a un grupo lo hace dentro de los 3 primeros días de un período y paga primero la cuota de ese período; ese pago queda como su cobro y desde el siguiente corte recibe los cobros regulares. Un titular puede tener hasta 5 grupos activos; como miembro no hay límite.
 
 ### Privacidad
 
-Cada persona solo ve los grupos a los que pertenece; pedir un recurso de un grupo ajeno responde `404`. Los comprobantes los ven solo el titular y quien los subió. El chat y el comprobante de una solicitud los ven solo el solicitante y el titular; un administrador los ve únicamente cuando hay un reclamo abierto, y cada acceso queda registrado. Entre los miembros se ve el nombre, y el celular solo si lo ingresaron; el correo nunca se comparte. Los permisos se validan siempre en el servidor.
+Cada persona solo ve los grupos a los que pertenece; pedir un recurso de un grupo ajeno responde `404`. Los comprobantes los ven solo el titular y quien los subió. El chat y el comprobante de una solicitud los ven solo el solicitante y el titular; un administrador los ve únicamente cuando hay un reclamo abierto, y cada acceso queda registrado. Entre los miembros se ve el nombre y el celular verificado; el correo y la CI nunca se comparten, y el celular de un solicitante solo se muestra al titular después de aceptado. El chat y los comprobantes de una solicitud se conservan 2 meses. Los permisos se validan siempre en el servidor.
 
 ## 4. Qué hace cada módulo
 
 ### Usuarios y autenticación (spec 003)
 
-Registro con nombre, correo, contraseña (mínimo 10 caracteres, con letra y número) y celular opcional boliviano. El inicio de sesión emite un JWT guardado en una cookie httpOnly, con duración de 7 días desde la última actividad. La recuperación de contraseña envía un enlace de un solo uso que vence a los 30 minutos, y la pantalla responde igual exista o no la cuenta. Hay bloqueo temporal tras 5 intentos fallidos en 15 minutos y un límite de 3 pedidos de recuperación por hora. El perfil permite editar nombre y celular y cambiar la contraseña. Una cuenta baneada no puede iniciar sesión y su correo y su celular quedan bloqueados para nuevos registros.
+Registro con nombre, correo, contraseña (mínimo 10 caracteres, con letra y número), celular boliviano verificado con un código de 6 dígitos y cédula de identidad, estos dos obligatorios y únicos, y aceptación de una política de datos corta. El inicio de sesión emite un JWT guardado en una cookie httpOnly, con duración de 7 días desde la última actividad. La recuperación de contraseña envía un enlace de un solo uso que vence a los 30 minutos, y la pantalla responde igual exista o no la cuenta. Hay bloqueo temporal tras 5 intentos fallidos en 15 minutos y un límite de 3 pedidos de recuperación por hora. El perfil permite editar nombre y celular (el nuevo celular se verifica) y cambiar la contraseña. Una cuenta baneada no puede iniciar sesión y su correo, su celular y su CI quedan bloqueados para nuevos registros. La CI se guarda cifrada, nunca se muestra a otros usuarios y el administrador la ve enmascarada.
 
 ### Catálogo de servicios (spec 004)
 
@@ -91,19 +91,19 @@ Servicios (Netflix, Spotify, Disney+, YouTube Premium, Max, Prime Video y otros)
 
 ### Suscripciones compartidas (spec 001)
 
-Creación (solo para titulares habilitados), código de invitación (regenerable) que abre una solicitud de ingreso, y opción de pausar el ingreso de nuevos miembros. El titular edita nombre, precio, tipo de cambio, día de cobro y cupos (sin bajar de los miembros actuales), quita miembros, transfiere la titularidad o cierra el grupo. Un miembro puede abandonar el grupo si no tiene cobros abiertos o si el titular los cancela. El titular configura sus datos de pago: un texto (hasta 500 caracteres) y una imagen de QR (JPG o PNG, hasta 2 MB). Cada usuario ve la lista de sus grupos con su rol, su cuota y su estado.
+Creación (solo para titulares habilitados, hasta 5 grupos activos por titular), código de invitación (regenerable) que abre una solicitud de ingreso dentro de la ventana de ingreso de 3 días, y opción de pausar el ingreso de nuevos miembros. Un miembro que no paga a los 3 días del corte es retirado automáticamente. El titular edita nombre, precio, tipo de cambio, día de cobro y cupos (sin bajar de los miembros actuales), quita miembros, transfiere la titularidad o cierra el grupo. Un miembro puede abandonar el grupo si no tiene cobros abiertos o si el titular los cancela. El titular configura sus datos de pago: un texto (hasta 500 caracteres) y una imagen de QR (JPG o PNG, hasta 2 MB). Cada usuario ve la lista de sus grupos con su rol, su cuota y su estado.
 
 ### Cobros y pagos (spec 002)
 
-Generación automática e idempotente de los cobros del mes, con un ciclo del grupo que guarda el total, el tipo de cambio y las cuotas. Subida de comprobantes (JPG, PNG o PDF de hasta 5 MB) con método y referencia opcionales, y reemplazo mientras esté en revisión. El titular confirma, rechaza (motivo de 5 a 200 caracteres), registra pagos en efectivo o cancela. Cada cobro lleva una línea de tiempo de eventos. Los miembros ven el resumen del mes y el historial del grupo sin ver los comprobantes de otros, y el titular ve el total esperado, cobrado, pendiente y atrasado.
+Generación automática e idempotente de los cobros del mes, con un ciclo del grupo que guarda el total, el tipo de cambio y las cuotas. Subida de comprobantes (JPG, PNG o PDF de hasta 5 MB) con método y referencia obligatoria y única por grupo, y reemplazo mientras esté en revisión. El titular confirma, rechaza (motivo de 5 a 200 caracteres), registra pagos en efectivo o cancela. Cada cobro lleva una línea de tiempo de eventos. Quien fue retirado por falta de pago puede pagar su deuda pero no vuelve al grupo. Los miembros ven el resumen del mes y el historial del grupo sin ver los comprobantes de otros, y el titular ve el total esperado, cobrado, pendiente y atrasado.
 
 ### Solicitudes de ingreso y chat (spec 010)
 
-Quien ingresa un código abre una solicitud (una por grupo y hasta 5 activas por usuario) con un chat privado entre ella y el titular, que admite texto de hasta 1.000 caracteres e imágenes JPG o PNG de hasta 5 MB. Los mensajes no se editan ni se borran y el chat queda en solo lectura al terminar la solicitud. El titular envía los datos de pago y el sistema fija la cuota de ingreso y reserva un cupo. El solicitante tiene 15 minutos para subir el comprobante y el titular 60 para decidir; el titular también puede registrar un pago en efectivo o rechazar con motivo. Al confirmar, la persona se une y se registra su cobro del período en curso como `pagado`. Quien pagó y terminó sin ingresar, porque el titular rechazó o no respondió, puede abrir un reclamo dentro de 7 días. Un administrador revisa la evidencia y lo resuelve como estafa confirmada, con baneo del titular, o sin falta. Vaquita no custodia el dinero ni lo devuelve.
+Quien ingresa un código dentro de la ventana de ingreso abre una solicitud (una por grupo y hasta 5 activas por usuario) con un chat privado entre ella y el titular, que admite texto de hasta 1.000 caracteres e imágenes JPG o PNG de hasta 5 MB. Los mensajes no se editan ni se borran y el chat queda en solo lectura al terminar la solicitud. El titular envía los datos de pago y el sistema fija la cuota de ingreso y reserva un cupo. El solicitante tiene 15 minutos para subir el comprobante y el titular 60 para decidir; el titular también puede prorrogar el plazo de pago una vez, registrar un pago en efectivo o rechazar con motivo. Al confirmar, la persona se une y se registra su cobro del período como `pagado`. Cualquiera de las partes puede reclamar dentro de 7 días: el solicitante que pagó y no ingresó, o el titular que recibió un comprobante falso. Un administrador revisa la evidencia y lo resuelve como estafa confirmada, con baneo de la persona acusada, o sin falta. Vaquita no custodia el dinero ni lo devuelve.
 
 ### Notificaciones (spec 005)
 
-Centro de notificaciones dentro de la app, siempre activo, y correos que cada usuario puede desactivar por tipo (los de seguridad no se desactivan). Para el miembro: aviso 2 días antes de la fecha de corte, cobro generado, recordatorio un día antes del vencimiento, atrasos y resolución de sus pagos. Para el titular: comprobante recibido, recordatorio si lleva más de 48 horas en revisión, ingreso o salida de miembros y atrasos. Invitaciones por correo y por WhatsApp (enlace `wa.me` que abre el mensaje, sin envío desde el servidor). Los correos fallidos se reintentan hasta 3 veces y las notificaciones se conservan 90 días.
+Centro de notificaciones dentro de la app, siempre activo, y correos que cada usuario puede desactivar por tipo (los de seguridad no se desactivan). Para el miembro: aviso 2 días antes de la fecha de corte, cobro generado, recordatorio un día antes del vencimiento, retiro por falta de pago y resolución de sus pagos. Para el titular: comprobante recibido, recordatorio si lleva más de 48 horas en revisión, ingreso o salida de miembros y retiros por falta de pago. Opcionalmente, avisos por Telegram vinculando la cuenta con un enlace de un solo uso. Invitaciones por correo y por WhatsApp (enlace `wa.me` que abre el mensaje, sin envío desde el servidor, dirigido al celular verificado del miembro). Los correos fallidos se reintentan hasta 3 veces y las notificaciones se conservan 90 días.
 
 ### Panel y reportes (spec 006)
 
@@ -111,29 +111,30 @@ Resumen por mes con el gasto propio, el ahorro estimado, lo que el usuario debe,
 
 ### Reputación (spec 007)
 
-Calificación de puntualidad de 0 a 5 estrellas, en pasos de media estrella: 5 por la proporción de cobros puntuales sobre cobros considerados en los últimos 12 meses. Un cobro es puntual si el miembro subió su comprobante antes del vencimiento, aunque el titular lo rechace después. Con menos de 3 cobros el nivel es "Nuevo"; luego Excelente (5 estrellas), Bueno (4 a 4,5), Regular (3 a 3,5) o En riesgo (2,5 o menos). Incluye insignias (primer pago, rachas de 3, 6 y 12 pagos puntuales, seis meses sin atrasos y otras), un ranking dentro del grupo sin montos ni comprobantes y la posibilidad de reportar un cobro mal calificado para que el titular lo revise. La calificación básica se construye junto con el MVP porque habilita a los titulares, y los cobros de ingreso no cuentan para ella.
+Calificación de puntualidad de 0 a 5 estrellas, en pasos de media estrella: 5 por la proporción de cobros puntuales sobre cobros considerados en los últimos 12 meses. Un cobro es puntual si el miembro subió su comprobante antes del vencimiento, aunque el titular lo rechace después. Con menos de 3 cobros el nivel es "Nuevo"; quien fue retirado por mora conserva su cobro como no puntual; luego Excelente (5 estrellas), Bueno (4 a 4,5), Regular (3 a 3,5) o En riesgo (2,5 o menos). Incluye insignias (primer pago, rachas de 3, 6 y 12 pagos puntuales, seis meses sin atrasos y otras), un ranking dentro del grupo sin montos ni comprobantes y la posibilidad de reportar un cobro mal calificado para que el titular lo revise. La calificación básica se construye junto con el MVP porque habilita a los titulares, y los cobros de ingreso no cuentan para ella.
 
 ### Cupos libres (spec 008)
 
-El titular publica los cupos que le sobran, con descripción y condiciones, y la publicación muestra la cuota estimada por persona. Cada grupo tiene una publicación activa, que expira a los 30 días. Los usuarios la buscan con filtros por servicio, categoría y cuota, y abren una solicitud de ingreso con un mensaje inicial (spec 010; máximo 5 activas por usuario). El titular ve el nivel de puntualidad y la calificación del solicitante, y el ingreso sigue el flujo de pago previo y confirmación. Cualquier usuario puede reportar una publicación y, con 3 reportes de personas distintas, se oculta hasta que un administrador la revise.
+El titular publica los cupos que le sobran, con descripción y condiciones, y la publicación muestra la cuota estimada por persona. Cada grupo tiene una publicación activa, que expira a los 30 días. Los usuarios la buscan con filtros por servicio, categoría y cuota, y abren una solicitud de ingreso con un mensaje inicial (spec 010; máximo 5 activas por usuario), solo durante la ventana de ingreso, que la publicación muestra. Al ser aceptado en un grupo, se cancelan las otras solicitudes abiertas al mismo servicio. El titular ve el nivel de puntualidad y la calificación del solicitante, y el ingreso sigue el flujo de pago previo y confirmación. Cualquier usuario puede reportar una publicación y, con 3 reportes de personas distintas, se oculta hasta que un administrador la revise.
 
 ### Administración (spec 009)
 
-Solo para el rol `admin`, creado con el seed o por otro administrador. Gestiona el catálogo (crear, editar, activar y desactivar, sin borrado físico), busca usuarios y los suspende o reactiva con un motivo obligatorio de 10 a 300 caracteres, banea cuentas de forma permanente, resuelve los reclamos de ingreso con su evidencia, habilita manualmente a los primeros titulares, modera las publicaciones reportadas y ve un tablero de estadísticas agregadas, sin acceso a comprobantes ni a cobros individuales fuera de un reclamo abierto. Todas las acciones quedan en un log de auditoría que no se puede editar ni borrar. Siempre debe existir al menos un administrador activo.
+Solo para el rol `admin`, creado con el seed o por otro administrador. Gestiona el catálogo (crear, editar, activar y desactivar, sin borrado físico), busca usuarios y los suspende o reactiva con un motivo obligatorio de 10 a 300 caracteres, banea cuentas de forma permanente (titulares o solicitantes; otro administrador puede revisar un baneo), resuelve los reclamos de ingreso con su evidencia, habilita manualmente a los primeros titulares, modera las publicaciones reportadas y ve un tablero de estadísticas agregadas, sin acceso a comprobantes ni a cobros individuales fuera de un reclamo abierto. Todas las acciones quedan en un log de auditoría que no se puede editar ni borrar. Siempre debe existir al menos un administrador activo.
 
 ### Setup del proyecto (spec 000)
 
-Repositorio con las tres capas, `docker-compose` con PostgreSQL y una bandeja de correo de desarrollo, migraciones y seed con `npm run db:migrate`, `db:seed` y `db:reset`, validación de variables de entorno, `GET /health`, Swagger en `/api/docs`, formato uniforme de errores, servicio de correo con modos `dev` y `prod`, módulo de tareas programadas, proxy `/api` del frontend, formato de Bs y fechas, CI con GitHub Actions y un entorno desplegado de punta a punta para el profesor.
+Repositorio con las tres capas, `docker-compose` con PostgreSQL y una bandeja de correo de desarrollo, migraciones y seed con `npm run db:migrate`, `db:seed` y `db:reset`, validación de variables de entorno, `GET /health`, Swagger en `/api/docs`, formato uniforme de errores, servicio de correo y de mensajería al celular con modos `dev` y `prod`, módulo de tareas programadas, proxy `/api` del frontend, formato de Bs y fechas, CI con GitHub Actions y un entorno desplegado de punta a punta para el profesor.
 
 ## 5. Procesos automáticos
 
 | Proceso | Cuándo | Qué hace |
 |---|---|---|
 | Generación de cobros | Fecha de corte de cada grupo, 00:00 de La Paz | Crea los cobros del mes y el ciclo del grupo |
-| Marca de atrasos | Al pasar el vencimiento | Pasa a `atrasado` los cobros `pendiente` |
-| Plazos de solicitudes | Cada minuto y al consultar o actuar | Pasa a `expirada` las solicitudes cuyo plazo venció, libera sus cupos y envía el recordatorio de 30 minutos al titular |
-| Avisos programados | Diario, 08:00 de La Paz | Aviso previo, recordatorio de vencimiento, recordatorios de atraso y revisión pendiente |
-| Envío de correos | Cada 5 minutos | Envía los correos pendientes y reintenta los fallidos |
+| Marca de atrasos y retiro | Al pasar el vencimiento (corte + 3 días) | Pasa a `atrasado` los cobros `pendiente` y retira al miembro del grupo |
+| Plazos de solicitudes | Cada minuto y al consultar o actuar | Pasa a `expirada` las solicitudes cuyo plazo venció o cuya ventana de ingreso terminó, libera sus cupos y envía el recordatorio de 30 minutos al titular |
+| Limpieza de solicitudes | Diario | Elimina el chat, las imágenes y los comprobantes de solicitudes con más de 2 meses, salvo reclamos abiertos |
+| Avisos programados | Diario, 08:00 de La Paz | Aviso previo, recordatorio de vencimiento y revisión pendiente |
+| Envío de correos y Telegram | Cada 5 minutos | Envía los correos y mensajes pendientes y reintenta los fallidos |
 | Reconciliación de reputación | Diario | Verifica y corrige calificaciones |
 | Vencimientos | Diario | Expira publicaciones (30 días) y notificaciones (90 días) |
 
@@ -151,7 +152,7 @@ Todos los procesos son idempotentes y calculan lo que falta según los datos, de
 | Ver comprobantes | Solo los suyos | Los de su grupo | Nunca, salvo la evidencia de un reclamo abierto |
 | Abrir una solicitud de ingreso y escribir en su chat | Solo como solicitante, antes de ser miembro | Sí, como contraparte | No |
 | Confirmar, rechazar o registrar en efectivo un ingreso | No | Sí | No |
-| Abrir un reclamo | Solo quien pagó y no ingresó | No | Resuelve el reclamo y puede banear |
+| Abrir un reclamo | Solo quien pagó y no ingresó | Sí, contra un comprobante falso | Resuelve el reclamo y puede banear |
 | Crear una suscripción | Solo si está habilitado | Solo si está habilitado | Habilita titulares |
 | Invitar, quitar miembros, transferir o cerrar el grupo | No | Sí | No |
 | Publicar cupos y aceptar solicitudes | No | Sí | Modera publicaciones reportadas |
@@ -163,42 +164,43 @@ Las entidades que se desprenden de las specs son: usuario, servicio y plan del c
 
 ## 8. Puntos abiertos para la revisión del equipo
 
-### Decisiones que dependen del equipo
+### Decisiones tomadas el 2026-10-17
+
+Las respuestas del equipo ya están en las specs. Las principales:
+
+| Tema | Decisión | Dónde |
+|---|---|---|
+| Ingreso | Solo durante los 3 primeros días del período de cobro | Spec 001, RF-001-22 |
+| Mora | A los 3 días del corte sin pago, el miembro es retirado y su cobro queda como deuda | Spec 002, RF-002-14 |
+| Titular | 4,5 estrellas con 6 cobros considerados, o habilitado por un administrador; hasta 5 grupos activos | Spec 001, RF-001-21 y RN-001-14 |
+| Identidad | Celular verificado con código y CI, obligatorios y únicos; el baneo bloquea correo, celular y CI | Spec 003, ADR 0005 |
+| Reclamos | Los puede abrir el solicitante y el titular, con una imagen de evidencia opcional | Spec 010, RF-010-21 |
+| Prórroga | El titular puede extender una vez el plazo de pago por 15 minutos | Spec 010, RF-010-28 |
+| Referencia | Obligatoria y única por grupo en cada comprobante | Specs 002 y 010 |
+| Conservación | 2 meses para el chat, las solicitudes y los comprobantes tras cerrar el grupo | Specs 002 y 010 |
+| Baneo | Lo decide un administrador (el equipo); otro puede revisarlo; la apelación es por un correo de contacto | Spec 009 |
+| Grupo con titular baneado | Se muestra "titular baneado" y la opción de buscar otro grupo | Spec 009, RF-009-22 |
+| Notificaciones | App y correo; Telegram opcional en P1; sin recordatorios de atraso | Spec 005 |
+| Correo y secretos | Resend en producción, gitleaks en CI | Spec 000 |
+| Carga | Menos de 100 usuarios en la demo | Spec 000, RNF-000-05 |
+| Documentación | Solo documentos, sin diagramas | Banco de preguntas, P8 |
+
+### Puntos que siguen abiertos
 
 | Spec | Pregunta | Propuesta actual |
 |---|---|---|
-| 000 | Servicio de correo en producción | Un proveedor con plan gratuito suficiente (Resend, Brevo o Gmail SMTP) |
 | 000 | Cómo cubrir los límites del plan gratuito de Render | Ver el riesgo descrito más abajo |
-| 001 | Servicio personalizado fuera del catálogo | Sí, con nombre libre |
-| 001 y 007 | Umbral para ser titular y arranque del sistema | 4,5 estrellas y 6 cobros considerados, más habilitación manual de los primeros titulares |
-| 003 | Datos que identifican a una persona baneada | Correo y celular; cédula solo para titulares si el equipo la confirma |
-| 007 | Cobros de ingreso en la calificación | No cuentan |
-| 009 | Efectos del baneo de un titular sobre su grupo | Solo lectura, aviso a los miembros y cobros abiertos cancelados |
-| 010 | Período en curso del pago de ingreso y doble pago cerca del corte | La creación del grupo es el corte inicial; se acepta el doble pago y se avisa |
-| 010 | Vencimiento de la solicitud abierta, plazo del reclamo y prórroga del plazo de pago | 24 horas, 7 días y una prórroga de 15 minutos |
-| 010 | Referencia obligatoria y única en el comprobante de ingreso | Sí, por grupo |
-| 002 | Comprobantes de un miembro ya quitado | El titular los puede ver |
-| 002 | Conservación de comprobantes tras cerrar el grupo | 12 meses |
-| 003 | Verificación del correo | No obligatoria en esta etapa |
-| 003 | Registro con un correo repetido | Revelar que ya existe, con límite por IP |
-| 003 | Eliminar cuenta | Fuera de alcance por ahora |
-| 003 | Revocación de sesiones | Versión de sesión por usuario |
-| 005 | Frecuencia de avisos | Valores por defecto de la spec, ajustables por configuración |
-| 006 | Librería de gráficos | Recharts |
-| 007 | Abuso del rechazo para "congelar" la puntualidad | El titular puede marcar un rechazo como comprobante inválido |
-| 008 | Quién ve las publicaciones | Solo usuarios con sesión |
-| 008 | Titularidad transferida con una publicación activa | La publicación pasa al nuevo titular |
-| 009 | Grupo cuyo titular fue suspendido | Los cobros siguen, se avisa a los miembros y se puede transferir la titularidad |
-| 009 | Canal de apelación de una suspensión | Un correo de contacto del equipo |
-| 009 | Importación masiva del catálogo | Última tarea de la spec |
-
-### Preguntas del banco que siguen sin respuesta
-
-Si la materia pide diagramas o documentos específicos (P8), si una persona puede ser titular de varios grupos y con qué límite (P15), si el titular puede saltar un mes sin cobrar (P17), cuántos usuarios se esperan en la demo (P29), los requisitos de privacidad y borrado de cuenta (P31) y si habrá marca propia con logo y colores (P32). El detalle está en [`specs/00-preguntas-abiertas.md`](../specs/00-preguntas-abiertas.md).
+| 000 y 003 | Canal y costo del código de celular (SMS o WhatsApp) | Un proveedor de SMS con tope diario, decidido en el plan de la spec 000 |
+| 003 | Formato de la CI y si se revisa una foto | Solo el número, sin foto |
+| 003 | Alias de correo (Gmail) | Calcular el bloqueo sobre el correo sin alias |
+| 001 y 010 | Qué son los "3 primeros días" y cómo funciona la ventana de un grupo nuevo | Desde el corte de cada grupo, con el día de corte como día 1; un grupo nuevo tiene una ventana inicial desde su creación |
+| 002 y 010 | Un miembro retirado con deuda y el regreso al grupo | Puede pagar su deuda, pero no abrir una solicitud a ese grupo hasta saldarla |
+| 009 | Cobros abiertos de un grupo con titular baneado | Congelarlos y excluirlos de la calificación, en lugar de cancelarlos |
+| 009 | Transferencia por un administrador con el titular suspendido | A pedido de los miembros y hacia un miembro habilitado |
 
 ### Límites de la protección
 
-Vaquita no custodia dinero, así que no puede garantizar que alguien recupere lo que pagó. Lo que ofrece al solicitante son plazos cortos, la evidencia del chat y del comprobante, un reclamo que revisa un administrador y el baneo del titular que estafe. Ese baneo bloquea el correo y el celular, pero una persona puede conseguir datos nuevos; la spec 003 deja abierta la verificación del celular y la cédula como refuerzos. Al titular lo protege que nadie ingrese sin pagar, pero los meses siguientes siguen siendo cobros con 3 días de gracia, de modo que un miembro que deja de pagar después de entrar todavía le genera una pérdida de una cuota. Cuánto atraso se tolera y qué se hace con la deuda sigue abierto (P33).
+Vaquita no custodia dinero, así que no puede garantizar que alguien recupere lo que pagó. Lo que ofrece al solicitante son plazos cortos, la evidencia del chat y del comprobante, un reclamo que revisa un administrador y el baneo del titular que estafe. Ese baneo bloquea el correo, el celular verificado y la CI, lo que lo hace más difícil de evadir, pero una persona todavía puede conseguir datos nuevos. Al titular lo protege que nadie ingrese sin pagar, pero los meses siguientes siguen siendo cobros con 3 días de gracia, pero un miembro que deja de pagar después de entrar es retirado a los 3 días del corte, de modo que la pérdida máxima del titular es una cuota, que queda registrada como deuda del miembro.
 
 ### Riesgo del despliegue en Render
 

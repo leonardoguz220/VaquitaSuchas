@@ -1,6 +1,6 @@
 # Stack técnico
 
-Stack acordado el 2026-10-17, a partir de lo que el equipo ya usó en los repositorios de la materia (`proyectoFrontend1`, `BackendProyecto1`, `backendUpbtest`). Un cambio se hace por PR aprobado por las tres capas. El PostgreSQL gestionado va en Render (decisión del 2026-10-17). Queda abierto el servicio de correo, que se cierra en la spec 000.
+Stack acordado el 2026-10-17, a partir de lo que el equipo ya usó en los repositorios de la materia (`proyectoFrontend1`, `BackendProyecto1`, `backendUpbtest`). Un cambio se hace por PR aprobado por las tres capas. El PostgreSQL gestionado va en Render (decisión del 2026-10-17). El correo en producción va con Resend y el escaneo de secretos con gitleaks (decisiones del 2026-10-17). Queda abierto el proveedor de mensajería al celular (SMS o WhatsApp) para el código de verificación, que se cierra en el plan de la spec 000. Los avisos opcionales por Telegram usan un bot propio (spec 005).
 
 | Capa | Decisión | Se apoya en |
 |---|---|---|

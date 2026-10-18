@@ -19,7 +19,7 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 - Tener la estructura de carpetas, scripts y convenciones acordadas en `CLAUDE.md`.
 - Tener CI que ejecute lint y tests en cada PR.
 - Tener un despliegue "hola mundo" de punta a punta: frontend → backend → base de datos.
-- Dejar listo el envío de correos (necesario para recuperar contraseña, spec 003) con un modo de desarrollo local.
+- Dejar listo el envío de correos (necesario para recuperar contraseña, spec 003) y de códigos de verificación al celular (spec 003, RF-003-21), ambos con un modo de desarrollo local.
 
 ## 3. Fuera de alcance
 
@@ -54,7 +54,8 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 - **RF-000-09:** `GET /health` responde el estado del servicio y de la conexión a la base de datos (sin exponer credenciales).
 - **RF-000-10:** Swagger/OpenAPI se publica en `/api/docs` en entornos de desarrollo y pruebas.
 - **RF-000-11:** El backend usa un filtro global de errores que devuelve un formato uniforme (`statusCode`, `code`, `message`, y `details` opcional) sin revelar detalles internos.
-- **RF-000-12:** Existe una abstracción de **servicio de correo** con dos modos: `dev` (los correos llegan a la bandeja local, por ejemplo Mailpit) y `prod` (proveedor real, ver pregunta abierta).
+- **RF-000-12:** Existe una abstracción de **servicio de correo** con dos modos: `dev` (los correos llegan a la bandeja local, por ejemplo Mailpit) y `prod` (Resend, ver la sección 10).
+- **RF-000-22 (Servicio de mensajería al celular):** existe una abstracción para enviar códigos de verificación al celular con dos modos: `dev` (el código se escribe en el log local y no sale a internet) y `prod` (proveedor de SMS o WhatsApp, por definir en el plan). Incluye un límite diario de mensajes configurable para controlar el costo. La spec 003 depende solo de esta abstracción. _(Decidido 2026-10-17)_
 - **RF-000-13:** El backend registra logs estructurados con un identificador de petición, sin incluir contraseñas, tokens ni comprobantes.
 - **RF-000-14:** Existe el módulo de tareas programadas (`@nestjs/schedule`) con un ejemplo de tarea idempotente, base para los procesos de las specs 002, 005 y 010.
 
@@ -72,9 +73,10 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 ## 6. Requisitos no funcionales
 
 - **RNF-000-01 (Reproducibilidad):** un integrante nuevo levanta el sistema completo en menos de 15 minutos siguiendo el `README`.
-- **RNF-000-02 (Seguridad):** no hay secretos en el repositorio ni en el historial. Se usa un escáner de secretos en CI [NECESITA ACLARACIÓN: herramienta].
+- **RNF-000-02 (Seguridad):** no hay secretos en el repositorio ni en el historial. Se usa **gitleaks** en CI.
 - **RNF-000-03 (Calidad):** CI falla si hay errores de lint o tests rotos.
 - **RNF-000-04 (Documentación):** el `README.md` raíz explica cómo levantar cada capa, correr tests, migrar y sembrar la base.
+- **RNF-000-05 (Carga esperada):** la demo se diseña para menos de 100 usuarios; no se exigen pruebas de carga ni escalado más allá de lo que da el plan gratuito.
 
 ## 7. Reglas de negocio / técnicas
 
@@ -111,13 +113,17 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 - **CA-000-14:** Dado el entorno de staging, cuando se abre la página de estado, entonces las tres capas responden.
 - **CA-000-15:** Dado un push directo a `main`, cuando se intenta, entonces es rechazado.
 - **CA-000-16:** Dado un `.env` con valores reales, cuando se intenta hacer commit, entonces no se incluye (está ignorado).
+- **CA-000-17:** Dado el modo `dev` del servicio de mensajería, cuando el backend envía un código de verificación, entonces el código aparece en el log local y no sale a internet.
+- **CA-000-18:** Dado un secreto de prueba incluido en un commit, cuando corre CI, entonces gitleaks falla y el PR no se puede fusionar.
 
 ## 10. Preguntas abiertas
 
 - [RESUELTO 2026-10-17] **Proveedor de PostgreSQL gestionado:** Render, el mismo proveedor del backend. Riesgos por verificar antes de cerrar el plan (según la documentación de Render al 2026-10-17): la base gratuita caduca a los 30 días de crearse, con 14 días de gracia antes de borrarse; tiene 1 GB de almacenamiento, sin copias de seguridad y sin pool de conexiones. El servicio web gratuito se duerme tras 15 minutos sin tráfico, lo que afecta a las tareas programadas de las specs 002 y 005. El plan debe definir cómo se cubre esto (instancia de pago, recrear la base con `db:reset` y el seed cerca de la fecha de la demo, o un disparador externo para las tareas).
-- [NECESITA ACLARACIÓN] **Proveedor de correo en `prod`** (Resend, Brevo, SMTP de Gmail u otro). **Propuesta:** un proveedor con plan gratuito suficiente para la demo.
-- [NECESITA ACLARACIÓN] **Herramienta de escaneo de secretos** (por ejemplo, gitleaks en CI). **Propuesta:** gitleaks.
-- [NECESITA ACLARACIÓN] ¿Usarán hooks de Claude Code para proteger specs y tests? **Propuesta:** sí, como mejora opcional posterior al setup.
+- [RESUELTO 2026-10-17] **Proveedor de correo en `prod`:** Resend, con plan gratuito para la demo.
+- [NECESITA ACLARACIÓN] **Proveedor de mensajería al celular en `prod`** (SMS o WhatsApp) y su costo. **Propuesta:** decidirlo en el plan de esta spec con los precios vigentes; mientras tanto el modo `dev` permite construir la spec 003.
+- [RESUELTO 2026-10-17] **Escaneo de secretos:** gitleaks en CI (RNF-000-02).
+- [RESUELTO 2026-10-17] Los hooks de Claude Code para proteger specs y tests son una mejora opcional posterior al setup.
+- [RESUELTO 2026-10-17] La carga esperada de la demo es de menos de 100 usuarios (RNF-000-05).
 
 ## 11. Historial de cambios
 
@@ -126,3 +132,4 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | RF-000-01 incorpora `context/`, `ia/` y la estructura por capas | Equipo |
 | 2026-10-17 | Se decide Render como proveedor de PostgreSQL y se registran sus límites del plan gratuito | Equipo |
+| 2026-10-17 | Ronda 2 de decisiones: servicio de mensajería al celular (RF-000-22), Resend, gitleaks, hooks opcionales y carga esperada; RF-000-14 menciona la spec 010 | Equipo |
