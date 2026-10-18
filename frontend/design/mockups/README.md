@@ -89,7 +89,7 @@ Propuesta de marca simple (P32, a cargo de Adrian). Para llevarla a Tailwind, en
 | `bg` | `#F5F6F2` | Fondo de la página |
 | `surface` | `#FFFFFF` | Tarjetas y formularios |
 | `line` | `#D9DDD7` | Bordes de tarjetas |
-| `field-border` | `#C9CFC8` | Borde de campos |
+| `field-border` | `#858E88` | Borde de campos (era `#C9CFC8`, 1,59:1; se oscureció a 3,38:1 sobre blanco para cumplir WCAG 1.4.11, T036) |
 | `danger` | `#9B1C12` | Rechazar, cancelar |
 
 Estados de un cobro (siempre color **y** texto, plan §6 de la spec 002):
