@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DbService, type DbPool, type DbTransaction } from '../db/db.service.js';
 import type { DomainEvent, TxEventHandler } from './domain-event.js';
@@ -195,13 +195,20 @@ describe('TxEventBus', () => {
       expect(handler).toHaveBeenCalledTimes(1);
     });
 
-    it('RF-000-14: el mismo manejador sí puede registrarse para tipos distintos', () => {
+    it('RF-000-14: el mismo manejador sí puede registrarse para tipos distintos y corre con cada uno', async () => {
       const bus = new TxEventBus();
       const handler = jest.fn<TxEventHandler>();
+      const tx = fakeTx();
 
       bus.register('test.group-created', handler);
-
       expect(() => bus.register('test.group-closed', handler)).not.toThrow();
+
+      await bus.publish(tx, groupCreated);
+      await bus.publish(tx, { type: 'test.group-closed' });
+
+      expect(handler).toHaveBeenCalledTimes(2);
+      expect(handler).toHaveBeenNthCalledWith(1, tx, groupCreated);
+      expect(handler).toHaveBeenNthCalledWith(2, tx, { type: 'test.group-closed' });
     });
   });
 
@@ -258,13 +265,17 @@ describe('TxEventBus', () => {
       constructor(readonly bus: TxEventBus) {}
     }
 
+    // Módulo aparte que NO importa EventsModule: solo puede inyectar el bus si EventsModule es global.
+    @Module({ providers: [Consumer] })
+    class ConsumerModule {}
+
     it('RF-000-14: provee una única instancia global de TxEventBus inyectable sin importar el módulo', async () => {
       const moduleRef = await Test.createTestingModule({
-        imports: [EventsModule],
-        providers: [Consumer],
+        imports: [EventsModule, ConsumerModule],
       }).compile();
 
-      expect(moduleRef.get(Consumer).bus).toBe(moduleRef.get(TxEventBus));
+      const consumer = moduleRef.get(Consumer, { strict: false });
+      expect(consumer.bus).toBe(moduleRef.get(TxEventBus));
       expect(moduleRef.get(TxEventBus)).toBeInstanceOf(TxEventBus);
     });
   });
