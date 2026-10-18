@@ -1,5 +1,4 @@
 import { jest } from '@jest/globals';
-import { Test } from '@nestjs/testing';
 
 // Entorno mínimo válido con valores ficticios: el módulo raíz exige variables (RF-000-08),
 // pero sigue sin necesitar una base de datos levantada.
@@ -17,11 +16,17 @@ const MINIMAL_ENV: Record<string, string> = {
 };
 
 // ConfigModule.forRoot lee el entorno cuando se evalúa app.module.ts, así que el módulo
-// se importa después de preparar process.env y con el registro de módulos limpio.
-async function loadAppModule(): Promise<typeof import('./app.module.js').AppModule> {
+// se importa después de preparar process.env y con el registro de módulos limpio. `Test` se
+// importa también aquí: tras `resetModules`, @nestjs/schedule trae su propia copia de
+// @nestjs/core y el `Reflector` solo coincide si @nestjs/testing sale del mismo registro.
+async function loadAppModule(): Promise<{
+  AppModule: typeof import('./app.module.js').AppModule;
+  Test: typeof import('@nestjs/testing').Test;
+}> {
   jest.resetModules();
+  const { Test } = await import('@nestjs/testing');
   const { AppModule } = await import('./app.module.js');
-  return AppModule;
+  return { AppModule, Test };
 }
 
 describe('AppModule', () => {
@@ -36,7 +41,7 @@ describe('AppModule', () => {
   });
 
   it('RF-000-01: compila el módulo raíz del backend sin base de datos', async () => {
-    const AppModule = await loadAppModule();
+    const { AppModule, Test } = await loadAppModule();
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
 
@@ -45,7 +50,7 @@ describe('AppModule', () => {
 
   it('RF-000-08 / CA-000-05: el módulo raíz no compila si falta DATABASE_URL y la nombra', async () => {
     delete process.env['DATABASE_URL'];
-    const AppModule = await loadAppModule();
+    const { AppModule, Test } = await loadAppModule();
 
     await expect(Test.createTestingModule({ imports: [AppModule] }).compile()).rejects.toThrow(
       /DATABASE_URL/,
