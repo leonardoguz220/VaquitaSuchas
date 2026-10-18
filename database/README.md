@@ -142,24 +142,7 @@ Cada restricción tiene una prueba que intenta violarla, y cada prueba cita en s
 - `db:restore` se niega contra un host que no es local. Staging lo restaura a mano una persona del equipo: exporta la `DATABASE_URL` de staging solo en su terminal (nunca en el repositorio) y agrega `--allow-remote`.
 - Si `pg_dump` o `psql` no están en el PATH y la base es local, se usan los del contenedor `db` (`docker compose exec -T db ...`), que respaldan y restauran la base de ese contenedor.
 
-## 7. Migrar staging (T044, RF-000-21)
-
-Las migraciones nunca corren al arrancar el backend. Staging se migra con el workflow manual `Migrate staging` (`.github/workflows/migrate-staging.yml`). El workflow valida la numeración con `db:check`, aplica `db:migrate`, comprueba que una segunda ejecución no cambia nada (CA-000-03) y, si se marca la opción `seed`, siembra el catálogo.
-
-Configuración, una sola vez (la hace una persona con permisos de administración en GitHub):
-
-1. En **Settings → Environments**, crear el entorno `staging` con **Required reviewers** (al menos una persona de otra capa).
-2. En ese entorno, agregar el secreto `STAGING_DATABASE_URL` con la URL **externa** de PostgreSQL de Render (Dashboard → la base → Connect → External Database URL), agregando al final `?sslmode=require` porque Render exige TLS en las conexiones externas. Nunca se copia en el repositorio.
-
-Para migrar:
-
-1. **Actions → Migrate staging → Run workflow** sobre `main` (el workflow se niega a correr desde otra rama), con `seed` marcado si hace falta cargar el catálogo.
-2. Aprobar la ejecución en el entorno `staging`.
-3. Revisar el registro: cada migración aplicada aparece como `Aplicada NNNN_nombre.sql` y el paso de la segunda ejecución debe terminar en verde.
-
-Una persona también puede migrar a mano desde una máquina de confianza, exportando `DATABASE_URL` con la URL externa antes de correr `db:migrate`. `db:reset` y `db:restore` se niegan a correr contra una base que no es local.
-
-## 8. Problemas frecuentes
+## 7. Problemas frecuentes
 
 - **El puerto 5432 está ocupado** por otro PostgreSQL: levanta la base en otro puerto del host con `DB_PORT=5435 npm run db:up` y usa ese mismo puerto en `DATABASE_URL` y `TEST_DATABASE_URL` de `database/.env`. `docker compose` no lee `database/.env`; toma `DB_PORT` del entorno o del `.env` de la raíz.
 - **No existe `vaquita_test`**: se crea en el mismo contenedor con `docker/init/01-create-test-db.sql`, que PostgreSQL ejecuta una sola vez al inicializar un volumen vacío. Si el volumen se creó antes de ese script, recréalo con `docker compose down -v && npm run db:up` (borra los datos locales).
