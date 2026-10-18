@@ -1,6 +1,6 @@
 # Backend
 
-Responsable: Leonardo Guzman. La carpeta se llena al implementar la spec 000; hasta entonces solo existe esta guía.
+Responsable: Leonardo Guzman. Ya existe el proyecto NestJS base (spec 000, T004); los módulos se agregan con cada spec.
 
 El backend es una API NestJS en TypeScript organizada por módulos y, dentro de cada módulo, en cuatro capas: `controllers`, `services`, `domain` y `repositories`. La descripción completa está en [`../context/arquitectura.md`](../context/arquitectura.md) y las reglas de negocio en [`../context/dominio.md`](../context/dominio.md).
 

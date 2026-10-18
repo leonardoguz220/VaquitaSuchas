@@ -1,6 +1,6 @@
 ---
 name: db-engineer
-description: Implementa tareas [BD] de Vaquita (Camila) en database/: migraciones SQL numeradas, seeds y pruebas de integridad, siguiendo el data-model.md y el plan de la spec. Úsalo para una tarea [BD] concreta de un tasks.md.
+description: "Implementa tareas [BD] de Vaquita (Camila) en database/: migraciones SQL numeradas, seeds y pruebas de integridad, siguiendo el data-model.md y el plan de la spec. Úsalo para una tarea [BD] concreta de un tasks.md."
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---
 

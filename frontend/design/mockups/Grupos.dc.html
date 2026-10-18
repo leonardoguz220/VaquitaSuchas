@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Mis suscripciones</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid #D9DDD7; background: #FFFFFF">
+    <a href="Grupos.dc.html" style="display: flex; align-items: center; gap: 10px; color: #17201C; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#1E6B4E"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#F5F6F2" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#F5F6F2"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">vaquita</span>
+    </a>
+    <nav aria-label="Principal" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="Grupos.dc.html" aria-current="page" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; background: #E3F1EA; color: #14503A; font-weight: 700; text-decoration: none">Mis suscripciones</a>
+      <a href="Cobro.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
+      <a href="Solicitudes.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border-radius: 10px; color: #17201C; text-decoration: none">Mis solicitudes<span aria-label="2 mensajes sin leer" style="min-width: 22px; height: 22px; border-radius: 999px; background: #B42318; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span></a>
+      <a href="#" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Cupos libres</a>
+    </nav>
+    <a href="#" aria-label="Notificaciones" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; color: #17201C; position: relative">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16 V11 A6 6 0 0 1 18 11 V16 L20 18 H4 Z M10 21 H14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path></svg>
+      <span style="position: absolute; top: 8px; right: 8px; width: 9px; height: 9px; border-radius: 999px; background: #B42318"></span>
+    </a>
+    <a href="#" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1180px; margin: 0 auto; padding: 40px 32px; display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 40px; letter-spacing: -1px">Mis suscripciones</h1>
+        <p style="margin: 0; font-size: 17px; color: #4F5A55">Este mes pagas <strong style="color: #17201C">Bs 41,90</strong> en total y ahorras un estimado de <strong style="color: #17201C">Bs 118,20</strong>.</p>
+      </div>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap">
+        <a href="Unirse.dc.html" style="height: 48px; padding: 0 20px; display: flex; align-items: center; border: 1.5px solid #1E6B4E; color: #1E6B4E; border-radius: 12px; font-weight: 700; text-decoration: none">Unirme con un código</a>
+        <a href="NuevoGrupo.dc.html" style="height: 48px; padding: 0 20px; display: flex; align-items: center; gap: 8px; background: #1E6B4E; color: #FFFFFF; border-radius: 12px; font-weight: 700; text-decoration: none">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5 V19 M5 12 H19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path></svg>
+          Crear suscripción
+        </a>
+      </div>
+    </div>
+    <div role="group" aria-label="Filtrar por rol" style="display: flex; gap: 8px; flex-wrap: wrap">
+      <button type="button" aria-pressed="true" style="min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid #17201C; background: #17201C; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">Todas · 4</button>
+      <button type="button" aria-pressed="false" style="min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; cursor: pointer">Soy titular · 1</button>
+      <button type="button" aria-pressed="false" style="min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; cursor: pointer">Soy miembro · 3</button>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px">
+      <sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+        <a href="{{g.href}}" style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 18px; color: #17201C; text-decoration: none; opacity: {{g.opacity}}">
+          <div style="display: flex; align-items: center; gap: 14px">
+            <span aria-hidden="true" style="width: 48px; height: 48px; border-radius: 12px; background: {{g.tile}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 22px">{{g.initial}}</span>
+            <div style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0">
+              <span style="font-weight: 700; font-size: 18px">{{g.name}}</span>
+              <span style="font-size: 15px; color: #4F5A55">{{g.plan}}</span>
+            </div>
+            <span style="border-radius: 999px; padding: 4px 12px; font-size: 14px; font-weight: 700; background: {{g.roleBg}}; color: {{g.roleFg}}">{{g.role}}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline">
+            <span style="font-size: 15px; color: #4F5A55">{{g.quotaLabel}}</span>
+            <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 26px">{{g.quota}}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 15px; color: #4F5A55; padding-top: 14px; border-top: 1px solid #E6E9E4">
+            <span>{{g.members}}</span>
+            <span>{{g.next}}</span>
+          </div>
+          <sc-if value="{{g.hasStatus}}" hint-placeholder-val="{{ false }}">
+            <span style="align-self: flex-start; border-radius: 999px; padding: 4px 12px; font-size: 14px; font-weight: 700; background: {{g.statusBg}}; color: {{g.statusFg}}">{{g.status}}</span>
+          </sc-if>
+        </a>
+      </sc-for>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const titular = { roleBg: '#E3F1EA', roleFg: '#14503A' };
+    const miembro = { roleBg: '#E6E7E9', roleFg: '#3F4650' };
+    return {
+      groups: [
+        { href: 'Grupo.dc.html', initial: 'N', tile: '#A4161A', name: 'Netflix de la familia', plan: 'Netflix · Estándar', role: 'Titular', ...titular, quotaLabel: 'Cuota de referencia', quota: 'Bs 25,50', members: '4 de 4 cupos', next: 'Próximo corte: 1 nov.', opacity: '1', hasStatus: true, status: '1 comprobante por revisar', statusBg: '#DCE6FB', statusFg: '#1C3F94' },
+        { href: 'Cobro.dc.html', initial: 'S', tile: '#14743A', name: 'Spotify depa', plan: 'Spotify · Familiar', role: 'Miembro', ...miembro, quotaLabel: 'Tu cuota', quota: 'Bs 19,80', members: '6 de 6 cupos', next: 'Próximo corte: 18 nov.', opacity: '1', hasStatus: true, status: 'Pendiente · vence el 21 oct.', statusBg: '#FCEBC7', statusFg: '#7A4B00' },
+        { href: '#', initial: 'D', tile: '#1D3A8A', name: 'Disney+ primos', plan: 'Disney+ · Premium', role: 'Miembro', ...miembro, quotaLabel: 'Tu cuota', quota: 'Bs 22,10', members: '4 de 4 cupos', next: 'Próximo corte: 12 nov.', opacity: '1', hasStatus: true, status: 'Pagado', statusBg: '#D7EFE2', statusFg: '#17573F' },
+        { href: '#', initial: 'Y', tile: '#5B5F66', name: 'YouTube de la U', plan: 'YouTube Premium · Familiar', role: 'Miembro', ...miembro, quotaLabel: 'Tu cuota', quota: 'Bs 16,40', members: '3 de 5 cupos', next: 'Grupo cerrado el 30 sep.', opacity: '0.72', hasStatus: true, status: 'Cerrado', statusBg: '#E6E7E9', statusFg: '#3F4650' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 ---
 name: frontend-engineer
-description: Implementa tareas [FE] de Vaquita (Adrian) en frontend/: pantallas Next.js por capas, componentes ui/, proxy /api, hooks y servicios según contracts/api.md, con pruebas de componentes y Playwright. Úsalo para una tarea [FE] concreta de un tasks.md.
+description: "Implementa tareas [FE] de Vaquita (Adrian) en frontend/: pantallas Next.js por capas, componentes ui/, proxy /api, hooks y servicios según contracts/api.md, con pruebas de componentes y Playwright. Úsalo para una tarea [FE] concreta de un tasks.md."
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---
 

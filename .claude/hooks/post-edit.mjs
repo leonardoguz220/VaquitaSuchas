@@ -30,8 +30,8 @@ function findBin(...candidates) {
   return null;
 }
 
-function run(bin, args, cwd) {
-  execFileSync(process.execPath, [bin, ...args], { cwd, stdio: ['ignore', 'pipe', 'pipe'], timeout: 90_000 });
+function run(bin, args, cwd, nodeArgs = []) {
+  execFileSync(process.execPath, [...nodeArgs, bin, ...args], { cwd, stdio: ['ignore', 'pipe', 'pipe'], timeout: 90_000 });
 }
 
 if (/\.(ts|tsx|js|mjs|cjs|json|css|md)$/.test(rel)) {
@@ -55,12 +55,13 @@ const cwd = path.join(ROOT, workspace);
 const vitest = findBin('vitest/vitest.mjs');
 const jest = findBin('jest/bin/jest.js');
 let runner = null;
+// Jest necesita --experimental-vm-modules para cargar ESM (el backend lo es desde el PR #10).
 if (vitest) runner = [vitest, ['related', abs, '--run', '--passWithNoTests']];
-else if (jest) runner = [jest, ['--findRelatedTests', abs, '--passWithNoTests', '--silent']];
+else if (jest) runner = [jest, ['--findRelatedTests', abs, '--passWithNoTests', '--silent'], ['--experimental-vm-modules']];
 if (!runner) process.exit(0);
 
 try {
-  run(runner[0], runner[1], cwd);
+  run(runner[0], runner[1], cwd, runner[2]);
 } catch (error) {
   const output = `${error.stdout ?? ''}${error.stderr ?? ''}`.trim().split('\n').slice(-40).join('\n');
   process.stdout.write(
