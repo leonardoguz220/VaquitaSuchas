@@ -1,0 +1,138 @@
+# Base de datos de Vaquita
+
+Paquete `@vaquita/database`: migraciones SQL numeradas, seed y pruebas de integridad de PostgreSQL. Responsable: Camila Fuentes. Las reglas de la capa están en [`CLAUDE.md`](CLAUDE.md) y el modelo de la spec 000 en [`../specs/000-setup-del-proyecto/data-model.md`](../specs/000-setup-del-proyecto/data-model.md).
+
+## 1. Contenido y comandos
+
+| Carpeta        | Contiene                                                                                       |
+| -------------- | ---------------------------------------------------------------------------------------------- |
+| `migrations/`  | Archivos `NNNN_nombre.sql`, uno por cambio, aplicados en orden numérico                        |
+| `seeds/`       | Catálogo inicial (spec 004) y datos de prueba                                                  |
+| `tests/`       | Pruebas de integridad con `node:test` y `pg`; `tests/helpers/` crea bases temporales           |
+| `src/`         | Ejecutor de migraciones (`migrate.ts`), configuración (`config.ts`), seed, reinicio y respaldo |
+| `docker/init/` | Scripts que PostgreSQL corre al crear el volumen (crea la base `vaquita_test`)                 |
+
+Los comandos se ejecutan desde la raíz del repositorio.
+
+| Para                                                    | Comando                                  |
+| ------------------------------------------------------- | ---------------------------------------- |
+| Levantar y apagar PostgreSQL y Mailpit                  | `npm run db:up` / `npm run db:down`      |
+| Aplicar las migraciones pendientes                      | `npm run db:migrate`                     |
+| Cargar el seed (catálogo y datos de prueba)             | `npm run db:seed`                        |
+| Recrear el esquema desde cero y sembrar (solo local)    | `npm run db:reset`                       |
+| Respaldar y restaurar (envoltorios de `pg_dump`/`psql`) | `npm run db:dump` / `npm run db:restore` |
+| Validar numeración y migraciones sin editar (CI)        | `npm run db:check -w database`           |
+| Pruebas de integridad                                   | `npm run test -w database`               |
+| ESLint, Prettier y `tsc --noEmit`                       | `npm run lint -w database`               |
+
+Variables (copiar [`.env.example`](.env.example) a `database/.env`; el `.env` real no se sube):
+
+| Variable            | Uso                                                                                   | Valor local por defecto                                  |
+| ------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `DATABASE_URL`      | Base de desarrollo: migraciones, seed y respaldo                                      | `postgres://vaquita:vaquita@localhost:5432/vaquita`      |
+| `TEST_DATABASE_URL` | Servidor de pruebas; cada prueba crea en él una base temporal y la borra al terminar  | `postgres://vaquita:vaquita@localhost:5432/vaquita_test` |
+| `DB_PORT`           | Puerto del host donde `docker compose` publica PostgreSQL (lo lee el entorno, ver §7) | `5432`                                                   |
+
+Las credenciales `vaquita:vaquita` son de desarrollo local y las define `docker-compose.yml`; no son secretos. Las pruebas no tocan `vaquita` ni dejan datos en `vaquita_test`: se conectan a `TEST_DATABASE_URL`, crean una base `vaquita_t_<aleatorio>`, aplican las migraciones y la eliminan con `DROP DATABASE ... WITH (FORCE)`.
+
+## 2. Rangos de numeración por spec
+
+Cada spec tiene un rango reservado para que dos integrantes no usen el mismo número (`research.md` R6, spec 000 §8).
+
+| Rango     | Spec | Módulo                                                |
+| --------- | ---- | ----------------------------------------------------- |
+| 0001–0009 | 000  | Base: extensiones, funciones y tablas técnicas        |
+| 0010–0019 | 003  | Usuarios y autenticación                              |
+| 0020–0029 | 004  | Catálogo de servicios                                 |
+| 0030–0039 | 001  | Suscripciones compartidas (grupos), división y moneda |
+| 0040–0049 | 002  | Cobros y pagos                                        |
+| 0050–0059 | 010  | Solicitudes de ingreso y chat                         |
+| 0060–0069 | 007  | Reputación                                            |
+| 0070–0079 | 005  | Notificaciones                                        |
+| 0080–0089 | 008  | Cupos libres                                          |
+| 0090–0099 | 009  | Administración                                        |
+| 0100–0109 | 006  | Panel y reportes (vistas)                             |
+
+Migraciones existentes de la spec 000:
+
+| Archivo                      | Crea                                                                                                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `0001_init.sql`              | Extensión `unaccent` y funciones `set_updated_at()`, `forbid_update_delete()` e `immutable_unaccent(text)` |
+| `0002_job_runs.sql`          | `job_runs`: ejecuciones de tareas programadas                                                              |
+| `0003_rate_limit_events.sql` | `rate_limit_events`: eventos de límites por ventana, de solo anexado                                       |
+| `0004_telegram_updates.sql`  | `telegram_updates`: deduplicación de actualizaciones del bot                                               |
+
+`schema_migrations` no la crea ninguna migración: la crea y mantiene el ejecutor (`version`, `name`, `checksum` SHA-256 y `applied_at`).
+
+## 3. Cómo agregar una migración
+
+1. Nombre `NNNN_snake_case.sql`: cuatro dígitos, minúsculas, números y guion bajo (por ejemplo `0011_user_sessions.sql`). El ejecutor ignora los archivos que no cumplen el patrón y rechaza dos archivos con el mismo prefijo.
+2. Usa el siguiente número libre **del rango de su spec**, también cuando corrige una migración anterior.
+3. Una transacción por archivo: el ejecutor abre `BEGIN` y hace `COMMIT` o `ROLLBACK`. No escribas `BEGIN` ni `COMMIT` en el archivo. Si algo falla, la base queda sin cambios parciales y el error nombra el archivo (CA-000-04).
+4. **Nunca se edita una migración que ya está en `main` o `dev`** (RN-000-02). El ejecutor guarda el checksum de cada archivo aplicado y se niega a seguir si cambió o fue renombrado; `db:check` lo valida en CI contra la rama base, y el hook de Claude Code bloquea la edición. El cambio va en una migración nueva.
+5. Pruébala desde una base vacía (`npm run db:reset` en local y `npm run test -w database`) y agrega la prueba que intenta violar cada restricción nueva (§5).
+
+## 4. Convenciones del esquema
+
+Resumen de `data-model.md` §1 (RF-000-07). Valen para todas las migraciones.
+
+| Tema             | Regla                                                                                                                                                                                                                                        |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Nombres          | Tablas en plural y columnas en `snake_case`, en inglés (`billing_cycles`, `paid_at`). Los valores de los estados son los de la spec, en español (`pendiente`, `en_revision`).                                                                |
+| Claves primarias | `id uuid PRIMARY KEY DEFAULT gen_random_uuid()` (nativa desde PostgreSQL 13, sin `pgcrypto`). Excepciones de clave natural: `schema_migrations` (`version`, la crea el ejecutor) y `telegram_updates` (`update_id bigint`, según el modelo). |
+| Fechas           | `timestamptz` guardado en UTC; nunca `timestamp` sin zona. La conversión a America/La_Paz ocurre solo al mostrar.                                                                                                                            |
+| Dinero           | `bigint` en centavos de Bs con `CHECK (... >= 0)` y sufijo `_cents`. Nunca `float`, `real`, `double precision` ni `numeric` sin escala.                                                                                                      |
+| Tipo de cambio   | `numeric(10,4)` con `CHECK (... > 0)`.                                                                                                                                                                                                       |
+| Estados          | `text` con `CHECK (col IN (...))` y los valores exactos de la spec. No se usa `ENUM`: agregar un valor a un `ENUM` no se puede revertir dentro de una transacción.                                                                           |
+| Marcas de tiempo | Toda tabla tiene `created_at` y `updated_at` (`timestamptz NOT NULL DEFAULT now()`); `updated_at` lo mantiene el disparador `set_updated_at()`. `schema_migrations` usa `applied_at` en su lugar.                                            |
+| Solo anexado     | Las tablas de eventos y auditoría llevan además `forbid_update_delete()`: todo `UPDATE` o `DELETE` lanza un error. Su `updated_at` es igual a `created_at`.                                                                                  |
+| Claves foráneas  | Siempre con la acción explícita; por defecto `ON DELETE RESTRICT`. Ningún historial se borra en cascada.                                                                                                                                     |
+| Índices          | Uno por cada consulta frecuente que menciona el plan de la spec, justificado con esa consulta en un comentario.                                                                                                                              |
+| Texto sensible   | Nada de contraseñas, tokens, CI ni correos en claro fuera de `users`; los tokens solo como hash.                                                                                                                                             |
+
+Líneas estándar al final de cada migración que crea una tabla:
+
+```sql
+CREATE TRIGGER <tabla>_set_updated_at
+  BEFORE UPDATE ON <tabla>
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Solo en tablas de solo anexado. Los disparadores BEFORE corren en orden alfabético de nombre,
+-- así que ..._forbid_update_delete corre antes que ..._set_updated_at y bloquea la operación.
+CREATE TRIGGER <tabla>_forbid_update_delete
+  BEFORE UPDATE OR DELETE ON <tabla>
+  FOR EACH ROW EXECUTE FUNCTION forbid_update_delete();
+```
+
+## 5. Pruebas de integridad
+
+Cada restricción tiene una prueba que intenta violarla, y cada prueba cita en su nombre o comentario el criterio o la regla que cubre (`CA-000-03`, `RN-000-02`, `RF-000-07`). Corren con `node:test` contra PostgreSQL real, sin mocks (`research.md` R7).
+
+| Archivo de `tests/`                     | Cubre                                                                                                                                                                                                                             |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `smoke.connection.test.ts`              | Conexión a la base de pruebas (RF-000-01)                                                                                                                                                                                         |
+| `migrations.apply.test.ts`              | Aplicación en orden sobre base vacía (CA-000-02), solo las nuevas en ejecuciones posteriores (RN-000-03), bloqueo asesor (RF-000-05) y prefijos repetidos (spec 000 §8)                                                           |
+| `migrations.idempotent.test.ts`         | Una segunda ejecución no cambia nada (CA-000-03)                                                                                                                                                                                  |
+| `migrations.atomic.test.ts`             | Una migración que falla a la mitad no deja cambios y el error nombra el archivo (CA-000-04)                                                                                                                                       |
+| `migrations.checksum.test.ts`           | Rechazo de migraciones aplicadas que cambiaron; los finales de línea no alteran el checksum (RN-000-02)                                                                                                                           |
+| `init.functions.test.ts`                | `unaccent`, `gen_random_uuid()`, `immutable_unaccent`, `set_updated_at()` y `forbid_update_delete()` (RF-000-07)                                                                                                                  |
+| `job_runs.constraints.test.ts`          | Valores por defecto, `CHECK` de `trigger` y `status`, `NOT NULL`, disparador e índice de `job_runs` (RF-000-14, RF-000-07)                                                                                                        |
+| `rate_limit_events.constraints.test.ts` | Columnas obligatorias, índice de búsqueda y disparadores de `rate_limit_events` (RF-000-07)                                                                                                                                       |
+| `telegram_updates.constraints.test.ts`  | `update_id` único y `bigint`, `ON CONFLICT DO NOTHING` y disparador de `telegram_updates` (RF-000-22)                                                                                                                             |
+| `schema.conventions.test.ts`            | Toda tabla salvo `schema_migrations` tiene `id uuid`, `created_at` y `updated_at`; ninguna columna `float`, `real`, `double precision` ni `timestamp without time zone`; los estados usan `text` + `CHECK` (RF-000-07, RN-000-01) |
+| `append_only.triggers.test.ts`          | `UPDATE` y `DELETE` sobre `rate_limit_events` fallan (RF-000-07)                                                                                                                                                                  |
+| `numbering.check`                       | Prefijos únicos y de 4 dígitos, nombres válidos y ninguna migración editada respecto de `main` (RN-000-02, spec 000 §8)                                                                                                           |
+| `seed` y `reset`                        | El seed es idempotente y no trae contraseñas; `db:reset` recrea el esquema y siembra (RF-000-06)                                                                                                                                  |
+
+## 6. Seed
+
+- Solo contiene el catálogo de servicios (spec 004) y datos de prueba. Nunca datos reales.
+- Es idempotente: correr `npm run db:seed` dos veces deja el mismo resultado.
+- No hay contraseñas en el repositorio. El administrador de desarrollo se crea con `npm run seed:admin -w backend` (T027), que reutiliza el hash del backend y solo funciona si `NODE_ENV` no es `production` y existen `SEED_ADMIN_EMAIL` y `SEED_ADMIN_PASSWORD` (RF-009-02).
+- Los precios del catálogo se verifican con fuentes oficiales.
+
+## 7. Problemas frecuentes
+
+- **El puerto 5432 está ocupado** por otro PostgreSQL: levanta la base en otro puerto del host con `DB_PORT=5435 npm run db:up` y usa ese mismo puerto en `DATABASE_URL` y `TEST_DATABASE_URL` de `database/.env`. `docker compose` no lee `database/.env`; toma `DB_PORT` del entorno o del `.env` de la raíz.
+- **No existe `vaquita_test`**: se crea en el mismo contenedor con `docker/init/01-create-test-db.sql`, que PostgreSQL ejecuta una sola vez al inicializar un volumen vacío. Si el volumen se creó antes de ese script, recréalo con `docker compose down -v && npm run db:up` (borra los datos locales).
+- **`db:reset` solo se usa contra la base local.**
