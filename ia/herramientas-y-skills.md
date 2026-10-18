@@ -128,7 +128,7 @@ Están en `.claude/settings.json` (compartido por Git) y los scripts en `.claude
 | Hook | Evento | Qué hace |
 |---|---|---|
 | `guard-files.mjs` | Antes de leer o escribir un archivo | Bloquea `.env` (salvo `.env.example`), claves y credenciales. Bloquea editar una migración que ya está en `main` (RN-000-02). Avisa, sin bloquear, al tocar una spec, un contrato, un modelo, la constitución, `CLAUDE.md`, `context/` o un test existente |
-| `guard-bash.mjs` | Antes de un comando de terminal | Bloquea push a `main`, push forzado, `--no-verify`, leer secretos con `cat` o similares, y `db:reset`, `db:restore`, `db:migrate` o `db:seed` contra una base que no es la local (RF-000-21) |
+| `guard-bash.mjs` | Antes de un comando de terminal | Bloquea push a `main`, `dev` o `qa`, push forzado, `--no-verify`, leer secretos con `cat` o similares, y `db:reset`, `db:restore`, `db:migrate` o `db:seed` contra una base que no es la local (RF-000-21) |
 | `post-edit.mjs` | Después de editar código en `backend/`, `frontend/` o `database/` | Formatea con Prettier y corre los tests unitarios relacionados (Jest o Vitest). Si fallan, se lo devuelve a Claude para que lo corrija. No hace nada hasta que exista el código. `VAQUITA_HOOK_TESTS=0` desactiva los tests |
 
 Permisos: se permiten sin preguntar lint, build, tests, `db:up`, `db:migrate`, `db:seed` y los comandos de Git de lectura. Se pregunta antes de `git push`, `git reset --hard`, `git clean`, `db:reset`, `db:restore` y `npm install`. Se prohíben `rm -rf`, el push forzado y `--no-verify`.

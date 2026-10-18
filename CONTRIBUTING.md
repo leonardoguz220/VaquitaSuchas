@@ -87,7 +87,8 @@ El orden de dependencia es base de datos, backend y frontend, pero el trabajo co
 
 ## 5. Ramas y PRs
 
-- `main` se mantiene estable y no recibe pushes directos.
+- Hay tres ramas permanentes y ninguna recibe pushes directos: `dev` integra el trabajo del día a día y es la rama por defecto, `qa` recibe lo que se va a probar antes de publicar y `main` contiene solo lo que ya pasó por `qa`.
+- Las ramas de trabajo salen de `dev` y vuelven a `dev` por PR. Luego se abre un PR de `dev` a `qa` y, cuando la prueba pasa, otro de `qa` a `main`.
 - `spec/NNN-nombre` contiene la especificación y el plan.
 - `bd/NNN-tX-descripcion`, `be/NNN-tX-descripcion` y `fe/NNN-tX-descripcion` contienen una tarea cada una, con el prefijo de su capa.
 - Los PRs son pequeños (una tarea) y usan la plantilla de `.github/pull_request_template.md`.

@@ -1,9 +1,12 @@
 // PreToolUse (Bash). Bloquea comandos que rompen las reglas del equipo:
-// - push directo a main o push forzado (RF-000-02, CONTRIBUTING.md §5);
+// - push directo a main, dev o qa, o push forzado (RF-000-02, CONTRIBUTING.md §5);
 // - saltarse los hooks de git (--no-verify);
 // - leer archivos con secretos desde la terminal;
 // - db:reset, db:restore, db:migrate o db:seed contra una base que no es la local (RF-000-21: staging migra por workflow).
 import { readInput, isSecretPath, git, denyPreToolUse } from './lib.mjs';
+
+const PROTECTED_BRANCHES = ['main', 'dev', 'qa'];
+const PROTECTED_PUSH = new RegExp(`(?:\\s|:)(${PROTECTED_BRANCHES.join('|')})(?:\\s|$)`);
 
 const input = await readInput();
 const cmd = input.tool_input?.command;
@@ -21,10 +24,12 @@ for (const part of parts) {
     if (/\s(--force(?!-with-lease)|-f)(\s|$)/.test(part)) {
       denyPreToolUse('Push forzado bloqueado. Si de verdad hace falta en tu propia rama, usa --force-with-lease a mano.');
     }
-    const pushesMain = /(\s|:)main(\s|$)/.test(part);
+    const target = part.match(PROTECTED_PUSH)?.[1];
     const hasRefspec = part.split(/\s+/).filter((t) => !t.startsWith('-')).length > 3;
-    if (pushesMain || (!hasRefspec && git(['rev-parse', '--abbrev-ref', 'HEAD']) === 'main')) {
-      denyPreToolUse('main está protegida: no se hace push directo. Trabaja en una rama y abre un PR (CONTRIBUTING.md §5).');
+    const current = hasRefspec ? null : git(['rev-parse', '--abbrev-ref', 'HEAD']);
+    const branch = target ?? (PROTECTED_BRANCHES.includes(current) ? current : null);
+    if (branch) {
+      denyPreToolUse(`${branch} está protegida: no se hace push directo. Trabaja en una rama y abre un PR (CONTRIBUTING.md §5).`);
     }
   }
 
