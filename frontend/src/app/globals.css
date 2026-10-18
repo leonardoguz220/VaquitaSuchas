@@ -1,1 +1,69 @@
 @import 'tailwindcss';
+
+/*
+ * Tokens de diseño de Vaquita (T036, RF-000-16).
+ * Fuente: frontend/design/mockups/README.md, sección Estilo.
+ *
+ * Contraste WCAG 2.1 (texto normal >= 4.5:1, componentes de interfaz >= 3:1).
+ * Razones calculadas con la fórmula de luminancia relativa de WCAG y verificadas
+ * en src/components/ui/tokens.test.ts, que lee este archivo:
+ *   blanco sobre primary ........... 6.43   blanco sobre primary-hover ... 9.38
+ *   primary sobre surface .......... 6.43   primary sobre bg ............. 5.92
+ *   primary-hover sobre primary-soft 8.06   primary sobre primary-soft ... 5.52
+ *   ink sobre surface ............. 16.67   ink sobre bg ................ 15.36
+ *   muted sobre surface ............ 7.18   muted sobre bg ............... 6.61
+ *   danger sobre surface ........... 8.18   blanco sobre danger .......... 8.18
+ *   pendiente ...................... 6.30   en_revision .................. 7.66
+ *   pagado ......................... 7.01   atrasado ..................... 6.36
+ *   cancelado ...................... 7.70
+ *   field-border sobre surface ..... 3.38   (borde de campo, mínimo 3:1)
+ *
+ * Único ajuste respecto del README: field-border pasa de #C9CFC8 (1.59:1 sobre
+ * blanco, no cumple WCAG 1.4.11) a #858E88, el mismo gris verdoso oscurecido lo
+ * mínimo para superar 3:1 sobre surface y sobre bg. line (#D9DDD7) se mantiene
+ * porque el borde de una tarjeta es decorativo y no identifica un control.
+ */
+@theme {
+  --color-primary: #1e6b4e;
+  --color-primary-hover: #14503a;
+  --color-primary-soft: #e3f1ea;
+  --color-ink: #17201c;
+  --color-muted: #4f5a55;
+  --color-bg: #f5f6f2;
+  --color-surface: #ffffff;
+  --color-line: #d9ddd7;
+  --color-field-border: #858e88;
+  --color-danger: #9b1c12;
+  --color-danger-hover: #7a1610;
+
+  /* Estados de un cobro: fondo (bg) y texto (fg). Siempre con texto visible. */
+  --color-status-pendiente-bg: #fcebc7;
+  --color-status-pendiente-fg: #7a4b00;
+  --color-status-en-revision-bg: #dce6fb;
+  --color-status-en-revision-fg: #1c3f94;
+  --color-status-pagado-bg: #d7efe2;
+  --color-status-pagado-fg: #17573f;
+  --color-status-atrasado-bg: #fbdcd8;
+  --color-status-atrasado-fg: #9b1c12;
+  --color-status-cancelado-bg: #e6e7e9;
+  --color-status-cancelado-fg: #3f4650;
+
+  /* Formas: campos y botones 12 px, tarjetas 20 px, insignias en píldora (rounded-full). */
+  --radius-field: 12px;
+  --radius-card: 20px;
+
+  /* Texto base de campos y botones: 17 px (evita el zoom automático de iOS). */
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.5;
+}
+
+/*
+ * Tipografías. T037 define --font-bricolage y --font-atkinson con next/font en
+ * app/layout.tsx y debe poner sus clases de variable en <html>. Mientras no
+ * existan se usa la fuente del sistema. `inline` hace que las utilidades
+ * resuelvan la variable donde se usan y no en :root.
+ */
+@theme inline {
+  --font-display: var(--font-bricolage), system-ui, sans-serif;
+  --font-sans: var(--font-atkinson), system-ui, sans-serif;
+}
