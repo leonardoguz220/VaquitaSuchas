@@ -1,0 +1,2 @@
+# Prettier exige LF (.prettierrc); evita que core.autocrlf de Windows convierta a CRLF.
+* text=auto eol=lf
