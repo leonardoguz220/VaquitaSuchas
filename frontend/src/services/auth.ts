@@ -38,3 +38,51 @@ export type RegisterErrorCode =
 export function register(input: RegisterRequest): Promise<RegisterResponse> {
   return apiRequest<RegisterResponse>('/api/auth/register', { method: 'POST', body: input });
 }
+
+/**
+ * Lo que ve la propia persona (contrato 003, objeto `UserSelf`). Nunca incluye el hash, la
+ * CI en claro ni datos de otros.
+ */
+export interface UserSelf {
+  id: string;
+  fullName: string;
+  email: string;
+  /** `"*****123"`: solo los últimos 3 dígitos (CA-003-31). */
+  ciMasked: string;
+  /** `"+59171234567"`. */
+  phone: string;
+  role: 'usuario' | 'admin';
+  /** Un usuario no activo no llega a ver este objeto. */
+  status: 'activo';
+  /** ISO 8601 en UTC (RF-003-09). */
+  lastLoginAt: string | null;
+  /** ISO 8601 en UTC. */
+  createdAt: string;
+}
+
+/** Cuerpo de `POST /auth/login`. */
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+/**
+ * Respuesta 200 de `POST /auth/login` tal como llega al navegador: el proxy guarda
+ * `sessionToken` en la cookie httpOnly `vq_session` y lo quita del cuerpo (contrato 000 C).
+ */
+export interface LoginResponse {
+  user: UserSelf;
+}
+
+/** Códigos de error propios de `POST /auth/login`. */
+export type LoginErrorCode = 'VALIDATION_ERROR' | 'INVALID_CREDENTIALS' | 'RATE_LIMITED';
+
+/** `POST /auth/login` (RF-003-06). Lanza `ApiError` con los códigos del contrato. */
+export function login(input: LoginRequest): Promise<LoginResponse> {
+  return apiRequest<LoginResponse>('/api/auth/login', { method: 'POST', body: input });
+}
+
+/** `GET /auth/me` (RF-003-08). Sin sesión válida lanza `ApiError` con `statusCode` 401. */
+export function getMe(): Promise<UserSelf> {
+  return apiRequest<UserSelf>('/api/auth/me');
+}

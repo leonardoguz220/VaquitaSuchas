@@ -58,3 +58,60 @@ export function buildAuthLink(path: string, searchParams: SearchParamsRecord = {
   const query = params.toString();
   return query ? `${path}?${query}` : path;
 }
+
+/** Pantalla de registro (spec 003 T023). */
+export const REGISTER_PATH = '/registro';
+
+/** Pantalla para pedir el enlace de recuperación de contraseña (spec 003 T035). */
+export const RECOVER_PATH = '/recuperar';
+
+/**
+ * "Unirme con un código" (plan 010 §6): acepta `?codigo=XXXXXXXX` del enlace de invitación.
+ * La pantalla llega con la spec 010.
+ */
+export const JOIN_PATH = '/unirse';
+
+/** Destino tras ingresar cuando no hay otro: la raíz redirige según la sesión (RF-000-16). */
+export const DEFAULT_AFTER_LOGIN_PATH = '/';
+
+/** Base ficticia para resolver rutas relativas y comprobar que no cambian de origen. */
+const SAME_ORIGIN_BASE = 'http://vaquita.invalid';
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+/**
+ * Devuelve `value` si es una ruta interna segura para redirigir tras ingresar, o `null`.
+ * Evita la redirección abierta: exige que empiece con una sola `/` (no `//` ni `/\`), sin
+ * esquema (`https:`, `javascript:`), sin barras invertidas ni caracteres de control (el
+ * navegador los quita o los cambia por `/`) y que al resolverla no cambie de origen.
+ */
+export function safeNextPath(value: string | string[] | undefined): string | null {
+  const candidate = firstValue(value);
+  if (!candidate || !candidate.startsWith('/')) return null;
+  if (candidate.startsWith('//') || candidate.includes('\\')) return null;
+  // Espacios y caracteres de control (U+0000 a U+0020 y U+007F).
+  if (/[\x00-\x20\x7f]/.test(candidate)) return null;
+  try {
+    const url = new URL(candidate, SAME_ORIGIN_BASE);
+    if (url.origin !== SAME_ORIGIN_BASE) return null;
+  } catch {
+    return null;
+  }
+  return candidate;
+}
+
+/**
+ * A dónde ir tras ingresar (spec 003 T029): a `next` si es una ruta interna segura; si no, y
+ * llegó un código de invitación, a `/unirse?codigo=…` (plan 010 §6); si no, a `/`.
+ */
+export function resolvePostLoginPath(searchParams: SearchParamsRecord = {}): string {
+  const next = safeNextPath(searchParams[NEXT_PARAM]);
+  if (next) return next;
+  const code = firstValue(searchParams[INVITE_CODE_PARAM])?.trim();
+  if (code) {
+    return `${JOIN_PATH}?${new URLSearchParams({ [INVITE_CODE_PARAM]: code }).toString()}`;
+  }
+  return DEFAULT_AFTER_LOGIN_PATH;
+}
