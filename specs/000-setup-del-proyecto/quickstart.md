@@ -21,6 +21,10 @@ npm run db:migrate && npm run db:seed
 npm run dev                                # backend en :3001 y frontend en :3000
 ```
 
+Si el puerto 5432 ya lo usa otro PostgreSQL, levantar la base con otro puerto del host (`DB_PORT=5435 npm run db:up`) y usar ese mismo puerto en `DATABASE_URL`.
+
+Para usar `/speckit-implement` sobre esta spec, definir antes la feature activa: `export SPECIFY_FEATURE_DIRECTORY=specs/000-setup-del-proyecto`.
+
 **Esperado:** `http://localhost:3000/estado` muestra el estado del backend y de la base (CA-000-10); `http://localhost:3001/api/docs` muestra Swagger (CA-000-07); Mailpit en `http://localhost:8025`.
 
 ## 2. Migraciones (CA-000-02, CA-000-03, CA-000-04)
@@ -66,7 +70,7 @@ npm run test -w frontend -- format
 ## 7. Integración continua (CA-000-13, CA-000-15, CA-000-16, CA-000-18)
 
 1. Abrir un PR de prueba con un test roto: el workflow falla y GitHub bloquea la fusión.
-2. Intentar `git push origin main`: GitHub lo rechaza (rama protegida).
+2. Intentar `git push origin main` (y lo mismo con `dev` y `qa`): GitHub lo rechaza (rama protegida).
 3. Crear un `.env` con valores reales y ejecutar `git status`: el archivo no aparece (ignorado).
 4. Agregar en un PR de prueba una clave falsa con formato de secreto: el paso `gitleaks` falla.
 
