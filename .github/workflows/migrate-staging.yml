@@ -1,0 +1,70 @@
+# Aplica las migraciones de database/migrations en staging (spec 000, T044, RF-000-21, RN-000-03).
+# Es manual a propósito: las migraciones nunca corren al arrancar el backend.
+# Requisitos en GitHub (los configura una persona, ver database/README.md «Migrar staging»):
+#   - Entorno "staging" con revisores obligatorios.
+#   - Secreto de entorno STAGING_DATABASE_URL con la URL externa de PostgreSQL de Render.
+name: Migrate staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: 'Sembrar también el catálogo (db:seed es idempotente)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migrate-staging
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: db:migrate en staging
+    runs-on: ubuntu-latest
+    # Solo desde main: staging nunca recibe migraciones que todavía no están fusionadas.
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # db:check compara las migraciones con origin/main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias del paquete database
+        run: npm ci --workspace database
+
+      - name: Validar numeración y migraciones ya fusionadas
+        run: npm run db:check -w database -- --base origin/main
+
+      - name: Aplicar migraciones
+        run: npm run db:migrate -w database
+        env:
+          CI: 'true'
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+
+      - name: Comprobar que una segunda ejecución no cambia nada (CA-000-03)
+        run: |
+          set -o pipefail
+          npm run db:migrate -w database | tee migrate-second.log
+          grep -q '^Migraciones: 0 aplicadas' migrate-second.log
+        env:
+          CI: 'true'
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+
+      - name: Sembrar el catálogo
+        if: ${{ inputs.seed }}
+        run: npm run db:seed -w database
+        env:
+          CI: 'true'
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
