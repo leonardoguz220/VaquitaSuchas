@@ -11,6 +11,10 @@
   "scripts": {
     "db:check": "node --import tsx src/check.ts",
     "db:migrate": "node --env-file-if-exists=.env --import tsx src/migrate.ts",
+    "db:seed": "node --env-file-if-exists=.env --import tsx src/seed.ts",
+    "db:reset": "node --env-file-if-exists=.env --import tsx src/reset.ts",
+    "db:dump": "node --env-file-if-exists=.env --import tsx src/dump.ts",
+    "db:restore": "node --env-file-if-exists=.env --import tsx src/restore.ts",
     "lint": "eslint . && prettier --check . && tsc --noEmit",
     "lint:fix": "eslint . --fix && prettier --write .",
     "typecheck": "tsc --noEmit",
