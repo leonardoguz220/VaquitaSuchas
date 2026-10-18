@@ -3,7 +3,7 @@
 - **Estado:** borrador
 - **Líder de la spec:** Camila Fuentes (BD)
 - **Revisión por capa:** Leonardo Guzman (Backend): pendiente · Adrian Vargas (Frontend): pendiente · Camila Fuentes (BD): pendiente
-- **Prioridad:** P2 (extra)
+- **Prioridad:** P2 (extra). La calificación básica (RF-007-01 a RF-007-05, RF-007-12, RF-007-13 y RF-007-15 a RF-007-17) se construye junto con el MVP, porque la spec 001 la usa para habilitar titulares (RF-001-21); las insignias y el ranking quedan en P2
 - **Depende de:** 002 (datos de puntualidad), 001 (grupos)
 - **Módulo cubierto:** 8 (Reputación)
 - **Última actualización:** 2026-10-17
@@ -24,7 +24,7 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 - Penalizaciones económicas o bloqueos automáticos por mala calificación.
 - Reseñas escritas entre usuarios y votos de estrellas de unos usuarios a otros: la calificación se calcula a partir de los pagos, no de opiniones.
 - Reputación pública fuera de la app.
-- Reputación del titular por rapidez de confirmación (se deja como mejora futura).
+- Reputación del titular por rapidez de confirmación. La spec 010 registra las solicitudes que expiran por falta de respuesta del titular, dato que esta spec podrá usar más adelante.
 
 ## 4. Actores y permisos
 
@@ -32,7 +32,7 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 |---|---|
 | Usuario | Su calificación detallada, su historial de puntualidad y sus insignias |
 | Miembro de un grupo | El ranking del grupo con calificación y nivel de los demás miembros |
-| Titular | Lo anterior, y la calificación y el nivel de quienes soliciten unirse a sus grupos (spec 008) |
+| Titular | Lo anterior, y la calificación y el nivel de quienes soliciten unirse a sus grupos (specs 008 y 010) |
 | Administrador | Estadísticas agregadas (spec 009) |
 
 ## 5. Historias de usuario
@@ -67,6 +67,11 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 - **RF-007-13:** Un cobro `cancelado` no cuenta. Si el titular cancela un cobro atrasado porque el miembro salió, no afecta su calificación.
 - **RF-007-14:** El usuario puede **reportar** un cobro que cree mal calificado; el titular del grupo lo revisa y puede marcar el cobro como "excluido de reputación" con un motivo. Queda registrado quién y cuándo.
 
+### Habilitación para ser titular
+- **RF-007-15:** Un usuario queda **habilitado como titular** (spec 001, RF-001-21) cuando su calificación mostrada alcanza el umbral y tiene la cantidad mínima de cobros considerados. [NECESITA ACLARACIÓN: umbral] **Propuesta:** 4,5 estrellas o más y al menos 6 cobros considerados.
+- **RF-007-16:** Si la calificación baja del umbral, el usuario deja de poder crear nuevas suscripciones. Los grupos que ya tiene no cambian.
+- **RF-007-17:** La habilitación manual que hace un administrador (spec 009, RF-009-21) es independiente de la calificación y no se pierde al bajar de ella.
+
 ## 7. Requisitos no funcionales
 
 - **RNF-007-01 (Transparencia):** la fórmula, con un ejemplo, se documenta en la app y es la misma para todos.
@@ -86,6 +91,7 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 - **RN-007-06:** La comparación de fechas usa la zona America/La_Paz: el último día del plazo cuenta hasta las 23:59:59.
 - **RN-007-07:** Las reglas de niveles y de insignias son configuración versionada; si cambian, se recalcula a todos.
 - **RN-007-08:** La reputación de un usuario nunca se calcula a partir de datos de otros usuarios.
+- **RN-007-09 (Cobros de ingreso):** los cobros de origen `ingreso` (spec 002, RN-002-10) no cuentan para la calificación ni para la habilitación como titular: el pago es previo al ingreso y no mide puntualidad. Así no se puede subir la calificación entrando y pagando en varios grupos.
 
 ## 9. Casos borde y errores
 
@@ -124,6 +130,10 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 - **CA-007-18:** Dados usuarios con 19 de 20, 15 de 20 y 11 de 20 cobros puntuales, cuando se calcula, entonces sus calificaciones son 5 (Excelente), 4 (Bueno) y 3 (Regular).
 - **CA-007-19:** Dado un usuario con 7 de 8 cobros puntuales, cuando se calcula, entonces la calificación exacta es 4,375 y se muestra como 4,5.
 - **CA-007-17:** Dado un intento de enviar una fecha de pago desde el cliente, cuando se procesa, entonces se ignora y se usa la fecha del servidor.
+- **CA-007-20:** Dado un usuario con 6 cobros considerados y 4,5 estrellas, cuando se evalúa la habilitación, entonces queda habilitado como titular; con 5 cobros considerados, no.
+- **CA-007-21:** Dado un titular habilitado cuya calificación baja del umbral, cuando intenta crear una suscripción nueva, entonces se rechaza y sus grupos existentes no cambian.
+- **CA-007-22:** Dado un usuario cuyo único cobro pagado es un cobro de ingreso, cuando se calcula su calificación, entonces ese cobro no cuenta y su nivel es "Nuevo".
+- **CA-007-23:** Dado un usuario habilitado manualmente por un administrador, cuando su calificación está por debajo del umbral, entonces puede crear suscripciones.
 
 ## 11. Preguntas abiertas
 
@@ -133,6 +143,8 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 - [NECESITA ACLARACIÓN] **Pasos y cortes de las estrellas.** **Propuesta:** pasos de media estrella y niveles según RN-007-03 (los cortes pasan de 80 % y 60 % a 75 % y 55 % respecto al puntaje de 0 a 100 anterior).
 - [NECESITA ACLARACIÓN] **Ventana de cálculo.** **Propuesta:** 12 meses.
 - [NECESITA ACLARACIÓN] **Catálogo final de insignias.** **Propuesta:** las del RF-007-06, ampliable.
+- [NECESITA ACLARACIÓN] **Umbral para ser titular y arranque del sistema** (RF-007-15). El equipo pidió "muy buena reputación". Al inicio nadie tiene cobros, así que la habilitación manual del administrador cubre a los primeros titulares. **Propuesta:** 4,5 estrellas y 6 cobros considerados como mínimo. Ver también la spec 001, sección 11.
+- [NECESITA ACLARACIÓN] **Cobros de ingreso fuera de la calificación** (RN-007-09). **Propuesta:** confirmar que no cuentan.
 
 ## 12. Historial de cambios
 
@@ -140,3 +152,4 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 |---|---|---|
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | El puntaje de 0 a 100 pasa a una calificación de 0 a 5 estrellas en pasos de media estrella; se agregan CA-007-18 y CA-007-19 | Equipo |
+| 2026-10-17 | La calificación básica se adelanta al MVP y se agrega la habilitación para ser titular y la exclusión de los cobros de ingreso (RF-007-15 a RF-007-17, RN-007-09, CA-007-20 a CA-007-23) | Equipo |

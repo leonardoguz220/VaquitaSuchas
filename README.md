@@ -2,13 +2,13 @@
 
 Grupo Suchas: Camila Fuentes (base de datos), Leonardo Guzman (backend) y Adrian Vargas (frontend).
 
-Vaquita es una aplicación web para organizar las suscripciones que comparten amigos, familias o compañeros de departamento (Netflix, Spotify, Disney+, YouTube Premium y similares). Calcula la cuota de cada miembro, convierte los montos de dólares a bolivianos, genera los cobros de cada mes, envía recordatorios y guarda un historial: cada miembro sube su comprobante y el titular lo confirma. Incluye además un panel de gasto y ahorro, reputación por puntualidad, cupos libres y administración.
+Vaquita es una aplicación web para organizar las suscripciones que comparten amigos, familias o compañeros de departamento (Netflix, Spotify, Disney+, YouTube Premium y similares). Calcula la cuota de cada miembro, convierte los montos de dólares a bolivianos, genera los cobros de cada mes, envía recordatorios y guarda un historial: cada miembro sube su comprobante y el titular lo confirma. Quien quiere entrar a un grupo abre una solicitud, conversa con el titular en un chat, paga y entra cuando el titular confirma su pago. Incluye además un panel de gasto y ahorro, reputación por puntualidad, cupos libres y administración.
 
 El proyecto se desarrolla con Spec Driven Development: la especificación se escribe y se revisa primero, y el código se deriva de ella.
 
 ## Estado
 
-Las diez specs están en borrador y esperan la revisión por capa. Todavía no hay código; las carpetas `backend/`, `frontend/` y `database/` contienen solo su guía de capa.
+Las once specs están en borrador y esperan la revisión por capa. Todavía no hay código; las carpetas `backend/`, `frontend/` y `database/` contienen solo su guía de capa.
 
 ## Stack
 
@@ -58,6 +58,7 @@ El orden de construcción es P0, P1 y P2, y los diez módulos entran en el alcan
 | 004 | [Catálogo de servicios](specs/004-catalogo-de-servicios/spec.md) | P0 | Camila (BD) |
 | 001 | [Suscripciones compartidas](specs/001-suscripciones-compartidas/spec.md) | P0 | Camila (BD) |
 | 002 | [Cobros y pagos](specs/002-cobros-y-pagos/spec.md) | P0 | Leonardo (BE) |
+| 010 | [Solicitudes de ingreso y chat](specs/010-solicitudes-de-ingreso/spec.md) | P0 | Leonardo (BE) |
 | 005 | [Notificaciones](specs/005-notificaciones/spec.md) | P1 | Leonardo (BE) |
 | 006 | [Panel y reportes](specs/006-panel-y-reportes/spec.md) | P1 | Adrian (FE) |
 | 007 | [Reputación](specs/007-reputacion/spec.md) | P2 | Camila (BD) |

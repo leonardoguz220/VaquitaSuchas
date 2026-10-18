@@ -56,7 +56,7 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 - **RF-000-11:** El backend usa un filtro global de errores que devuelve un formato uniforme (`statusCode`, `code`, `message`, y `details` opcional) sin revelar detalles internos.
 - **RF-000-12:** Existe una abstracción de **servicio de correo** con dos modos: `dev` (los correos llegan a la bandeja local, por ejemplo Mailpit) y `prod` (proveedor real, ver pregunta abierta).
 - **RF-000-13:** El backend registra logs estructurados con un identificador de petición, sin incluir contraseñas, tokens ni comprobantes.
-- **RF-000-14:** Existe el módulo de tareas programadas (`@nestjs/schedule`) con un ejemplo de tarea idempotente, base para los procesos de las specs 002 y 005.
+- **RF-000-14:** Existe el módulo de tareas programadas (`@nestjs/schedule`) con un ejemplo de tarea idempotente, base para los procesos de las specs 002, 005 y 010.
 
 ### Frontend (Adrian)
 - **RF-000-15:** El frontend tiene la ruta proxy `/api/[...path]` que reenvía al backend y gestiona la cookie httpOnly (patrón de `proyectoFrontend1`).

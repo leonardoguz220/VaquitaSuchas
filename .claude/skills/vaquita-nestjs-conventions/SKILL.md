@@ -35,7 +35,7 @@ Stack acordado: NestJS + TypeScript, JWT con Passport, bcrypt, class-validator, 
 
 ## Tareas programadas (`@nestjs/schedule`)
 
-- Procesos: generar cobros en la fecha de corte, marcar `atrasado` al pasar el vencimiento, enviar recordatorios (specs 002 y 005).
+- Procesos: generar cobros en la fecha de corte, marcar `atrasado` al pasar el vencimiento, enviar recordatorios (specs 002 y 005) y vencer los plazos de las solicitudes de ingreso (spec 010), que además se evalúan al consultar o actuar.
 - Deben ser **idempotentes** y soportar ejecutarse dos veces o con retraso (por ejemplo si el servidor estuvo apagado): calculan "qué falta" según los datos, no según "qué hora es".
 - La lógica es un servicio que se puede invocar directamente en los tests; el decorador `@Cron` solo la dispara.
 - La zona de referencia de las fechas de corte es America/La_Paz.

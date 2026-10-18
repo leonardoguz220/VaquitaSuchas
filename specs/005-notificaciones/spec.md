@@ -4,7 +4,7 @@
 - **Líder de la spec:** Leonardo Guzman (Backend)
 - **Revisión por capa:** Camila Fuentes (BD): pendiente · Adrian Vargas (Frontend): pendiente · Leonardo Guzman (Backend): pendiente
 - **Prioridad:** P1 (importante)
-- **Depende de:** 000 (servicio de correo y tareas programadas), 001, 002, 003
+- **Depende de:** 000 (servicio de correo y tareas programadas), 001, 002, 003, 010 (solicitudes de ingreso)
 - **Módulo cubierto:** 6 (Notificaciones)
 - **Última actualización:** 2026-10-17
 
@@ -23,7 +23,7 @@ El valor de Vaquita está en que nadie tenga que perseguir a nadie. Para eso la 
 
 - Notificaciones push del navegador o del celular.
 - Envío automático de mensajes de WhatsApp o SMS mediante API (solo se genera un enlace para que la persona los envíe).
-- Chat entre miembros.
+- Chat de grupo entre miembros. El chat por solicitud de ingreso pertenece a la spec 010; aquí solo se definen sus avisos.
 - Plantillas editables por el usuario.
 
 ## 4. Actores y permisos
@@ -66,6 +66,12 @@ Nadie puede ver las notificaciones de otra persona.
 - **RF-005-11:** Si un comprobante lleva más de 48 horas en revisión, se envía **un** recordatorio al titular.
 - **RF-005-12:** Se avisa al titular cuando un miembro se une o abandona el grupo.
 - **RF-005-13:** Se avisa al titular cuando uno de sus miembros pasa a `atrasado` (un aviso por cobro).
+
+### Solicitudes de ingreso (spec 010)
+- **RF-005-22 (Titular):** se avisa al titular cuando llega una solicitud de ingreso, cuando el solicitante sube el comprobante (con el plazo de 60 minutos), cuando pasan 30 minutos sin decisión y cuando hay un mensaje nuevo en el chat de una solicitud.
+- **RF-005-23 (Solicitante):** se avisa al solicitante cuando el titular le envía los datos de pago (con el plazo de 15 minutos), cuando hay un mensaje nuevo, y cuando su solicitud queda aceptada, rechazada (con el motivo) o expirada.
+- **RF-005-24 (Reclamos):** se avisa al titular cuando se abre un reclamo en su contra y a ambas partes cuando un administrador lo resuelve.
+- **RF-005-25 (Urgencia):** los avisos de esta sección se generan en el momento del evento, no con la tarea diaria, y los correos correspondientes se envían sin la ventana horaria de RNF-005-03. El recordatorio de 30 minutos lo dispara la tarea frecuente de la spec 010.
 
 ### Invitaciones
 - **RF-005-14 (Correo):** el titular ingresa un correo y el sistema envía una invitación con un enlace `/unirse?codigo=XXXXXXXX` y el código. Si el invitado no tiene sesión, tras iniciar sesión o registrarse vuelve a esa pantalla con el código ya cargado. Límite: 10 invitaciones por hora por titular.
@@ -132,7 +138,7 @@ Nadie puede ver las notificaciones de otra persona.
 - **CA-005-12:** Dado un correo de seguridad, cuando se envía, entonces se envía aunque el usuario haya desactivado los demás.
 - **CA-005-13:** Dado un correo no transaccional, cuando se envía, entonces incluye un enlace funcional para desactivar ese tipo.
 - **CA-005-14:** Dado un titular, cuando invita a un correo válido, entonces el invitado recibe un correo con enlace y código.
-- **CA-005-15:** Dado un invitado sin sesión que abre el enlace, cuando se registra, entonces llega a la pantalla de unirse con el código cargado.
+- **CA-005-15:** Dado un invitado sin sesión que abre el enlace, cuando se registra, entonces llega a la pantalla para solicitar su ingreso con el código cargado.
 - **CA-005-16:** Dado un titular que invitó a 10 correos en una hora, cuando envía el siguiente, entonces se rechaza.
 - **CA-005-17:** Dado el botón de WhatsApp, cuando se pulsa, entonces se abre un enlace `wa.me` con el mensaje prellenado y no se hace ninguna llamada de envío desde el servidor.
 - **CA-005-18:** Dado un miembro sin celular, cuando el titular ve su cobro atrasado, entonces no aparece el botón de WhatsApp para él.
@@ -142,6 +148,11 @@ Nadie puede ver las notificaciones de otra persona.
 - **CA-005-22:** Dado un usuario que marca todas como leídas, cuando recarga, entonces el contador está en cero.
 - **CA-005-23:** Dada una notificación de más de 90 días, cuando corre la limpieza, entonces se elimina.
 - **CA-005-24:** Dado un correo de recordatorio programado, cuando son las 21:00 de La Paz, entonces no se envía hasta la siguiente ventana.
+- **CA-005-25:** Dada una solicitud de ingreso nueva, cuando se abre, entonces el titular recibe una notificación en la app con el nombre del solicitante.
+- **CA-005-26:** Dado un titular que envía los datos de pago, cuando la solicitud pasa a `esperando_pago`, entonces el solicitante recibe un aviso con el monto y el plazo de 15 minutos.
+- **CA-005-27:** Dada una solicitud `pago_informado` con 30 minutos sin decisión, cuando se cumple ese tiempo, entonces el titular recibe un único recordatorio.
+- **CA-005-28:** Dado un mensaje nuevo en el chat de una solicitud, cuando se envía, entonces la otra persona ve el contador de no leídos aumentar y no se envía un correo por cada mensaje seguido (se agrupan).
+- **CA-005-29:** Dado un correo de aviso de solicitud a las 21:00 de La Paz, cuando corresponde enviarlo, entonces se envía sin esperar la ventana de RNF-005-03.
 
 ## 11. Preguntas abiertas
 
@@ -155,3 +166,4 @@ Nadie puede ver las notificaciones de otra persona.
 | Fecha | Cambio | Autor |
 |---|---|---|
 | 2026-10-17 | Primer borrador | Equipo |
+| 2026-10-17 | Se agregan los avisos de las solicitudes de ingreso y de los reclamos (RF-005-22 a RF-005-25, CA-005-25 a CA-005-29); el chat de grupo sigue fuera de alcance | Equipo |
