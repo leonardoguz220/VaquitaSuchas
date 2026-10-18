@@ -4,7 +4,7 @@
 - **Líder de la spec:** Leonardo Guzman (Backend)
 - **Revisión por capa:** Camila Fuentes (BD): pendiente · Adrian Vargas (Frontend): pendiente · Leonardo Guzman (Backend): pendiente
 - **Prioridad:** P1 (importante)
-- **Depende de:** 000 (servicio de correo y tareas programadas), 001, 002, 003, 010 (solicitudes de ingreso)
+- **Depende de:** 000 (servicio de correo, bot de Telegram y tareas programadas), 001, 002, 003 (cuenta de Telegram verificada), 010 (solicitudes de ingreso)
 - **Módulo cubierto:** 6 (Notificaciones)
 - **Última actualización:** 2026-10-17
 
@@ -30,7 +30,7 @@ El valor de Vaquita está en que nadie tenga que perseguir a nadie. Para eso la 
 
 | Actor | Recibe / puede |
 |---|---|
-| Miembro | Avisos de sus cobros y del grupo; ver y marcar sus notificaciones; ajustar sus preferencias de correo y de Telegram; vincular su cuenta de Telegram |
+| Miembro | Avisos de sus cobros y del grupo; ver y marcar sus notificaciones; ajustar sus preferencias de correo y de Telegram |
 | Titular | Avisos de comprobantes, nuevos miembros y atrasos de su grupo; invitar por correo; abrir WhatsApp con un mensaje de cobro |
 | Sistema | Genera y envía las notificaciones programadas |
 
@@ -79,12 +79,12 @@ Nadie puede ver las notificaciones de otra persona.
 - **RF-005-16 (Cobro por WhatsApp):** el titular puede abrir WhatsApp con un mensaje de recordatorio de cobro dirigido al celular del miembro, con el monto, el período y el vencimiento.
 
 ### Telegram (P1)
-- **RF-005-26 (Vincular Telegram):** el usuario puede vincular su cuenta de Telegram desde su perfil. La app genera un enlace al bot de Vaquita con un token de un solo uso que vence en 15 minutos; al abrirlo en Telegram y pulsar "Iniciar", la cuenta queda vinculada. El usuario puede desvincularla en cualquier momento. _(Decidido 2026-10-17)_
-- **RF-005-27 (Avisos por Telegram):** con Telegram vinculado y activado, el usuario recibe los mismos tipos de aviso que por correo, con los mismos interruptores por tipo (RF-005-17). Los mensajes no incluyen datos sensibles (montos exactos de otros, comprobantes, datos de pago, contenido del chat): solo un texto corto y un enlace a la app.
-- **RF-005-28:** Si Telegram falla (bot caído, el usuario bloqueó el bot), el envío se reintenta como el correo (RF-005-20) y, si se agotan los reintentos, queda marcado como fallido sin afectar la notificación dentro de la app. Si el usuario bloqueó el bot, se desvincula la cuenta.
+- **RF-005-26 (Cuenta de Telegram):** todo usuario tiene su cuenta de Telegram vinculada desde el registro, porque el celular se verifica con el bot (spec 003, RF-003-21). Esta spec no pide una vinculación aparte. Si el usuario cambia de celular, se vincula la cuenta de Telegram del nuevo número. _(Decidido 2026-10-18; reemplaza la vinculación opcional)_
+- **RF-005-27 (Avisos por Telegram, P1):** el usuario recibe por Telegram los mismos tipos de aviso que por correo, con los mismos interruptores por tipo (RF-005-17), activados por defecto. Los mensajes no incluyen datos sensibles (montos exactos de otros, comprobantes, datos de pago, contenido del chat): solo un texto corto y un enlace a la app.
+- **RF-005-28:** Si Telegram falla (bot caído o el usuario bloqueó el bot), el envío se reintenta como el correo (RF-005-20) y, si se agotan los reintentos, queda marcado como fallido sin afectar la notificación dentro de la app. Si el usuario bloqueó el bot, se desactivan sus avisos por Telegram, pero su celular sigue verificado; puede reactivarlos desde su perfil.
 
 ### Preferencias
-- **RF-005-17:** El usuario puede activar o desactivar el correo y Telegram (RF-005-26) por tipo de aviso: recordatorios de pago, resoluciones de pago, avisos como titular, y avisos de grupo. Los correos de **seguridad** (recuperar o cambiar contraseña) no se pueden desactivar.
+- **RF-005-17:** El usuario puede activar o desactivar el correo y Telegram (RF-005-27) por tipo de aviso: recordatorios de pago, resoluciones de pago, avisos como titular, y avisos de grupo. Los correos de **seguridad** (recuperar o cambiar contraseña) no se pueden desactivar.
 - **RF-005-18:** Todo correo no transaccional incluye un enlace para desactivar ese tipo de aviso.
 
 ### Procesamiento
@@ -122,8 +122,8 @@ Nadie puede ver las notificaciones de otra persona.
 | Correo inválido en una invitación | Error de validación; no se envía |
 | Invitación al correo de alguien que ya es miembro | Se envía igual el correo de forma neutra, sin revelar si pertenece al grupo |
 | Se supera el límite de invitaciones | Mensaje con el tiempo de espera |
-| El usuario bloqueó el bot de Telegram | Se desvincula su cuenta y sigue recibiendo avisos en la app y por correo |
-| El token de vinculación venció o ya se usó | Mensaje claro y opción de generar uno nuevo |
+| El usuario bloqueó el bot de Telegram | Se desactivan sus avisos por Telegram, el celular sigue verificado y sigue recibiendo avisos en la app y por correo |
+| El usuario cambió de celular | Los avisos por Telegram pasan a la cuenta del nuevo número una vez verificado |
 | El proveedor de correo está caído | Reintentos; finalmente estado `failed` y registro del error |
 | Un grupo se cierra con avisos pendientes | Los avisos futuros de ese grupo se cancelan |
 | Cuenta con correo rebotado | Si el proveedor informa un rebote permanente, se marca el correo con problemas y se deja de enviar |
@@ -160,10 +160,10 @@ Nadie puede ver las notificaciones de otra persona.
 - **CA-005-28:** Dado un mensaje nuevo en el chat de una solicitud, cuando se envía, entonces la otra persona ve el contador de no leídos aumentar y no se envía un correo por cada mensaje seguido (se agrupan).
 - **CA-005-29:** Dado un correo de aviso de solicitud a las 21:00 de La Paz, cuando corresponde enviarlo, entonces se envía sin esperar la ventana de RNF-005-03.
 
-- **CA-005-30:** Dado un usuario sin Telegram vinculado, cuando genera el enlace y pulsa "Iniciar" en el bot, entonces su cuenta queda vinculada y el token no sirve una segunda vez.
-- **CA-005-31:** Dado un token de vinculación de más de 15 minutos, cuando se usa, entonces se rechaza.
+- **CA-005-30:** Dado un usuario recién registrado, cuando completa la verificación del celular, entonces su cuenta de Telegram queda vinculada y recibe avisos por Telegram sin hacer nada más.
+- **CA-005-31:** Dado un usuario que cambia su celular y verifica el nuevo número con el bot, cuando termina, entonces los avisos por Telegram van a la cuenta del nuevo número.
 - **CA-005-32:** Dado un usuario con Telegram vinculado y el tipo de aviso activado, cuando corresponde un aviso, entonces recibe un mensaje sin datos sensibles; con el tipo desactivado solo lo ve en la app.
-- **CA-005-33:** Dado un usuario que bloquea el bot, cuando falla el envío, entonces su cuenta de Telegram se desvincula y la notificación en la app sigue visible.
+- **CA-005-33:** Dado un usuario que bloquea el bot, cuando falla el envío, entonces sus avisos por Telegram se desactivan, su celular sigue verificado y la notificación en la app sigue visible.
 - **CA-005-34:** Dado un proveedor de Telegram caído, cuando un miembro sube un comprobante, entonces la operación se completa y el mensaje queda en reintentos.
 
 ## 11. Preguntas abiertas
@@ -180,3 +180,4 @@ Nadie puede ver las notificaciones de otra persona.
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | Se agregan los avisos de las solicitudes de ingreso y de los reclamos (RF-005-22 a RF-005-25, CA-005-25 a CA-005-29); el chat de grupo sigue fuera de alcance | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: el atraso pasa a retiro del grupo y se eliminan los recordatorios repetidos (RF-005-07, 09, 13, RN-005-06), el celular siempre existe (RF-005-16), canal opcional de Telegram en P1 (RF-005-26 a 28, CA-005-30 a 34); se aceptan las propuestas de la sección 11 | Equipo |
+| 2026-10-18 | La cuenta de Telegram se vincula en el registro por la verificación del celular (RF-005-26 a 28, CA-005-30, 31 y 33) | Equipo |

@@ -40,8 +40,8 @@ Capas afectadas: BD (Camila), BE (Leonardo) y FE (Adrian).
 
 | # | Pregunta | Capas | Estado |
 |---|---|---|---|
-| P9 | ¿Cómo se registra el usuario? | BE, FE | Decidida el 2026-10-17. Correo, celular verificado, CI y contraseña; Google fuera de alcance (spec 003) |
-| P10 | ¿Se verifica el correo? ¿Cómo se recupera la contraseña? | BE | Decidida el 2026-10-17. Sin verificación del correo; se verifica el celular con un código; recuperación por enlace al correo (spec 003) |
+| P9 | ¿Cómo se registra el usuario? | BE, FE | Decidida el 2026-10-17. Correo, CI, celular verificado por Telegram y contraseña; Google fuera de alcance (spec 003) |
+| P10 | ¿Se verifica el correo? ¿Cómo se recupera la contraseña? | BE | Decidida el 2026-10-17. Sin verificación del correo; el celular se verifica con el bot de Telegram; recuperación por enlace al correo (spec 003) |
 | P11 | ¿Qué datos tiene el perfil? | BD, FE | Decidida el 2026-10-17. Nombre, correo, celular verificado y CI, ambos obligatorios y únicos (spec 003) |
 | P12 | ¿Qué ven los miembros unos de otros? | BE, FE | Decidida el 2026-10-17. Nombre y celular entre titular y miembros; nunca el correo ni la CI (spec 003, RN-003-03) |
 | P13 | ¿Qué plataformas y planes entran al catálogo inicial? | BD | Decidida el 2026-10-17. Netflix, Spotify, Disney+, YouTube Premium, Max y Prime Video (spec 004); Camila verifica precios |
@@ -69,15 +69,15 @@ Capas afectadas: BD (Camila), BE (Leonardo) y FE (Adrian).
 | P37 | ¿Qué admite el chat? | BE, FE | Decidida el 2026-10-17. Texto y fotos, por solicitud (spec 010, RF-010-05) |
 | P38 | ¿Cuántos tipos de reclamo hay? | BE | Decidida el 2026-10-17. Dos: pago sin ingreso (lo abre el solicitante) y comprobante falso (lo abre el titular), con imagen de evidencia opcional (spec 010, RF-010-21) |
 | P39 | ¿Se pagan por adelantado los meses siguientes? | BE | Decidida el 2026-10-17. No; se mantienen los cobros de la spec 002 |
-| P40 | ¿Qué pasa con el titular que estafa? | BE, BD | Decidida el 2026-10-17. Baneo de la cuenta decidido por un administrador; se bloquean correo, celular y CI, y rige para titulares y solicitantes (specs 003, 009 y 010) |
+| P40 | ¿Qué pasa con el titular que estafa? | BE, BD | Decidida el 2026-10-17. Baneo de la cuenta decidido por un administrador; se bloquean correo, celular, CI y cuenta de Telegram, y rige para titulares y solicitantes (specs 003, 009 y 010) |
 | P41 | ¿Quién puede ser titular? | BE, BD | Decidida el 2026-10-17. Titular habilitado con 4,5 estrellas y al menos 6 cobros considerados, o habilitado por un administrador; vale para todos los grupos (spec 001, RF-001-21; spec 007, RF-007-15) |
-| P42 | ¿Cómo se define el período en curso del pago de ingreso y qué pasa si se ingresa cerca del corte? | BE, BD | Decidida el 2026-10-17. Con la ventana de ingreso se paga siempre el período que acaba de empezar. Abierto: confirmar que los "3 primeros días" cuentan desde el corte de cada grupo y la ventana inicial de un grupo nuevo (spec 010, sección 11) |
+| P42 | ¿Cómo se define el período en curso del pago de ingreso y qué pasa si se ingresa cerca del corte? | BE, BD | Decidida el 2026-10-18. Con la ventana de ingreso se paga siempre el período que acaba de empezar. Los "3 primeros días" cuentan desde el corte de cada grupo y un grupo nuevo tiene una ventana inicial desde su creación (spec 010, RN-010-12) |
 | P43 | ¿Hay prórroga del plazo de pago, referencia obligatoria y única, y reclamo del titular contra un comprobante falso? | BE | Decidida el 2026-10-17. Una prórroga de 15 minutos; referencia obligatoria y única por grupo; el titular puede reclamar un comprobante falso (spec 010) |
 | P44 | ¿Quién puede entrar y cuándo? | BE, BD, FE | Decidida el 2026-10-17. Solo durante los 3 primeros días de cada período de cobro (spec 001, RF-001-22) |
-| P45 | ¿Qué datos de identidad se piden y se bloquean? | BD, BE | Decidida el 2026-10-17. Celular verificado con código y CI, únicos; se bloquean correo, celular y CI (spec 003, `context/decisiones/0005-identidad-con-cedula-y-celular-verificado.md`). Abierto: canal SMS o WhatsApp, formato de la CI y alias de correo |
-| P46 | ¿Qué ve un grupo cuyo titular fue baneado? | FE, BE | Decidida el 2026-10-17. El texto "titular baneado" y la opción de buscar otro grupo (spec 009, RF-009-22). Abierto: qué pasa con los cobros abiertos (propuesta: congelarlos) |
+| P45 | ¿Qué datos de identidad se piden y se bloquean? | BD, BE | Decidida el 2026-10-17. Celular verificado con el bot de Telegram (sin SMS, sin costo) y CI, únicos; se bloquean correo, celular, CI y cuenta de Telegram (spec 003, `context/decisiones/0005-identidad-con-cedula-y-celular-verificado.md`). La CI es solo el número y los alias de Gmail se normalizan. Limitación aceptada: hace falta una cuenta de Telegram |
+| P46 | ¿Qué ve un grupo cuyo titular fue baneado? | FE, BE | Decidida el 2026-10-17. El texto "titular baneado" y la opción de buscar otro grupo (spec 009, RF-009-22). Los cobros abiertos se congelan y se excluyen de la calificación de los miembros (decidido el 2026-10-18) |
 | P47 | ¿Quién revisa los reclamos y cómo se apela? | BE, FE | Decidida el 2026-10-17. El equipo funciona como administrador y la apelación es por un correo de contacto; otro administrador puede revisar un baneo (spec 009) |
-| P48 | ¿Qué pasa si un miembro retirado por falta de pago quiere volver? | BE | Propuesta. No puede abrir una solicitud al mismo grupo mientras tenga el cobro atrasado (spec 010, RN-010-13; spec 002, RN-002-11) |
+| P48 | ¿Qué pasa si un miembro retirado por falta de pago quiere volver? | BE | Decidida el 2026-10-18. No puede abrir una solicitud al mismo grupo mientras tenga el cobro atrasado (spec 010, RN-010-13; spec 002, RN-002-11) |
 
 ## Calidad y operación
 

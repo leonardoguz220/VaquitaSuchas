@@ -185,7 +185,7 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - [RESUELTO 2026-10-17] Los comprobantes se conservan 2 meses tras cerrar el grupo (RN-002-06).
 - [RESUELTO 2026-10-17] Período del cobro de ingreso y doble pago cerca del corte: el ingreso solo se abre durante los 3 primeros días del período (spec 001, RF-001-22), así que se paga siempre el período que acaba de empezar.
 - [RESUELTO 2026-10-17] **Atrasos prolongados y cobros que nunca se pagan** (P33): el miembro tiene 3 días para pagar; si no lo hace, es retirado del grupo y su cobro queda `atrasado` como deuda visible (RF-002-14, RN-002-11). La pérdida máxima del titular es una cuota.
-- [NECESITA ACLARACIÓN] **Retiro y deuda.** Se asumió que quien fue retirado puede seguir pagando su deuda y que no puede volver a ese grupo mientras la tenga (RN-002-11). **Propuesta:** dejarlo así.
+- [RESUELTO 2026-10-18] **Retiro y deuda:** quien fue retirado puede seguir pagando su deuda y no puede volver a ese grupo mientras la tenga (RN-002-11).
 
 ## 12. Historial de cambios
 
@@ -197,3 +197,4 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 | 2026-10-17 | Se registra la pregunta abierta sobre atrasos prolongados y cobros impagos | Equipo |
 | 2026-10-17 | Se agrega el cobro de ingreso por la spec 010: RF-002-19, RN-002-10, nueva transición en RN-002-01, CA-002-24 y CA-002-25 | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: referencia obligatoria y única (RF-002-07), retiro automático por atraso (RF-002-14, RN-002-11), retención de 2 meses (RN-002-06), CA-002-26 a 33; se resuelve P33 | Equipo |
+| 2026-10-18 | Se confirma el tratamiento de la deuda del miembro retirado (RN-002-11) | Equipo |

@@ -42,7 +42,7 @@ La tabla completa de transiciones está en `specs/002-cobros-y-pagos/spec.md` (R
 - El chat y el comprobante de una solicitud de ingreso los ven solo el solicitante y el titular. Un administrador los ve únicamente cuando hay un reclamo abierto, y cada acceso queda registrado.
 - Las contraseñas se guardan con un hash seguro (bcrypt o argon2) y nunca se registran en logs, igual que los tokens.
 - Los comprobantes los ven solo el titular y el miembro que los subió, salvo que una spec indique otra cosa. La referencia de cada comprobante es obligatoria y única por grupo.
-- El registro exige un celular verificado con un código y una cédula de identidad, ambos únicos. La cédula se guarda cifrada y nunca se muestra a otros usuarios. Un baneo bloquea el correo, el celular y la cédula con huellas irreversibles.
+- El registro exige un celular verificado con el bot de Telegram (sin SMS) y una cédula de identidad, ambos únicos. La cédula se guarda cifrada y nunca se muestra a otros usuarios. Un baneo bloquea el correo, el celular, la cédula y la cuenta de Telegram con huellas irreversibles.
 - El chat, las solicitudes de ingreso y los comprobantes se conservan 2 meses desde su estado final o desde el cierre del grupo.
 - Los permisos, los montos y los estados se validan siempre en el servidor. El frontend solo ayuda a la experiencia de uso.
 - Los archivos subidos se validan por tipo (imagen o PDF) y por tamaño máximo, definido en la spec 002.

@@ -19,7 +19,7 @@ Vaquita resuelve un problema concreto: una persona paga una suscripción compart
 
 ## 2. Recorrido de un grupo
 
-1. Una persona se registra con nombre, correo, celular, cédula de identidad (CI) y contraseña (spec 003). Verifica su celular con un código de 6 dígitos y recién entonces queda con la sesión iniciada.
+1. Una persona se registra con nombre, correo, cédula de identidad (CI) y contraseña (spec 003). Verifica su celular compartiendo su contacto con el bot de Telegram de Vaquita, sin SMS ni costo, y recién entonces queda con la sesión iniciada. Hace falta una cuenta de Telegram.
 2. Si está habilitado como titular, crea una suscripción (spec 001). Está habilitado quien tiene una muy buena calificación de puntualidad (spec 007) o quien un administrador habilitó. Elige un servicio y plan del catálogo (spec 004) o escribe un servicio propio, e indica el precio, la moneda (USD o Bs), el tipo de cambio si el precio está en dólares, el día de cobro y los cupos totales. El sistema le genera un código de invitación de 8 caracteres.
 3. Comparte el código, por correo o por un mensaje de WhatsApp prellenado (spec 005). Nadie entra a mitad de un período: solo se puede abrir una solicitud durante los 3 primeros días de cada período de cobro, contando el día de corte como día 1 (la ventana de ingreso, spec 001, RF-001-22). Cada invitado se registra o inicia sesión y, con el código, abre una solicitud de ingreso (spec 010) dentro de esa ventana y mientras haya un cupo disponible. El código no une a nadie por sí solo.
 4. En el chat de la solicitud, el titular le envía sus datos de pago (por ejemplo su QR). El sistema fija la cuota de ingreso: el precio del mes dividido entre los miembros que tendrá el grupo con la persona incluida. La persona tiene 15 minutos para pagar fuera de la app y subir el comprobante con la referencia de la transacción, que es obligatoria y no puede repetirse en el grupo. El titular puede prorrogar ese plazo una vez, por 15 minutos.
@@ -30,7 +30,7 @@ Vaquita resuelve un problema concreto: una persona paga una suscripción compart
 9. El titular revisa el comprobante y lo confirma, con lo que el cobro pasa a `pagado`, o lo rechaza con un motivo, con lo que vuelve a `pendiente` o a `atrasado` y el miembro puede subir otro.
 10. Si el vencimiento pasa sin pago, el cobro pasa a `atrasado` y el miembro es **retirado del grupo automáticamente**. Su cobro queda como deuda visible, cuenta como no puntual y no puede volver a ese grupo hasta saldarla. Así la pérdida máxima del titular es una cuota. Un cobro en revisión no retira a nadie.
 11. Todo el grupo ve el resumen del mes y el historial. Cada pago puntual suma a la reputación del miembro (spec 007).
-12. Si un titular recibe el dinero y no agrega a la persona, ella abre un reclamo; si un solicitante presenta un comprobante falso, el titular lo abre contra él. Cada parte puede adjuntar una imagen de evidencia y la otra puede responder. Un administrador (el equipo del proyecto) revisa el chat, el comprobante y la línea de tiempo, y si confirma la estafa banea la cuenta de quien la cometió y bloquea su correo, su celular y su CI (specs 009 y 003). Si el titular es baneado, su grupo queda en solo lectura con el texto "titular baneado" y la opción de buscar otro grupo.
+12. Si un titular recibe el dinero y no agrega a la persona, ella abre un reclamo; si un solicitante presenta un comprobante falso, el titular lo abre contra él. Cada parte puede adjuntar una imagen de evidencia y la otra puede responder. Un administrador (el equipo del proyecto) revisa el chat, el comprobante y la línea de tiempo, y si confirma la estafa banea la cuenta de quien la cometió y bloquea su correo, su celular, su CI y su cuenta de Telegram (specs 009 y 003). Si el titular es baneado, su grupo queda en solo lectura con el texto "titular baneado" y la opción de buscar otro grupo.
 13. Cuando el titular quiere salir, transfiere la titularidad o cierra el grupo. Un grupo cerrado queda en solo lectura.
 
 ## 3. Reglas que atraviesan todo el sistema
@@ -83,7 +83,7 @@ Cada persona solo ve los grupos a los que pertenece; pedir un recurso de un grup
 
 ### Usuarios y autenticación (spec 003)
 
-Registro con nombre, correo, contraseña (mínimo 10 caracteres, con letra y número), celular boliviano verificado con un código de 6 dígitos y cédula de identidad, estos dos obligatorios y únicos, y aceptación de una política de datos corta. El inicio de sesión emite un JWT guardado en una cookie httpOnly, con duración de 7 días desde la última actividad. La recuperación de contraseña envía un enlace de un solo uso que vence a los 30 minutos, y la pantalla responde igual exista o no la cuenta. Hay bloqueo temporal tras 5 intentos fallidos en 15 minutos y un límite de 3 pedidos de recuperación por hora. El perfil permite editar nombre y celular (el nuevo celular se verifica) y cambiar la contraseña. Una cuenta baneada no puede iniciar sesión y su correo, su celular y su CI quedan bloqueados para nuevos registros. La CI se guarda cifrada, nunca se muestra a otros usuarios y el administrador la ve enmascarada.
+Registro con nombre, correo, contraseña (mínimo 10 caracteres, con letra y número), cédula de identidad y celular boliviano verificado con el bot de Telegram, ambos obligatorios y únicos, y aceptación de una política de datos corta. El inicio de sesión emite un JWT guardado en una cookie httpOnly, con duración de 7 días desde la última actividad. La recuperación de contraseña envía un enlace de un solo uso que vence a los 30 minutos, y la pantalla responde igual exista o no la cuenta. Hay bloqueo temporal tras 5 intentos fallidos en 15 minutos y un límite de 3 pedidos de recuperación por hora. El perfil permite editar nombre y celular (el nuevo celular se verifica) y cambiar la contraseña. Una cuenta baneada no puede iniciar sesión y su correo, su celular, su CI y su cuenta de Telegram quedan bloqueados para nuevos registros. La CI se guarda cifrada, nunca se muestra a otros usuarios y el administrador la ve enmascarada.
 
 ### Catálogo de servicios (spec 004)
 
@@ -103,7 +103,7 @@ Quien ingresa un código dentro de la ventana de ingreso abre una solicitud (una
 
 ### Notificaciones (spec 005)
 
-Centro de notificaciones dentro de la app, siempre activo, y correos que cada usuario puede desactivar por tipo (los de seguridad no se desactivan). Para el miembro: aviso 2 días antes de la fecha de corte, cobro generado, recordatorio un día antes del vencimiento, retiro por falta de pago y resolución de sus pagos. Para el titular: comprobante recibido, recordatorio si lleva más de 48 horas en revisión, ingreso o salida de miembros y retiros por falta de pago. Opcionalmente, avisos por Telegram vinculando la cuenta con un enlace de un solo uso. Invitaciones por correo y por WhatsApp (enlace `wa.me` que abre el mensaje, sin envío desde el servidor, dirigido al celular verificado del miembro). Los correos fallidos se reintentan hasta 3 veces y las notificaciones se conservan 90 días.
+Centro de notificaciones dentro de la app, siempre activo, y correos que cada usuario puede desactivar por tipo (los de seguridad no se desactivan). Para el miembro: aviso 2 días antes de la fecha de corte, cobro generado, recordatorio un día antes del vencimiento, retiro por falta de pago y resolución de sus pagos. Para el titular: comprobante recibido, recordatorio si lleva más de 48 horas en revisión, ingreso o salida de miembros y retiros por falta de pago. Avisos por Telegram a la cuenta que verificó el celular, que el usuario puede desactivar por tipo. Invitaciones por correo y por WhatsApp (enlace `wa.me` que abre el mensaje, sin envío desde el servidor, dirigido al celular verificado del miembro). Los correos fallidos se reintentan hasta 3 veces y las notificaciones se conservan 90 días.
 
 ### Panel y reportes (spec 006)
 
@@ -123,7 +123,7 @@ Solo para el rol `admin`, creado con el seed o por otro administrador. Gestiona 
 
 ### Setup del proyecto (spec 000)
 
-Repositorio con las tres capas, `docker-compose` con PostgreSQL y una bandeja de correo de desarrollo, migraciones y seed con `npm run db:migrate`, `db:seed` y `db:reset`, validación de variables de entorno, `GET /health`, Swagger en `/api/docs`, formato uniforme de errores, servicio de correo y de mensajería al celular con modos `dev` y `prod`, módulo de tareas programadas, proxy `/api` del frontend, formato de Bs y fechas, CI con GitHub Actions y un entorno desplegado de punta a punta para el profesor.
+Repositorio con las tres capas, `docker-compose` con PostgreSQL y una bandeja de correo de desarrollo, migraciones y seed con `npm run db:migrate`, `db:seed` y `db:reset`, validación de variables de entorno, `GET /health`, Swagger en `/api/docs`, formato uniforme de errores, servicio de correo y bot de Telegram con modos `dev` y `prod`, módulo de tareas programadas, proxy `/api` del frontend, formato de Bs y fechas, CI con GitHub Actions y un entorno desplegado de punta a punta para el profesor.
 
 ## 5. Procesos automáticos
 
@@ -170,37 +170,32 @@ Las respuestas del equipo ya están en las specs. Las principales:
 
 | Tema | Decisión | Dónde |
 |---|---|---|
-| Ingreso | Solo durante los 3 primeros días del período de cobro | Spec 001, RF-001-22 |
+| Ingreso | Solo durante los 3 primeros días del período de cobro de cada grupo, contados desde su corte | Spec 001, RF-001-22 |
 | Mora | A los 3 días del corte sin pago, el miembro es retirado y su cobro queda como deuda | Spec 002, RF-002-14 |
 | Titular | 4,5 estrellas con 6 cobros considerados, o habilitado por un administrador; hasta 5 grupos activos | Spec 001, RF-001-21 y RN-001-14 |
-| Identidad | Celular verificado con código y CI, obligatorios y únicos; el baneo bloquea correo, celular y CI | Spec 003, ADR 0005 |
+| Identidad | Celular verificado por Telegram (sin SMS ni costo) y CI (solo el número), obligatorios y únicos; el baneo bloquea correo, celular, CI y cuenta de Telegram | Spec 003, ADR 0005 |
 | Reclamos | Los puede abrir el solicitante y el titular, con una imagen de evidencia opcional | Spec 010, RF-010-21 |
 | Prórroga | El titular puede extender una vez el plazo de pago por 15 minutos | Spec 010, RF-010-28 |
 | Referencia | Obligatoria y única por grupo en cada comprobante | Specs 002 y 010 |
 | Conservación | 2 meses para el chat, las solicitudes y los comprobantes tras cerrar el grupo | Specs 002 y 010 |
 | Baneo | Lo decide un administrador (el equipo); otro puede revisarlo; la apelación es por un correo de contacto | Spec 009 |
 | Grupo con titular baneado | Se muestra "titular baneado" y la opción de buscar otro grupo | Spec 009, RF-009-22 |
-| Notificaciones | App y correo; Telegram opcional en P1; sin recordatorios de atraso | Spec 005 |
+| Notificaciones | App y correo; Telegram con el mismo bot que verifica el celular (P1); sin recordatorios de atraso | Spec 005 |
 | Correo y secretos | Resend en producción, gitleaks en CI | Spec 000 |
 | Carga | Menos de 100 usuarios en la demo | Spec 000, RNF-000-05 |
 | Documentación | Solo documentos, sin diagramas | Banco de preguntas, P8 |
 
-### Puntos que siguen abiertos
+### Lo único que sigue abierto
 
 | Spec | Pregunta | Propuesta actual |
 |---|---|---|
-| 000 | Cómo cubrir los límites del plan gratuito de Render | Ver el riesgo descrito más abajo |
-| 000 y 003 | Canal y costo del código de celular (SMS o WhatsApp) | Un proveedor de SMS con tope diario, decidido en el plan de la spec 000 |
-| 003 | Formato de la CI y si se revisa una foto | Solo el número, sin foto |
-| 003 | Alias de correo (Gmail) | Calcular el bloqueo sobre el correo sin alias |
-| 001 y 010 | Qué son los "3 primeros días" y cómo funciona la ventana de un grupo nuevo | Desde el corte de cada grupo, con el día de corte como día 1; un grupo nuevo tiene una ventana inicial desde su creación |
-| 002 y 010 | Un miembro retirado con deuda y el regreso al grupo | Puede pagar su deuda, pero no abrir una solicitud a ese grupo hasta saldarla |
-| 009 | Cobros abiertos de un grupo con titular baneado | Congelarlos y excluirlos de la calificación, en lugar de cancelarlos |
-| 009 | Transferencia por un administrador con el titular suspendido | A pedido de los miembros y hacia un miembro habilitado |
+| 000 | Cómo cubrir los límites del plan gratuito de Render (base que caduca a los 30 días, servicio que se duerme) y cómo recibe el backend los mensajes del bot de Telegram | Ver el riesgo descrito más abajo; se decide en el plan de la spec 000 |
+
+Todas las demás preguntas de las specs quedaron decididas el 2026-10-18: la ventana de ingreso se cuenta desde el corte de cada grupo (un grupo nuevo tiene una ventana inicial desde su creación), el celular se verifica por Telegram, la CI es solo el número, los alias de Gmail se normalizan, los cobros de un grupo con titular baneado se congelan, un administrador puede transferir la titularidad de un titular suspendido a pedido de los miembros, y un miembro retirado puede pagar su deuda pero no volver al grupo hasta saldarla.
 
 ### Límites de la protección
 
-Vaquita no custodia dinero, así que no puede garantizar que alguien recupere lo que pagó. Lo que ofrece al solicitante son plazos cortos, la evidencia del chat y del comprobante, un reclamo que revisa un administrador y el baneo del titular que estafe. Ese baneo bloquea el correo, el celular verificado y la CI, lo que lo hace más difícil de evadir, pero una persona todavía puede conseguir datos nuevos. Al titular lo protege que nadie ingrese sin pagar, pero los meses siguientes siguen siendo cobros con 3 días de gracia, pero un miembro que deja de pagar después de entrar es retirado a los 3 días del corte, de modo que la pérdida máxima del titular es una cuota, que queda registrada como deuda del miembro.
+Vaquita no custodia dinero, así que no puede garantizar que alguien recupere lo que pagó. Lo que ofrece al solicitante son plazos cortos, la evidencia del chat y del comprobante, un reclamo que revisa un administrador y el baneo del titular que estafe. Ese baneo bloquea el correo, el celular verificado, la CI y la cuenta de Telegram, lo que lo hace más difícil de evadir, pero una persona todavía puede conseguir datos nuevos. Al titular lo protege que nadie ingrese sin pagar, pero los meses siguientes siguen siendo cobros con 3 días de gracia, pero un miembro que deja de pagar después de entrar es retirado a los 3 días del corte, de modo que la pérdida máxima del titular es una cuota, que queda registrada como deuda del miembro.
 
 ### Riesgo del despliegue en Render
 
