@@ -342,6 +342,13 @@ describe('JobRunner contra PostgreSQL real', () => {
     expect(updates.rows.map((row) => Number(row.update_id))).toEqual([2]);
   });
 
+  // Hoy el esquema íntegro de la spec 000 (0003) bloquea todo DELETE de rate_limit_events con 23001,
+  // así que con filas de más de 24 horas la tarea termina en error. No se fija ese fallo en un test
+  // para no poner en rojo el PR de base de datos que lo corrija; queda como pendiente documentado.
+  it.todo(
+    'RF-000-14: con el esquema íntegro (sin DROP TRIGGER), maintenance.cleanup borra también rate_limit_events viejo y termina en ok (pendiente de la migración 0005, T033)',
+  );
+
   it('RF-000-14: maintenance.cleanup es idempotente: una segunda pasada no borra nada más', async () => {
     await inspect.query(`INSERT INTO telegram_updates (update_id, received_at) VALUES (10, $1)`, [
       ago(8 * DAY_MS),
