@@ -58,13 +58,14 @@ Esta spec define cómo se **crea una suscripción compartida**, cómo se **invit
 - **RF-001-03:** Si la moneda es `USD`, el tipo de cambio (Bs por 1 USD) es obligatorio. Si es `BS`, no se solicita.
 - **RF-001-04:** Al crear, el usuario queda como titular y primer miembro, y el sistema genera un código de invitación único.
 - **RF-001-05:** El precio por defecto del plan del catálogo se propone, pero el titular puede modificarlo.
-- **RF-001-21 (Requisito para ser titular):** solo puede crear suscripciones un usuario **habilitado como titular**. Se habilita quien tiene una muy buena calificación de puntualidad (spec 007) o quien un administrador habilita manualmente (spec 009, RF-009-21). Quien no está habilitado ve qué le falta. [NECESITA ACLARACIÓN: umbral de calificación y arranque del sistema; ver la sección 11] _(Requisito decidido 2026-10-17)_
+- **RF-001-21 (Requisito para ser titular):** solo puede crear suscripciones un usuario **habilitado como titular**. Se habilita quien tiene una muy buena calificación de puntualidad (spec 007) o quien un administrador habilita manualmente (spec 009, RF-009-21). Quien no está habilitado ve qué le falta. El umbral es de **4,5 estrellas o más con al menos 6 cobros considerados** en los últimos 12 meses (spec 007, RF-007-15). Mientras nadie tiene historial, el administrador habilita a los primeros titulares. El requisito vale para **todos** los grupos. _(Decidido 2026-10-17)_
 
 ### Invitación e ingreso
 - **RF-001-06:** El código de invitación es único, de 8 caracteres alfanuméricos sin caracteres ambiguos (sin `0/O`, `1/I/L`).
-- **RF-001-07:** Un usuario autenticado puede **abrir una solicitud de ingreso** ingresando el código, siempre que existan cupos disponibles, el grupo esté activo y reciba nuevos miembros, y no sea ya miembro. La persona pasa a ser miembro solo cuando el titular confirma su pago (spec 010).
+- **RF-001-07:** Un usuario autenticado puede **abrir una solicitud de ingreso** ingresando el código, siempre que la ventana de ingreso esté abierta (RF-001-22), existan cupos disponibles, el grupo esté activo y reciba nuevos miembros, y no sea ya miembro. La persona pasa a ser miembro solo cuando el titular confirma su pago (spec 010).
 - **RF-001-08:** El titular puede regenerar el código; el código anterior deja de funcionar de inmediato.
 - **RF-001-09:** El titular puede activar o pausar la recepción de nuevos miembros.
+- **RF-001-22 (Ventana de ingreso):** nadie entra a un grupo a mitad de un período de cobro. Solo se pueden abrir solicitudes de ingreso durante los **3 primeros días** de cada período, contando el día de corte como día 1 y hasta las 23:59:59 de La Paz del día 3 (configuración `dias_ventana_ingreso`, valor por defecto 3). Un grupo recién creado tiene una ventana inicial que empieza al crearlo. Una solicitud que ya está en pago cuando termina la ventana puede completarse (spec 010, RN-010-12). Fuera de la ventana, el grupo muestra cuándo se abre la próxima. _(Decidido 2026-10-17)_
 
 ### División y moneda
 - **RF-001-10:** La cuota se calcula dividiendo el precio total entre el **número de miembros actuales**, no entre los cupos totales (ver RN-001-02).
@@ -76,10 +77,11 @@ Esta spec define cómo se **crea una suscripción compartida**, cómo se **invit
 - **RF-001-14:** El titular puede editar nombre, precio, tipo de cambio, día de cobro y cupos totales (no puede reducir cupos por debajo del número de miembros actuales).
 - **RF-001-15:** El titular puede quitar a un miembro. Los cobros ya generados de ese miembro se conservan en el historial.
 - **RF-001-16:** Un miembro puede abandonar el grupo. Si tiene cobros `pendiente`, `en_revision` o `atrasado`, debe saldarlos antes o el titular debe cancelarlos (ver CA-001-14).
-- **RF-001-17:** El titular puede transferir la titularidad a otro miembro; el cambio requiere que el destinatario sea miembro activo.
+- **RF-001-17:** El titular puede transferir la titularidad a otro miembro; el cambio requiere que el destinatario sea miembro activo y esté **habilitado como titular** (RF-001-21) y que el grupo no tenga solicitudes de ingreso en pago (spec 010, RN-010-09).
 - **RF-001-18:** El titular puede cerrar el grupo; un grupo cerrado no genera nuevos cobros y queda en modo solo lectura.
+- **RF-001-23 (Retiro por falta de pago):** un miembro que no paga su cobro dentro de los 3 días siguientes al corte es **retirado del grupo automáticamente** (spec 002, RF-002-14). Su cobro queda `atrasado` como deuda visible y se avisa al miembro y al titular. Las cuotas se recalculan para los miembros que quedan. _(Decidido 2026-10-17)_
 - **RF-001-19:** Cada usuario puede ver la lista de sus grupos (como titular y como miembro) con su rol, cuota y estado.
-- **RF-001-20 (Datos de pago):** el titular puede configurar en la suscripción sus datos de pago: un **texto** (banco, cuenta, nombre; máx. 500 caracteres) y/o una **imagen de QR** (JPG/PNG, máx. 2 MB) [NECESITA ACLARACIÓN: confirmar el límite de 2 MB]. Los miembros del grupo los ven en la pantalla de cobro. Si el titular no los configuró, se muestra el aviso "El titular aún no configuró sus datos de pago". _(Decidido 2026-10-17)_
+- **RF-001-20 (Datos de pago):** el titular puede configurar en la suscripción sus datos de pago: un **texto** (banco, cuenta, nombre; máx. 500 caracteres) y/o una **imagen de QR** (JPG/PNG, máx. 2 MB). Los miembros del grupo los ven en la pantalla de cobro. Si el titular no los configuró, se muestra el aviso "El titular aún no configuró sus datos de pago". _(Decidido 2026-10-17)_
 
 ## 7. Requisitos no funcionales
 
@@ -100,10 +102,11 @@ Esta spec define cómo se **crea una suscripción compartida**, cómo se **invit
 - **RN-001-07:** Un grupo cerrado no admite nuevos miembros ni cambios, salvo lectura.
 - **RN-001-08:** Un titular no puede abandonar el grupo: debe transferir la titularidad o cerrarlo.
 - **RN-001-09:** Límites: precio total entre Bs 1,00 y Bs 5.000,00 (equivalente), cupos entre 2 y 20.
+- **RN-001-14 (Límite de grupos):** un usuario puede ser titular de **hasta 5 grupos activos** al mismo tiempo. Como miembro no hay límite. _(Decidido 2026-10-17)_
 - **RN-001-10 (Titular sin cobro propio):** el titular cuenta como miembro en la división (RF-001-10), pero **no genera cobro**: ya paga la plataforma. Su cuota se muestra solo como referencia y para calcular el ahorro. _(Decidido 2026-10-17)_
 - **RN-001-12 (Copia del catálogo):** al crear la suscripción se guarda una copia del nombre del servicio, nombre del plan, logo, cupos y precio individual de referencia del catálogo (spec 004, RF-004-08); el historial no depende de cambios posteriores del catálogo.
 - **RN-001-13:** si la suscripción se crea desde un plan del catálogo, los cupos totales no pueden superar los cupos máximos del plan (spec 004, RN-004-03).
-- **RN-001-11 (Ingreso con pago previo):** quien ingresa al grupo **paga primero** la cuota del período en curso, calculada con la persona incluida (spec 010, RN-010-01 y RN-010-03), y desde el siguiente corte recibe los cobros regulares de la spec 002. _(Reemplaza la decisión del 2026-10-17 según la cual quien entraba a mitad de mes pagaba desde el siguiente cobro. Actualizada 2026-10-17)_
+- **RN-001-11 (Ingreso con pago previo):** quien ingresa al grupo, siempre dentro de la ventana de ingreso (RF-001-22), **paga primero** la cuota del período que acaba de empezar, calculada con la persona incluida (spec 010, RN-010-01 y RN-010-03), y desde el siguiente corte recibe los cobros regulares de la spec 002. _(Reemplaza la decisión del 2026-10-17 según la cual quien entraba a mitad de mes pagaba desde el siguiente cobro. Actualizada 2026-10-17)_
 
 ## 9. Casos borde y errores
 
@@ -120,8 +123,12 @@ Esta spec define cómo se **crea una suscripción compartida**, cómo se **invit
 | Se quita a un miembro con cobros sin pagar | Se advierte al titular; los cobros se conservan y solo pasan a `cancelado` si el titular lo decide (RF-002-13, RN-002-07) |
 | Dos solicitudes compiten por el último cupo | El cupo se reserva al enviar los datos de pago; solo una avanza y la otra recibe "No hay cupos disponibles" (control de concurrencia, spec 010) |
 | Un usuario no habilitado intenta crear una suscripción | Se rechaza con un mensaje que indica qué le falta (RF-001-21) |
+| Un titular con 5 grupos activos intenta crear otro | Se rechaza indicando el límite (RN-001-14) |
+| Alguien ingresa un código con la ventana de ingreso cerrada | Error que indica la fecha en que se abre; no se crea la solicitud (RF-001-22) |
+| El titular intenta transferir la titularidad a un miembro no habilitado | Se rechaza indicando que el destinatario no es titular habilitado (RF-001-17) |
+| Un miembro no paga y pasan los 3 días desde el corte | Es retirado del grupo; su cobro sigue `atrasado` y se recalculan las cuotas (RF-001-23) |
 | Día de cobro 31 en febrero | Se usa el 28 (o 29 en bisiesto) |
-| Una persona ingresa el mismo día de la fecha de corte | Paga la cuota de ingreso del período en curso; la generación de cobros no duplica el cobro de ese período (RN-001-11, spec 010) |
+| Una persona ingresa el día de corte (día 1 de la ventana) | Paga la cuota de ingreso del período que empezó; la generación de cobros no duplica el cobro de ese período (RN-001-11, spec 010) |
 | QR de pago con formato o tamaño inválido | Error de validación; se conserva el QR anterior si había |
 | Usuario con sesión expirada intenta abrir una solicitud | Se redirige a iniciar sesión y se conserva el código para reintentar |
 
@@ -148,18 +155,27 @@ Esta spec define cómo se **crea una suscripción compartida**, cómo se **invit
 - **CA-001-19:** Dadas dos solicitudes que intentan ocupar el último cupo al mismo tiempo, entonces exactamente una llega a aceptarse.
 - **CA-001-20:** Dado un usuario con varios grupos, cuando abre "Mis suscripciones", entonces ve solo los suyos, con su rol y su cuota.
 - **CA-001-21:** Dado un grupo de 3 miembros (incluido el titular), cuando la cuota total es Bs 90,00, entonces el titular ve su cuota como referencia (Bs 30,00) y no se le genera ningún cobro.
-- **CA-001-22:** Dado un miembro que ingresó después de generado el cobro del mes y pagó su cuota de ingreso, cuando llega la siguiente fecha de corte, entonces recibe su primer cobro regular y del período de ingreso tiene un cobro `pagado`.
+- **CA-001-22:** Dado un miembro que ingresó durante la ventana de ingreso y pagó su cuota de ingreso, cuando llega la siguiente fecha de corte, entonces recibe su primer cobro regular y del período de ingreso tiene un cobro `pagado`.
 - **CA-001-23:** Dado un titular que configuró texto y QR de pago, cuando un miembro abre su cobro, entonces ve ambos; si no los configuró, ve el aviso correspondiente.
 - **CA-001-24:** Dado un usuario que no está habilitado como titular, cuando intenta crear una suscripción, entonces se rechaza y ve qué le falta.
 - **CA-001-25:** Dado un usuario habilitado como titular, cuando crea una suscripción válida, entonces la crea (CA-001-01).
+- **CA-001-26:** Dado un grupo con corte el día 10, cuando un usuario ingresa un código el día 13 a las 23:59, entonces se abre la solicitud; el día 14 a las 00:00 se rechaza con la fecha de la próxima apertura.
+- **CA-001-27:** Dado un grupo recién creado, cuando un usuario ingresa un código dentro de los 3 días siguientes a su creación, entonces se abre la solicitud.
+- **CA-001-28:** Dado un titular con 5 grupos activos, cuando intenta crear un sexto, entonces se rechaza; el mismo usuario puede ser miembro de cualquier número de grupos.
+- **CA-001-29:** Dado un miembro sin pago 3 días después del corte, cuando corre el control de vencimientos, entonces deja de ser miembro, su cobro queda `atrasado` y las cuotas se recalculan para los miembros restantes.
+- **CA-001-30:** Dado un miembro que no es titular habilitado, cuando el titular intenta transferirle la titularidad, entonces se rechaza.
 
 ## 11. Preguntas abiertas
 
 - [RESUELTO 2026-10-17] Alta a mitad de mes: pagaba desde el siguiente cobro. Reemplazado el mismo día por el ingreso con pago previo (RN-001-11 y spec 010).
 - [RESUELTO 2026-10-17] El titular no tiene cobro propio (RN-001-10).
 - [RESUELTO] Cobros de un miembro quitado: se conservan; el titular decide si cancelarlos (alineado con spec 002, RN-002-07).
-- [NECESITA ACLARACIÓN] ¿El servicio personalizado (fuera del catálogo) es posible en el MVP? **Propuesta:** sí, solo con nombre libre.
-- [NECESITA ACLARACIÓN] **Quién puede ser titular** (RF-001-21). El equipo decidió que solo lo sea un usuario con muy buena reputación. Hay tres puntos por cerrar. (1) **Umbral:** **propuesta** de 4,5 estrellas o más con al menos 6 cobros considerados en los últimos 12 meses. (2) **Arranque:** al inicio nadie tiene historial, así que **propuesta** de que el administrador habilite a los primeros titulares (spec 009) y que la habilitación automática por calificación se active cuando exista la calificación (spec 007, RF-007-01 a RF-007-05), que pasa a construirse junto con el MVP. (3) **Alcance:** que el requisito valga para todos los grupos o solo para los que reciben a personas que no conocen al titular. **Propuesta:** para todos, por simplicidad y porque el ingreso es el mismo flujo.
+- [RESUELTO 2026-10-17] El servicio personalizado (fuera del catálogo) es posible en el MVP, solo con nombre libre.
+- [RESUELTO 2026-10-17] Ingreso solo durante los 3 primeros días del período (RF-001-22). Esto reemplaza el ingreso a mitad de mes.
+- [RESUELTO 2026-10-17] Límite de 5 grupos como titular y sin límite como miembro (RN-001-14).
+- [RESUELTO 2026-10-17] El miembro que no paga es retirado a los 3 días del corte (RF-001-23).
+- [RESUELTO 2026-10-17] **Quién puede ser titular** (RF-001-21): umbral de 4,5 estrellas con al menos 6 cobros considerados; el administrador habilita a los primeros titulares; el requisito vale para todos los grupos.
+- [NECESITA ACLARACIÓN] **Qué son los "3 primeros días".** Se interpretó como los 3 primeros días del período de cobro de cada grupo, con el día de corte como día 1, y no como los días 1 a 3 del mes calendario. **Propuesta:** dejarlo así. Para un grupo nuevo, **propuesta:** la ventana inicial cuenta desde la creación.
 
 ## 12. Historial de cambios
 
@@ -169,3 +185,4 @@ Esta spec define cómo se **crea una suscripción compartida**, cómo se **invit
 | 2026-10-17 | Se agregan RN-001-12 y RN-001-13 por el catálogo (spec 004) | Equipo |
 | 2026-10-17 | Se resuelven: titular sin cobro propio, alta a mitad de mes y datos de pago (RN-001-10, RN-001-11, RF-001-20, CA-001-21 a 23) | Equipo (ronda 1 de preguntas) |
 | 2026-10-17 | El ingreso pasa a una solicitud con pago previo y chat (spec 010): cambian RF-001-07, RN-001-11, CA-001-06, 12, 19 y 22; se agrega el requisito de ser titular habilitado (RF-001-21, CA-001-24 y 25) | Equipo |
+| 2026-10-17 | Ronda 2 de decisiones: ventana de ingreso (RF-001-22), retiro por falta de pago (RF-001-23), límite de 5 grupos como titular (RN-001-14), umbral para ser titular, destinatario de la transferencia habilitado (RF-001-17), CA-001-26 a 30 | Equipo |

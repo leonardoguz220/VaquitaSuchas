@@ -136,13 +136,14 @@ Quien comparte varias suscripciones pierde de vista cuánto gasta al mes, cuánt
 
 ## 11. Preguntas abiertas
 
-- [NECESITA ACLARACIÓN] **Cálculo del ahorro** (P24). **Propuesta:** precio individual de referencia del catálogo (spec 004) vs. cuota; "estimado".
-- [NECESITA ACLARACIÓN] **Gráficos imprescindibles** (P25). **Propuesta:** los tres de RF-006-07 a RF-006-09.
-- [NECESITA ACLARACIÓN] **Librería de gráficos.** **Propuesta:** Recharts (se define en el plan de esta spec).
-- [NECESITA ACLARACIÓN] ¿El titular necesita ver cobranza por miembro a lo largo del tiempo (historial por persona)? **Propuesta:** sí, dentro del historial del grupo con filtro por miembro.
+- [RESUELTO 2026-10-17] **Cálculo del ahorro** (P24). **Decidido:** precio individual de referencia del catálogo (spec 004) vs. cuota; "estimado".
+- [RESUELTO 2026-10-17] **Gráficos imprescindibles** (P25). **Decidido:** los tres de RF-006-07 a RF-006-09.
+- [RESUELTO 2026-10-17] **Librería de gráficos.** **Decidido:** Recharts (se define en el plan de esta spec).
+- [RESUELTO 2026-10-17] ¿El titular necesita ver cobranza por miembro a lo largo del tiempo (historial por persona)? **Decidido:** sí, dentro del historial del grupo con filtro por miembro.
 
 ## 12. Historial de cambios
 
 | Fecha | Cambio | Autor |
 |---|---|---|
 | 2026-10-17 | Primer borrador | Equipo |
+| 2026-10-17 | Ronda 2 de decisiones: se aceptan las propuestas de la sección 11 | Equipo |

@@ -18,6 +18,7 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 - Que sus datos y sus grupos solo sean accesibles con su sesión.
 - Que pueda recuperar el acceso si olvida su contraseña, sin revelar a terceros quién tiene cuenta.
 - Que mantenga su perfil (nombre y celular) para que los grupos la reconozcan.
+- Que cada cuenta corresponda a una persona real e identificable: celular verificado y cédula de identidad únicos, de modo que quien estafe no pueda volver con otra cuenta.
 
 ## 3. Fuera de alcance
 
@@ -42,21 +43,24 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 - **HU-003-02:** Como usuario, quiero iniciar y cerrar sesión de forma segura.
 - **HU-003-03:** Como usuario, quiero recuperar mi contraseña desde mi correo si la olvido.
 - **HU-003-04:** Como usuario, quiero editar mi nombre y mi celular para que mis compañeros me identifiquen.
+- **HU-003-07:** Como visitante, quiero verificar mi celular con un código, para demostrar que el número es mío.
 - **HU-003-05:** Como usuario, quiero cambiar mi contraseña estando dentro de la app.
 - **HU-003-06:** Como usuario, quiero que, si me bloquean por intentos fallidos, el bloqueo sea temporal y claro.
 
 ## 6. Requisitos funcionales
 
 ### Registro
-- **RF-003-01:** El registro pide: nombre completo (2 a 80 caracteres), correo electrónico, contraseña y confirmación de contraseña. El celular es opcional.
+- **RF-003-01:** El registro pide: nombre completo (2 a 80 caracteres), correo electrónico, **celular**, **cédula de identidad (CI)**, contraseña y confirmación de contraseña. El celular y la CI son **obligatorios**. El usuario también acepta la política de datos (RF-003-23).
 - **RF-003-02:** El correo es único sin distinguir mayúsculas y se guarda normalizado (minúsculas, sin espacios).
 - **RF-003-03:** La contraseña cumple la política: mínimo 10 caracteres, al menos una letra y un número, y no puede ser igual al correo.
-- **RF-003-04:** Al registrarse, el usuario queda con sesión iniciada.
-- **RF-003-05:** El celular, si se ingresa, se guarda como número boliviano (8 dígitos, empieza con 6 o 7) con prefijo `+591`.
+- **RF-003-04:** El registro se completa al verificar el celular (RF-003-21); recién entonces el usuario queda con sesión iniciada. Una cuenta sin verificar no puede iniciar sesión y se elimina a las 24 horas.
+- **RF-003-05:** El celular se guarda como número boliviano (8 dígitos, empieza con 6 o 7) con prefijo `+591`. Es **único**: no puede haber dos cuentas con el mismo celular.
+- **RF-003-21 (Verificación del celular):** el sistema envía al celular un código de 6 dígitos que vence a los 10 minutos. Se permiten 5 intentos por código y hasta 3 envíos por hora por celular. Con el código correcto el celular queda verificado. El envío se hace a través de la abstracción de mensajería de la spec 000 (RF-000-22). _(Decidido 2026-10-17)_
+- **RF-003-22 (Cédula de identidad):** la CI es **única** por cuenta y no se puede editar. Se guarda **cifrada** (para mostrarla enmascarada a un administrador) y con una huella irreversible (para la unicidad y el bloqueo). Nunca se muestra a otros usuarios ni se devuelve en respuestas a quien no sea su dueño; el administrador la ve enmascarada (spec 009, RF-009-09).
 
 ### Sesión
 - **RF-003-06:** El inicio de sesión usa correo y contraseña. Al ingresar, el backend emite un JWT que el frontend guarda en una **cookie httpOnly, `Secure` y `SameSite=Lax`**; el navegador nunca lee el token.
-- **RF-003-07:** La sesión dura 7 días desde la última actividad (renovación deslizante). Cerrar sesión elimina la cookie e invalida el token en el servidor [NECESITA ACLARACIÓN: lista de tokens revocados].
+- **RF-003-07:** La sesión dura 7 días desde la última actividad (renovación deslizante). Cerrar sesión elimina la cookie e invalida el token en el servidor mediante una **versión de sesión por usuario** (`session_version`): cerrar sesión, cambiar la contraseña o ser baneado incrementa la versión y los tokens anteriores dejan de servir. _(Decidido 2026-10-17)_
 - **RF-003-08:** Los endpoints protegidos rechazan peticiones sin sesión válida con `401`.
 - **RF-003-09:** El usuario puede ver en su perfil la fecha del último inicio de sesión.
 
@@ -67,7 +71,7 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 - **RF-003-13:** Si el usuario pide un nuevo enlace, los anteriores dejan de funcionar.
 
 ### Perfil
-- **RF-003-14:** El usuario puede editar su nombre y su celular. El correo no se puede editar en esta etapa.
+- **RF-003-14:** El usuario puede editar su nombre y su celular. Un celular nuevo debe verificarse con un código (RF-003-21) y ser único; mientras no se verifique se conserva el anterior. El correo y la CI no se pueden editar en esta etapa.
 - **RF-003-15:** El usuario puede cambiar su contraseña ingresando la actual y la nueva; al hacerlo se cierran sus otras sesiones.
 - **RF-003-16:** Las demás personas ven de un usuario únicamente lo que define la regla RN-003-03.
 
@@ -76,8 +80,9 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 - **RF-003-18:** Los pedidos de recuperación de contraseña tienen límite: máximo 3 por correo cada hora.
 
 ### Cuentas baneadas
-- **RF-003-19:** Cuando se banea una cuenta (spec 009), el sistema guarda una huella irreversible (hash con una clave del servidor) de su correo normalizado y de su celular. El registro rechaza cualquier correo o celular cuya huella esté bloqueada, con el mensaje genérico "No es posible crear la cuenta con estos datos", sin indicar cuál dato fue el bloqueado.
+- **RF-003-19:** Cuando se banea una cuenta (spec 009), el sistema guarda una huella irreversible (hash con una clave del servidor) de su correo normalizado, de su celular y de su CI. El registro rechaza cualquier correo, celular o CI cuya huella esté bloqueada, con el mensaje genérico "No es posible crear la cuenta con estos datos", sin indicar cuál dato fue el bloqueado. Las huellas se conservan de forma permanente, aunque se eliminen los demás datos de la cuenta. Aplica a un titular y a un solicitante baneados por igual.
 - **RF-003-20:** Una cuenta baneada no puede iniciar sesión ni recuperar su contraseña, y sus sesiones activas se cierran. El mensaje es el mismo genérico de acceso no disponible.
+- **RF-003-23 (Política de datos):** el registro muestra una política corta que explica qué datos se piden (nombre, correo, celular y CI), para qué se usan (identificar a las personas y bloquear a quien estafe) y cuánto se conservan, y exige aceptarla. Se guarda la fecha de aceptación. _(Decidido 2026-10-17)_
 
 ## 7. Requisitos no funcionales
 
@@ -92,7 +97,7 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 
 - **RN-003-01:** Cada usuario tiene un rol de sistema: `usuario` (por defecto) o `admin`. Nadie se registra como admin; los administradores se crean con el seed o por otro admin (spec 009).
 - **RN-003-02:** Un usuario puede tener estado `activo`, `suspendido` o `baneado` (spec 009). Un usuario suspendido o baneado no puede iniciar sesión. La suspensión es reversible; el baneo es permanente y bloquea además los datos de la cuenta (RF-003-19).
-- **RN-003-03 (Visibilidad entre usuarios):** dentro de un grupo, todos ven el **nombre** de los demás miembros; el titular y los miembros se ven mutuamente el **celular** solo si fue ingresado, para poder coordinar pagos. El correo no se comparte.
+- **RN-003-03 (Visibilidad entre usuarios):** dentro de un grupo, todos ven el **nombre** de los demás miembros; el titular y los miembros se ven mutuamente el **celular**, que siempre existe y está verificado, para poder coordinar pagos. Un solicitante de ingreso solo comparte su celular con el titular después de ser aceptado (spec 010, RNF-010-02). El correo y la CI no se comparten.
 - **RN-003-04:** El nombre en la app es el nombre del perfil; el titular puede pedir al miembro que lo coloque tal como figura en su banco, pero la app no lo exige.
 - **RN-003-05:** Las fechas de sesión y de tokens se manejan en UTC.
 
@@ -111,8 +116,12 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 | Dos registros simultáneos con el mismo correo | Solo uno se crea (restricción única en base de datos) |
 | Falla el envío del correo de recuperación | Se registra el error y se reintenta; el usuario ve el mensaje genérico |
 | Celular con formato inválido | Error de validación en el campo |
-| Registro con el correo o el celular de una cuenta baneada | Se rechaza con el mensaje genérico, también si el correo cambia solo en mayúsculas o espacios |
-| Registro con un correo y un celular nuevos de una persona baneada | No se puede detectar con solo estos datos; ver la pregunta abierta sobre identidad |
+| Registro con el correo, el celular o la CI de una cuenta baneada | Se rechaza con el mensaje genérico, también si el correo cambia solo en mayúsculas o espacios |
+| Registro con un correo, un celular y una CI nuevos de una persona baneada | No se puede detectar con solo estos datos; es el límite de la medida (ver la pregunta abierta sobre identidad) |
+| Celular o CI ya registrados en otra cuenta | Se rechaza con un mensaje que indica que ya existe una cuenta con ese dato |
+| Código de verificación vencido, incorrecto 5 veces o pedido más de 3 veces por hora | Mensaje claro; se debe pedir un código nuevo o esperar |
+| Falla el envío del código al celular | Se registra el error; el usuario puede pedir un reenvío dentro del límite |
+| Cuenta sin verificar pasadas 24 horas | Se elimina y el celular, la CI y el correo quedan libres |
 
 ## 10. Criterios de aceptación
 
@@ -139,16 +148,29 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 - **CA-003-21:** Dada una cuenta baneada, cuando alguien se registra con su correo (aunque con otras mayúsculas o espacios), entonces se rechaza con el mensaje genérico.
 - **CA-003-22:** Dada una cuenta baneada, cuando alguien se registra con un correo distinto pero con el mismo celular, entonces se rechaza con el mismo mensaje genérico.
 - **CA-003-23:** Dada una cuenta baneada, cuando intenta iniciar sesión o recuperar su contraseña, entonces no puede y el mensaje no revela el baneo.
-- **CA-003-24:** Dado el bloqueo de datos, cuando se inspecciona la tabla de bloqueos, entonces solo contiene huellas y no el correo ni el celular en claro.
+- **CA-003-24:** Dado el bloqueo de datos, cuando se inspecciona la tabla de bloqueos, entonces solo contiene huellas y no el correo, el celular ni la CI en claro.
+- **CA-003-25:** Dado un registro sin celular o sin CI, cuando se envía, entonces se rechaza con error de validación en el campo.
+- **CA-003-26:** Dado un celular o una CI ya registrados, cuando alguien se registra con ellos, entonces se rechaza.
+- **CA-003-27:** Dado un código de verificación correcto dentro de 10 minutos, cuando se ingresa, entonces el celular queda verificado, se completa el registro y el usuario tiene sesión.
+- **CA-003-28:** Dado un código vencido, o el sexto intento sobre un mismo código, cuando se ingresa, entonces se rechaza.
+- **CA-003-29:** Dado el límite de 3 envíos por hora, cuando se pide un cuarto código, entonces se rechaza con mensaje de espera.
+- **CA-003-30:** Dada una cuenta baneada, cuando alguien se registra con su CI y un correo y celular distintos, entonces se rechaza con el mismo mensaje genérico.
+- **CA-003-31:** Dado cualquier usuario, cuando consulta la API, entonces nunca recibe la CI de otro usuario; la CI de su propia cuenta se devuelve enmascarada.
+- **CA-003-32:** Dado un cambio de celular, cuando no se verifica el código nuevo, entonces se conserva el celular anterior.
+- **CA-003-33:** Dado un usuario que cierra sesión o cambia la contraseña, cuando se usa un token anterior, entonces se rechaza con `401` (versión de sesión).
+- **CA-003-34:** Dado un registro sin aceptar la política de datos, cuando se envía, entonces se rechaza.
 
 ## 11. Preguntas abiertas
 
-- [NECESITA ACLARACIÓN] **Verificación del correo.** **Propuesta:** sin verificación obligatoria en esta etapa; el correo se valida solo por formato. Riesgo: cuentas con correos ajenos y, con el baneo (RF-003-19), facilidad para abrir otra cuenta con otro correo.
-- [NECESITA ACLARACIÓN] **Identidad de una persona baneada.** Hoy el bloqueo usa el correo y el celular, y una persona puede conseguir otros nuevos. Dos medidas lo dificultan y tienen costo: verificar el celular con un código por SMS o WhatsApp (cuesta por mensaje y depende de un proveedor) y pedir la cédula de identidad a quien quiera ser titular (es un dato personal sensible; se guardaría solo su huella y hay que revisar la normativa de protección de datos). **Propuesta:** en el MVP bloquear correo y celular, y decidir en equipo si se suma la cédula solo para titulares. Los alias de Gmail (`nombre+1@gmail.com` o con puntos distintos) apuntan a la misma casilla; **propuesta:** que la huella del bloqueo se calcule sobre el correo sin alias en esos dominios. Ninguna medida garantiza que la persona no cree otra cuenta con datos nuevos.
-- [NECESITA ACLARACIÓN] **Mensaje de registro con correo repetido:** revelar que existe (mejor experiencia) o respuesta neutra (más privado). **Propuesta:** revelarlo, con límite de intentos por IP.
-- [NECESITA ACLARACIÓN] **Eliminar cuenta.** **Propuesta:** fuera de alcance por ahora; si se agrega, solo sin deudas ni titularidad y anonimizando datos para conservar el historial de los grupos.
-- [NECESITA ACLARACIÓN] **Revocación de tokens:** lista de tokens revocados en base de datos o versión de sesión por usuario. **Propuesta:** versión de sesión por usuario (columna `session_version`) para simplificar.
-- [NECESITA ACLARACIÓN] **Nombre bancario:** ¿hace falta un campo separado "nombre en el banco" para ayudar a conciliar pagos? **Propuesta:** no en esta etapa.
+- [RESUELTO 2026-10-17] **Verificación del correo:** no es obligatoria en esta etapa; el correo se valida solo por formato. La identidad se apoya en el celular verificado y en la CI.
+- [RESUELTO 2026-10-17] **Celular y CI en el registro:** son obligatorios, únicos, y el celular se verifica con un código (RF-003-01, RF-003-21 y RF-003-22). El baneo bloquea correo, celular y CI.
+- [RESUELTO 2026-10-17] **Mensaje de registro con correo repetido:** se revela que ya existe, con límite de intentos por IP.
+- [RESUELTO 2026-10-17] **Eliminar cuenta:** fuera de alcance por ahora; si se agrega, solo sin deudas ni titularidad y anonimizando datos, pero conservando las huellas de bloqueo.
+- [RESUELTO 2026-10-17] **Revocación de tokens:** versión de sesión por usuario (RF-003-07).
+- [RESUELTO 2026-10-17] **Nombre bancario:** no hay campo separado en esta etapa.
+- [NECESITA ACLARACIÓN] **Canal y costo del código de celular.** SMS o WhatsApp, y quién lo paga. **Propuesta:** en desarrollo, el código se muestra en el log; en producción, un proveedor de SMS con un tope de mensajes por día, elegido en la spec 000. El canal queda detrás de la abstracción de mensajería (RF-000-22), así que cambiarlo no afecta esta spec.
+- [NECESITA ACLARACIÓN] **Formato de la CI y su revisión.** Se asumió que se registra solo el número (con complemento opcional) y que no se sube foto del documento. **Propuesta:** solo el número, con validación de formato; el administrador no puede verificar que sea real, así que la CI funciona como identificador único y no como prueba de identidad. Pedir una foto y revisarla solo a quien se quiere habilitar como titular es una alternativa más fuerte, pero implica guardar una imagen sensible.
+- [NECESITA ACLARACIÓN] **Alias de correo.** Los alias de Gmail (`nombre+1@gmail.com` o con puntos distintos) apuntan a la misma casilla. **Propuesta:** que la huella del bloqueo de correo se calcule sin alias en esos dominios. Ninguna medida garantiza que una persona con otro celular y otra CI no cree una cuenta nueva.
 
 ## 12. Historial de cambios
 
@@ -156,3 +178,4 @@ Toda la app gira alrededor de personas que comparten dinero: hay que saber quié
 |---|---|---|
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | Se agrega el estado `baneado` y el bloqueo de correo y celular de cuentas baneadas (RN-003-02, RF-003-19, RF-003-20, CA-003-21 a CA-003-24) | Equipo |
+| 2026-10-17 | Ronda 2 de decisiones: celular obligatorio y verificado, CI obligatoria y única, política de datos, bloqueo de correo, celular y CI, versión de sesión (RF-003-01, 05, 07, 14, 19, 21, 22, 24; RN-003-03; CA-003-25 a 34) | Equipo |

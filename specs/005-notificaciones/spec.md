@@ -30,7 +30,7 @@ El valor de Vaquita está en que nadie tenga que perseguir a nadie. Para eso la 
 
 | Actor | Recibe / puede |
 |---|---|
-| Miembro | Avisos de sus cobros y del grupo; ver y marcar sus notificaciones; ajustar sus preferencias de correo |
+| Miembro | Avisos de sus cobros y del grupo; ver y marcar sus notificaciones; ajustar sus preferencias de correo y de Telegram; vincular su cuenta de Telegram |
 | Titular | Avisos de comprobantes, nuevos miembros y atrasos de su grupo; invitar por correo; abrir WhatsApp con un mensaje de cobro |
 | Sistema | Genera y envía las notificaciones programadas |
 
@@ -57,15 +57,15 @@ Nadie puede ver las notificaciones de otra persona.
 - **RF-005-04 (Aviso previo):** 2 días antes de la fecha de corte del grupo, se avisa a cada miembro del cobro próximo y su monto estimado.
 - **RF-005-05 (Cobro generado):** al generarse el cobro, se avisa con monto, fecha de vencimiento y datos de pago.
 - **RF-005-06 (Recordatorio de vencimiento):** 1 día antes del vencimiento, si el cobro sigue `pendiente`.
-- **RF-005-07 (Atraso):** cuando el cobro pasa a `atrasado`, se avisa. Mientras siga atrasado, se envía un recordatorio cada 3 días, **máximo 3 recordatorios**.
+- **RF-005-07 (Retiro por falta de pago):** cuando vence el plazo sin pago, el cobro pasa a `atrasado` y el miembro es retirado del grupo (spec 002, RF-002-14); se le avisa a él, con el monto adeudado y cómo pagar la deuda, y al titular (RF-005-13). No hay recordatorios repetidos de atraso: tras el retiro la deuda queda visible pero no se insiste. _(Decidido 2026-10-17: reemplaza los recordatorios cada 3 días)_
 - **RF-005-08 (Resolución):** cuando el titular confirma o rechaza un pago, se avisa al miembro; el rechazo incluye el motivo.
-- **RF-005-09 (Cambios del grupo):** se avisa al miembro cuando es quitado del grupo, cuando cambia la titularidad o cuando el grupo se cierra.
+- **RF-005-09 (Cambios del grupo):** se avisa al miembro cuando es quitado o retirado del grupo, cuando cambia la titularidad o cuando el grupo se cierra.
 
 ### Eventos para el titular
 - **RF-005-10:** Cuando un miembro sube un comprobante (cobro `en_revision`), se avisa al titular.
 - **RF-005-11:** Si un comprobante lleva más de 48 horas en revisión, se envía **un** recordatorio al titular.
 - **RF-005-12:** Se avisa al titular cuando un miembro se une o abandona el grupo.
-- **RF-005-13:** Se avisa al titular cuando uno de sus miembros pasa a `atrasado` (un aviso por cobro).
+- **RF-005-13:** Se avisa al titular cuando uno de sus miembros es retirado por falta de pago (un aviso por cobro), con el monto adeudado y el cupo que quedó libre.
 
 ### Solicitudes de ingreso (spec 010)
 - **RF-005-22 (Titular):** se avisa al titular cuando llega una solicitud de ingreso, cuando el solicitante sube el comprobante (con el plazo de 60 minutos), cuando pasan 30 minutos sin decisión y cuando hay un mensaje nuevo en el chat de una solicitud.
@@ -76,14 +76,19 @@ Nadie puede ver las notificaciones de otra persona.
 ### Invitaciones
 - **RF-005-14 (Correo):** el titular ingresa un correo y el sistema envía una invitación con un enlace `/unirse?codigo=XXXXXXXX` y el código. Si el invitado no tiene sesión, tras iniciar sesión o registrarse vuelve a esa pantalla con el código ya cargado. Límite: 10 invitaciones por hora por titular.
 - **RF-005-15 (WhatsApp):** el titular puede abrir WhatsApp con un mensaje prellenado que incluye el enlace de invitación, mediante un enlace `wa.me`. No se envía nada desde el servidor.
-- **RF-005-16 (Cobro por WhatsApp):** el titular puede abrir WhatsApp con un mensaje de recordatorio de cobro dirigido al celular del miembro (si lo registró), con el monto, el período y el vencimiento.
+- **RF-005-16 (Cobro por WhatsApp):** el titular puede abrir WhatsApp con un mensaje de recordatorio de cobro dirigido al celular del miembro, con el monto, el período y el vencimiento.
+
+### Telegram (P1)
+- **RF-005-26 (Vincular Telegram):** el usuario puede vincular su cuenta de Telegram desde su perfil. La app genera un enlace al bot de Vaquita con un token de un solo uso que vence en 15 minutos; al abrirlo en Telegram y pulsar "Iniciar", la cuenta queda vinculada. El usuario puede desvincularla en cualquier momento. _(Decidido 2026-10-17)_
+- **RF-005-27 (Avisos por Telegram):** con Telegram vinculado y activado, el usuario recibe los mismos tipos de aviso que por correo, con los mismos interruptores por tipo (RF-005-17). Los mensajes no incluyen datos sensibles (montos exactos de otros, comprobantes, datos de pago, contenido del chat): solo un texto corto y un enlace a la app.
+- **RF-005-28:** Si Telegram falla (bot caído, el usuario bloqueó el bot), el envío se reintenta como el correo (RF-005-20) y, si se agotan los reintentos, queda marcado como fallido sin afectar la notificación dentro de la app. Si el usuario bloqueó el bot, se desvincula la cuenta.
 
 ### Preferencias
-- **RF-005-17:** El usuario puede activar o desactivar el correo por tipo de aviso: recordatorios de pago, resoluciones de pago, avisos como titular, y avisos de grupo. Los correos de **seguridad** (recuperar o cambiar contraseña) no se pueden desactivar.
+- **RF-005-17:** El usuario puede activar o desactivar el correo y Telegram (RF-005-26) por tipo de aviso: recordatorios de pago, resoluciones de pago, avisos como titular, y avisos de grupo. Los correos de **seguridad** (recuperar o cambiar contraseña) no se pueden desactivar.
 - **RF-005-18:** Todo correo no transaccional incluye un enlace para desactivar ese tipo de aviso.
 
 ### Procesamiento
-- **RF-005-19:** Las notificaciones programadas se generan con una tarea diaria a las 08:00 hora de La Paz, y una tarea cada 5 minutos envía los correos pendientes.
+- **RF-005-19:** Las notificaciones programadas se generan con una tarea diaria a las 08:00 hora de La Paz, y una tarea cada 5 minutos envía los correos y mensajes de Telegram pendientes.
 - **RF-005-20:** Un correo fallido se reintenta hasta 3 veces (a los 5 minutos, 30 minutos y 2 horas) y luego queda marcado como fallido, sin afectar la notificación dentro de la app.
 - **RF-005-21:** Las notificaciones se conservan 90 días y luego se eliminan.
 
@@ -104,7 +109,7 @@ Nadie puede ver las notificaciones de otra persona.
 - **RN-005-03:** El titular **no** recibe avisos de cobro como si fuera miembro (no tiene cobro propio, RN-001-10).
 - **RN-005-04:** Un usuario suspendido o con cuenta inactiva no recibe correos.
 - **RN-005-05:** El aviso previo se calcula con la cuota vigente al momento del aviso y se indica como "estimado".
-- **RN-005-06:** Los tiempos (2 días, 1 día, 3 días, 48 horas, 3 recordatorios) son **parámetros de configuración** con estos valores por defecto.
+- **RN-005-06:** Los tiempos (2 días, 1 día, 48 horas) son **parámetros de configuración** con estos valores por defecto.
 
 ## 9. Casos borde y errores
 
@@ -117,10 +122,11 @@ Nadie puede ver las notificaciones de otra persona.
 | Correo inválido en una invitación | Error de validación; no se envía |
 | Invitación al correo de alguien que ya es miembro | Se envía igual el correo de forma neutra, sin revelar si pertenece al grupo |
 | Se supera el límite de invitaciones | Mensaje con el tiempo de espera |
-| Miembro sin celular y el titular quiere usar WhatsApp | El botón de WhatsApp para ese miembro no se muestra |
+| El usuario bloqueó el bot de Telegram | Se desvincula su cuenta y sigue recibiendo avisos en la app y por correo |
+| El token de vinculación venció o ya se usó | Mensaje claro y opción de generar uno nuevo |
 | El proveedor de correo está caído | Reintentos; finalmente estado `failed` y registro del error |
 | Un grupo se cierra con avisos pendientes | Los avisos futuros de ese grupo se cancelan |
-| Cuenta con correo rebotado | Se marca el correo con problemas y se deja de enviar [NECESITA ACLARACIÓN] |
+| Cuenta con correo rebotado | Si el proveedor informa un rebote permanente, se marca el correo con problemas y se deja de enviar |
 
 ## 10. Criterios de aceptación
 
@@ -128,8 +134,8 @@ Nadie puede ver las notificaciones de otra persona.
 - **CA-005-02:** Dado un grupo con fecha de corte el día 15, cuando es día 13, entonces cada miembro recibe un aviso previo.
 - **CA-005-03:** Dado un cobro `pendiente` que vence mañana, cuando corre la tarea diaria, entonces el miembro recibe un recordatorio.
 - **CA-005-04:** Dado un cobro `pagado`, cuando corre la tarea diaria, entonces no se genera recordatorio.
-- **CA-005-05:** Dado un cobro que pasa a `atrasado`, cuando ocurre, entonces el miembro y el titular reciben aviso.
-- **CA-005-06:** Dado un cobro `atrasado` durante 12 días, cuando corre la tarea diaria cada día, entonces el miembro recibe como máximo 3 recordatorios, cada 3 días.
+- **CA-005-05:** Dado un cobro que pasa a `atrasado` y el miembro es retirado, cuando ocurre, entonces el miembro y el titular reciben aviso.
+- **CA-005-06:** Dado un cobro `atrasado` de un miembro ya retirado, cuando corre la tarea diaria durante 12 días, entonces no se generan recordatorios de atraso.
 - **CA-005-07:** Dado un comprobante subido, cuando el cobro pasa a `en_revision`, entonces el titular recibe un aviso inmediato.
 - **CA-005-08:** Dado un comprobante en revisión por más de 48 horas, cuando corre la tarea, entonces el titular recibe un solo recordatorio.
 - **CA-005-09:** Dado un rechazo con motivo, cuando el titular lo envía, entonces el miembro recibe el motivo en su notificación.
@@ -141,7 +147,7 @@ Nadie puede ver las notificaciones de otra persona.
 - **CA-005-15:** Dado un invitado sin sesión que abre el enlace, cuando se registra, entonces llega a la pantalla para solicitar su ingreso con el código cargado.
 - **CA-005-16:** Dado un titular que invitó a 10 correos en una hora, cuando envía el siguiente, entonces se rechaza.
 - **CA-005-17:** Dado el botón de WhatsApp, cuando se pulsa, entonces se abre un enlace `wa.me` con el mensaje prellenado y no se hace ninguna llamada de envío desde el servidor.
-- **CA-005-18:** Dado un miembro sin celular, cuando el titular ve su cobro atrasado, entonces no aparece el botón de WhatsApp para él.
+- **CA-005-18:** Dado un miembro con un cobro vigente, cuando el titular abre el botón de WhatsApp, entonces el mensaje va dirigido al celular verificado del miembro.
 - **CA-005-19:** Dado el proveedor de correo caído, cuando un miembro sube un comprobante, entonces la operación se completa y el correo queda en reintentos.
 - **CA-005-20:** Dadas 3 fallas de envío, cuando se agotan los reintentos, entonces el correo queda `failed` y la notificación en la app sigue visible.
 - **CA-005-21:** Dado un usuario, cuando consulta notificaciones, entonces solo ve las suyas.
@@ -154,12 +160,18 @@ Nadie puede ver las notificaciones de otra persona.
 - **CA-005-28:** Dado un mensaje nuevo en el chat de una solicitud, cuando se envía, entonces la otra persona ve el contador de no leídos aumentar y no se envía un correo por cada mensaje seguido (se agrupan).
 - **CA-005-29:** Dado un correo de aviso de solicitud a las 21:00 de La Paz, cuando corresponde enviarlo, entonces se envía sin esperar la ventana de RNF-005-03.
 
+- **CA-005-30:** Dado un usuario sin Telegram vinculado, cuando genera el enlace y pulsa "Iniciar" en el bot, entonces su cuenta queda vinculada y el token no sirve una segunda vez.
+- **CA-005-31:** Dado un token de vinculación de más de 15 minutos, cuando se usa, entonces se rechaza.
+- **CA-005-32:** Dado un usuario con Telegram vinculado y el tipo de aviso activado, cuando corresponde un aviso, entonces recibe un mensaje sin datos sensibles; con el tipo desactivado solo lo ve en la app.
+- **CA-005-33:** Dado un usuario que bloquea el bot, cuando falla el envío, entonces su cuenta de Telegram se desvincula y la notificación en la app sigue visible.
+- **CA-005-34:** Dado un proveedor de Telegram caído, cuando un miembro sube un comprobante, entonces la operación se completa y el mensaje queda en reintentos.
+
 ## 11. Preguntas abiertas
 
-- [NECESITA ACLARACIÓN] **Canal de recordatorios** (P21). **Propuesta:** en la app + correo; WhatsApp solo con enlace manual.
-- [NECESITA ACLARACIÓN] **Frecuencia de avisos** (P22). **Propuesta:** valores por defecto de RN-005-06, ajustables por configuración.
-- [NECESITA ACLARACIÓN] **Rebotes de correo.** **Propuesta:** si el proveedor informa rebote permanente, se marca el correo y se deja de enviar.
-- [NECESITA ACLARACIÓN] ¿Se necesita un resumen semanal para el titular? **Propuesta:** no en esta etapa.
+- [RESUELTO 2026-10-17] **Canal de recordatorios** (P21). **Decidido:** en la app + correo; WhatsApp solo con enlace manual.
+- [RESUELTO 2026-10-17] **Frecuencia de avisos** (P22). **Decidido:** valores por defecto de RN-005-06, ajustables por configuración.
+- [RESUELTO 2026-10-17] **Rebotes de correo.** **Decidido:** si el proveedor informa rebote permanente, se marca el correo y se deja de enviar.
+- [RESUELTO 2026-10-17] ¿Se necesita un resumen semanal para el titular? **Decidido:** no en esta etapa.
 
 ## 12. Historial de cambios
 
@@ -167,3 +179,4 @@ Nadie puede ver las notificaciones de otra persona.
 |---|---|---|
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | Se agregan los avisos de las solicitudes de ingreso y de los reclamos (RF-005-22 a RF-005-25, CA-005-25 a CA-005-29); el chat de grupo sigue fuera de alcance | Equipo |
+| 2026-10-17 | Ronda 2 de decisiones: el atraso pasa a retiro del grupo y se eliminan los recordatorios repetidos (RF-005-07, 09, 13, RN-005-06), el celular siempre existe (RF-005-16), canal opcional de Telegram en P1 (RF-005-26 a 28, CA-005-30 a 34); se aceptan las propuestas de la sección 11 | Equipo |

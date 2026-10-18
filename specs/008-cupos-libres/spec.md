@@ -51,7 +51,7 @@ Muchos grupos tienen lugares vacíos: un plan familiar de 6 personas con 4 ocupa
 ### Publicación
 - **RF-008-01:** El titular puede publicar cupos de un grupo **activo** con al menos 1 cupo libre. Campos: cupos ofrecidos (de 1 hasta los libres), descripción (hasta 300 caracteres) y condiciones opcionales (hasta 300 caracteres).
 - **RF-008-02:** Cada grupo puede tener **una** publicación activa.
-- **RF-008-03:** La publicación muestra: servicio y plan (copia del grupo), cupos ofrecidos, **cuota estimada** por persona si se ocupan los cupos ofrecidos (ver RN-008-02), día de cobro, nombre del titular, su nivel de puntualidad (spec 007) y la fecha de publicación.
+- **RF-008-03:** La publicación muestra: servicio y plan (copia del grupo), cupos ofrecidos, **cuota estimada** por persona si se ocupan los cupos ofrecidos (ver RN-008-02), día de cobro, nombre del titular, su nivel de puntualidad (spec 007), la fecha de publicación y el **estado de la ventana de ingreso**: "abierta hasta [fecha]" o "se abre el [fecha]" (spec 001, RF-001-22).
 - **RF-008-04:** La publicación **no** muestra: nombres ni datos de los miembros actuales, comprobantes, datos de pago ni el código de invitación.
 - **RF-008-05:** La publicación **expira a los 30 días**; el titular puede renovarla. También se cierra sola si el grupo se llena o se cierra.
 - **RF-008-06:** El titular puede editar o retirar la publicación en cualquier momento.
@@ -62,12 +62,12 @@ Muchos grupos tienen lugares vacíos: un plan familiar de 6 personas con 4 ocupa
 - **RF-008-09:** Las listas se paginan.
 
 ### Solicitudes
-- **RF-008-10:** Un usuario puede solicitar un cupo de una publicación con un mensaje inicial de hasta 200 caracteres, que abre una **solicitud de ingreso** (spec 010) y la primera línea de su chat. Rigen los límites de la spec 010: una solicitud activa por grupo y máximo 5 activas por usuario.
+- **RF-008-10:** Un usuario puede solicitar un cupo de una publicación con un mensaje inicial de hasta 200 caracteres, que abre una **solicitud de ingreso** (spec 010) y la primera línea de su chat. Solo se puede solicitar mientras la ventana de ingreso del grupo esté abierta; fuera de ella la publicación se ve, pero el botón de solicitar queda deshabilitado con la fecha de apertura. Rigen los límites de la spec 010: una solicitud activa por grupo y máximo 5 activas por usuario.
 - **RF-008-11:** El titular ve las solicitudes con nombre del solicitante, mensaje, su nivel de puntualidad y su calificación en estrellas (spec 007), dentro de la lista de la spec 010 (RF-010-26).
 - **RF-008-12:** El ingreso sigue el flujo de la spec 010: el titular envía los datos de pago, el solicitante paga y sube el comprobante, y el titular confirma. El titular también puede rechazar con motivo. Al confirmar, la persona se une al grupo con las reglas de la spec 001 (cupos y RN-001-11).
 - **RF-008-13:** El solicitante puede cancelar su solicitud mientras no haya informado el pago (RF-010-15).
 - **RF-008-14:** Al aceptarse el último cupo ofrecido, la publicación se cierra y las demás solicitudes `abierta` pasan a `rechazada` por falta de cupo (spec 010, RN-010-05).
-- **RF-008-15:** Los plazos de las solicitudes son los de la spec 010 (RN-010-06). Una solicitud `abierta` expira a las 24 horas sin que el titular envíe los datos de pago.
+- **RF-008-15:** Los plazos de las solicitudes son los de la spec 010 (RN-010-06). Una solicitud `abierta` expira a las 24 horas sin que el titular envíe los datos de pago, o cuando termina la ventana de ingreso, lo que ocurra primero.
 - **RF-008-16:** Se notifica (spec 005) al titular de cada solicitud nueva y al solicitante de la respuesta.
 
 ### Moderación
@@ -89,7 +89,7 @@ Muchos grupos tienen lugares vacíos: un plan familiar de 6 personas con 4 ocupa
 - **RN-008-02 (Cuota estimada):** `cuota_estimada = total_bs / (miembros_actuales + cupos_ofrecidos)`, con la regla de redondeo de RN-001-02 aplicada al cobro real. Se rotula como **estimada**: la cuota real depende de cuántos miembros finalmente tenga el grupo.
 - **RN-008-03:** Aceptar a alguien cambia la cuota de **todos** los miembros a partir del siguiente cobro (RN-001-03). El titular debe ser consciente de ello antes de aceptar (aviso en pantalla).
 - **RN-008-04:** Una publicación activa no cambia cupos si el grupo cambia de tamaño: se recalcula `cupos libres` y, si es menor a los ofrecidos, se ajusta automáticamente.
-- **RN-008-05:** Un usuario puede tener solicitudes pendientes en distintas publicaciones, pero una vez aceptado en una, sus otras solicitudes al **mismo servicio** se mantienen pendientes hasta que él las retire [NECESITA ACLARACIÓN].
+- **RN-008-05:** Un usuario puede tener solicitudes pendientes en distintas publicaciones, pero una vez aceptado en una, sus otras solicitudes `abierta` al **mismo servicio** pasan a `cancelada` por el sistema (spec 010, RN-010-05). Las que ya están en pago siguen su curso. _(Decidido 2026-10-17)_
 - **RN-008-06:** Un solicitante con nivel "En riesgo" puede solicitar; la decisión es del titular.
 - **RN-008-07:** Los textos libres (descripción, condiciones, mensaje) se muestran escapados, sin HTML ni enlaces activos.
 
@@ -98,9 +98,10 @@ Muchos grupos tienen lugares vacíos: un plan familiar de 6 personas con 4 ocupa
 | Situación | Comportamiento esperado |
 |---|---|
 | Publicar en un grupo lleno | Error "No hay cupos libres" |
+| Solicitar un cupo con la ventana de ingreso cerrada | Se rechaza mostrando la fecha de apertura; la publicación sigue visible |
 | Dos solicitudes aceptadas a la vez para el último cupo | Solo una se completa; la otra recibe error de cupo |
 | El grupo se cierra con solicitudes pendientes | Las solicitudes pasan a `rechazada` y se avisa a los solicitantes |
-| El titular transfiere la titularidad | La publicación queda a nombre del nuevo titular [NECESITA ACLARACIÓN] |
+| El titular transfiere la titularidad | La publicación queda a nombre del nuevo titular, previa notificación |
 | El solicitante ya tiene una solicitud activa en ese grupo, abierta con el código | No se crea otra: hay una solicitud activa por grupo (RF-010-02) |
 | Publicación expirada con solicitudes en curso | Las solicitudes siguen su flujo (spec 010); la publicación deja de recibir nuevas |
 | Usuario suspendido con solicitudes pendientes | Las solicitudes se cancelan |
@@ -132,15 +133,17 @@ Muchos grupos tienen lugares vacíos: un plan familiar de 6 personas con 4 ocupa
 - **CA-008-19:** Dado un texto con `<script>`, cuando se muestra, entonces aparece como texto plano.
 - **CA-008-20:** Dado un usuario que no es titular, cuando intenta aceptar una solicitud, entonces recibe `403`.
 - **CA-008-21:** Dado el titular, cuando ve una solicitud, entonces ve el nivel y la calificación en estrellas del solicitante.
+- **CA-008-23:** Dada una publicación de un grupo con la ventana de ingreso cerrada, cuando un usuario la abre, entonces ve "se abre el [fecha]" y no puede solicitar; con la ventana abierta ve "abierta hasta [fecha]".
+- **CA-008-24:** Dado un usuario aceptado en un grupo de un servicio, cuando tiene otras solicitudes `abierta` a grupos del mismo servicio, entonces pasan a `cancelada` y las que están en pago siguen su curso.
 - **CA-008-22:** Dado un usuario suspendido, cuando intenta publicar o solicitar, entonces se rechaza.
 
 ## 11. Preguntas abiertas
 
-- [NECESITA ACLARACIÓN] **Quién ve las publicaciones** (P27). **Propuesta:** todos los usuarios autenticados; sin publicaciones públicas sin sesión.
+- [RESUELTO 2026-10-17] **Quién ve las publicaciones** (P27). **Decidido:** todos los usuarios autenticados; sin publicaciones públicas sin sesión.
 - [RESUELTO 2026-10-17] **Aprobación.** El titular decide y el ingreso exige pago previo y confirmación (spec 010).
-- [NECESITA ACLARACIÓN] **Transferencia de titularidad** con publicación activa. **Propuesta:** la publicación pasa al nuevo titular, previa notificación.
-- [NECESITA ACLARACIÓN] **Solicitudes al mismo servicio** tras ser aceptado en una publicación (RN-008-05). **Propuesta:** quedan pendientes hasta que el usuario las retire.
-- [NECESITA ACLARACIÓN] ¿Se muestra el celular del titular antes de ser aceptado? **Propuesta:** no; se comparte solo tras aceptar la solicitud.
+- [RESUELTO 2026-10-17] **Transferencia de titularidad** con publicación activa. **Decidido:** la publicación pasa al nuevo titular, previa notificación.
+- [RESUELTO 2026-10-17] **Solicitudes al mismo servicio** tras ser aceptado en una publicación (RN-008-05). **Decidido:** quedan pendientes hasta que el usuario las retire.
+- [RESUELTO 2026-10-17] ¿Se muestra el celular del titular antes de ser aceptado? **Decidido:** no; se comparte solo tras aceptar la solicitud.
 
 ## 12. Historial de cambios
 
@@ -148,3 +151,4 @@ Muchos grupos tienen lugares vacíos: un plan familiar de 6 personas con 4 ocupa
 |---|---|---|
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | Las solicitudes pasan a ser las de la spec 010 (chat, pago previo y confirmación); cambian RF-008-10 a RF-008-15, RNF-008-03, RN-008-01 y CA-008-10 a CA-008-15 | Equipo |
+| 2026-10-17 | Ronda 2 de decisiones: ventana de ingreso en la publicación y en la solicitud (RF-008-03, 10, 15), cancelación de otras solicitudes al mismo servicio (RN-008-05, CA-008-23 y 24); se aceptan las propuestas de la sección 11 | Equipo |

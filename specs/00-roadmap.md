@@ -20,11 +20,11 @@ Mapa de los diez módulos del proyecto hacia specs concretas, en orden de implem
 | 001 | [Suscripciones compartidas (grupos, invitación, miembros, titular)](001-suscripciones-compartidas/spec.md) | 3, 4 | P0 | 003, 004 | Camila (BD) | borrador |
 | 002 | [Cobros y pagos (generación mensual, comprobantes, confirmación, historial)](002-cobros-y-pagos/spec.md) | 5 | P0 | 001 | Leonardo (BE) | borrador |
 | 010 | [Solicitudes de ingreso y chat (pago previo, chat por solicitud, reclamos)](010-solicitudes-de-ingreso/spec.md) | 3 (ingreso al grupo) | P0 | 001, 002, 003 | Leonardo (BE) | borrador |
-| 005 | [Notificaciones (recordatorios, atrasos, invitaciones)](005-notificaciones/spec.md) | 6 | P1 | 002 | Leonardo (BE) | borrador |
+| 005 | [Notificaciones (recordatorios, retiros por mora, invitaciones, Telegram opcional)](005-notificaciones/spec.md) | 6 | P1 | 002 | Leonardo (BE) | borrador |
 | 006 | [Panel y reportes (gasto mensual, ahorro, calendario, deudas)](006-panel-y-reportes/spec.md) | 7 | P1 | 002 | Adrian (FE) | borrador |
 | 007 | [Reputación (calificación en estrellas, insignias, ranking)](007-reputacion/spec.md) | 8 | P2 (la calificación básica va en P0) | 002 | Camila (BD) | borrador |
 | 008 | [Cupos libres (publicar y buscar cupos)](008-cupos-libres/spec.md) | 9 | P2 | 001, 010 | Adrian (FE) | borrador |
-| 009 | [Administración (usuarios, catálogo, estadísticas)](009-administracion/spec.md) | 10 | P2 | 003, 004 | Adrian (FE) | borrador |
+| 009 | [Administración (usuarios, baneos y reclamos, catálogo, estadísticas)](009-administracion/spec.md) | 10 | P2 | 003, 004 | Adrian (FE) | borrador |
 
 Todas las specs están en borrador y esperan la revisión por capa (base de datos, backend y frontend). La numeración identifica cada spec y no indica el orden de ejecución, que es el de la tabla de arriba hacia abajo.
 

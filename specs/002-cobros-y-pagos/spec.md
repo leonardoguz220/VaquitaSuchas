@@ -57,22 +57,22 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - **RF-002-02:** Cada cobro guarda un **snapshot**: monto en centavos de Bs, precio original y moneda, tipo de cambio usado, nº de miembros, período (`AAAA-MM`), fecha de emisión y **fecha de vencimiento**.
 - **RF-002-03:** Fecha de vencimiento = fecha de corte + **3 días** de gracia _(decidido 2026-10-17)_.
 - **RF-002-04:** La generación es **idempotente**: no puede existir más de un cobro por (grupo, miembro, período), aunque el proceso se ejecute varias veces.
-- **RF-002-05:** Los grupos cerrados no generan cobros. Pausar la recepción de nuevos miembros (RF-001-09) no afecta la generación de cobros. Un miembro que ingresó después de la generación del período no recibe un cobro regular de ese período: ya pagó su cuota de ingreso, que figura como su cobro de ese período (spec 010, RN-010-03).
+- **RF-002-05:** Los grupos cerrados no generan cobros. Los grupos de un titular baneado quedan en solo lectura: no generan cobros nuevos y sus cobros abiertos se congelan, sin pasar a `atrasado` ni retirar a nadie (spec 009, RF-009-22). Pausar la recepción de nuevos miembros (RF-001-09) no afecta la generación de cobros. Un miembro que ingresó después de la generación del período no recibe un cobro regular de ese período: ya pagó su cuota de ingreso, que figura como su cobro de ese período (spec 010, RN-010-03).
 
 ### Pago y comprobante
 - **RF-002-06:** El miembro puede subir un comprobante (imagen JPG/PNG o PDF, máximo 5 MB) a un cobro `pendiente` o `atrasado`; el cobro pasa a `en_revision`.
-- **RF-002-07:** Al subir, el miembro puede indicar método (`qr`, `transferencia`) y una referencia opcional (máx. 100 caracteres).
+- **RF-002-07:** Al subir, el miembro puede indicar método (`qr`, `transferencia`) y una **referencia obligatoria** de la transacción (máx. 100 caracteres). La referencia no puede repetirse en otro comprobante del mismo grupo; la de un comprobante rechazado puede volver a usarse (spec 010, RN-010-14). En un pago en efectivo registrado por el titular no se pide referencia.
 - **RF-002-08:** El miembro puede reemplazar el comprobante mientras el cobro esté `en_revision` (el anterior se conserva en el historial del cobro).
 - **RF-002-09:** El sistema muestra al miembro los datos de pago que el titular configuró (texto y/o imagen de QR), configurados en la suscripción (spec 001, RF-001-20). Si no los configuró, se muestra un aviso _(decidido 2026-10-17)_.
 
 ### Confirmación
 - **RF-002-10:** El titular puede **confirmar** un cobro `en_revision` → `pagado` (se guarda quién y cuándo).
-- **RF-002-11:** El titular puede **rechazar** un cobro `en_revision` indicando un motivo obligatorio (5–200 caracteres); el cobro vuelve a `pendiente` (o `atrasado` si ya venció) y el miembro puede volver a subir.
+- **RF-002-11:** El titular puede **rechazar** un cobro `en_revision` indicando un motivo obligatorio (5–200 caracteres); el cobro vuelve a `pendiente` (o `atrasado` si ya venció) y el miembro puede volver a subir. El titular puede marcar el rechazo como «comprobante inválido», lo que afecta la medición de puntualidad (spec 007, RF-007-12).
 - **RF-002-12:** El titular puede registrar un **pago manual** (efectivo) sobre un cobro `pendiente` o `atrasado` → `pagado`, con nota opcional.
 - **RF-002-13:** El titular puede **cancelar** un cobro `pendiente` o `atrasado` → `cancelado`, con motivo.
 
 ### Atrasos
-- **RF-002-14:** Pasada la fecha de vencimiento, el sistema marca como `atrasado` todo cobro que siga en `pendiente`. Los cobros `en_revision` **no** se marcan atrasados.
+- **RF-002-14 (Atraso y retiro):** pasada la fecha de vencimiento (corte + 3 días), el sistema marca como `atrasado` todo cobro que siga en `pendiente` y **retira automáticamente al miembro del grupo** (spec 001, RF-001-23). El cobro queda `atrasado` como deuda visible y cuenta como no puntual (spec 007). Los cobros `en_revision` **no** se marcan atrasados ni retiran a nadie. Si el titular rechaza un comprobante cuando el cobro ya venció, el cobro queda `atrasado` sin retiro automático. El miembro retirado conserva acceso solo a sus cobros adeudados para pagarlos (RN-002-11). _(Decidido 2026-10-17)_
 
 ### Consulta e historial
 - **RF-002-15:** Cada miembro ve **sus cobros** con filtro por estado y período.
@@ -81,7 +81,7 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - **RF-002-18:** El titular ve un resumen: total esperado, total cobrado, total pendiente y total atrasado del período.
 
 ### Cobro de ingreso
-- **RF-002-19:** Cuando el titular confirma una solicitud de ingreso (spec 010), el sistema crea el cobro del período en curso del nuevo miembro directamente en estado `pagado`, con origen `ingreso`, el snapshot de la cuota cotizada y el comprobante de la solicitud. Aparece en el historial y en el resumen del mes como cualquier otro cobro pagado, pero no cuenta para la calificación de puntualidad (spec 007, RN-007-09).
+- **RF-002-19:** Cuando el titular confirma una solicitud de ingreso (spec 010), el sistema crea el cobro del período que acaba de empezar del nuevo miembro directamente en estado `pagado`, con origen `ingreso`, el snapshot de la cuota cotizada y el comprobante de la solicitud. Aparece en el historial y en el resumen del mes como cualquier otro cobro pagado, pero no cuenta para la calificación de puntualidad (spec 007, RN-007-09).
 
 ## 7. Requisitos no funcionales
 
@@ -103,7 +103,7 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
   | _(nuevo)_ | `pagado` | Sistema | El titular confirma una solicitud de ingreso (spec 010) |
   | `pendiente` | `en_revision` | Miembro | Sube comprobante |
   | `atrasado` | `en_revision` | Miembro | Sube comprobante |
-  | `pendiente` | `atrasado` | Sistema | Pasa fecha de vencimiento |
+  | `pendiente` | `atrasado` | Sistema | Pasa fecha de vencimiento (el miembro es retirado, RF-002-14) |
   | `en_revision` | `pagado` | Titular | Confirma |
   | `en_revision` | `pendiente` | Titular | Rechaza, vigente |
   | `en_revision` | `atrasado` | Titular | Rechaza, ya vencido |
@@ -116,11 +116,12 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - **RN-002-03:** El miembro nunca confirma su propio pago. El titular no genera cobro para sí mismo.
 - **RN-002-04:** La cuota del miembro en el cobro es la de RN-001-02 vigente en la fecha de corte.
 - **RN-002-05:** Un cobro se considera **puntual** si `fecha_subida_comprobante <= fecha_vencimiento` (dato para reputación, spec 007).
-- **RN-002-06:** Los comprobantes de cobros `pagado` o `cancelado` se conservan mientras exista el grupo.
+- **RN-002-06:** Los comprobantes de cobros `pagado` o `cancelado` se conservan mientras exista el grupo y hasta **2 meses** después de cerrarlo.
 - **RN-002-08 (Datos para reputación):** cada cobro registra `primera_subida_en` (primera vez que el miembro subió un comprobante) y `pagado_en` (momento en que pasó a `pagado`; en un pago manual, la fecha indicada por el titular, por defecto la actual). La spec 007 los usa para medir la puntualidad.
 - **RN-002-09 (Ciclo de cobro):** al generar los cobros de un período, el sistema registra un **ciclo** del grupo con: período, total en Bs, tipo de cambio, número de miembros, cuota base, cuota del titular (referencia) y fecha de corte. Los cobros de los miembros referencian ese ciclo. El panel (spec 006) y la reputación (spec 007) leen de aquí.
 - **RN-002-10 (Origen del cobro):** cada cobro tiene un origen: `ciclo` (generado en la fecha de corte) o `ingreso` (pago previo de un nuevo miembro, spec 010). El origen no cambia las reglas de visibilidad ni de historial. Los cobros de origen `ingreso` no cuentan para la calificación de puntualidad (spec 007, RN-007-09).
-- **RN-002-07:** Si un miembro es quitado o abandona, sus cobros históricos se conservan; los no pagados pasan a `cancelado` solo por decisión del titular (RF-002-13).
+- **RN-002-07:** Si un miembro es quitado, abandona o es retirado por falta de pago, sus cobros históricos se conservan; los no pagados pasan a `cancelado` solo por decisión del titular (RF-002-13). Un cobro `atrasado` de alguien retirado sigue siendo deuda visible para el titular.
+- **RN-002-11 (Pago de la deuda tras el retiro):** quien fue retirado por falta de pago puede subir el comprobante de su cobro `atrasado` y el titular puede confirmarlo o cancelarlo. Mientras tenga un cobro `atrasado` en el grupo no puede abrir una nueva solicitud de ingreso (spec 010, RN-010-13). Pagar la deuda no lo devuelve al grupo.
 
 ## 9. Casos borde y errores
 
@@ -167,15 +168,24 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 - **CA-002-22:** Dado un servidor caído en la fecha de corte, cuando se reinicia, entonces se generan los cobros faltantes sin duplicar.
 - **CA-002-24:** Dado un miembro cuyo ingreso fue confirmado en un período, cuando corre la generación de cobros de ese período, entonces no se crea un segundo cobro para él y el cobro de ingreso figura `pagado`.
 - **CA-002-25:** Dada una solicitud de ingreso confirmada, cuando se consulta el historial del grupo, entonces el cobro de ingreso aparece como `pagado` con su línea de tiempo y el comprobante, visible solo para el titular y el miembro.
+- **CA-002-26:** Dado un comprobante sin referencia, cuando el miembro lo sube, entonces se rechaza y el cobro no cambia de estado.
+- **CA-002-27:** Dada una referencia ya usada en otro comprobante del mismo grupo, cuando se sube, entonces se rechaza; si el comprobante anterior fue rechazado, o la referencia es de otro grupo, se acepta.
+- **CA-002-28:** Dado un cobro `pendiente` cuyo vencimiento pasó, cuando corre el proceso de atrasos, entonces el cobro pasa a `atrasado`, el miembro deja de pertenecer al grupo y titular y miembro reciben un aviso.
+- **CA-002-29:** Dado un cobro `en_revision` al pasar el vencimiento, cuando corre el proceso de atrasos, entonces no se marca atrasado y el miembro no es retirado.
+- **CA-002-30:** Dado un cobro `en_revision` rechazado después del vencimiento, cuando el titular rechaza, entonces queda `atrasado` y el miembro no es retirado automáticamente.
+- **CA-002-31:** Dado un miembro retirado con un cobro `atrasado`, cuando sube su comprobante y el titular lo confirma, entonces el cobro queda `pagado`, la deuda desaparece y no vuelve a ser miembro.
+- **CA-002-32:** Dado un miembro retirado con un cobro `atrasado`, cuando consulta el grupo, entonces solo ve sus cobros adeudados y no el resto del grupo.
+- **CA-002-33:** Dado un grupo cerrado hace más de 2 meses, cuando corre la limpieza, entonces se eliminan sus comprobantes y se conservan los montos y estados del historial.
 
 ## 11. Preguntas abiertas
 
 - [RESUELTO 2026-10-17] Días de gracia: 3 (RF-002-03).
 - [RESUELTO 2026-10-17] Datos de pago: texto + imagen de QR en la suscripción (RF-002-09, spec 001 RF-001-20).
-- [NECESITA ACLARACIÓN] ¿El titular debe poder ver el comprobante de un miembro ya quitado del grupo? (propuesta: sí).
-- [NECESITA ACLARACIÓN] ¿Cuánto tiempo se conservan los comprobantes tras cerrar el grupo? (propuesta: 12 meses).
-- [NECESITA ACLARACIÓN] **Período en curso del cobro de ingreso** y doble pago cerca del corte: ver la spec 010, sección 11.
-- [NECESITA ACLARACIÓN] **Atrasos prolongados y cobros que nunca se pagan** (P33). La spec no fija un plazo máximo: un cobro `atrasado` sigue así hasta que se paga, el titular registra el pago manual o lo cancela, y cada mes se genera un cobro nuevo mientras la persona siga en el grupo. **Propuesta:** sin acciones automáticas sobre la cuenta ni los cobros; la decisión es del titular. El titular recibe un aviso cuando un miembro cumple 30 días de atraso o acumula 2 cobros atrasados, con la sugerencia de cancelar o quitar al miembro; el resumen del grupo muestra el total adeudado por miembro; al quitar a un miembro, sus cobros sin pagar siguen visibles como deuda hasta que se paguen o el titular los cancele.
+- [RESUELTO 2026-10-17] El titular puede ver el comprobante de un miembro ya quitado o retirado (propuesta aceptada).
+- [RESUELTO 2026-10-17] Los comprobantes se conservan 2 meses tras cerrar el grupo (RN-002-06).
+- [RESUELTO 2026-10-17] Período del cobro de ingreso y doble pago cerca del corte: el ingreso solo se abre durante los 3 primeros días del período (spec 001, RF-001-22), así que se paga siempre el período que acaba de empezar.
+- [RESUELTO 2026-10-17] **Atrasos prolongados y cobros que nunca se pagan** (P33): el miembro tiene 3 días para pagar; si no lo hace, es retirado del grupo y su cobro queda `atrasado` como deuda visible (RF-002-14, RN-002-11). La pérdida máxima del titular es una cuota.
+- [NECESITA ACLARACIÓN] **Retiro y deuda.** Se asumió que quien fue retirado puede seguir pagando su deuda y que no puede volver a ese grupo mientras la tenga (RN-002-11). **Propuesta:** dejarlo así.
 
 ## 12. Historial de cambios
 
@@ -186,3 +196,4 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 | 2026-10-17 | Se fija `403` (miembro sin permiso) y `404` (no pertenece al grupo) para comprobantes ajenos: CA-002-13 y CA-002-23 | Equipo |
 | 2026-10-17 | Se registra la pregunta abierta sobre atrasos prolongados y cobros impagos | Equipo |
 | 2026-10-17 | Se agrega el cobro de ingreso por la spec 010: RF-002-19, RN-002-10, nueva transición en RN-002-01, CA-002-24 y CA-002-25 | Equipo |
+| 2026-10-17 | Ronda 2 de decisiones: referencia obligatoria y única (RF-002-07), retiro automático por atraso (RF-002-14, RN-002-11), retención de 2 meses (RN-002-06), CA-002-26 a 33; se resuelve P33 | Equipo |

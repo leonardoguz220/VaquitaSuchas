@@ -64,7 +64,7 @@ Al crear una suscripción compartida, el titular no debería escribir a mano el 
 
 - **RN-004-01:** El precio del catálogo es **solo una sugerencia**. El precio real de cada suscripción lo define el titular (spec 001).
 - **RN-004-02:** Los montos del catálogo se guardan en centavos enteros (`context/dominio.md`).
-- **RN-004-03:** Los cupos máximos de un plan son un número entero entre 2 y 20. La suscripción no puede definir más cupos que los del plan elegido [NECESITA ACLARACIÓN: ¿se puede superar?].
+- **RN-004-03:** Los cupos máximos de un plan son un número entero entre 2 y 20. La suscripción no puede definir más cupos que los del plan elegido _(Decidido 2026-10-17: no se puede superar.)_
 - **RN-004-04:** Un `slug` de servicio y de plan es único, en minúsculas y sin espacios (ej. `netflix`, `netflix-premium`).
 - **RN-004-05:** Un servicio sin planes activos no aparece en el listado de creación.
 - **RN-004-06:** Los precios y cupos del seed deben **verificarse con la fuente oficial** de cada plataforma al momento de cargarlos y se registra la fecha de verificación.
@@ -99,13 +99,14 @@ Al crear una suscripción compartida, el titular no debería escribir a mano el 
 
 ## 11. Preguntas abiertas
 
-- [NECESITA ACLARACIÓN] **Plataformas y planes del seed inicial** (P13). **Propuesta:** Netflix, Spotify, Disney+, YouTube Premium, Max y Prime Video, con los planes familiares/premium; Camila los carga y verifica precios vigentes.
-- [NECESITA ACLARACIÓN] ¿Se puede superar el cupo máximo del plan? **Propuesta:** no, porque rompe las condiciones del servicio y la cuota perdería sentido.
-- [NECESITA ACLARACIÓN] ¿Se muestran precios en USD y se convierten con el tipo de cambio del titular? **Propuesta:** sí, el catálogo guarda la moneda original del plan.
-- [NECESITA ACLARACIÓN] **Origen del logo.** **Propuesta:** URL pública definida en el seed; sin subida de archivos.
+- [RESUELTO 2026-10-17] **Plataformas y planes del seed inicial** (P13). **Decidido:** Netflix, Spotify, Disney+, YouTube Premium, Max y Prime Video, con los planes familiares/premium; Camila los carga y verifica precios vigentes.
+- [RESUELTO 2026-10-17] ¿Se puede superar el cupo máximo del plan? **Decidido:** no, porque rompe las condiciones del servicio y la cuota perdería sentido.
+- [RESUELTO 2026-10-17] ¿Se muestran precios en USD y se convierten con el tipo de cambio del titular? **Decidido:** sí, el catálogo guarda la moneda original del plan.
+- [RESUELTO 2026-10-17] **Origen del logo.** **Decidido:** URL pública definida en el seed; sin subida de archivos.
 
 ## 12. Historial de cambios
 
 | Fecha | Cambio | Autor |
 |---|---|---|
 | 2026-10-17 | Primer borrador | Equipo |
+| 2026-10-17 | Ronda 2 de decisiones: se aceptan las propuestas de la sección 11 | Equipo |
