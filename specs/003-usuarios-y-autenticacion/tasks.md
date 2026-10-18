@@ -131,5 +131,5 @@
 
 | Fecha | Situación | Decisión | ¿Cambió la spec o el contrato? |
 |---|---|---|---|
-| — | CI aceptada: solo dígitos de 5 a 10 (plan §2) | Confirmar con el equipo antes de T008 | Posible: `plan.md` y `ci.ts` |
+| 2026-10-18 | CI aceptada: solo dígitos de 5 a 10 (plan §2) | Aprobado | No |
 | — | Proveedor de correo (spec 000 R-02) condiciona CA-003-09 a CA-003-13 en producción | Decidir en spec 000 T050 | No |

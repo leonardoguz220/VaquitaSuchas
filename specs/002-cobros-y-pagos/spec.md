@@ -55,7 +55,7 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 ### Generación
 - **RF-002-01:** En la **fecha de corte** (día de cobro del grupo, ajustado según RN-001-06, a las 00:00 America/La_Paz) el sistema genera un cobro por cada miembro activo **excepto el titular**.
 - **RF-002-02:** Cada cobro guarda un **snapshot**: monto en centavos de Bs, precio original y moneda, tipo de cambio usado, nº de miembros, período (`AAAA-MM`), fecha de emisión y **fecha de vencimiento**.
-- **RF-002-03:** Fecha de vencimiento = fecha de corte + **3 días** de gracia _(decidido 2026-10-17)_.
+- **RF-002-03:** Fecha de vencimiento = fecha de corte + **3 días** de gracia _(decidido 2026-10-17)_. Si el cobro se emite con más de un día de retraso por una caída del servicio, el vencimiento es el mayor entre ese y la emisión + 3 días _(decidido 2026-10-18)_.
 - **RF-002-04:** La generación es **idempotente**: no puede existir más de un cobro por (grupo, miembro, período), aunque el proceso se ejecute varias veces.
 - **RF-002-05:** Los grupos cerrados no generan cobros. Los grupos de un titular baneado quedan en solo lectura: no generan cobros nuevos y sus cobros abiertos se congelan, sin pasar a `atrasado` ni retirar a nadie (spec 009, RF-009-22). Pausar la recepción de nuevos miembros (RF-001-09) no afecta la generación de cobros. Un miembro que ingresó después de la generación del período no recibe un cobro regular de ese período: ya pagó su cuota de ingreso, que figura como su cobro de ese período (spec 010, RN-010-03).
 
@@ -198,3 +198,4 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 | 2026-10-17 | Se agrega el cobro de ingreso por la spec 010: RF-002-19, RN-002-10, nueva transición en RN-002-01, CA-002-24 y CA-002-25 | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: referencia obligatoria y única (RF-002-07), retiro automático por atraso (RF-002-14, RN-002-11), retención de 2 meses (RN-002-06), CA-002-26 a 33; se resuelve P33 | Equipo |
 | 2026-10-18 | Se confirma el tratamiento de la deuda del miembro retirado (RN-002-11) | Equipo |
+| 2026-10-18 | Se aprueban la emisión tardía (RF-002-03: vencimiento = mayor entre corte + 3 días y emisión + 3 días) y el tratamiento de grupos cerrados y congelados (`research.md` R5) | Equipo |

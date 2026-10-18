@@ -9,9 +9,9 @@
 
 **Por qué no «una tarea por día a las 00:00».** El servicio gratuito de Render se duerme; una tarea de una sola oportunidad se pierde. Evaluar el estado esperado en cada tick es idempotente y se recupera solo (RNF-002-05, CA-002-22).
 
-**Caídas largas.** Si faltan varios períodos (más de un mes sin ejecución), se genera **solo el más reciente** y se deja una advertencia en `job_runs`. Es una decisión de simplicidad: la caída de más de un mes no es un escenario del MVP. Se anota como riesgo.
+**Caídas largas (aprobado 2026-10-18).** Si faltan varios períodos (más de un mes sin ejecución), se genera **solo el más reciente** y se deja una advertencia en `job_runs`. Es una decisión de simplicidad: la caída de más de un mes no es un escenario del MVP. Se anota como riesgo.
 
-**Fecha de emisión real.** `issued_at` es el momento en que se creó; `due_at` sale del corte (RF-002-03). Si el cobro se genera tarde, el plazo no se mueve (se aplica la spec al pie de la letra). Con ticks de 5 minutos el desfase esperado es de minutos.
+**Fecha de emisión real (decisión aprobada 2026-10-18).** `issued_at` es el momento en que se creó. `due_at = max(inicio del día corte+4 en La Paz, issued_at + 3 días)`: si el cobro se genera con más de un día de retraso por una caída, el plazo se corre para que nadie sea marcado `atrasado` ni retirado sin haber tenido sus 3 días. Con ticks de 5 minutos coincide con la fórmula normal (RF-002-03).
 
 **Alternativas descartadas.** `@nestjs/schedule` con `@Cron('0 0 * * *')` como único disparador (se pierde si el servicio duerme); una cola de trabajos con Redis (servicio extra y de pago).
 
@@ -44,4 +44,4 @@
 
 La spec dice que un grupo cerrado «queda en solo lectura» (RF-001-18) y que no genera cobros, pero no dice qué pasa con los cobros ya abiertos. Dejarlos intocables atraparía al titular con comprobantes `en_revision` que no puede confirmar.
 
-**Propuesta (aclaración, ver análisis).** En un grupo **cerrado**, los cobros existentes se pueden seguir saldando (subir, confirmar, rechazar, pago manual, cancelar), pero la tarea de atrasos no actúa sobre ellos (nadie es retirado de un grupo cerrado). En un grupo **congelado** por titular baneado, todo queda quieto (RF-002-05).
+**Decisión (aprobada 2026-10-18).** En un grupo **cerrado**, los cobros existentes se pueden seguir saldando (subir, confirmar, rechazar, pago manual, cancelar), pero la tarea de atrasos no actúa sobre ellos (nadie es retirado de un grupo cerrado). En un grupo **congelado** por titular baneado, todo queda quieto (RF-002-05).

@@ -3,7 +3,7 @@
 - **Fecha:** 2026-10-18
 - **Para:** `plan.md` de la spec 001 (y, por extensión, 002 y 010, que dependen de estas definiciones)
 
-Esta investigación fija cuatro definiciones que la spec deja implícitas y que las specs 002, 006 y 010 necesitan para ser coherentes. Cada una está marcada como **propuesta de aclaración** cuando conviene que el equipo la confirme en la revisión de la spec.
+Esta investigación fija cuatro definiciones que la spec deja implícitas y que las specs 002, 006 y 010 necesitan para ser coherentes. Las definiciones R1 y R2 fueron aprobadas por el equipo el 2026-10-18.
 
 ---
 
@@ -13,7 +13,7 @@ Esta investigación fija cuatro definiciones que la spec deja implícitas y que 
 
 **Hueco.** La spec 002 (RN-002-09) crea el ciclo "al generar los cobros", así que no dice qué período y qué ciclo existen entre la creación del grupo y el primer corte regular, y ahí es justo donde ingresan los primeros miembros.
 
-**Definición propuesta (aclaración).**
+**Definición (aprobada por el equipo el 2026-10-18).**
 
 1. **Período de un corte** = año y mes de la fecha de corte ya ajustada (`2026-02` para el día 31 ajustado al 28).
 2. Al crear un grupo se crea un **ciclo inicial** (`cycle_type = 'inicial'`) cuyo período es el año y mes de la fecha de creación en La Paz. No genera cobros (el único miembro es el titular).
@@ -30,6 +30,8 @@ Esta investigación fija cuatro definiciones que la spec deja implícitas y que 
 **Qué dice la spec.** Vencimiento = fecha de corte + 3 días (RF-002-03). La puntualidad compara con el vencimiento y "el último día del plazo cuenta hasta las 23:59:59" (RN-007-06, CA-007-03/04: vencimiento el día 18, 23:30 es puntual, 00:05 del 19 no lo es). El miembro es retirado cuando "pasa la fecha de vencimiento" (RF-002-14, RF-001-23: "dentro de los 3 días siguientes al corte").
 
 **Definición.** `due_date = cut_date + 3 días` (fecha de calendario en La Paz). El cobro vence al terminar ese día: `due_at` = inicio del día `due_date + 1` en La Paz (instante exclusivo). Un cobro está atrasado cuando `now >= due_at`. Un corte el día 15 deja los días 15, 16, 17 y 18 para pagar (el 18 hasta las 23:59:59).
+
+**Excepción por emisión tardía (aprobada 2026-10-18, ver spec 002 `research.md` R1).** `due_at` de un cobro es el mayor entre el instante anterior y `issued_at + 3 días`; así una caída del servicio no retira a nadie. Con ticks de 5 minutos coincide con la fórmula normal.
 
 **Distinto de la ventana de ingreso** (RF-001-22): la ventana dura los días 1 a 3 desde el corte y termina el día 17 a las 23:59:59, es decir, **un día antes** de que venza el cobro. La spec lo dice así y se respeta.
 

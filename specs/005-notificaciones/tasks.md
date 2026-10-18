@@ -110,5 +110,5 @@
 
 | Fecha | Situación | Decisión | ¿Cambió la spec o el contrato? |
 |---|---|---|---|
-| — | Proveedor de correo y dominio de envío (spec 000 R4) | Confirmar antes de T020 | No |
+| 2026-10-18 | Proveedor de correo y dominio de envío (spec 000 R4) | Resend con dominio gratis; si no, Brevo con remitente único | No |
 | — | Cómo recibe el backend los mensajes del bot con el servicio gratuito de Render (spec 000) | Confirmar antes de T030 | No |

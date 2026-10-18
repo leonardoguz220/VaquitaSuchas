@@ -42,7 +42,7 @@ Dos módulos de NestJS: `users` (perfil, identidad y huellas) y `auth` (registro
 | Normalización de correo para bloqueo | minúsculas, sin espacios; si el dominio es `gmail.com` o `googlemail.com`: sin puntos y sin `+alias` en la parte local | Solo minúsculas | RF-003-19, CA-003-35. |
 | Límites de intentos | `rate_limit_events` (spec 000) | Memoria del proceso | El servicio se reinicia y se duerme; los límites deben sobrevivir. |
 | Verificación por Telegram | Estado en la base (`started_by_telegram_id`), bot sin estado | Sesiones de conversación en memoria | El proceso puede reiniciarse entre `/start` y el contacto. |
-| CI aceptada | Solo dígitos, 5 a 10 | Formato con complemento o extensión | La spec dice "solo el número". **Se confirma con el equipo**; cambiar la expresión regular es trivial. |
+| CI aceptada | Solo dígitos, 5 a 10 | Formato con complemento o extensión | La spec dice "solo el número". **Aprobada el 2026-10-18**; cambiar la expresión regular es trivial. |
 | Política de datos | Texto versionado en `backend/src/modules/auth/policy.ts` (`DATA_POLICY_VERSION`), con fecha de aceptación | Archivo aparte | Se muestra desde `GET /auth/policy` (contenido estático). |
 | Registro con correo de cuenta sin verificar | Se actualiza esa cuenta | Rechazar | La cuenta no tiene sesión y se borra a las 24 h; evita bloquear a la persona que se equivocó. |
 

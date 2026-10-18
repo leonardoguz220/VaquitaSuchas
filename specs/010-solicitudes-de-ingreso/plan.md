@@ -15,7 +15,7 @@
 
 | Principio | ¿Cumple? | Nota |
 |---|---|---|
-| I. Spec primero | Sí, con una aclaración | `research.md` R6 propone ampliar RN-010-13 a cualquier cobro abierto. Se confirma en la revisión por capa. |
+| I. Spec primero | Sí, con una aclaración | `research.md` R6 amplía RN-010-13 a cualquier cobro abierto (aprobado el 2026-10-18). |
 | II. Dinero exacto | Sí | Cuota de ingreso en centavos con `floor`; el cobro copia la cotización. |
 | III. Criterios verificables | Sí | CA-010-01 a 47 mapeados en §8. |
 | IV. Seguridad | Sí | Chat y comprobantes solo para las dos partes; `403`/`404`; archivos privados con URL firmada; evidencia al admin solo con registro. |
@@ -39,7 +39,7 @@ Módulo `join-requests` (nuevo; se agrega a la lista de `context/arquitectura.md
 | Archivos | `FileStorage` (spec 000), copia propia del QR de pago por solicitud | Referenciar el QR del grupo | El QR del grupo puede cambiar después. Requiere `FileStorage.copy` (se agrega a la spec 000). |
 | Referencias | `PaymentReferenceService` de la spec 002 | Tabla propia | Unicidad única por grupo (RN-010-14). |
 | Reclamos | `DisputesService` aquí; controladores de cola y resolución en 009 vía `BanPort` y `AuditPort` | Todo en 009 | Mantiene la regla del reclamo junto a la solicitud sin ciclos de módulos (R5). |
-| Cobros abiertos del solicitante | Ampliar RN-010-13 a cualquier cobro abierto (R6) | Solo `atrasado` | Evita colisión con el cobro único del período. **Aclaración propuesta.** |
+| Cobros abiertos del solicitante | Ampliar RN-010-13 a cualquier cobro abierto (R6) | Solo `atrasado` | Evita colisión con el cobro único del período. **Aprobada 2026-10-18.** |
 | Estado de la cuenta | `AuthGuard` bloquea baneados; suspendidos → `ACCOUNT_RESTRICTED` en acciones nuevas | Verificar en cada servicio | Una sola regla (spec 009). |
 
 ## 3. Modelo de datos — _Camila (BD)_

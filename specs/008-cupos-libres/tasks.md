@@ -6,7 +6,7 @@
 - Historias: **US1** publicar los cupos libres del grupo (HU-008-01, HU-008-07) · **US2** buscar cupos y ver el detalle (HU-008-02) · **US3** solicitar un cupo y que el titular decida (HU-008-03, HU-008-04, HU-008-05) · **US4** reportar una publicación sospechosa (HU-008-06) · **US5** vencimiento y eventos de grupo (RF-008-05, RF-008-14, RN-008-04).
 - Prioridad P2. Es el último módulo del orden de construcción. Depende de las specs 001 (grupos, `entryWindow`, `splitShares`), 010 (solicitudes: `JoinRequestsService`, `ReservedSlotsQuery`, `ListingQuotaPort`), 007 (`ReputationQueryPort`), 005 (avisos) y 009 (moderación).
 - **Cambios pedidos a otras specs** (se aplican por PR antes de T012): la spec 010 expone `openFromListing(userId, listing, message)`, `rejectOpenForListing(tx, listingId, reason)`, define `ListingQuotaPort.remainingOffered(tx, listingId)` y publica `JoinRequestAccepted{listingId?}` (spec 010 T036); la spec 005 agrega el aviso `publicacion_transferida` (ya en su catálogo).
-- **Decisiones del plan que se confirman** en la revisión por capa: tope de cupos ofrecidos por el puerto de cuotas, límite de 10 reportes por día y descripción opcional.
+- **Decisiones del plan aprobadas el 2026-10-18:** tope de cupos ofrecidos por el puerto de cuotas, límite de 10 reportes por día y descripción opcional.
 
 ## Fase 1: Base común (modelo y dominio puro)
 
@@ -106,5 +106,5 @@
 
 | Fecha | Situación | Decisión | ¿Cambió la spec o el contrato? |
 |---|---|---|---|
-| — | Cambios a la spec 010 (`openFromListing`, `rejectOpenForListing`, `ListingQuotaPort`, evento con `listingId`) | Aplicar por PR sobre su `contracts/api.md` y `plan.md` | Sí: spec 010 |
-| — | Tope de cupos ofrecidos, límite de 10 reportes por día y descripción opcional | Confirmar en la revisión por capa | Posible: `spec.md` |
+| 2026-10-18 | Cambios a la spec 010 (`openFromListing`, `rejectOpenForListing`, `ListingQuotaPort`, evento con `listingId`) | Aplicados en la spec 010 | Sí: spec 010 |
+| 2026-10-18 | Tope de cupos ofrecidos, límite de 10 reportes por día y descripción opcional | Aprobado | No |

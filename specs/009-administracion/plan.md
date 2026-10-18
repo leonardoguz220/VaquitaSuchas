@@ -15,7 +15,7 @@
 
 | Principio | ¿Cumple? | Nota |
 |---|---|---|
-| I. Spec primero | Sí, con aclaraciones | Dos huecos para el análisis: qué pasa con un grupo congelado cuando se revierte el baneo del titular, y las tablas y servicios del núcleo que la prioridad P2 deja fuera del MVP (ver §2). |
+| I. Spec primero | Sí, con aclaraciones | Un hueco resuelto el 2026-10-18 (los grupos congelados se descongelan al revertir el baneo del titular, CA-009-37) y las tablas y servicios del núcleo que la prioridad P2 deja fuera del MVP (ver §2). |
 | II. Dinero exacto | Sí | Las estadísticas suman enteros en centavos con SQL. |
 | III. Criterios verificables | Sí | CA-009-01 a 36 mapeados en §8. |
 | IV. Seguridad | Sí | `AdminGuard` en cada petición; evidencia solo con reclamo abierto y auditoría; CI enmascarada; sin exportaciones. |
@@ -40,7 +40,7 @@ Módulo `admin` con el panel del equipo: usuarios (suspender, reactivar, banear,
 | Estadísticas | Consultas agregadas con caché en memoria de 5 min | Tablas materializadas | Basta para 10.000 usuarios (CA-009-21) y es simple. |
 | Importación del catálogo | Vista previa con token + aplicación atómica | Importar directo | RF-009-06, CA-009-06. Última tarea. |
 | Habilitación para ser titular | `host_enablements` + adaptador `HostEligibilityPort` | Columna en `users` | `users` queda congelado (spec 003). |
-| Reversión del baneo | No restaura grupos ni cobros (texto de la spec); el grupo congelado queda congelado | Descongelar automáticamente | La spec lo dice; se señala en el análisis porque deja sin salida al titular revertido. |
+| Reversión del baneo | Descongela los grupos que ese baneo congeló (evento `UserUnbanned` → spec 001); no restituye pertenencias a otros grupos ni rehace cobros o solicitudes (RF-009-23, CA-009-37) | Dejar el grupo congelado | Aprobado 2026-10-18: el titular baneado no salió de sus grupos, solo se congelaron; sin esto el titular revertido quedaría sin salida. |
 
 ## 3. Modelo de datos — _Camila (BD)_
 
@@ -89,7 +89,7 @@ backend/src/cli/            seed-admin.ts (spec 003), host-enable.ts
   - `billing`: nada que hacer; las tareas de generación y atrasos ya saltan los grupos congelados.
   - `reputation`: los cobros abiertos de grupos congelados por baneo se excluyen de la calificación (consulta, RF-009-22).
   - `notifications`: avisos a los titulares de los grupos que perdió y a los miembros de los grupos congelados.
-- **`BanService.revoke`**: `canRevokeBan`; `bans.revoked_*`; `IdentityService.releaseIdentities(banId)`; estado `activo`; auditoría; evento `UserUnbanned` (no restaura nada).
+- **`BanService.revoke`**: `canRevokeBan`; `bans.revoked_*`; `IdentityService.releaseIdentities(banId)`; estado `activo`; auditoría; evento `UserUnbanned`, que la spec 001 usa para descongelar los grupos del titular (no restaura otras pertenencias).
 - **`UsersAdminService`**: búsqueda (`unaccent` + `ILIKE`), ficha con conteos (consultas de lectura a través de servicios de `subscriptions` y `reputation`), suspender, reactivar, rol (con `canRemoveAdminRole`), transferencia de titularidad por un administrador (RF-009-24: solo con titular `suspendido`; usa `MembershipService.transferOwnership` con el destinatario ya validado como habilitado).
 - **`HostEnablementService`**: habilitar y revocar con motivo y auditoría; el adaptador `HostEligibilityAdapter.check(userId)` devuelve `manual` si hay habilitación vigente, o `calificacion` si la spec 007 lo permite (RF-007-15). CLI `npm run host:enable -w backend -- <correo> "<motivo>"` para el arranque (registra auditoría con el administrador del seed).
 - **`AuditService`** implementa `AuditPort`; `list` con filtros.
@@ -167,6 +167,7 @@ Pantallas de lista utilizables en celular (tarjetas en lugar de tablas anchas); 
 | CA-009-34 (revertir baneo por otro admin) | Unitario + integración + integridad | BE, BD | `admin-rules.spec.ts`; `admin.ban.e2e-spec.ts`; `admin.integrity.test.ts` |
 | CA-009-35 (transferir con titular suspendido) | Integración | BE | `admin.transfer.e2e-spec.ts` |
 | CA-009-36 (CI enmascarada) | Unitario + integración | BE | `mask-ci.spec.ts`; `admin.users.e2e-spec.ts` |
+| CA-009-37 (revertir el baneo descongela los grupos del titular) | Integración | BE | `admin.ban-effects.e2e-spec.ts`; `groups.events.e2e-spec.ts` (spec 001) |
 
 Pruebas de reglas: RN-009-01 → `admin.roles.e2e-spec.ts`; RN-009-02 y RN-009-07 → `admin-rules.spec.ts`; RN-009-03 → `admin.suspension.e2e-spec.ts` (los grupos y cobros no cambian); RN-009-04 → `reason.spec.ts`; RN-009-05 → `admin.catalog.e2e-spec.ts`; RN-009-06 → `admin.stats.e2e-spec.ts`; RN-009-08 → `admin.disputes.e2e-spec.ts`; RN-009-09 → `admin.disputes.e2e-spec.ts` (abrir un reclamo no banea).
 

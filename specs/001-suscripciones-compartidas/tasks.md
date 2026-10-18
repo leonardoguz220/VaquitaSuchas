@@ -5,7 +5,7 @@
 - Formato: `- [ ] Tnnn [P] [USn] [CAPA] Descripción con ruta — Depende: … · Cubre: …`. Los commits citan la tarea: `feat(001): add share split [T012]`.
 - Historias: **US1** crear una suscripción con precio, moneda, tipo de cambio y día de cobro (HU-001-01) · **US2** código de invitación y datos para solicitar el ingreso (HU-001-02, HU-001-03) · **US3** ver el grupo, los miembros y la cuota de cada uno (HU-001-05) · **US4** gestionar miembros: quitar, regenerar el código, pausar (HU-001-04) · **US5** abandonar un grupo (HU-001-06) · **US6** actualizar precio o tipo de cambio (HU-001-07) · **US7** transferir la titularidad o cerrar el grupo (HU-001-08).
 - Prioridad P0. Depende de las specs 003 (usuarios), 004 (catálogo) y 000 (eventos, reloj, puertos). La apertura de la solicitud de ingreso con el código es de la spec 010 (`POST /join-requests`); aquí se entrega `InviteCodeService.resolve`, `MembershipService.addMemberTx` y la ventana de ingreso.
-- **Aclaración abierta** (`research.md` R1 y R2): el ciclo inicial, el período y el vencimiento (`due_at`) se confirman en la revisión por capa antes de implementar T006, T012 y T030.
+- **Aclaraciones aprobadas el 2026-10-18** (`research.md` R1 y R2): el ciclo inicial, el período y el vencimiento (`due_at`, con la excepción por emisión tardía de la spec 002 R1) quedan definidos; no hay nada abierto antes de T006, T012 y T030.
 
 ## Fase 1: Base común (modelo y dominio puro)
 
@@ -64,7 +64,7 @@
 
 - [ ] T026 [P] [US4] [BE] `backend/test/membership.e2e-spec.ts`: CA-001-07 (grupo lleno), CA-001-14 (abandonar con cobros sin pagar, con un adaptador de prueba de `OpenChargesPort`), CA-001-15 (el titular no abandona), quitar un miembro con cobros abiertos (se conservan) y recálculo de cuotas — Depende: T011 · Cubre: CA-001-07, CA-001-14, CA-001-15
 - [ ] T027 [US4] [BE] `services/membership.service.ts`: `addMemberTx(tx, groupId, userId, source, joinRequestId)` (lo usa la spec 010; el disparador impone la capacidad), `removeMember(groupId, userId, reason)` (`quitado`, `mora`, `baneo`; publica `MemberRemoved`) y `DELETE /groups/:id/members/:userId` (titular) — Depende: T014, T026 · Cubre: RF-001-15, RF-001-23, RN-001-05, RN-001-09, CA-001-07
-- [ ] T028 [US4] [BE] Manejadores de eventos de este módulo: `UserBanned` (spec 009) → congela los grupos que posee (`frozen_at`, `frozen_reason = 'titular_baneado'`) y retira al usuario de los grupos donde es miembro (`reason = 'baneo'`); `UserSuspended` no toca el grupo — Depende: T027, spec 003 T012 · Cubre: RF-001-23, RN-001-07
+- [ ] T028 [US4] [BE] Manejadores de eventos de este módulo: `UserBanned` (spec 009) → congela los grupos que posee (`frozen_at`, `frozen_reason = 'titular_baneado'`) y retira al usuario de los grupos donde es miembro (`reason = 'baneo'`); `UserSuspended` no toca el grupo — Depende: T027, spec 003 T012; y `UserUnbanned` (spec 009) → descongela los grupos que ese baneo congeló (`frozen_at` y `frozen_reason` a `NULL`), con prueba en `groups.events.e2e-spec.ts` (CA-009-37) · Cubre: RF-001-23, RN-001-07, CA-009-37
 - [ ] T029 [P] [US4] [FE] Pestañas **Miembros** y **Ajustes** del titular: quitar con modal («Se conservarán sus cobros» y aviso de cobros abiertos), pausar recepción; conectar con `DELETE …/members/:userId` — Depende: T021, T027 · Cubre: RF-001-15, RF-001-09
 
 ## Fase 6: US5 — Abandonar un grupo (Prioridad: P0)
@@ -132,5 +132,5 @@
 
 | Fecha | Situación | Decisión | ¿Cambió la spec o el contrato? |
 |---|---|---|---|
-| — | Confirmar el ciclo inicial y el período (`research.md` R1) | Revisión por capa antes de T008 | Posible: `spec.md` |
-| — | Confirmar `due_at` = inicio del día corte + 4 (R2) | Revisión por capa antes de T008 | Posible: `spec.md` y spec 002 |
+| 2026-10-18 | Ciclo inicial y período (`research.md` R1) | Aprobado | No |
+| 2026-10-18 | `due_at` (R2) | Aprobado: inicio del día corte + 4, con la excepción por emisión tardía de la spec 002 | Sí: spec 002 RF-002-03 |

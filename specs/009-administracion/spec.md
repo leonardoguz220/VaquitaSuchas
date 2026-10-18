@@ -71,7 +71,7 @@ Una vez que la app tiene usuarios reales, alguien debe poder mantener el catálo
 - **RF-009-20 (Reclamos):** el administrador ve la cola de reclamos de ingreso (los abiertos primero) con la evidencia que define la spec 010 (RF-010-23) y los resuelve como `estafa_confirmada` o `sin_falta`. Resolver como `estafa_confirmada` banea en la misma acción a la persona acusada: el titular en un reclamo por pago sin ingreso, o el solicitante en un reclamo por comprobante falso (spec 010, RF-010-24).
 - **RF-009-21 (Habilitar titulares):** el administrador puede habilitar o quitar la habilitación manual de un usuario como titular, con un motivo (spec 001, RF-001-21).
 - **RF-009-22 (Efectos del baneo de un titular):** sus solicitudes activas pasan a `rechazada` (spec 010), sus grupos pasan a solo lectura, sus miembros reciben un aviso y el grupo muestra el texto **"titular baneado"** con la opción **"buscar otro grupo"**, que lleva a la búsqueda de cupos libres (spec 008). Un grupo en solo lectura no genera cobros nuevos ni recibe miembros. Los cobros abiertos no se cancelan: quedan congelados, sin pasar a `atrasado` ni retirar a nadie, y se excluyen de la calificación de los miembros (spec 007, RF-007-14). _(Decidido 2026-10-17; los cobros abiertos se congelan, decidido 2026-10-18)_
-- **RF-009-23 (Revisión del baneo):** otro administrador (distinto del que baneó) puede revertir un baneo en forma excepcional, con un motivo, y queda en auditoría. Al revertirlo se liberan los datos bloqueados. La persona baneada pide la revisión por el correo de contacto del equipo (RF-009-11). _(Decidido 2026-10-17)_
+- **RF-009-23 (Revisión del baneo):** otro administrador (distinto del que baneó) puede revertir un baneo en forma excepcional, con un motivo, y queda en auditoría. Al revertirlo se liberan los datos bloqueados y se descongelan los grupos que se congelaron por ese baneo (RF-009-22); no se restituyen las pertenencias a otros grupos ni se rehacen cobros o solicitudes. La persona baneada pide la revisión por el correo de contacto del equipo (RF-009-11). _(Decidido 2026-10-17)_
 - **RF-009-24 (Titular suspendido):** mientras un titular está suspendido, su grupo sigue funcionando y los miembros ven un aviso. Como el titular no puede iniciar sesión, un administrador puede transferir la titularidad a un miembro habilitado como titular (spec 001, RF-001-21), a pedido de los miembros, con motivo y auditoría.
 
 ### Moderación
@@ -165,6 +165,7 @@ Una vez que la app tiene usuarios reales, alguien debe poder mantener el catálo
 - **CA-009-34:** Dado un baneo, cuando un administrador distinto lo revierte con motivo, entonces el usuario queda `activo`, sus datos se liberan y queda en auditoría; el mismo administrador que baneó no puede revertirlo.
 - **CA-009-35:** Dado un titular suspendido, cuando un administrador transfiere la titularidad a un miembro habilitado, entonces el grupo tiene nuevo titular y queda en auditoría; a un miembro no habilitado, se rechaza.
 - **CA-009-36:** Dado un usuario con cédula registrada, cuando un administrador consulta su ficha, entonces la ve enmascarada.
+- **CA-009-37:** Dado un titular baneado cuyos grupos quedaron congelados, cuando otro administrador revierte el baneo, entonces esos grupos se descongelan y vuelven a generar cobros desde el siguiente corte; los grupos donde era miembro no se restituyen.
 - **CA-009-29:** Dado un administrador, cuando intenta banear a otro administrador, entonces se rechaza hasta que le quite el rol.
 
 ## 11. Preguntas abiertas
@@ -184,5 +185,6 @@ Una vez que la app tiene usuarios reales, alguien debe poder mantener el catálo
 |---|---|---|
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | Se agregan el baneo, la cola de reclamos y la habilitación manual de titulares (RF-009-19 a RF-009-23, RN-009-07 a RN-009-09, CA-009-22 a CA-009-29) | Equipo |
+| 2026-10-18 | Al revertir un baneo se descongelan los grupos que congeló (RF-009-23, CA-009-37) | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: el baneo bloquea correo, celular y cédula y recae también en solicitantes (RF-009-19, 20), efectos en el grupo (RF-009-22), revisión, apelación y titular suspendido (RF-009-11, 23, 24), CA-009-30 a 36; se aceptan las propuestas de la sección 11 | Equipo |
 | 2026-10-18 | Se confirman los cobros congelados de un titular baneado, la transferencia por un administrador y el bloqueo de la cuenta de Telegram | Equipo |

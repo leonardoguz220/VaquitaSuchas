@@ -16,7 +16,7 @@
 
 | Principio | ¿Cumple? | Nota |
 |---|---|---|
-| I. Spec primero | Sí, con tres aclaraciones | §2 decisiones 3, 4 y 6 completan huecos que la spec deja abiertos (a confirmar). |
+| I. Spec primero | Sí, con tres aclaraciones | §2 decisiones 3, 4 y 6 completan huecos que la spec deja abiertos (aprobadas el 2026-10-18). |
 | II. Dinero exacto | Sí | La cuota estimada usa `splitShares` en centavos (spec 001); sin `float`. |
 | III. Criterios verificables | Sí | CA-008-01 a 24 mapeados en §8. |
 | IV. Seguridad | Sí | La publicación nunca expone miembros ni datos de pago; textos como texto plano. |
@@ -41,7 +41,7 @@ Módulo `listings` con la publicación de cupos de un grupo, la búsqueda para u
 | 7 | Orden por puntualidad | Unión con `user_reputation` (núcleo de 007): más medias estrellas primero, «Nuevo» al final | Calcular en vivo | Rendimiento (RNF-008-02); la copia se reconcilia a diario. |
 | 8 | Ocultar por reportes | Servicio cuenta reportes distintos desde la última restauración; al tercero pasa a `oculta` en la misma transacción | Contador guardado | Imposible desincronizar; `moderation_cleared_at` evita que reportes viejos oculten una publicación ya revisada. |
 | 9 | Texto libre | Se guarda como texto plano (sin HTML); el cliente lo muestra como texto sin enlaces activos | Limpiar el HTML en el servidor | RN-008-07; React escapa por defecto y no se convierte nada en enlaces. |
-| 10 | Límites de abuso | 10 reportes por día por usuario (`rate_limit_events`, cubo `listing_report:user`); solicitudes: límites de 010 | Sin límite | RNF-008-04. El valor 10 es una propuesta a confirmar. |
+| 10 | Límites de abuso | 10 reportes por día por usuario (`rate_limit_events`, cubo `listing_report:user`); solicitudes: límites de 010 | Sin límite | RNF-008-04. El valor 10 fue aprobado el 2026-10-18. |
 | 11 | Paginación de la búsqueda | Cursor (clave de orden + `id`) | `OFFSET` | Estable con altas y bajas; RF-008-09. |
 
 ## 3. Modelo de datos — _Camila (BD)_

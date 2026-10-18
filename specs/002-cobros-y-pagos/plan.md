@@ -15,7 +15,7 @@
 
 | Principio | ¿Cumple? | Nota |
 |---|---|---|
-| I. Spec primero | Sí, con aclaraciones | Tres huecos propuestos en `research.md` (R1 caídas largas, R5 grupo cerrado) y en `specs/001/research.md` (R1 ciclo inicial). Se confirman en la revisión por capa. |
+| I. Spec primero | Sí, con aclaraciones aprobadas | R1 (caídas largas y emisión tardía), R5 (grupo cerrado) y `specs/001/research.md` R1 (ciclo inicial), aprobadas el 2026-10-18. |
 | II. Dinero exacto | Sí | Centavos enteros; el monto del cobro se copia del ciclo; `Σ cuotas = total` con `CHECK`. |
 | III. Criterios verificables | Sí | CA-002-01 a 33 mapeados en §8. |
 | IV. Seguridad | Sí | Archivos privados con URL firmada, tipo real por firma binaria, `403`/`404` según la tabla de acceso, referencias únicas. |
@@ -37,7 +37,7 @@ Módulo `billing` con tres responsabilidades: **generar** cobros por ciclo (idem
 | Concurrencia | `SELECT … FOR UPDATE` del cobro + `version` opcional | Optimista solo | CA-002-19: una acción gana, la otra recibe `409`. |
 | Referencias | `payment_references` con índice parcial (R3) | Índice sobre `receipts` | Se comparte con solicitudes de ingreso (010). |
 | Archivos | Subida en 4 pasos con compensación (R4) | Subir y luego validar | El estado no cambia si falla el almacén (sección 9 de la spec). |
-| Cierre del grupo | Cobros existentes se pueden saldar; no hay atrasos ni retiros (R5) | Congelar todo | Evita atrapar al titular. **Aclaración propuesta.** |
+| Cierre del grupo | Cobros existentes se pueden saldar; no hay atrasos ni retiros (R5) | Congelar todo | Evita atrapar al titular. **Aprobada 2026-10-18.** |
 | Cobro de ingreso | `createEntryCharge` lo llama la spec 010 dentro de su transacción | Evento asíncrono | Debe ser atómico con la entrada del miembro (RF-010-17). |
 | Lectura para otros módulos | `BillingReadService` y `ChargeFactsPort` | SQL cruzado | `context/arquitectura.md`. |
 | Retiro por mora | `MembershipService.removeMember(…, 'mora')` de la spec 001 | Borrar desde `billing` | Un solo dueño del dato de membresía. |
@@ -76,7 +76,7 @@ backend/src/modules/billing/
 | `transition(status, action, ctx)` | → `{ to, event }` o error `INVALID_TRANSITION` | Tabla RN-002-01 completa: `generate`, `entryPaid`, `uploadReceipt`, `markOverdue`, `confirm`, `reject` (`ctx.now >= ctx.dueAt` decide `pendiente`/`atrasado`), `manualPayment`, `cancel`. Cualquier otra combinación falla (CA-002-21). |
 | `buildCycle(group, memberCount, cutDate, now)` | → ciclo con cuotas | Usa `computeTotalBsCents` y `splitShares` de la spec 001; `Σ = total`. |
 | `chargeFromCycle(cycle, userId, now)` | → cobro | `amount = base_share`; copia de precio, moneda, tipo de cambio, total y miembros (RF-002-02). |
-| `dueAtFor(cutDate)` | → instante | Spec 001 `research.md` R2. |
+| `dueAtFor(cutDate, issuedAt)` | → instante | Spec 001 `research.md` R2: el mayor entre el inicio del día corte+4 y `issuedAt + 3 días` (RF-002-03). |
 | `isOverdue(charge, now)` | → boolean | `now >= dueAt`. |
 | `isPunctual(firstSubmittedAt, dueAt)` | → boolean | `firstSubmittedAt < dueAt` (equivale a `<= 23:59:59`, RN-002-05, RN-007-06). |
 | `punctualityDate(receipts, events)` | → instante | RF-007-12: primera subida, o la última si hubo rechazo con `invalidReceipt`. |

@@ -84,7 +84,7 @@ El proveedor se elige con `STORAGE_DRIVER`. La subida pasa **siempre por el back
 
 1. **Resend** (decisión del 2026-10-17) sin dominio verificado solo entrega a la dirección del dueño de la cuenta. Sirve para la demo si los correos de prueba son de los integrantes.
 2. Si la recuperación de contraseña debe llegar a cualquier persona, la alternativa gratuita a evaluar es **Brevo**, que permite verificar una dirección de remitente única (sin dominio propio) y enviar por API HTTPS **[verificar límites diarios y la entrega desde un remitente Gmail]**. Cambiarlo toca solo la implementación `prod` de `MailService`.
-3. Hasta que el equipo confirme cuál usar, el plan deja el proveedor `prod` configurable por `MAIL_PROVIDER` (`resend` | `brevo`). Está registrado como riesgo R-02.
+3. **Decisión (2026-10-18).** Si el equipo consigue un dominio gratis (por ejemplo, con el paquete de estudiantes de GitHub), se usa Resend con ese dominio verificado; si no, Brevo con un remitente único verificado. El proveedor `prod` es configurable por `MAIL_PROVIDER` (`resend` | `brevo`). Está registrado como riesgo R-02.
 
 **Alternativa descartada.** Gmail por SMTP (puertos bloqueados) y SendGrid/Brevo (no se evaluaron a fondo; el modo `prod` queda detrás de la interfaz, así que cambiar de proveedor toca un solo archivo).
 

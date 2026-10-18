@@ -61,7 +61,7 @@ charges
 - price_cents: bigint (NOT NULL), currency: text (NOT NULL), exchange_rate: numeric(10,4) (NULL)
 - total_bs_cents: bigint (NOT NULL), member_count: smallint (NOT NULL)
 - issued_at: timestamptz (NOT NULL)                             fecha real de emisión
-- due_at: timestamptz (NOT NULL)                                instante exclusivo: inicio del día corte+4 en La Paz (research 001 R2)
+- due_at: timestamptz (NOT NULL)                                instante exclusivo: el mayor entre el inicio del día corte+4 en La Paz y `issued_at + 3 días` (research 001 R2, RF-002-03)
 -- Datos para reputación (RN-002-08)
 - first_submitted_at: timestamptz (NULL)                        primera vez que el miembro subió un comprobante
 - paid_at: timestamptz (NULL)                                   momento en que pasó a pagado (pago manual: fecha indicada por el titular)
@@ -166,7 +166,7 @@ INDEX charge_events_group_idx (group_id, occurred_at DESC)
 
 | Spec | Lee | Cómo |
 |---|---|---|
-| 006 (panel) | `billing_cycles`, `charges` | Servicios de lectura de `billing` (`BillingReadService`), nunca SQL directo desde otro módulo. Vistas de la spec 006 (migraciones 0100+) pueden apoyarse en los índices de arriba. |
+| 006 (panel) | `billing_cycles`, `charges` | Servicios de lectura de `billing` (`BillingReadService`) para el resto de los módulos. **Excepción aprobada el 2026-10-18:** la spec 006 lee solo con vistas de la base (`v_user_cost_lines`, `v_group_collection`, migraciones 0100+) que se apoyan en los índices de arriba; es solo lectura y la definen Camila y Leonardo. |
 | 007 (reputación) | `charges.first_submitted_at`, `due_at`, `paid_at`, `status`, `origin`; `receipts.uploaded_at`; `charge_events.metadata.invalidReceipt` | `ChargeFactsPort` implementado por `billing`: devuelve por cobro la fecha de puntualidad según RF-007-12 (primera subida, o la última si el rechazo fue «comprobante inválido»). |
 | 010 (solicitudes) | `payment_references`, `charges (origin='ingreso')` | `PaymentReferenceService.reserve/release` y `ChargesService.createEntryCharge`. |
 

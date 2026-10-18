@@ -54,4 +54,4 @@ El baneo lo decide una persona (administrador) al resolver (RN-010-08); un recla
 
 RN-010-13 prohíbe abrir solicitud con un cobro **atrasado** en el grupo. Pero un exmiembro con un cobro **pendiente** (por ejemplo, quitado por el titular a mitad de período) que vuelve dentro de la ventana chocaría con el cobro único del período (`charges_member_period_uq`).
 
-**Propuesta (aclaración, ver análisis).** Ampliar la regla: no se puede abrir una solicitud al grupo si la persona tiene **cualquier cobro abierto** (`pendiente`, `en_revision` o `atrasado`) en él. Es el superconjunto natural de RN-010-13 y evita una colisión sin casos especiales. El plan implementa esta versión ampliada (`OPEN_CHARGES_IN_GROUP`).
+**Decisión (aprobada 2026-10-18).** Ampliar la regla: no se puede abrir una solicitud al grupo si la persona tiene **cualquier cobro abierto** (`pendiente`, `en_revision` o `atrasado`) en él. Es el superconjunto natural de RN-010-13 y evita una colisión sin casos especiales. El plan implementa esta versión ampliada (`OPEN_CHARGES_IN_GROUP`).

@@ -15,7 +15,7 @@
 
 | Principio | ¿Cumple? | Nota |
 |---|---|---|
-| I. Spec primero | Sí, con una aclaración | `research.md` R1 propone cerrar el hueco del ciclo inicial; se confirma en la revisión por capa y, si cambia, se actualiza la spec primero. |
+| I. Spec primero | Sí, con una aclaración aprobada | `research.md` R1 y R2 (ciclo inicial y vencimiento) aprobados por el equipo el 2026-10-18. |
 | II. Dinero exacto | Sí | Centavos enteros; total en Bs con columna generada y función pura equivalente; `Σ cuotas = total`. |
 | III. Criterios verificables | Sí | CA-001-01 a 30 mapeados en §8. |
 | IV. Seguridad | Sí | `404` para ajenos, límite de intentos de código, QR con tipo real validado. |
@@ -102,7 +102,7 @@ backend/src/
 - **`PaymentInfoService`**: guarda el texto y el QR mediante `FileStorage` (clave `groups/<id>/qr/<uuid>.<ext>`), valida tipo real (firma binaria) y tamaño (2 MB), y conserva el QR anterior si la validación falla. Solo genera la URL firmada (10 min) cuando un miembro consulta el grupo.
 - **`GroupViewService`**: arma `GroupSummary`/`GroupDetail` con `splitShares` y `entryWindow`; el código solo se incluye para el titular; los teléfonos solo para miembros activos.
 - **`HostEligibilityPort`** (implementado por un adaptador en `app-adapters/` registrado en `AppModule`): `check(userId)` → `{ eligible, source, current, requirement }`. En el MVP: `manual` si hay una habilitación vigente de la spec 009 (`host_enablements`); `calificacion` si la spec 007 informa ≥ 4,5 estrellas con ≥ 6 cobros considerados (RF-007-15). Antes de existir la reputación, la parte de calificación devuelve "no habilitado".
-- **Manejadores de eventos que registra este módulo:** `UserBanned` (spec 009) → congela los grupos que el usuario posee (`frozen_at`, `frozen_reason`) y retira al usuario de los grupos donde es miembro (`reason = 'baneo'`, evento `MemberRemoved`); `UserSuspended` → no hace nada con el grupo (RN-009-03).
+- **Manejadores de eventos que registra este módulo:** `UserBanned` (spec 009) → congela los grupos que el usuario posee (`frozen_at`, `frozen_reason`) y retira al usuario de los grupos donde es miembro (`reason = 'baneo'`, evento `MemberRemoved`); `UserUnbanned` → descongela los grupos del usuario que se congelaron por ese baneo (`frozen_at` y `frozen_reason` a `NULL`, CA-009-37); `UserSuspended` → no hace nada con el grupo (RN-009-03).
 - **Retiro por mora (RF-001-23):** lo ejecuta la spec 002 llamando a `MembershipService.removeMember(..., 'mora')`; esta spec garantiza que las cuotas de quienes quedan se recalculen (se calculan al consultar).
 
 ### Consultas con permisos
@@ -180,7 +180,7 @@ Pruebas de reglas: RN-001-01 y RN-001-05 → `groups.integrity.test.ts`; RN-001-
 
 | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|
-| Hueco del ciclo inicial mal entendido entre specs | Media | Alto | `research.md` R1 propuesto para aclaración antes de aprobar; CA-001-22/27 y 002 lo prueban. |
+| Hueco del ciclo inicial mal entendido entre specs | Media | Alto | `research.md` R1 aprobado el 2026-10-18; CA-001-22/27 y 002 lo prueban. |
 | Dependencia circular entre módulos por cobros y reputación | Media | Medio | Puertos y eventos (R3); una regla de lint (`eslint-plugin-boundaries` o `import/no-cycle`) lo vigila en CI. |
 | Habilitación de titulares bloquea el arranque (nadie tiene historial) | Alta | Alto | Habilitación manual por el administrador/CLI desde el hito 2; el seed crea un titular habilitado de desarrollo. |
 | Diferencia entre el total de la columna generada y el del dominio | Baja | Alto | Prueba de equivalencia con miles de combinaciones. |

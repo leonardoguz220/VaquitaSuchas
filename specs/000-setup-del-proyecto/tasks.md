@@ -132,6 +132,6 @@
 
 | Fecha | Situación | Decisión | ¿Cambió la spec o el contrato? |
 |---|---|---|---|
-| — | Pendiente: proveedor de correo de staging y dominio (R-02) | Decisión del equipo antes de T050 | Posible: `research.md` R4 |
-| — | Pendiente: confirmar Supabase Storage en lugar de Firebase (R-03, R-04) | Aprobar el cambio de `context/stack.md` en T054 | Sí: `context/stack.md` |
-| — | Pendiente: argon2id en lugar de bcrypt (R-07) | Medir en T053 | Sí: `context/stack.md` |
+| 2026-10-18 | Proveedor de correo y dominio (R-02) | Resend con dominio gratis; si no, Brevo con remitente único | No |
+| 2026-10-18 | Supabase Storage en lugar de Firebase (R-03, R-04) | Aprobado; la llamada diaria de mantenimiento evita la pausa | Sí: `context/stack.md` (ya actualizado) |
+| 2026-10-18 | argon2id en lugar de bcrypt (R-07) | Aprobado; medir en T053 y volver a bcrypt solo si tarda demasiado | Sí: `context/stack.md` (ya actualizado) |

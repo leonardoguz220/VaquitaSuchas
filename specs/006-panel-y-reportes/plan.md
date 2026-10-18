@@ -16,13 +16,13 @@
 
 | Principio | ¿Cumple? | Nota |
 |---|---|---|
-| I. Spec primero | Sí, con tres aclaraciones | §2 decisiones 2, 3 y 5 (ámbito de «Debo» y «Me deben», cuota del titular en «pagado», ahorro sin tipo de cambio). |
+| I. Spec primero | Sí, con tres aclaraciones aprobadas | §2 decisiones 2, 3 y 5 (ámbito de «Debo» y «Me deben», cuota del titular en «pagado», ahorro sin tipo de cambio). |
 | II. Dinero exacto | Sí | Totales en la base de datos con `bigint`; porcentaje con enteros; el CSV muestra el entero dividido en 100 sin `float`. |
 | III. Criterios verificables | Sí | CA-006-01 a 22 mapeados en §8. |
 | IV. Seguridad | Sí | Todo bajo `/me`; `404` para lo ajeno; sin comprobantes; CSV con celdas escapadas. |
 | V. Contratos primero | Sí | `data-model.md` y `contracts/api.md`. |
 | VI. Simplicidad | Sí | Cálculo en vivo con vistas; sin tablas ni cachés propios. |
-| VII. Capas | Sí, con una excepción a confirmar | El módulo lee **vistas** definidas por la capa de BD (§2 decisión 1) en lugar de usar los repositorios de otros módulos. |
+| VII. Capas | Sí, con una excepción aprobada el 2026-10-18 | El módulo lee **vistas** definidas por la capa de BD (§2 decisión 1) en lugar de usar los repositorios de otros módulos. |
 
 ## 1. Resumen de la solución
 
@@ -36,14 +36,14 @@ Módulo `reports` que **solo lee**. La base de datos expone dos vistas (`v_user_
 | 2 | Alcance de «Debo» y «Me deben» | **Todos los períodos** (deuda vigente), sin importar el mes elegido | Solo el mes elegido | Una deuda atrasada de hace dos meses sigue siendo deuda (HU-006-03); el mes elegido manda en gasto, ahorro, gráficos y cobranza. |
 | 3 | Cuota del titular en «pagado» | `paidCents = null` para el titular; no suma al «pagado» del total | Contarla como pagada | No existe cobro propio del titular (RN-001-10): su cuota es de referencia. |
 | 4 | Cuota de referencia del titular por mes | `billing_cycles.owner_share_cents` de todos los ciclos (incluye el inicial) | Solo ciclos regulares | RN-006-02 usa «el ciclo»; el ciclo inicial también tiene cuota de referencia. |
-| 5 | Ahorro con precio individual en USD y grupo en Bs | «Sin dato» | Usar un tipo de cambio actual | Sin tipo de cambio guardado en el ciclo no hay copia fiel (RN-006-06). **A confirmar.** |
+| 5 | Ahorro con precio individual en USD y grupo en Bs | «Sin dato» | Usar un tipo de cambio actual | Sin tipo de cambio guardado en el ciclo no hay copia fiel (RN-006-06). **Aprobada 2026-10-18.** |
 | 6 | Atribución al titular tras una transferencia | `billing_cycles.owner_id` (copia) | Usar `groups.owner_id` | Evita reescribir la historia (§1 de `data-model.md`). |
 | 7 | Porcentaje cobrado | Entero con mitad hacia arriba: `floor((200·cobrado + esperado) / (2·esperado))` | `Math.round` sobre decimales | Sin errores binarios (CA-006-09: 60/90 → 67). |
 | 8 | Frescura | Sin caché; `Cache-Control: private, no-store` | Caché de 1 min | RNF-006-02: un cambio de estado aparece en menos de 1 minuto sin lógica de invalidación. |
 | 9 | Calendario futuro | Fechas con `adjustBillingDay` (spec 001) y cuota estimada con `splitShares` | Guardar un calendario | RN-001-06; los datos cambian con cada ingreso o salida. |
 | 10 | Gráficos | Recharts, cargado con `next/dynamic` (sin SSR) y un botón «Ver tabla» por gráfico | Otra librería | Decidido en la spec (sección 11); el import dinámico reduce el peso inicial. |
 | 11 | CSV | Generado en el servidor, en flujo, con BOM y escape de fórmulas | Generarlo en el navegador | RNF-006-04 y que el titular nunca reciba más datos de los permitidos. |
-| 12 | Límites de la exportación | 10 por hora por usuario; tope de 20.000 filas | Sin límite | Abuso y memoria; valores propuestos, a confirmar. |
+| 12 | Límites de la exportación | 10 por hora por usuario; tope de 20.000 filas | Sin límite | Abuso y memoria; valores aprobados el 2026-10-18. |
 | 13 | Historial propio | Endpoint propio `/me/history` con todos los cobros propios | Reutilizar `GET /me/charges` | `/me/charges` omite cobros de grupos que dejó (spec 002) y aquí se necesita el historial completo. |
 
 ## 3. Modelo de datos — _Camila (BD)_

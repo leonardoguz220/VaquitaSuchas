@@ -5,7 +5,7 @@
 - Formato: `- [ ] Tnnn [P] [USn] [CAPA] Descripción con ruta — Depende: … · Cubre: …`. Los commits citan la tarea: `feat(006): add dashboard summary [T012]`.
 - Historias: **US1** panel: gasto del mes, ahorro estimado, lo que debo y lo que me deben (HU-006-01, HU-006-02, HU-006-03; **parte A**) · **US2** cobranza del titular (HU-006-04; parte A) · **US3** gráficos de evolución (HU-006-06; parte B) · **US4** calendario de cobros y vencimientos (HU-006-05; parte B) · **US5** historial y exportación a CSV (HU-006-07; parte C).
 - Prioridad P1 (después del MVP). El módulo `reports` **solo lee**: usa dos vistas de la base (`v_user_cost_lines`, `v_group_collection`) y no tiene tablas nuevas. Depende de las specs 001 (grupos, calendario), 002 (cobros y ciclos; `billing_cycles.owner_id`) y 004 (precio individual de referencia, copiado por 001).
-- **Aclaración abierta:** leer vistas de la base contradice la regla de `specs/002-cobros-y-pagos/data-model.md` §2 («nunca SQL directo desde otro módulo»); se propone una excepción solo para lectura (`plan.md` §2) y se confirma en la revisión por capa antes de T003. También se confirman las decisiones del plan: «Debo» de todos los períodos, cuota de referencia del titular, «sin dato» cuando el precio individual está en USD y el grupo en Bs, y los límites de exportación (10 por hora y 20.000 filas).
+- **Aclaraciones aprobadas el 2026-10-18:** la excepción de leer vistas de la base (solo lectura, anotada en la spec 002 `data-model.md` §2) y las decisiones del plan: «Debo» de todos los períodos, cuota de referencia del titular (`paid = null`), «sin dato» cuando el precio individual está en USD y el grupo en Bs, y los límites de exportación (10 por hora y 20.000 filas).
 
 ## Fase 1: Base común (vistas, índices y dominio puro)
 
@@ -90,7 +90,7 @@
 1. **Parte A primero:** panel y cobranza (T001–T015). Es lo que el equipo usa a diario.
 2. **Parte B:** gráficos y calendario, cargando Recharts de forma diferida.
 3. **Parte C:** historial y exportación, con los límites de seguridad desde el inicio.
-4. Antes de empezar, confirmar la excepción de leer vistas y las decisiones del panel.
+4. La excepción de leer vistas y las decisiones del panel fueron aprobadas el 2026-10-18.
 
 ## Puntos de integración (hitos)
 
@@ -103,5 +103,5 @@
 
 | Fecha | Situación | Decisión | ¿Cambió la spec o el contrato? |
 |---|---|---|---|
-| — | `reports` lee vistas de la base (excepción a la regla de la spec 002) | Confirmar con las tres capas antes de T003 | Posible: spec 002 `data-model.md` §2 |
-| — | «Debo» en todos los períodos, titular sin «pagado», «sin dato», límites de exportación | Confirmar antes de T009 | Posible: `spec.md` |
+| 2026-10-18 | `reports` lee vistas de la base (excepción a la regla de la spec 002) | Aprobado, solo lectura | Sí: spec 002 `data-model.md` §2 |
+| 2026-10-18 | «Debo» en todos los períodos, titular sin «pagado», «sin dato», límites de exportación | Aprobado | No |

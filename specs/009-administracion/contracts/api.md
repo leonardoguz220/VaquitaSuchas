@@ -34,7 +34,7 @@
 - **Errores:** `400`, `422 BUSINESS_RULE` `RN-009-07` (a sí mismo o a un administrador), `409 INVALID_TRANSITION` (ya baneado).
 
 ### `POST /admin/bans/:banId/revoke` [MVP] (RF-009-23; CA-009-34)
-- **Request:** `{ reason: string /* 10–300 */ }`. **Response 200.** Libera los datos bloqueados y deja la cuenta `activo`. No restaura grupos ni cobros (ver análisis). **Errores:** `422 BUSINESS_RULE` `RF-009-23` (`SAME_ADMIN`: quien baneó no puede revertir), `409` (ya revertido).
+- **Request:** `{ reason: string /* 10–300 */ }`. **Response 200.** Libera los datos bloqueados y deja la cuenta `activo`. Descongela los grupos que ese baneo congeló (evento `UserUnbanned`, CA-009-37); no restituye pertenencias a otros grupos ni rehace cobros o solicitudes. **Errores:** `422 BUSINESS_RULE` `RF-009-23` (`SAME_ADMIN`: quien baneó no puede revertir), `409` (ya revertido).
 
 ### `POST /admin/users/:userId/role` (RF-009-03; CA-009-12)
 - **Request:** `{ role: "admin" | "usuario", reason: string /* 10–300 */ }`. **Errores:** `422 BUSINESS_RULE` `RN-009-01` (`LAST_ADMIN`: "Debe existir al menos un administrador").

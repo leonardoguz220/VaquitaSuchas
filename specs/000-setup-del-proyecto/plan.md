@@ -223,7 +223,7 @@ Pruebas de las reglas técnicas: `RN-000-01` (UTC) → `la-paz.spec.ts` y la pru
 | ID | Riesgo | Probabilidad | Impacto | Mitigación |
 |---|---|---|---|---|
 | R-01 | La base gratuita de Render caduca a los 30 días y no tiene copias | Alta | Alto | Crearla ≤ 25 días antes de la demo; `db:dump`/`db:restore`; plan B con otro PostgreSQL gratuito cambiando solo `DATABASE_URL` (R1). |
-| R-02 | Resend sin dominio verificado solo envía al dueño de la cuenta, y no se compra dominio | Alta | Medio (la recuperación de contraseña no llega a usuarios reales) | Demo con correos de los integrantes, o cambiar a Brevo con remitente único verificado (`MAIL_PROVIDER=brevo`) **[verificar límites y entrega]**. |
+| R-02 | Resend sin dominio verificado solo envía al dueño de la cuenta, y no se compra dominio | Alta | Medio (la recuperación de contraseña no llega a usuarios reales) | Demo con correos de los integrantes, o cambiar a Brevo con remitente único verificado (`MAIL_PROVIDER=brevo`) **[verificar límites y entrega]**. Decisión del 2026-10-18: Resend si hay dominio gratis, si no Brevo. |
 | R-03 | Firebase Storage exige tarjeta (Blaze) | Alta | Bajo (ya resuelto) | Se usa Supabase Storage; el PR de este plan actualiza `context/stack.md` (R3). |
 | R-04 | El proyecto gratuito de Supabase se pausa por inactividad | Media | Medio | Llamada diaria al almacén dentro de `maintenance.cleanup`; si igual se pausa, se reactiva desde el panel de Supabase (gratis). Plan B sin costo: guardar los archivos en un segundo proyecto gratuito de Supabase. |
 | R-05 | cron-job.org o GitHub fallan y el servicio duerme | Media | Bajo | Evaluación perezosa de plazos y atrasos; primera petición lenta pero correcta (R1). |

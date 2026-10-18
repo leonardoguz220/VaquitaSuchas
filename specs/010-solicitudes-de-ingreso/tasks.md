@@ -5,7 +5,7 @@
 - Formato: `- [ ] Tnnn [P] [USn] [CAPA] Descripción con ruta — Depende: … · Cubre: …`. Los commits citan la tarea: `feat(010): add entry payment confirm [T028]`.
 - Historias: **US1** abrir una solicitud con el código y conversar con el titular (HU-010-01, HU-010-10) · **US2** datos de pago, cuota exacta y plazo (HU-010-02, HU-010-03) · **US3** subir el comprobante (HU-010-04) · **US4** confirmar, pagar en efectivo, rechazar y cancelar (HU-010-05) · **US5** fotos en el chat (HU-010-06) · **US6** reclamos y sanción (HU-010-07, HU-010-08, HU-010-09) · **US7** vencimientos, recordatorios y eventos de otros módulos (RF-010-14, RF-010-19, RN-010-09).
 - Prioridad P0. Depende de las specs 000, 001 (`InviteCodeService`, `MembershipService.addMemberTx`, `entryWindow`), 002 (`ensureCurrentCycle`, `PaymentReferenceService`, `createEntryCharge`) y 003. Los reclamos (US6) y los avisos usan el **núcleo mínimo** de las specs 009 (`BanPort`, `AuditPort`, cola de reclamos) y 005 (avisos en la app); ese núcleo entra en el hito MVP.
-- **Aclaraciones abiertas** (se confirman en la revisión por capa): `research.md` R6 (ampliar RN-010-13 a cualquier cobro abierto del solicitante en el grupo) y los cambios que pide la spec 008 (T036).
+- **Aclaraciones aprobadas el 2026-10-18:** `research.md` R6 (RN-010-13 ampliada a cualquier cobro abierto del solicitante en el grupo) y los cambios que pide la spec 008 (T036).
 
 ## Fase 1: Base común (modelo y dominio puro)
 
@@ -128,7 +128,7 @@
 
 1. **MVP primero:** Fase 1 → US1 → US2 → US3 → US4 → US5 → US7. Con eso el flujo «abrir, conversar, pagar, confirmar» funciona de punta a punta.
 2. US6 (reclamos) entra cuando el núcleo de la spec 009 esté disponible; T036 cuando exista la spec 008.
-3. Antes de empezar, confirmar R6 (cobros abiertos del solicitante) con el equipo.
+3. R6 (cobros abiertos del solicitante) fue aprobada el 2026-10-18.
 
 ## Puntos de integración (hitos)
 
@@ -144,5 +144,5 @@
 
 | Fecha | Situación | Decisión | ¿Cambió la spec o el contrato? |
 |---|---|---|---|
-| — | RN-010-13 ampliada a cualquier cobro abierto (R6) | Confirmar antes de T011 | Posible: `spec.md` |
-| — | Puertos nuevos por la spec 008 (T036) | Aplicar en `contracts/api.md` y `plan.md` por PR | Sí: contrato |
+| 2026-10-18 | RN-010-13 ampliada a cualquier cobro abierto (R6) | Aprobado | Sí: `spec.md` |
+| 2026-10-18 | Puertos nuevos por la spec 008 (T036) | Aplicados en `contracts/api.md` y `plan.md` | Sí: contrato |
