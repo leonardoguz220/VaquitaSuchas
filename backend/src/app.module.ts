@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { ClockModule } from './shared/clock/clock.module.js';
 import { validateEnv } from './shared/config/env.validation.js';
 import { DbModule } from './shared/db/db.module.js';
+import { ErrorsModule } from './shared/errors/errors.module.js';
+import { EventsModule } from './shared/events/events.module.js';
 
 @Module({
   imports: [
@@ -10,6 +12,9 @@ import { DbModule } from './shared/db/db.module.js';
     ConfigModule.forRoot({ validate: validateEnv, isGlobal: true }),
     ClockModule,
     DbModule,
+    EventsModule,
+    // Filtro global de errores y ValidationPipe (RF-000-11).
+    ErrorsModule,
   ],
 })
 export class AppModule {}

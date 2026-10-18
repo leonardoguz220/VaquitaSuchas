@@ -9,6 +9,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "db:migrate": "node --env-file-if-exists=.env --import tsx src/migrate.ts",
     "lint": "eslint . && prettier --check . && tsc --noEmit",
     "lint:fix": "eslint . --fix && prettier --write .",
     "typecheck": "tsc --noEmit",
