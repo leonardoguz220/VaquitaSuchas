@@ -19,7 +19,7 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 - Tener la estructura de carpetas, scripts y convenciones acordadas en `CLAUDE.md`.
 - Tener CI que ejecute lint y tests en cada PR.
 - Tener un despliegue "hola mundo" de punta a punta: frontend → backend → base de datos.
-- Dejar listo el envío de correos (necesario para recuperar contraseña, spec 003) y de códigos de verificación al celular (spec 003, RF-003-21), ambos con un modo de desarrollo local.
+- Dejar listo el envío de correos (necesario para recuperar contraseña, spec 003) y el bot de Telegram que verifica el celular (spec 003, RF-003-21), ambos con un modo de desarrollo local.
 
 ## 3. Fuera de alcance
 
@@ -55,7 +55,7 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 - **RF-000-10:** Swagger/OpenAPI se publica en `/api/docs` en entornos de desarrollo y pruebas.
 - **RF-000-11:** El backend usa un filtro global de errores que devuelve un formato uniforme (`statusCode`, `code`, `message`, y `details` opcional) sin revelar detalles internos.
 - **RF-000-12:** Existe una abstracción de **servicio de correo** con dos modos: `dev` (los correos llegan a la bandeja local, por ejemplo Mailpit) y `prod` (Resend, ver la sección 10).
-- **RF-000-22 (Servicio de mensajería al celular):** existe una abstracción para enviar códigos de verificación al celular con dos modos: `dev` (el código se escribe en el log local y no sale a internet) y `prod` (proveedor de SMS o WhatsApp, por definir en el plan). Incluye un límite diario de mensajes configurable para controlar el costo. La spec 003 depende solo de esta abstracción. _(Decidido 2026-10-17)_
+- **RF-000-22 (Bot de Telegram):** existe una abstracción del bot de Telegram con dos modos: `dev` (un simulador local, sin red, que permite probar el flujo de compartir un contacto y recibir mensajes) y `prod` (el bot real creado con BotFather, con su token en una variable de entorno). Recibe los mensajes por un webhook de Telegram hacia el backend y envía los mensajes de la spec 005. La verificación del celular de la spec 003 depende solo de esta abstracción. No tiene costo por mensaje. _(Decidido 2026-10-18; reemplaza al envío de códigos por SMS)_
 - **RF-000-13:** El backend registra logs estructurados con un identificador de petición, sin incluir contraseñas, tokens ni comprobantes.
 - **RF-000-14:** Existe el módulo de tareas programadas (`@nestjs/schedule`) con un ejemplo de tarea idempotente, base para los procesos de las specs 002, 005 y 010.
 
@@ -113,14 +113,14 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 - **CA-000-14:** Dado el entorno de staging, cuando se abre la página de estado, entonces las tres capas responden.
 - **CA-000-15:** Dado un push directo a `main`, cuando se intenta, entonces es rechazado.
 - **CA-000-16:** Dado un `.env` con valores reales, cuando se intenta hacer commit, entonces no se incluye (está ignorado).
-- **CA-000-17:** Dado el modo `dev` del servicio de mensajería, cuando el backend envía un código de verificación, entonces el código aparece en el log local y no sale a internet.
+- **CA-000-17:** Dado el modo `dev` del bot de Telegram, cuando se simula que una persona comparte su contacto con un token válido, entonces el backend lo recibe, verifica el celular y no sale a internet.
 - **CA-000-18:** Dado un secreto de prueba incluido en un commit, cuando corre CI, entonces gitleaks falla y el PR no se puede fusionar.
 
 ## 10. Preguntas abiertas
 
 - [RESUELTO 2026-10-17] **Proveedor de PostgreSQL gestionado:** Render, el mismo proveedor del backend. Riesgos por verificar antes de cerrar el plan (según la documentación de Render al 2026-10-17): la base gratuita caduca a los 30 días de crearse, con 14 días de gracia antes de borrarse; tiene 1 GB de almacenamiento, sin copias de seguridad y sin pool de conexiones. El servicio web gratuito se duerme tras 15 minutos sin tráfico, lo que afecta a las tareas programadas de las specs 002 y 005. El plan debe definir cómo se cubre esto (instancia de pago, recrear la base con `db:reset` y el seed cerca de la fecha de la demo, o un disparador externo para las tareas).
 - [RESUELTO 2026-10-17] **Proveedor de correo en `prod`:** Resend, con plan gratuito para la demo.
-- [NECESITA ACLARACIÓN] **Proveedor de mensajería al celular en `prod`** (SMS o WhatsApp) y su costo. **Propuesta:** decidirlo en el plan de esta spec con los precios vigentes; mientras tanto el modo `dev` permite construir la spec 003.
+- [RESUELTO 2026-10-18] **Mensajería al celular:** se usa Telegram y no SMS ni WhatsApp, por costo cero (RF-000-22). Queda para el plan de esta spec cómo recibe el backend los mensajes del bot (webhook o consulta periódica) con el servicio gratuito de Render que se duerme.
 - [RESUELTO 2026-10-17] **Escaneo de secretos:** gitleaks en CI (RNF-000-02).
 - [RESUELTO 2026-10-17] Los hooks de Claude Code para proteger specs y tests son una mejora opcional posterior al setup.
 - [RESUELTO 2026-10-17] La carga esperada de la demo es de menos de 100 usuarios (RNF-000-05).
@@ -133,3 +133,4 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 | 2026-10-17 | RF-000-01 incorpora `context/`, `ia/` y la estructura por capas | Equipo |
 | 2026-10-17 | Se decide Render como proveedor de PostgreSQL y se registran sus límites del plan gratuito | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: servicio de mensajería al celular (RF-000-22), Resend, gitleaks, hooks opcionales y carga esperada; RF-000-14 menciona la spec 010 | Equipo |
+| 2026-10-18 | La mensajería al celular pasa a ser un bot de Telegram sin costo (RF-000-22, CA-000-17) | Equipo |

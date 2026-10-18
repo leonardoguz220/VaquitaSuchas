@@ -16,7 +16,7 @@ El equipo decidió que el ingreso funcione como una operación entre pares, pare
 
 Para que el grupo no cambie a mitad de mes, el ingreso solo se abre durante los 3 primeros días de cada período de cobro (la **ventana de ingreso**). Quien paga una cuota de un período que recién empezó no tiene que pagar otra pocos días después, y la cuota se calcula con los miembros que tendrá el grupo durante todo el período.
 
-Vaquita no custodia dinero. En una operación entre pares con custodia, la plataforma retiene lo que se intercambia hasta que ambas partes cumplen. Aquí lo que se entrega es el acceso a la cuenta, y lo tiene el titular. Por eso la protección no viene de la custodia sino de los plazos, de la evidencia que queda registrada (chat, comprobante y línea de tiempo), de un reclamo que revisa un administrador y de una sanción fuerte para quien estafe: el baneo de la cuenta y el bloqueo de todos sus datos de identidad (correo, celular y cédula).
+Vaquita no custodia dinero. En una operación entre pares con custodia, la plataforma retiene lo que se intercambia hasta que ambas partes cumplen. Aquí lo que se entrega es el acceso a la cuenta, y lo tiene el titular. Por eso la protección no viene de la custodia sino de los plazos, de la evidencia que queda registrada (chat, comprobante y línea de tiempo), de un reclamo que revisa un administrador y de una sanción fuerte para quien estafe: el baneo de la cuenta y el bloqueo de todos sus datos de identidad (correo, celular, cédula y cuenta de Telegram).
 
 ## 2. Objetivos
 
@@ -98,7 +98,7 @@ Vaquita no custodia dinero. En una operación entre pares con custodia, la plata
 - **RF-010-21:** Cualquiera de las dos partes puede abrir un **reclamo** sobre una solicitud en la que el solicitante informó el pago (llegó a `pago_informado`). Hay dos tipos. El reclamo por **pago sin ingreso** lo abre el solicitante cuando la solicitud terminó `rechazada` o `expirada` por falta de respuesta del titular. El reclamo por **comprobante falso** lo abre el titular cuando rechazó el pago por considerar falso el comprobante. Se abre dentro de 7 días desde el estado final, con una descripción de 10 a 500 caracteres y, opcionalmente, una imagen de evidencia (JPG o PNG, máximo 5 MB, por ejemplo una captura del banco). Cada parte puede abrir un reclamo por solicitud.
 - **RF-010-22:** La otra parte puede dejar **una** respuesta al reclamo, con las mismas reglas de texto e imagen.
 - **RF-010-23:** El administrador ve la cola de reclamos con la evidencia completa de cada uno: línea de tiempo de la solicitud, chat, comprobante, monto cotizado, descripciones, imágenes y respuestas. Cada vez que abre esa evidencia queda en el log de auditoría (spec 009).
-- **RF-010-24:** El administrador resuelve el reclamo con un motivo (de 10 a 300 caracteres) como `estafa_confirmada` o `sin_falta`. Con `estafa_confirmada` se banea a la persona acusada, que es el titular en un reclamo por pago sin ingreso y el solicitante en un reclamo por comprobante falso (spec 009, RF-009-19). El baneo bloquea todos sus datos de identidad: correo, celular y cédula (spec 003, RF-003-19). Ambas partes ven la decisión y su motivo.
+- **RF-010-24:** El administrador resuelve el reclamo con un motivo (de 10 a 300 caracteres) como `estafa_confirmada` o `sin_falta`. Con `estafa_confirmada` se banea a la persona acusada, que es el titular en un reclamo por pago sin ingreso y el solicitante en un reclamo por comprobante falso (spec 009, RF-009-19). El baneo bloquea todos sus datos de identidad: correo, celular, cédula y cuenta de Telegram (spec 003, RF-003-19). Ambas partes ven la decisión y su motivo.
 - **RF-010-25:** La app deja claro, antes de pagar, que Vaquita no devuelve dinero ni obliga al titular a hacerlo, y que el reclamo sirve para sancionar y dejar constancia.
 
 ### Consulta
@@ -244,13 +244,13 @@ Vaquita no custodia dinero. En una operación entre pares con custodia, la plata
 - [RESUELTO 2026-10-17] Los meses siguientes no se pagan por adelantado: se mantienen los cobros de la spec 002.
 - [RESUELTO 2026-10-17] Nadie entra a mitad de un período: el ingreso solo se abre durante los 3 primeros días (RN-010-12). Esto elimina el doble pago cerca del corte.
 - [RESUELTO 2026-10-17] El baneo lo decide un administrador al resolver el reclamo, no es automático (RN-010-08). El equipo hace de administrador.
-- [RESUELTO 2026-10-17] El baneo bloquea todos los datos que pide la app: correo, celular y cédula de identidad (spec 003, RF-003-19).
+- [RESUELTO 2026-10-17] El baneo bloquea todos los datos que pide la app: correo, celular, cédula de identidad y cuenta de Telegram (spec 003, RF-003-19).
 - [RESUELTO 2026-10-17] La referencia del comprobante es obligatoria y única por grupo (RN-010-14).
 - [RESUELTO 2026-10-17] El titular también puede reclamar contra un comprobante falso, y en ese caso se banea al solicitante (RF-010-21 y RF-010-24).
 - [RESUELTO 2026-10-17] Efectos del baneo de un titular sobre su grupo: spec 009, RF-009-22.
-- [NECESITA ACLARACIÓN] **Qué cuenta como "los 3 primeros días".** Se interpretó como los 3 primeros días del período de cobro de cada grupo (que empieza en su día de corte), contando el día de corte como día 1, y no como los días 1 a 3 del mes calendario. **Propuesta:** dejarlo así; el valor de 3 días es configuración.
-- [NECESITA ACLARACIÓN] **Grupo nuevo.** Un grupo recién creado no tiene un corte previo. **Propuesta:** la fecha de creación cuenta como corte inicial y la ventana de ingreso dura los 3 primeros días desde la creación.
-- [NECESITA ACLARACIÓN] **Deuda en el grupo** (RN-010-13). **Propuesta:** quien fue retirado por falta de pago no puede volver a ese grupo mientras tenga un cobro atrasado en él.
+- [RESUELTO 2026-10-18] **Qué cuenta como "los 3 primeros días":** los 3 primeros días del período de cobro de cada grupo, que empieza en su día de corte, con el día de corte como día 1 (RN-010-12).
+- [RESUELTO 2026-10-18] **Grupo nuevo:** la fecha de creación cuenta como corte inicial y la ventana de ingreso dura los 3 primeros días desde la creación.
+- [RESUELTO 2026-10-18] **Deuda en el grupo** (RN-010-13): quien fue retirado por falta de pago no puede volver a ese grupo mientras tenga un cobro atrasado en él.
 
 ## 12. Historial de cambios
 
@@ -258,3 +258,4 @@ Vaquita no custodia dinero. En una operación entre pares con custodia, la plata
 |---|---|---|
 | 2026-10-17 | Primer borrador a partir de la decisión del equipo de cobrar el ingreso antes de unir a la persona, con chat por solicitud | Equipo |
 | 2026-10-17 | Se incorporan las decisiones de la ronda 2: ventana de ingreso de 3 días, reclamo de ambas partes, referencia obligatoria y única, prórroga, retención de 2 meses y bloqueo de correo, celular y cédula (RF-010-28, RN-010-12 a RN-010-14, CA-010-37 a CA-010-47) | Equipo |
+| 2026-10-18 | Se confirman la ventana desde el corte de cada grupo, la ventana inicial de un grupo nuevo y la deuda del retirado | Equipo |

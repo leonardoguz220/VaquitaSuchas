@@ -175,7 +175,7 @@ Esta spec define cómo se **crea una suscripción compartida**, cómo se **invit
 - [RESUELTO 2026-10-17] Límite de 5 grupos como titular y sin límite como miembro (RN-001-14).
 - [RESUELTO 2026-10-17] El miembro que no paga es retirado a los 3 días del corte (RF-001-23).
 - [RESUELTO 2026-10-17] **Quién puede ser titular** (RF-001-21): umbral de 4,5 estrellas con al menos 6 cobros considerados; el administrador habilita a los primeros titulares; el requisito vale para todos los grupos.
-- [NECESITA ACLARACIÓN] **Qué son los "3 primeros días".** Se interpretó como los 3 primeros días del período de cobro de cada grupo, con el día de corte como día 1, y no como los días 1 a 3 del mes calendario. **Propuesta:** dejarlo así. Para un grupo nuevo, **propuesta:** la ventana inicial cuenta desde la creación.
+- [RESUELTO 2026-10-18] **Qué son los "3 primeros días":** los 3 primeros días del período de cobro de cada grupo, con el día de corte como día 1 (RF-001-22). Para un grupo nuevo, la ventana inicial cuenta desde su creación.
 
 ## 12. Historial de cambios
 
@@ -186,3 +186,4 @@ Esta spec define cómo se **crea una suscripción compartida**, cómo se **invit
 | 2026-10-17 | Se resuelven: titular sin cobro propio, alta a mitad de mes y datos de pago (RN-001-10, RN-001-11, RF-001-20, CA-001-21 a 23) | Equipo (ronda 1 de preguntas) |
 | 2026-10-17 | El ingreso pasa a una solicitud con pago previo y chat (spec 010): cambian RF-001-07, RN-001-11, CA-001-06, 12, 19 y 22; se agrega el requisito de ser titular habilitado (RF-001-21, CA-001-24 y 25) | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: ventana de ingreso (RF-001-22), retiro por falta de pago (RF-001-23), límite de 5 grupos como titular (RN-001-14), umbral para ser titular, destinatario de la transferencia habilitado (RF-001-17), CA-001-26 a 30 | Equipo |
+| 2026-10-18 | Se confirma que la ventana de ingreso se cuenta desde el corte de cada grupo | Equipo |
