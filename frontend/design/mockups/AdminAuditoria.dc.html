@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita Admin · Auditoría</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; background: #17201C; color: #F5F6F2">
+    <a href="AdminPanel.dc.html" style="display: flex; align-items: center; gap: 10px; color: #F5F6F2; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#F5F6F2"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#1E6B4E" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#1E6B4E"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 22px">vaquita <span style="font-size: 14px; font-weight: 600; color: #C5CEC9">admin</span></span>
+    </a>
+    <nav aria-label="Administración" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="AdminUsuarios.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Usuarios</a>
+      <a href="AdminReclamo.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Reclamos</a>
+      <a href="AdminTitulares.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Titulares</a>
+      <a href="AdminAuditoria.dc.html" aria-current="page" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; background: #2E3A35; color: #FFFFFF; font-weight: 700; text-decoration: none">Auditoría</a>
+      <a href="AdminCatalogo.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Catálogo</a>
+      <a href="AdminModeracion.dc.html" style="min-height: 44px; padding: 0 14px; display: flex; align-items: center; border-radius: 10px; color: #E6EBE8; text-decoration: none">Moderación</a>
+    </nav>
+    <span aria-label="Administradora: Camila Fuentes" style="width: 44px; height: 44px; border-radius: 999px; background: #E3F1EA; color: #14503A; display: flex; align-items: center; justify-content: center; font-weight: 700">CF</span>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1180px; margin: 0 auto; padding: 32px 32px 48px; display: flex; flex-direction: column; gap: 18px">
+    <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; letter-spacing: -0.8px">Auditoría</h1>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap">
+      <select aria-label="Acción" style="height: 46px; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 12px; font: inherit; background: #FFFFFF; color: #17201C"><option selected>Todas las acciones</option><option>Evidencia abierta</option><option>Usuario baneado</option><option>Usuario suspendido</option><option>Titular habilitado</option><option>Reclamo resuelto</option></select>
+      <select aria-label="Administrador" style="height: 46px; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 12px; font: inherit; background: #FFFFFF; color: #17201C"><option selected>Todos los administradores</option><option>Camila Fuentes</option><option>Leonardo Guzman</option><option>Adrian Vargas</option></select>
+      <input type="date" aria-label="Desde" value="2026-10-01" style="height: 46px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 12px; font: inherit; color: #17201C">
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 16px; overflow-x: auto">
+      <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 15px">
+        <thead><tr style="text-align: left; color: #4F5A55; font-size: 14px"><th scope="col" style="padding: 12px 18px">Fecha</th><th scope="col" style="padding: 12px 18px">Administrador</th><th scope="col" style="padding: 12px 18px">Acción</th><th scope="col" style="padding: 12px 18px">Sobre</th><th scope="col" style="padding: 12px 18px">Motivo</th></tr></thead>
+        <tbody>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+            <tr style="border-top: 1px solid #E6E9E4"><td style="padding: 13px 18px; color: #4F5A55; white-space: nowrap">{{r.date}}</td><td style="padding: 13px 18px">{{r.admin}}</td><td style="padding: 13px 18px; font-weight: 700">{{r.action}}</td><td style="padding: 13px 18px">{{r.target}}</td><td style="padding: 13px 18px; color: #4F5A55">{{r.reason}}</td></tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 15px; color: #4F5A55"><span>Registro de solo anexado: no se edita ni se borra.</span><button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; font-weight: 700; cursor: pointer">Cargar más</button></div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      rows: [
+        { date: '18 oct. 10:04', admin: 'Camila Fuentes', action: 'Evidencia abierta', target: 'Reclamo · Crunchyroll anime', reason: '—' },
+        { date: '17 oct. 18:30', admin: 'Leonardo Guzman', action: 'Usuario suspendido', target: 'Patricia Mendoza', reason: 'Comprobantes repetidos en dos grupos' },
+        { date: '15 oct. 12:10', admin: 'Adrian Vargas', action: 'Titular habilitado', target: 'Valeria Choque', reason: 'Titular de prueba para la demo' },
+        { date: '9 oct. 16:45', admin: 'Camila Fuentes', action: 'Usuario baneado', target: 'Raúl Flores', reason: 'Estafa confirmada en reclamo por comprobante falso' },
+        { date: '9 oct. 16:40', admin: 'Camila Fuentes', action: 'Reclamo resuelto', target: 'Comprobante falso · Disney+ amigos', reason: 'Estafa confirmada' },
+        { date: '2 oct. 11:00', admin: 'Leonardo Guzman', action: 'Reclamo resuelto', target: 'Pago sin ingreso · YouTube familia', reason: 'Sin falta: el titular confirmó tarde' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
