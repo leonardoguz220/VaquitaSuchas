@@ -2,6 +2,7 @@
   "name": "@vaquita/backend",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "description": "API NestJS de Vaquita",
   "license": "UNLICENSED",
   "engines": {
@@ -10,13 +11,13 @@
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
-    "start": "node dist/main",
+    "start": "node dist/main.js",
     "lint": "eslint . && prettier --check . && tsc --noEmit",
     "lint:fix": "eslint . --fix && prettier --write .",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "jest --selectProjects unit",
-    "test:e2e": "jest --selectProjects e2e --runInBand --passWithNoTests"
+    "test:unit": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --selectProjects unit",
+    "test:e2e": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --selectProjects e2e --runInBand --passWithNoTests"
   },
   "dependencies": {
     "@nestjs/common": "12.1.3",
@@ -54,41 +55,5 @@
     "ts-jest": "29.4.15",
     "typescript": "5.9.3",
     "typescript-eslint": "8.71.2"
-  },
-  "jest": {
-    "projects": [
-      {
-        "displayName": "unit",
-        "rootDir": ".",
-        "testMatch": [
-          "<rootDir>/src/**/*.spec.ts"
-        ],
-        "moduleFileExtensions": [
-          "js",
-          "json",
-          "ts"
-        ],
-        "transform": {
-          "^.+\\.ts$": "ts-jest"
-        },
-        "testEnvironment": "node"
-      },
-      {
-        "displayName": "e2e",
-        "rootDir": ".",
-        "testMatch": [
-          "<rootDir>/test/**/*.e2e-spec.ts"
-        ],
-        "moduleFileExtensions": [
-          "js",
-          "json",
-          "ts"
-        ],
-        "transform": {
-          "^.+\\.ts$": "ts-jest"
-        },
-        "testEnvironment": "node"
-      }
-    ]
   }
 }
