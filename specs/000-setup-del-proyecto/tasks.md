@@ -14,7 +14,7 @@
 - [ ] T003 [P] [BD] Crear el paquete `database/` con `package.json`, `tsconfig`, carpetas `migrations/`, `seeds/`, `tests/` y configuración de `node:test` + `pg`, según `context/arquitectura.md` — Depende: T001 · Cubre: RF-000-01
 - [x] T004 [P] [BE] Crear el proyecto NestJS en `backend/` con versiones exactas en `package.json` (NestJS, `pg`, `argon2`, `class-validator`, `class-transformer`, `@nestjs/config`, `@nestjs/swagger`, `@nestjs/schedule`, `nestjs-pino`, `helmet`), ESLint, Prettier, Jest + supertest y las carpetas de `plan.md` §5; `backend/.env.example` con todas las variables sin valores reales — Depende: T001 · Cubre: RF-000-01, RF-000-03
 - [ ] T005 [P] [FE] Crear el proyecto Next.js (App Router, TypeScript, Tailwind) en `frontend/` con versiones exactas, ESLint, Prettier, la carpeta `src/` de `plan.md` §6 y la herramienta de pruebas de componentes elegida (Vitest o Jest + Testing Library); `frontend/.env.example` (`BACKEND_URL`, sin valores reales) — Depende: T001 · Cubre: RF-000-01, RF-000-03
-- [ ] T006 [P] [BE] Escribir el `README.md` raíz (RNF-000-01 y RNF-000-04): requisitos, cómo levantar base, backend y frontend, correr pruebas, migrar y sembrar; enlazar `CONTRIBUTING.md` y `quickstart.md` — Depende: T001 · Cubre: RNF-000-04, RNF-000-01
+- [x] T006 [P] [BE] Escribir el `README.md` raíz (RNF-000-01 y RNF-000-04): requisitos, cómo levantar base, backend y frontend, correr pruebas, migrar y sembrar; enlazar `CONTRIBUTING.md` y `quickstart.md` — Depende: T001 · Cubre: RNF-000-04, RNF-000-01
 
 **Punto de control:** el equipo clona, ejecuta `npm install` y las tres capas tienen su carpeta lista.
 
