@@ -40,7 +40,7 @@
 - [ ] T014 [US1] [BE] `services/ban.service.ts` `ban(tx, input)` (valida con `canActOnUser`; `setStatus(baneado)` cierra sesiones; crea `bans`; `IdentityService.blockIdentities` con huellas irreversibles; auditoría `usuario_banear`; publica `UserBanned`) que implementa `BanPort.ban(tx, { adminId, userId, reason, disputeId })`, y `POST /admin/users/:userId/ban` — Depende: T013, spec 003 T011 · Cubre: RF-009-19, RF-009-22, RN-009-07, RN-009-08, CA-009-22, CA-009-23, CA-009-29
 - [ ] T015 [US1] [BE] `BanService.revoke` y `POST /admin/bans/:banId/revoke` (otro administrador distinto del que baneó; `IdentityService.releaseIdentities`; estado `activo`; auditoría; evento `UserUnbanned`, los grupos que ese baneo congeló se descongelan por el manejador de la spec 001 T028; no se restituyen otras pertenencias ni cobros) — Depende: T014 · Cubre: RF-009-23, CA-009-34, CA-009-37
 - [ ] T016 [P] [US1] [BE] `backend/test/admin.ban-effects.e2e-spec.ts`: CA-009-31 (grupo «titular baneado» en solo lectura), CA-009-33 (miembro baneado en 2 grupos), solicitudes activas rechazadas o canceladas, cobros abiertos de grupos congelados excluidos de la reputación (RF-009-22) y CA-009-32 en `billing.overdue.e2e-spec.ts` (el grupo congelado no pasa a `atrasado`) — Depende: T014, spec 001 T028, spec 010 T043, spec 002 T032; y CA-009-37 (revertir el baneo descongela los grupos del titular) · Cubre: CA-009-31, CA-009-32, CA-009-33, RF-009-22, CA-009-37
-- [ ] T017 [P] [US1] [FE] `/admin/usuarios` (búsqueda, filtros, lista paginada con estado y rol) y `/admin/usuarios/[id]` (ficha con CI enmascarada, grupos y nivel; botones **Suspender**, **Reactivar**, **Banear**, **Promover/Quitar rol**, cada uno con modal de confirmación y motivo de 10 a 300 con contador) con mock; `proxy.ts` redirige a los no administradores; listas como tarjetas en móvil — Depende: spec 000 T036 · Cubre: RF-009-08, RF-009-09, RF-009-10, RF-009-19, RNF-009-02
+- [x] T017 [P] [US1] [FE] `/admin/usuarios` (búsqueda, filtros, lista paginada con estado y rol) y `/admin/usuarios/[id]` (ficha con CI enmascarada, grupos y nivel; botones **Suspender**, **Reactivar**, **Banear**, **Promover/Quitar rol**, cada uno con modal de confirmación y motivo de 10 a 300 con contador) con mock; `proxy.ts` redirige a los no administradores; listas como tarjetas en móvil — Depende: spec 000 T036 · Cubre: RF-009-08, RF-009-09, RF-009-10, RF-009-19, RNF-009-02
 - [ ] T018 [US1] [FE] Conectar `/admin/usuarios` y la ficha con los endpoints de usuarios y baneo, y mostrar el aviso «grupo congelado por titular baneado» en `/grupos/[id]` con `frontend/e2e/admin-ban.spec.ts` (CA-009-31) — Depende: T015, T017, spec 001 T021 · Cubre: RF-009-08, RF-009-19, CA-009-31
 
 ## Fase 4: US3 — Titulares habilitados y transferencia por un administrador (núcleo MVP)
@@ -50,7 +50,7 @@
 
 - [ ] T019 [P] [US3] [BE] `backend/test/admin.hosts.e2e-spec.ts` (CA-009-28: la habilitación manual permite crear; revocar con motivo) y `admin.transfer.e2e-spec.ts` (CA-009-35: transferir solo con titular `suspendido`) — Depende: T011 · Cubre: CA-009-28, CA-009-35, RF-009-21, RF-009-24
 - [ ] T020 [US3] [BE] `services/host-enablement.service.ts`, `controllers/admin-hosts.controller.ts` (`GET /admin/host-enablements?active=true`, `POST /admin/users/:userId/host-enablement` para habilitar y revocar con motivo y auditoría), `POST /admin/groups/:groupId/transfer-ownership` (usa `MembershipService.transferOwnership`, spec 001 T036), el adaptador `app-adapters/host-eligibility.adapter.ts` que compone la habilitación vigente con `ReputationQueryPort.checkHostRating` y el CLI `backend/src/cli/host-enable.ts` — Depende: T019, spec 001 T013, spec 007 T010 · Cubre: RF-009-21, RF-009-24, RF-007-17, CA-009-28, CA-009-35
-- [ ] T021 [P] [US3] [FE] `/admin/titulares` (habilitaciones vigentes, alta y baja con motivo) y acción **Transferir titularidad** en la ficha del grupo, con mock, conectado al terminar T020 — Depende: T017 · Cubre: RF-009-21, RF-009-24
+- [x] T021 [P] [US3] [FE] `/admin/titulares` (habilitaciones vigentes, alta y baja con motivo) y acción **Transferir titularidad** en la ficha del grupo, con mock, conectado al terminar T020 — Depende: T017 · Cubre: RF-009-21, RF-009-24
 
 ## Fase 5: US4 — Reclamos de ingreso (núcleo MVP)
 
@@ -84,7 +84,7 @@
 
 - [ ] T033 [P] [US7] [BE] `backend/test/admin.stats.e2e-spec.ts` (CA-009-16 totales por estado coinciden, CA-009-17 solo agregados) y `admin.stats.perf-spec.ts` (CA-009-21: tablero con 10.000 usuarios en menos de 2 s) — Depende: T011 · Cubre: CA-009-16, CA-009-17, CA-009-21
 - [ ] T034 [US7] [BE] `services/stats.service.ts`, `repositories/stats.repository.ts` (consultas agregadas con caché en memoria de 5 minutos) y `controllers/admin-stats.controller.ts` `GET /admin/stats` — Depende: T033 · Cubre: RF-009-15, RF-009-16, RF-009-17, CA-009-16, CA-009-17, CA-009-21, RN-009-06, RNF-009-04
-- [ ] T035 [P] [US7] [FE] `/admin` (tarjetas y tablas de estadísticas con alternativa en tabla, sin depender del color) con mock, conectado al terminar T034 — Depende: T017 · Cubre: RF-009-15, RNF-009-02
+- [x] T035 [P] [US7] [FE] `/admin` (tarjetas y tablas de estadísticas con alternativa en tabla, sin depender del color) con mock, conectado al terminar T034 — Depende: T017 · Cubre: RF-009-15, RNF-009-02
 
 ## Fase 9: Cierre
 
