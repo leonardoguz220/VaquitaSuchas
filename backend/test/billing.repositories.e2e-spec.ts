@@ -94,7 +94,7 @@ describe('Repositorios de billing contra PostgreSQL real', () => {
       groupId = (group.rows[0] as { id: string }).id;
       await client.query(
         `INSERT INTO group_members (group_id, user_id, role, join_source)
-         VALUES ($1, $2, 'titular', 'creacion'), ($1, $3, 'miembro', 'solicitud')`,
+         VALUES ($1, $2, 'titular', 'creacion'), ($1, $3, 'miembro', 'creacion')`,
         [groupId, ownerId, memberId],
       );
       await client.query('COMMIT');
