@@ -203,6 +203,26 @@ describe('GroupListingTab: publicar cupos del titular (T011, spec 008)', () => {
     expect(screen.getByRole('button', { name: 'Retirar' })).toBeInTheDocument();
   });
 
+  it('T023 CA-008-17: el titular ve que su publicación oculta por reportes no aparece en la búsqueda', async () => {
+    await renderTab({
+      ...activeListing,
+      status: 'oculta',
+      reportCount: 3,
+      hiddenAt: '2026-10-19T10:00:00.000Z',
+    });
+
+    expect(await screen.findByText('Tu publicación está oculta')).toBeInTheDocument();
+    expect(screen.getByText(/Recibió 3 reportes de otros usuarios/)).toBeInTheDocument();
+    expect(screen.getByText(/no aparece en la búsqueda/)).toBeInTheDocument();
+  });
+
+  it('una publicación activa no muestra el aviso de oculta', async () => {
+    await renderTab(activeListing);
+
+    expect(await screen.findByText(/Publicación activa hasta el/)).toBeInTheDocument();
+    expect(screen.queryByText('Tu publicación está oculta')).not.toBeInTheDocument();
+  });
+
   it('una publicación expirada se puede renovar y no se edita', async () => {
     await renderTab({ ...activeListing, status: 'expirada', preview: null });
 

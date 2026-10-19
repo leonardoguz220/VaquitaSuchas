@@ -13,6 +13,7 @@ import {
   toListingInput,
   type ListingFormValues,
 } from './listing-owner-model';
+import { ListingHiddenNotice } from './listing-hidden-notice';
 import { ListingOwnerForm } from './listing-owner-form';
 import { ListingOwnerPreview } from './listing-owner-preview';
 import { slotsText, serviceTitle } from './listing-messages';
@@ -124,6 +125,9 @@ export function GroupListingTab({ group }: { group: GroupDetail }) {
               <p className="text-[15px] text-muted">
                 {`${slotsText(listing.slotsOffered)} · ${listing.openRequests} solicitudes abiertas`}
               </p>
+              {listing.status === 'oculta' && (
+                <ListingHiddenNotice reportCount={listing.reportCount} />
+              )}
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 {(listing.status === 'activa' || listing.status === 'expirada') && (
                   <Button onClick={handleRenew} loading={busy} className="w-full sm:w-auto">

@@ -58,7 +58,7 @@
 
 - [ ] T021 [P] [US4] [BE] `backend/test/listings.reports.e2e-spec.ts`: CA-008-17 (tercer reporte oculta), CA-008-18 (reportar dos veces), límite de 10 reportes por día, reportes contados desde `moderation_cleared_at` — Depende: T008 · Cubre: CA-008-17, CA-008-18, RF-008-17, RF-008-18, RNF-008-04
 - [ ] T022 [US4] [BE] `services/listing-reports.service.ts` y `POST /listings/:id/reports` (inserta, cuenta reportes distintos, oculta con `shouldHide` y avisa `publicacion_oculta` al titular, todo en una transacción); `ListingsService.adminRestore/adminRemove/listReported` para la spec 009 (T031) — Depende: T021, T010 · Cubre: RF-008-17, RF-008-18, CA-008-17, CA-008-18
-- [ ] T023 [P] [US4] [FE] Botón **Reportar** en `/cupos/[id]` (motivo y comentario opcional) y mensaje de publicación oculta para el titular, con mock, conectado al terminar T022 — Depende: T015 · Cubre: RF-008-17
+- [x] T023 [P] [US4] [FE] Botón **Reportar** en `/cupos/[id]` (motivo y comentario opcional) y mensaje de publicación oculta para el titular, con mock, conectado al terminar T022 — Depende: T015 · Cubre: RF-008-17
 
 ## Fase 6: US5 — Vencimiento y eventos del grupo (Prioridad: P2)
 
