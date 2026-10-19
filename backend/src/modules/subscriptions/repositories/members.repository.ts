@@ -104,4 +104,15 @@ export class MembersRepository {
       [groupId, userId, role],
     );
   }
+
+  /** Grupos donde la persona es miembro activo sin ser titular, en orden estable. */
+  async listNonOwnerGroupIds(q: Queryable, userId: string): Promise<string[]> {
+    const result = await q.query<{ group_id: string }>(
+      `SELECT group_id FROM group_members
+        WHERE user_id = $1 AND left_at IS NULL AND role <> 'titular'
+        ORDER BY group_id`,
+      [userId],
+    );
+    return result.rows.map((row) => row.group_id);
+  }
 }
