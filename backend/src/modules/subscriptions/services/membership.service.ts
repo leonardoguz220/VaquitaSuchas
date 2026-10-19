@@ -8,11 +8,12 @@ import type {
   MemberRemovedReason,
 } from '../../../shared/events/group-events.js';
 import { TxEventBus } from '../../../shared/events/tx-event-bus.js';
+import { canLeave } from '../domain/group-rules.js';
 import { OPEN_CHARGES_PORT, type OpenChargesPort } from '../ports/open-charges.port.js';
 import { GroupsRepository, type GroupRow } from '../repositories/groups.repository.js';
 import { MembersRepository, type MemberRow } from '../repositories/members.repository.js';
 
-/** Motivos con los que se retira a alguien; `abandono` es de `leave` (T030). */
+/** Motivos con los que se retira a alguien; `abandono` es de `leave`. */
 export type RemovalReason = Exclude<MemberRemovedReason, 'abandono'>;
 
 const notFound = (): DomainError =>
@@ -88,25 +89,79 @@ export class MembershipService {
     userId: string,
     reason: RemovalReason,
   ): Promise<{ removedUserId: string; openCharges: number }> {
-    return this.db.withTransaction(async (tx) => {
+    return this.db.withTransaction((tx) => this.removeMemberTx(tx, groupId, userId, reason));
+  }
+
+  /**
+   * Igual que `removeMember` pero dentro de la transacción del llamador (la tarea de atrasos de la
+   * spec 002 retira por `mora` en la misma transacción que marca el cobro). No abre otra.
+   */
+  async removeMemberTx(
+    tx: DbTransaction,
+    groupId: string,
+    userId: string,
+    reason: RemovalReason,
+  ): Promise<{ removedUserId: string; openCharges: number }> {
+    const group = await this.groups.findByIdForUpdate(tx, groupId);
+    if (!group) throw notFound();
+    this.assertCanRemove(group, reason);
+    const member = await this.members.findActive(tx, groupId, userId);
+    if (!member) throw notFound();
+    if (member.role === 'titular') {
+      throw new DomainError(
+        ErrorCode.BUSINESS_RULE,
+        422,
+        'No se puede quitar al titular: transfiere la titularidad o cierra el grupo.',
+        { rule: 'RN-001-08', hint: 'TRANSFER_OR_CLOSE' },
+      );
+    }
+    const openCharges = await this.openCharges.countOpenCharges(tx, groupId, userId);
+    await this.members.markLeft(tx, groupId, userId, reason);
+    const event: MemberRemoved = { type: 'groups.member-removed', groupId, userId, reason };
+    await this.bus.publish(tx, event);
+    return { removedUserId: userId, openCharges };
+  }
+
+  /**
+   * El miembro abandona el grupo (RF-001-16, RN-001-08). `canLeave` decide: el titular no (debe
+   * transferir o cerrar) y con cobros `pendiente`, `en_revision` o `atrasado` tampoco, contados
+   * por `OpenChargesPort`. Un grupo cerrado o congelado es de solo lectura. Guarda `left_at` y
+   * `left_reason = 'abandono'` y publica `MemberRemoved`.
+   */
+  async leave(groupId: string, userId: string): Promise<void> {
+    await this.db.withTransaction(async (tx) => {
       const group = await this.groups.findByIdForUpdate(tx, groupId);
       if (!group) throw notFound();
-      this.assertCanRemove(group, reason);
       const member = await this.members.findActive(tx, groupId, userId);
       if (!member) throw notFound();
-      if (member.role === 'titular') {
+      const openCharges = await this.openCharges.countOpenCharges(tx, groupId, userId);
+      const blocked = canLeave(member.role, openCharges);
+      if (blocked === 'owner_must_transfer_or_close') {
         throw new DomainError(
           ErrorCode.BUSINESS_RULE,
           422,
-          'No se puede quitar al titular: transfiere la titularidad o cierra el grupo.',
+          'El titular no puede abandonar el grupo: transfiere la titularidad o cierra el grupo.',
           { rule: 'RN-001-08', hint: 'TRANSFER_OR_CLOSE' },
         );
       }
-      const openCharges = await this.openCharges.countOpenCharges(tx, groupId, userId);
-      await this.members.markLeft(tx, groupId, userId, reason);
-      const event: MemberRemoved = { type: 'groups.member-removed', groupId, userId, reason };
+      if (blocked === 'open_charges') {
+        throw new DomainError(
+          ErrorCode.BUSINESS_RULE,
+          422,
+          'Tienes cobros sin pagar: salda o pide al titular que los cancele antes de abandonar.',
+          { rule: 'RF-001-16', openCharges },
+        );
+      }
+      if (group.status === 'cerrado') throw groupClosed();
+      if (group.frozen_at !== null) throw groupFrozen();
+      await this.members.markLeft(tx, groupId, userId, 'abandono');
+      const event: MemberRemoved = {
+        type: 'groups.member-removed',
+        groupId,
+        userId,
+        reason: 'abandono',
+      };
       await this.bus.publish(tx, event);
-      return { removedUserId: userId, openCharges };
     });
   }
 

@@ -345,9 +345,139 @@ describe('Membresías', () => {
       expect(await adapter.countOpenCharges(harness.pool, group.id, member)).toBe(3);
       expect(await adapter.countOpenCharges(harness.pool, group.id, group.ownerId)).toBe(0);
     });
+  });
 
-    // El HTTP de abandonar (POST /groups/:id/leave) llega con la tarea T030.
-    it.todo('CA-001-14: un miembro con cobros sin pagar no puede abandonar (T030)');
-    it.todo('CA-001-15: el titular no puede abandonar y se le indica transferir o cerrar (T030)');
+  describe('POST /groups/:id/leave', () => {
+    const storedMember = async (
+      groupId: string,
+      userId: string,
+    ): Promise<{ left_reason: string | null; left_at: Date | null }> =>
+      (
+        await harness.pool.query(
+          `SELECT left_reason, left_at FROM group_members WHERE group_id = $1 AND user_id = $2
+            ORDER BY joined_at DESC LIMIT 1`,
+          [groupId, userId],
+        )
+      ).rows[0];
+
+    it('RF-001-16: un miembro sin cobros abiertos abandona (204), queda "abandono" y se publica MemberRemoved', async () => {
+      const group = await createGroup(4);
+      const member = await join(group);
+      await join(group);
+      const paid = await harness.insertCharge(group, member);
+      await harness.pool.query(
+        `UPDATE charges SET status = 'cancelado', cancelled_at = now(), cancelled_by = $2,
+                cancel_reason = 'Prueba' WHERE id = $1`,
+        [paid, group.ownerId],
+      );
+      removedEvents.length = 0;
+
+      await asUser(member, 'post', `/groups/${group.id}/leave`).expect(204);
+
+      const stored = await storedMember(group.id, member);
+      expect(stored.left_reason).toBe('abandono');
+      expect(stored.left_at).not.toBeNull();
+      expect(removedEvents).toEqual([
+        { type: 'groups.member-removed', groupId: group.id, userId: member, reason: 'abandono' },
+      ]);
+      expect(await activeCount(group.id)).toBe(2);
+    });
+
+    it('RF-001-23 y CA-001-12: al abandonar se recalculan las cuotas de los demás', async () => {
+      const group = await createGroup(4);
+      const member = await join(group);
+      await join(group);
+      expect((await initialCycle(group.id)).member_count).toBe(3);
+
+      await asUser(member, 'post', `/groups/${group.id}/leave`).expect(204);
+
+      const cycle = await initialCycle(group.id);
+      expect(cycle.member_count).toBe(2);
+      expect(Number(cycle.base) + Number(cycle.owner)).toBe(Number(cycle.total));
+    });
+
+    it.each(['pendiente', 'en_revision', 'atrasado'] as const)(
+      'CA-001-14: un miembro con un cobro %s no puede abandonar y se informa cuántos tiene',
+      async (status) => {
+        const group = await createGroup(4);
+        const member = await join(group);
+        await join(group);
+        await harness.insertCharge(group, member, { status });
+        removedEvents.length = 0;
+
+        const response = await asUser(member, 'post', `/groups/${group.id}/leave`).expect(422);
+
+        expect(response.body).toMatchObject({
+          code: 'BUSINESS_RULE',
+          details: { rule: 'RF-001-16', openCharges: 1 },
+        });
+        expect(await activeCount(group.id)).toBe(3);
+        expect((await storedMember(group.id, member)).left_at).toBeNull();
+        expect(removedEvents).toEqual([]);
+      },
+    );
+
+    it('CA-001-14: al saldarse o cancelarse los cobros, el miembro ya puede abandonar', async () => {
+      const group = await createGroup(4);
+      const member = await join(group);
+      await join(group);
+      const charge = await harness.insertCharge(group, member);
+      await asUser(member, 'post', `/groups/${group.id}/leave`).expect(422);
+
+      await harness.pool.query(
+        `UPDATE charges SET status = 'cancelado', cancelled_at = now(), cancelled_by = $2,
+                cancel_reason = 'Prueba' WHERE id = $1`,
+        [charge, group.ownerId],
+      );
+
+      await asUser(member, 'post', `/groups/${group.id}/leave`).expect(204);
+    });
+
+    it('CA-001-15: el titular no puede abandonar y se le indica transferir o cerrar', async () => {
+      const group = await createGroup(3);
+      await join(group);
+
+      const response = await asUser(group.ownerId, 'post', `/groups/${group.id}/leave`).expect(422);
+
+      expect(response.body).toMatchObject({
+        code: 'BUSINESS_RULE',
+        details: { rule: 'RN-001-08', hint: 'TRANSFER_OR_CLOSE' },
+      });
+      expect(await activeCount(group.id)).toBe(2);
+    });
+
+    it('CA-001-10: quien no es miembro activo recibe 404 (incluido quien ya abandonó) y sin sesión 401', async () => {
+      const group = await createGroup(3);
+      const member = await join(group);
+      const stranger = await harness.insertUser();
+
+      await asUser(stranger, 'post', `/groups/${group.id}/leave`).expect(404);
+      await request(harness.app.getHttpServer()).post(`/groups/${group.id}/leave`).expect(401);
+      await asUser(member, 'post', `/groups/${group.id}/leave`).expect(204);
+      await asUser(member, 'post', `/groups/${group.id}/leave`).expect(404);
+    });
+
+    it('RN-001-07: un grupo cerrado es de solo lectura y no admite abandonar', async () => {
+      const group = await createGroup(3);
+      const member = await join(group);
+      await harness.pool.query(
+        `UPDATE groups SET status = 'cerrado', closed_at = now() WHERE id = $1`,
+        [group.id],
+      );
+
+      const response = await asUser(member, 'post', `/groups/${group.id}/leave`).expect(422);
+
+      expect(response.body.code).toBe('GROUP_CLOSED');
+    });
+
+    it('RN-001-05: quien abandonó puede volver con una fila nueva', async () => {
+      const group = await createGroup(3);
+      const member = await join(group);
+      await asUser(member, 'post', `/groups/${group.id}/leave`).expect(204);
+
+      await addMember(group, member);
+
+      expect(await activeCount(group.id)).toBe(2);
+    });
   });
 });
