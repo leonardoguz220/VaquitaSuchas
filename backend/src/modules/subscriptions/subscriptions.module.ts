@@ -8,6 +8,7 @@ import {
   GroupAdminController,
   GroupsController,
   GroupViewController,
+  InviteCodeController,
   LeaveController,
   MembersController,
   PaymentInfoController,
@@ -36,6 +37,7 @@ import { UserEventsHandler } from './services/user-events.handler.js';
     MembersController,
     LeaveController,
     PaymentInfoController,
+    InviteCodeController,
   ],
   providers: [
     GroupsRepository,
