@@ -8,6 +8,7 @@ import {
   ADMIN_CATALOG_PATH,
   ADMIN_DISPUTES_PATH,
   ADMIN_HOSTS_PATH,
+  ADMIN_MODERATION_PATH,
   ADMIN_PATH,
   ADMIN_USERS_PATH,
 } from '@/lib/routes';
@@ -20,6 +21,7 @@ const SECTIONS = [
   { href: ADMIN_HOSTS_PATH, label: 'Titulares' },
   { href: ADMIN_DISPUTES_PATH, label: 'Reclamos' },
   { href: ADMIN_CATALOG_PATH, label: 'Catálogo' },
+  { href: ADMIN_MODERATION_PATH, label: 'Moderación' },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {

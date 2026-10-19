@@ -78,7 +78,7 @@
 
 - [ ] T030 [P] [US6] [BE] `backend/test/admin.listings.e2e-spec.ts`: CA-009-14 (restaurar una publicación), CA-009-15 (eliminar notifica al titular) — Depende: T011, spec 008 (publicaciones y reportes) · Cubre: CA-009-14, CA-009-15
 - [ ] T031 [US6] [BE] `services/listings-moderation.service.ts` y `controllers/admin-listings.controller.ts` (`GET /admin/listings/reports`, `POST /admin/listings/:id/restore | delete | delete-and-suspend` con motivo y auditoría; notifica con la spec 005) — Depende: T030 · Cubre: RF-009-12, RF-009-13, RF-009-14, CA-009-14, CA-009-15
-- [ ] T032 [P] [US6] [FE] `/admin/moderacion` (publicaciones reportadas u ocultas con motivos; restaurar, eliminar, eliminar y suspender) con mock, conectado al terminar T031 — Depende: T017 · Cubre: RF-009-12
+- [x] T032 [P] [US6] [FE] `/admin/moderacion` (publicaciones reportadas u ocultas con motivos; restaurar, eliminar, eliminar y suspender) con mock, conectado al terminar T031 — Depende: T017 · Cubre: RF-009-12
 
 ## Fase 8: US7 — Estadísticas (Prioridad: P2)
 
