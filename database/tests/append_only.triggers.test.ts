@@ -1,7 +1,8 @@
 // RF-000-07 (data-model.md §1 "Tablas de solo anexado" y §4 `append_only.triggers`): las tablas de
 // solo anexado llevan el disparador forbid_update_delete() y rechazan UPDATE y DELETE con
-// 'append-only table' (restrict_violation, 23001). Hoy son rate_limit_events (spec 000) y
-// charge_events (spec 002, RNF-002-04).
+// 'append-only table' (restrict_violation, 23001). Hoy son rate_limit_events (spec 000),
+// charge_events (spec 002, RNF-002-04), join_request_events (spec 010) y admin_audit_log
+// (spec 009, CA-009-19).
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { after, before, test } from 'node:test';
@@ -99,7 +100,7 @@ test('RF-000-07: toda tabla con forbid_update_delete lo tiene BEFORE UPDATE OR D
   // 009), se suma aquí y en la prueba de comportamiento de abajo.
   assert.deepEqual(
     triggers.map((t) => t.table_name),
-    ['charge_events', 'join_request_events', 'rate_limit_events'],
+    ['admin_audit_log', 'charge_events', 'join_request_events', 'rate_limit_events'],
   );
 
   for (const { table_name, tgtype, tgenabled } of triggers) {
@@ -116,7 +117,7 @@ test('RF-000-07: toda tabla con forbid_update_delete lo tiene BEFORE UPDATE OR D
 // con session_replication_role = replica SOLO en esta transacción, lo que omite las FK al insertar.
 // El UPDATE y el DELETE de la prueba siguiente corren con el rol normal: el disparador de solo
 // anexado se verifica igual. Las FK y CHECK de charge_events los cubre billing.integrity.test.ts.
-test('RNF-002-04, CA-010-35: se inserta una fila en charge_events y join_request_events para la prueba de solo anexado', async () => {
+test('RNF-002-04, CA-010-35, CA-009-19: se inserta una fila en charge_events, join_request_events y admin_audit_log para la prueba de solo anexado', async () => {
   const client = new pg.Client({ connectionString: db.connectionString });
   await client.connect();
   try {
@@ -131,15 +132,21 @@ test('RNF-002-04, CA-010-35: se inserta una fila en charge_events y join_request
       `INSERT INTO join_request_events (request_id, type, actor_kind)
        VALUES (gen_random_uuid(), 'abierta', 'sistema')`,
     );
+    // admin_audit_log (spec 009, CA-009-19): misma técnica, sin el administrador real.
+    await client.query(
+      `INSERT INTO admin_audit_log (admin_id, action, target_type)
+       VALUES (gen_random_uuid(), 'usuario_banear', 'user')`,
+    );
     await client.query('COMMIT');
   } finally {
     await client.end();
   }
   const [{ count }] = (await queryRows<{ count: string }>(
     db.connectionString,
-    'SELECT (SELECT count(*) FROM charge_events) + (SELECT count(*) FROM join_request_events) AS count',
+    `SELECT (SELECT count(*) FROM charge_events) + (SELECT count(*) FROM join_request_events)
+            + (SELECT count(*) FROM admin_audit_log) AS count`,
   )) as [{ count: string }];
-  assert.equal(Number(count), 2);
+  assert.equal(Number(count), 3);
 });
 
 // Los disparadores FOR EACH ROW solo se disparan si hay filas: esta prueba usa las que dejan las
