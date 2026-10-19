@@ -9,6 +9,7 @@ export interface GroupRow {
   frozen_at: Date | null;
   frozen_reason: 'titular_baneado' | null;
   catalog_plan_id: string | null;
+  plan_max_slots_snapshot: number | null;
   service_name_snapshot: string;
   plan_name_snapshot: string | null;
   logo_url_snapshot: string | null;
@@ -27,7 +28,7 @@ export interface GroupRow {
 }
 
 const COLUMNS = `id, owner_id, name, status, frozen_at, frozen_reason, catalog_plan_id,
-  service_name_snapshot, plan_name_snapshot, logo_url_snapshot, brand_color_snapshot,
+  plan_max_slots_snapshot, service_name_snapshot, plan_name_snapshot, logo_url_snapshot, brand_color_snapshot,
   price_cents::text AS price_cents, currency, exchange_rate::text AS exchange_rate,
   total_bs_cents::text AS total_bs_cents, billing_day, total_slots, invite_code,
   accepting_members, payment_info_text, version, created_at`;
@@ -142,6 +143,39 @@ export class GroupsRepository {
       [groupId, code],
     );
     return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Guarda los campos editables y sube `version` en una sentencia (RF-001-14). */
+  async update(
+    q: Queryable,
+    groupId: string,
+    g: {
+      name: string;
+      priceCents: number;
+      currency: 'USD' | 'BS';
+      exchangeRate: string | null;
+      billingDay: number;
+      totalSlots: number;
+      acceptingMembers: boolean;
+    },
+  ): Promise<GroupRow> {
+    const result = await q.query<GroupRow>(
+      `UPDATE groups SET name = $2, price_cents = $3, currency = $4, exchange_rate = $5,
+                         billing_day = $6, total_slots = $7, accepting_members = $8,
+                         version = version + 1
+        WHERE id = $1 RETURNING ${COLUMNS}`,
+      [
+        groupId,
+        g.name,
+        g.priceCents,
+        g.currency,
+        g.currency === 'USD' ? g.exchangeRate : null,
+        g.billingDay,
+        g.totalSlots,
+        g.acceptingMembers,
+      ],
+    );
+    return result.rows[0] as GroupRow;
   }
 
   async setOwner(q: Queryable, groupId: string, ownerId: string): Promise<void> {
