@@ -134,6 +134,25 @@ Cada restricción tiene una prueba que intenta violarla, y cada prueba cita en s
 - Los precios del catálogo se verifican con fuentes oficiales.
 - `npm run db:seed` ejecuta `seeds/NNNN_nombre.sql` en orden numérico y todos en una sola transacción: si uno falla no queda nada sembrado y el error nombra el archivo. Antes de ejecutar rechaza cualquier archivo que mencione `password` fuera de comentarios. Las reglas para escribir seeds están en [`seeds/README.md`](seeds/README.md).
 
+### Catálogo de servicios y actualización de precios (spec 004, T018)
+
+El catálogo vive en `seeds/catalog.json` (versionado, RNF-004-04). `db:seed` lo valida entero con `applyCatalog` antes de escribir y lo aplica en la misma transacción que los `.sql`: si un plan es inválido no se aplica nada (CA-004-06), y una segunda ejecución no cambia ninguna fila (CA-004-05).
+
+Para actualizar un precio o un cupo (RF-004-07, RN-004-06):
+
+1. Abrir la página oficial de la plataforma **desde Bolivia** y comprobar que muestra los precios de Bolivia. Nunca se copian precios de sitios de terceros.
+2. En `seeds/catalog.json`, editar el plan: `priceCents` en centavos enteros y `currency` tal como la publica la plataforma (`USD` o `BS`), `maxSlots` (personas en total, titular incluido: en video, pantallas a la vez; en música, cuentas del plan) e `individualPriceCents` si existe un plan individual.
+3. Actualizar en ese plan `verifiedOn` (fecha `AAAA-MM-DD` de la verificación) y `verifiedSource` (URL https de la fuente oficial). Son obligatorios: sin ellos `db:seed` rechaza el archivo.
+4. Correr `npm run test -w database` (valida el archivo real en `tests/catalog.seed.test.ts`) y `npm run db:seed` en local. Abrir un PR con la fuente en la descripción.
+5. En staging, el catálogo se siembra con el workflow `Migrate staging` marcando la opción `seed` (`.github/workflows/migrate-staging.yml`, T044).
+
+Qué no hace el seed:
+
+- **No hay borrado físico del catálogo** (RF-004-06): un servicio o plan que se quita del archivo no se borra de la base, y borrar un servicio con planes falla por `RESTRICT`. Para retirarlo se desactiva (`is_active = false`) desde la administración (spec 009).
+- El seed **nunca cambia `is_active`**: no reactiva lo que un administrador desactivó.
+- Un `slug` no cambia de servicio: si el archivo pone un plan existente bajo otro servicio, el seed falla y no aplica nada. Los `slug` no se renombran; un plan nuevo lleva un `slug` nuevo.
+- Cambiar el precio del catálogo **no altera las suscripciones existentes**: cada suscripción guarda su propia copia del precio (spec 001, CA-004-07).
+
 ### Reinicio y respaldo
 
 - `npm run db:reset` borra y recrea el esquema `public` (dueño `pg_database_owner` y `USAGE` para `PUBLIC`, como lo deja PostgreSQL 15+), aplica las migraciones (`0001_init.sql` vuelve a crear `unaccent`) y siembra. Se niega si el host no es `localhost`, `127.0.0.1`, `::1`, `db` o `postgres`, o si `NODE_ENV=production`.
