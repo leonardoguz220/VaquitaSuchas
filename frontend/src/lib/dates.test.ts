@@ -1,4 +1,12 @@
-import { formatCalendarDayLaPaz, formatDateLaPaz, formatDateTimeLaPaz, lapazDayOf } from './dates';
+import {
+  formatCalendarDayLaPaz,
+  formatDateLaPaz,
+  formatDateTimeLaPaz,
+  formatPeriod,
+  formatRemaining,
+  lapazDayOf,
+  recentPeriods,
+} from './dates';
 
 describe('formatDateTimeLaPaz (RF-000-17)', () => {
   it('CA-000-12 muestra las 02:00 UTC del día 1 como las 22:00 del día anterior en La Paz', () => {
@@ -84,5 +92,33 @@ describe('formatCalendarDayLaPaz (RF-001-19)', () => {
   it('rechaza un texto que no es YYYY-MM-DD', () => {
     expect(() => formatCalendarDayLaPaz('15/11/2026')).toThrow(RangeError);
     expect(() => formatCalendarDayLaPaz('2026-13-01')).toThrow(RangeError);
+  });
+});
+
+describe('formatPeriod (RF-002-15)', () => {
+  it('muestra el período YYYY-MM con el mes en palabras', () => {
+    expect(formatPeriod('2026-10')).toBe('Octubre 2026');
+    expect(formatPeriod('2027-01')).toBe('Enero 2027');
+  });
+
+  it('rechaza un texto que no es YYYY-MM', () => {
+    expect(() => formatPeriod('2026-13')).toThrow(RangeError);
+    expect(() => formatPeriod('oct 2026')).toThrow(RangeError);
+  });
+});
+
+describe('recentPeriods (RF-002-15)', () => {
+  it('parte del mes de La Paz y cruza el año hacia atrás', () => {
+    // 1 feb 02:00 UTC todavía es 31 de enero en La Paz.
+    expect(recentPeriods('2027-02-01T02:00:00Z', 3)).toEqual(['2027-01', '2026-12', '2026-11']);
+  });
+});
+
+describe('formatRemaining (RF-002-09)', () => {
+  it('junta días, horas y minutos en español', () => {
+    expect(formatRemaining(90061)).toBe('1 día, 1 hora y 1 minuto');
+    expect(formatRemaining(3 * 86400 + 5 * 3600)).toBe('3 días y 5 horas');
+    expect(formatRemaining(120)).toBe('2 minutos');
+    expect(formatRemaining(30)).toBe('menos de 1 minuto');
   });
 });
