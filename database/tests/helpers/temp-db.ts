@@ -20,6 +20,32 @@ async function withAdminClient<T>(fn: (client: pg.Client) => Promise<T>): Promis
   }
 }
 
+// Un pool por base: abrir una conexión por consulta domina el tiempo de la suite. allowExitOnIdle
+// deja terminar el proceso de prueba y el manejador de 'error' absorbe las conexiones ociosas que
+// corta un DROP DATABASE ... WITH (FORCE).
+const pools = new Map<string, pg.Pool>();
+
+function poolFor(connectionString: string): pg.Pool {
+  let pool = pools.get(connectionString);
+  if (!pool) {
+    pool = new pg.Pool({
+      connectionString,
+      max: 4,
+      idleTimeoutMillis: 1000,
+      allowExitOnIdle: true,
+    });
+    pool.on('error', () => undefined);
+    pools.set(connectionString, pool);
+  }
+  return pool;
+}
+
+async function closePool(connectionString: string): Promise<void> {
+  const pool = pools.get(connectionString);
+  pools.delete(connectionString);
+  await pool?.end();
+}
+
 export async function createTempDatabase(): Promise<TempDatabase> {
   const name = `vaquita_t_${randomBytes(6).toString('hex')}`;
   await withAdminClient((client) => client.query(`CREATE DATABASE "${name}"`));
@@ -30,10 +56,12 @@ export async function createTempDatabase(): Promise<TempDatabase> {
   return {
     name,
     connectionString: url.toString(),
-    drop: () =>
-      withAdminClient(async (client) => {
+    drop: async () => {
+      await closePool(url.toString());
+      await withAdminClient(async (client) => {
         await client.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
-      }),
+      });
+    },
   };
 }
 
@@ -42,14 +70,8 @@ export async function queryRows<T extends pg.QueryResultRow>(
   sql: string,
   params: unknown[] = [],
 ): Promise<T[]> {
-  const client = new pg.Client({ connectionString });
-  await client.connect();
-  try {
-    const { rows } = await client.query<T>(sql, params);
-    return rows;
-  } finally {
-    await client.end();
-  }
+  const { rows } = await poolFor(connectionString).query<T>(sql, params);
+  return rows;
 }
 
 export interface MigrationRow {

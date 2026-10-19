@@ -11,7 +11,7 @@ import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { migrate } from '../src/migrate.ts';
-import { createTempDatabase, queryRows, type TempDatabase } from './helpers/temp-db.ts';
+import { createTempDatabase, type TempDatabase } from './helpers/temp-db.ts';
 
 const migrationsDir = fileURLToPath(new URL('../migrations/', import.meta.url));
 const quiet = (): void => undefined;
@@ -23,13 +23,17 @@ const POLICY_VERSION = '2026-10-18';
 const VIEW_BUDGET_MS = 100;
 
 let db: TempDatabase;
+// Un pool compartido: abrir una conexión por consulta hace que el archivo tarde demasiado.
+let pool: pg.Pool;
 
 before(async () => {
   db = await createTempDatabase();
   await migrate({ connectionString: db.connectionString, migrationsDir, log: quiet });
+  pool = new pg.Pool({ connectionString: db.connectionString, max: 2 });
 });
 
 after(async () => {
+  await pool?.end();
   await db?.drop();
 });
 
@@ -39,13 +43,13 @@ function fingerprint(value: string): string {
   return createHmac('sha256', 'test-only-key').update(value).digest('hex');
 }
 
-function run<T extends Row = Row>(sql: string, params: unknown[] = []): Promise<T[]> {
-  return queryRows<T>(db.connectionString, sql, params);
+async function run<T extends Row = Row>(sql: string, params: unknown[] = []): Promise<T[]> {
+  const { rows } = await pool.query<T>(sql, params);
+  return rows;
 }
 
-async function inTransaction<T>(fn: (client: pg.Client) => Promise<T>): Promise<T> {
-  const client = new pg.Client({ connectionString: db.connectionString });
-  await client.connect();
+async function inTransaction<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
+  const client = await pool.connect();
   try {
     await client.query('BEGIN');
     try {
@@ -57,11 +61,11 @@ async function inTransaction<T>(fn: (client: pg.Client) => Promise<T>): Promise<
       throw error;
     }
   } finally {
-    await client.end();
+    client.release();
   }
 }
 
-async function insertWith(client: pg.Client, table: string, values: Row): Promise<string> {
+async function insertWith(client: pg.PoolClient, table: string, values: Row): Promise<string> {
   const columns = Object.keys(values);
   const placeholders = columns.map((_, i) => `$${i + 1}`);
   const { rows } = await client.query<{ id: string }>(
@@ -73,8 +77,15 @@ async function insertWith(client: pg.Client, table: string, values: Row): Promis
   return row.id;
 }
 
-function insertRow(table: string, values: Row): Promise<string> {
-  return inTransaction((tx) => insertWith(tx, table, values));
+async function insertRow(table: string, values: Row): Promise<string> {
+  const columns = Object.keys(values);
+  const placeholders = columns.map((_, i) => `$${i + 1}`);
+  const [row] = await run<{ id: string }>(
+    `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING id`,
+    Object.values(values),
+  );
+  assert.ok(row);
+  return row.id;
 }
 
 // ---------------------------------------------------------------- usuarios y grupos
