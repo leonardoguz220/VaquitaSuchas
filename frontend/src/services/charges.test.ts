@@ -48,6 +48,32 @@ async function fakeBackend(url: string, init?: RequestInit): Promise<Response> {
       );
       return jsonResponse(200, page);
     }
+    const groupMatch = /^\/api\/groups\/([^/]+)\/(charges|billing\/summary)$/.exec(target.pathname);
+    if (groupMatch) {
+      const groupId = decodeURIComponent(groupMatch[1]);
+      const params = target.searchParams;
+      if (groupMatch[2] === 'charges') {
+        const limit = params.get('limit');
+        const page = await mock.getGroupCharges(
+          groupId,
+          {
+            period: params.get('period') ?? undefined,
+            status: params.getAll('status') as ChargeStatus[],
+            userId: params.get('userId') ?? undefined,
+            limit: limit === null ? undefined : Number(limit),
+            cursor: params.get('cursor') ?? undefined,
+          },
+          signal,
+        );
+        return jsonResponse(200, page);
+      }
+      const summary = await mock.getBillingSummary(
+        groupId,
+        params.get('period') ?? undefined,
+        signal,
+      );
+      return jsonResponse(200, summary);
+    }
     const receiptMatch = /^\/api\/charges\/([^/]+)\/receipts$/.exec(target.pathname);
     if (receiptMatch && init?.method === 'POST' && init.body instanceof FormData) {
       const form = init.body;
@@ -317,6 +343,30 @@ describe('services/charges conectado a GET /me/charges y GET /charges/:id (T019,
       statusCode: 400,
       code: 'VALIDATION_ERROR',
     });
+  });
+
+  it('T038: historial y resumen del grupo salen por GET al proxy con su query (CA-002-17, CA-002-18, CA-002-20)', async () => {
+    const owner = MOCK_BILLING_GROUP_IDS.owner;
+    fetchMock.mockClear();
+
+    await settle(
+      getGroupCharges(owner, { period: '2026-10', status: ['pagado', 'atrasado'], limit: 5 }),
+    );
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/groups/${owner}/charges?period=2026-10&status=pagado&status=atrasado&limit=5`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+
+    await settle(getBillingSummary(owner, '2026-09'));
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/groups/${owner}/billing/summary?period=2026-09`,
+      expect.anything(),
+    );
+
+    await settle(getBillingSummary(owner));
+    expect(fetchMock.mock.calls[fetchMock.mock.calls.length - 1]?.[0]).toBe(
+      `/api/groups/${owner}/billing/summary`,
+    );
   });
 
   it('CA-002-19: un 409 STALE_STATE llega como ApiError con su código', async () => {
