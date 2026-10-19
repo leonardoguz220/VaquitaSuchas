@@ -2,7 +2,12 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { isPublicPath } from '@/lib/routes';
 import { reviewCharge } from '@/services/__fixtures__/charges';
-import { listGroupCharges } from '@/services/charges';
+import {
+  getBillingSummary,
+  listGroupCharges,
+  type ChargePublic,
+  type PeriodSummary,
+} from '@/services/charges';
 import { getGroup, updateGroup, type GroupDetail } from '@/services/groups';
 import { ApiError } from '@/services/http';
 import GroupPage, { metadata } from './page';
@@ -20,10 +25,12 @@ jest.mock('@/services/groups', () => ({
 jest.mock('@/services/charges', () => ({
   ...jest.requireActual('@/services/charges'),
   listGroupCharges: jest.fn(),
+  getBillingSummary: jest.fn(),
 }));
 
 const mockedGet = jest.mocked(getGroup);
 const mockedGroupCharges = jest.mocked(listGroupCharges);
+const mockedSummary = jest.mocked(getBillingSummary);
 const mockedUpdate = jest.mocked(updateGroup);
 
 // Datos simulados del contrato 001 (GroupDetail visto por un miembro).
@@ -100,6 +107,9 @@ beforeEach(() => {
   mockedGet.mockReset();
   mockedUpdate.mockReset();
   mockedGroupCharges.mockReset();
+  mockedSummary.mockReset();
+  mockedSummary.mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'x'));
+  mockedGroupCharges.mockResolvedValue({ items: [], nextCursor: null });
 });
 
 describe('/grupos/[id] (spec 001 T020): carga', () => {
@@ -351,26 +361,248 @@ describe('/grupos/[id] (spec 002 T026): cola «Por revisar» del titular', () =>
 
   it('RF-002-10: sin comprobantes en revisión lo dice; con error ofrece Reintentar', async () => {
     mockedGet.mockResolvedValue(ownerView);
-    mockedGroupCharges.mockRejectedValueOnce(new ApiError(0, 'NETWORK_ERROR', 'x'));
+    let failQueue = true;
+    mockedGroupCharges.mockImplementation(async (_groupId, params) => {
+      if (params?.status === 'en_revision' && failQueue) {
+        failQueue = false;
+        throw new ApiError(0, 'NETWORK_ERROR', 'x');
+      }
+      return { items: [], nextCursor: null };
+    });
     const actor = await renderPage();
     await actor.click(await screen.findByRole('tab', { name: 'Cobros' }));
-    expect(
-      await screen.findByText('No pudimos cargar los comprobantes por revisar.'),
-    ).toBeInTheDocument();
-    mockedGroupCharges.mockResolvedValue({ items: [], nextCursor: null });
-    await actor.click(screen.getByRole('button', { name: 'Reintentar' }));
+    const alert = await screen.findByText('No pudimos cargar los comprobantes por revisar.');
+    expect(alert).toBeInTheDocument();
+    await actor.click(
+      within(screen.getByRole('region', { name: 'Por revisar' })).getByRole('button', {
+        name: 'Reintentar',
+      }),
+    );
     expect(await screen.findByText('No hay comprobantes por revisar.')).toBeInTheDocument();
   });
 
   it('RF-002-11: un miembro no ve la cola «Por revisar»', async () => {
     mockedGet.mockResolvedValue(memberView);
-    mockedGroupCharges.mockResolvedValue({ items: [], nextCursor: null });
-    await renderPage();
-    await screen.findByRole('heading', { level: 1, name: 'Spotify depa' });
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('tab', { name: 'Cobros' }));
+    await screen.findByRole('region', { name: 'Historial del grupo' });
     expect(screen.queryByText(/Por revisar/)).not.toBeInTheDocument();
     expect(mockedGroupCharges).not.toHaveBeenCalledWith(
       'g2',
       expect.objectContaining({ status: 'en_revision' }),
     );
+  });
+});
+
+function publicCharge(overrides: Partial<ChargePublic> = {}): ChargePublic {
+  return {
+    id: 'p1',
+    groupId: 'g2',
+    period: '2026-10',
+    origin: 'ciclo',
+    member: { userId: 'u2', fullName: 'Ana Quispe Mamani', isFormerMember: false },
+    amountCents: 1980,
+    status: 'pagado',
+    dueAt: '2026-10-22T04:00:00.000Z',
+    paidAt: '2026-10-19T16:00:00.000Z',
+    timeline: [
+      { type: 'generado', actor: null, occurredAt: '2026-10-18T04:00:00.000Z' },
+      {
+        type: 'confirmado',
+        actor: { userId: 'u1', fullName: 'Marco Vargas Rojas' },
+        occurredAt: '2026-10-19T16:00:00.000Z',
+      },
+    ],
+    ...overrides,
+  };
+}
+
+const october: PeriodSummary = {
+  period: '2026-10',
+  cycleType: 'regular',
+  cutDate: '2026-10-18',
+  dueAt: '2026-10-22T04:00:00.000Z',
+  totalBsCents: 11881,
+  memberCount: 6,
+  baseShareCents: 1980,
+  ownerShareCents: 1981,
+  rows: [
+    { charge: publicCharge(), isFormerMember: false },
+    {
+      charge: publicCharge({
+        id: 'p2',
+        member: { userId: 'u3', fullName: 'Luis Mamani', isFormerMember: false },
+        status: 'en_revision',
+        paidAt: null,
+      }),
+      isFormerMember: false,
+    },
+    {
+      charge: publicCharge({
+        id: 'p3',
+        member: { userId: 'u4', fullName: 'Carla Rojas', isFormerMember: true },
+        status: 'atrasado',
+        paidAt: null,
+      }),
+      isFormerMember: true,
+    },
+  ],
+  availablePeriods: ['2026-10', '2026-09'],
+};
+
+const summaryRegion = (name: string) => screen.findByRole('region', { name });
+
+describe('/grupos/[id] (spec 002 T037): pestaña Cobros', () => {
+  const ownerView: GroupDetail = { ...memberView, myRole: 'titular', inviteCode: 'K7M2Q9PX' };
+
+  async function openCobros(view: GroupDetail = memberView) {
+    mockedGet.mockResolvedValue(view);
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('tab', { name: 'Cobros' }));
+    return actor;
+  }
+
+  it('CA-002-17: un miembro ve estado y monto de todos, sin comprobantes ni totales', async () => {
+    mockedSummary.mockResolvedValue(october);
+    await openCobros();
+    const summary = await summaryRegion('Cobros de octubre 2026');
+    expect(mockedSummary).toHaveBeenCalledWith('g2', undefined);
+    expect(summary).toHaveTextContent('Corte: 18 oct 2026 · Vence: 21 oct 2026, 23:59');
+    const rows = within(
+      within(summary).getByRole('list', { name: 'Estado por miembro' }),
+    ).getAllByRole('listitem');
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toHaveTextContent('Ana Quispe Mamani');
+    expect(rows[0]).toHaveTextContent('Bs 19,80');
+    expect(within(rows[0]).getByText('Pagado')).toHaveClass('bg-status-pagado-bg');
+    expect(within(rows[1]).getByText('En revisión')).toBeInTheDocument();
+    expect(rows[2]).toHaveTextContent('Ya no es miembro del grupo');
+    expect(within(rows[2]).getByText('Atrasado')).toBeInTheDocument();
+    expect(within(summary).queryByRole('link')).not.toBeInTheDocument();
+    expect(within(summary).queryByLabelText('Totales del período')).not.toBeInTheDocument();
+    expect(summary).not.toHaveTextContent(/Referencia|Comprobante/);
+  });
+
+  it('CA-002-20: el titular ve los totales esperado, cobrado, pendiente y atrasado que da la API', async () => {
+    mockedSummary.mockResolvedValue({
+      ...october,
+      ownerTotals: {
+        expectedCents: 5940,
+        collectedCents: 1980,
+        pendingCents: 1980,
+        overdueCents: 1980,
+      },
+    });
+    await openCobros(ownerView);
+    const summary = await summaryRegion('Cobros de octubre 2026');
+    const totals = within(summary).getByLabelText('Totales del período');
+    expect(totals).toHaveTextContent('EsperadoBs 59,40');
+    expect(totals).toHaveTextContent('CobradoBs 19,80');
+    expect(totals).toHaveTextContent('Pendiente (incluye en revisión)Bs 19,80');
+    expect(totals).toHaveTextContent('AtrasadoBs 19,80');
+    expect(within(summary).getByRole('link', { name: 'Ana Quispe Mamani' })).toHaveAttribute(
+      'href',
+      '/cobros/p1',
+    );
+  });
+
+  it('RF-002-16: el selector usa los períodos de la API y pide el resumen del elegido', async () => {
+    mockedSummary.mockResolvedValueOnce(october);
+    const actor = await openCobros();
+    await summaryRegion('Cobros de octubre 2026');
+    const select = screen.getByRole('combobox', { name: 'Período' });
+    expect(
+      within(select)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Octubre 2026', 'Septiembre 2026']);
+    mockedSummary.mockResolvedValueOnce({
+      ...october,
+      period: '2026-09',
+      cutDate: '2026-09-18',
+      rows: [],
+    });
+    await actor.selectOptions(select, '2026-09');
+    expect(mockedSummary).toHaveBeenLastCalledWith('g2', '2026-09');
+    const september = await summaryRegion('Cobros de septiembre 2026');
+    expect(september).toHaveTextContent('No hay cobros de miembros en este período.');
+    expect(screen.getByRole('combobox', { name: 'Período' })).toHaveValue('2026-09');
+  });
+
+  it('RF-002-16: el período inicial explica que no hay cobros regulares y muestra la cuota', async () => {
+    mockedSummary.mockResolvedValue({ ...october, cycleType: 'inicial', rows: [] });
+    const actor = await openCobros();
+    const summary = await summaryRegion('Cobros de octubre 2026');
+    expect(summary).toHaveTextContent('Es el período en que se creó el grupo');
+    await actor.click(within(summary).getByText('Cuota de este período'));
+    expect(summary).toHaveTextContent('Total del mesBs 118,81');
+    expect(summary).toHaveTextContent('Cada miembroBs 19,80');
+    expect(summary).toHaveTextContent('Parte del titular (referencia)Bs 19,81');
+  });
+
+  it('RF-002-16: sin ciclo (404) muestra el estado vacío de la spec', async () => {
+    await openCobros();
+    expect(
+      await screen.findAllByText('Aún no hay cobros: se generan solos en la fecha de corte.'),
+    ).toHaveLength(2);
+  });
+
+  it('RF-002-16: con error del resumen ofrece Reintentar', async () => {
+    mockedSummary.mockRejectedValueOnce(new ApiError(0, 'NETWORK_ERROR', 'x'));
+    const actor = await openCobros();
+    expect(await screen.findByText('No pudimos cargar el resumen del mes.')).toBeInTheDocument();
+    mockedSummary.mockResolvedValue(october);
+    await actor.click(
+      within(screen.getByRole('region', { name: 'Cobros del mes' })).getByRole('button', {
+        name: 'Reintentar',
+      }),
+    );
+    expect(await summaryRegion('Cobros de octubre 2026')).toBeInTheDocument();
+  });
+
+  it('CA-002-18: el historial muestra cada cobro con su línea de tiempo (evento, autor y fecha)', async () => {
+    mockedGroupCharges.mockResolvedValue({
+      items: [publicCharge(), publicCharge({ id: 'p9', period: '2026-09', origin: 'ingreso' })],
+      nextCursor: null,
+    });
+    const actor = await openCobros();
+    const history = await summaryRegion('Historial del grupo');
+    const list = await within(history).findByRole('list', { name: 'Cobros del grupo' });
+    expect(mockedGroupCharges).toHaveBeenCalledWith('g2', { limit: 20 });
+    const items = within(list).getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('Ana Quispe Mamani · Octubre 2026');
+    expect(items[0]).toHaveTextContent('Pagado el 19 oct 2026');
+    expect(list).toHaveTextContent('Ana Quispe Mamani · Septiembre 2026Pago de ingreso');
+    await actor.click(within(list).getAllByText('Línea de tiempo')[0]);
+    const timeline = within(list).getByRole('list', {
+      name: 'Línea de tiempo de Ana Quispe Mamani, Octubre 2026',
+    });
+    expect(timeline).toHaveTextContent('Cobro generadoSistema · 18 oct 2026, 00:00');
+    expect(timeline).toHaveTextContent('Pago confirmadoMarco Vargas Rojas · 19 oct 2026, 12:00');
+    expect(within(list).queryByRole('link', { name: 'Ver el cobro' })).not.toBeInTheDocument();
+  });
+
+  it('RF-002-17: el historial se pagina con "Ver más cobros"', async () => {
+    mockedGroupCharges
+      .mockResolvedValueOnce({ items: [publicCharge()], nextCursor: 'k1' })
+      .mockResolvedValueOnce({
+        items: [publicCharge({ id: 'p8', period: '2026-08' })],
+        nextCursor: null,
+      });
+    const actor = await openCobros();
+    const history = await summaryRegion('Historial del grupo');
+    await actor.click(await within(history).findByRole('button', { name: 'Ver más cobros' }));
+    expect(await within(history).findByText('Ana Quispe Mamani · Agosto 2026')).toBeInTheDocument();
+    expect(mockedGroupCharges).toHaveBeenLastCalledWith('g2', { limit: 20, cursor: 'k1' });
+  });
+
+  it('RF-002-17: con error del historial ofrece Reintentar', async () => {
+    mockedGroupCharges.mockRejectedValueOnce(new ApiError(0, 'NETWORK_ERROR', 'x'));
+    const actor = await openCobros();
+    const history = await summaryRegion('Historial del grupo');
+    expect(await within(history).findByText('No pudimos cargar el historial.')).toBeVisible();
+    mockedGroupCharges.mockResolvedValue({ items: [publicCharge()], nextCursor: null });
+    await actor.click(within(history).getByRole('button', { name: 'Reintentar' }));
+    expect(await within(history).findByRole('list', { name: 'Cobros del grupo' })).toBeVisible();
   });
 });

@@ -57,9 +57,9 @@ export interface GroupDetailViewProps {
 
 /**
  * Detalle del grupo `/grupos/[id]` (spec 001 T020, plan §6; mockups `GrupoMiembro.dc.html` y
- * `GrupoMiembros.dc.html`) con las pestañas **Resumen** y **Miembros**; el titular ve además
- * el código de invitación (T025) y la pestaña **Cobros** con la cola «Por revisar» (spec 002
- * T026). Quien no pertenece al
+ * `GrupoMiembros.dc.html`) con las pestañas **Resumen** y **Miembros**; la pestaña
+ * **Cobros** (spec 002 T037) muestra el resumen del mes y el historial, y el titular ve además
+ * el código de invitación (T025) y la cola «Por revisar» (spec 002 T026). Quien no pertenece al
  * grupo recibe `404` (RNF-001-01) y ve el mismo mensaje que si no existiera.
  */
 export function GroupDetailView({ groupId }: GroupDetailViewProps) {
@@ -143,9 +143,7 @@ export function GroupDetailView({ groupId }: GroupDetailViewProps) {
             ),
           },
           { id: 'miembros', label: 'Miembros', content: <GroupMembersTab group={group} /> },
-          ...(isOwner
-            ? [{ id: 'cobros', label: 'Cobros', content: <GroupChargesTab group={group} /> }]
-            : []),
+          { id: 'cobros', label: 'Cobros', content: <GroupChargesTab group={group} /> },
         ]}
       />
     </>

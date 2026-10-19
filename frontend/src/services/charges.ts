@@ -278,3 +278,46 @@ export function listGroupCharges(
     `/api/groups/${encodeURIComponent(groupId)}/charges${search ? `?${search}` : ''}`,
   );
 }
+
+export type CycleType = 'inicial' | 'regular';
+
+/** Totales del período que solo recibe el titular (RF-002-18, CA-002-20). */
+export interface OwnerTotals {
+  /** Σ cobros distintos de `cancelado`. */
+  expectedCents: number;
+  /** Σ `pagado`. */
+  collectedCents: number;
+  /** Σ (`pendiente` + `en_revision`). */
+  pendingCents: number;
+  /** Σ `atrasado`. */
+  overdueCents: number;
+}
+
+/** Resumen del mes (`PeriodSummary` del contrato) más los períodos para el selector. */
+export interface PeriodSummary {
+  period: string;
+  cycleType: CycleType;
+  /** `YYYY-MM-DD` de La Paz. */
+  cutDate: string;
+  dueAt: string;
+  totalBsCents: number;
+  memberCount: number;
+  baseShareCents: number;
+  ownerShareCents: number;
+  /** Un cobro por miembro; sin comprobantes ni referencias (RNF-002-07). */
+  rows: Array<{ charge: ChargePublic; isFormerMember: boolean }>;
+  ownerTotals?: OwnerTotals;
+  availablePeriods: string[];
+}
+
+/**
+ * `GET /groups/:groupId/billing/summary?period=YYYY-MM` (RF-002-16, RF-002-18; CA-002-17,
+ * CA-002-20). Sin `period`, el backend usa el del último ciclo. Lanza `ApiError` `404
+ * NOT_FOUND` si el grupo todavía no tiene ciclo en ese período o la persona no es miembro.
+ */
+export function getBillingSummary(groupId: string, period?: string): Promise<PeriodSummary> {
+  const search = period ? `?${new URLSearchParams({ period }).toString()}` : '';
+  return apiRequest<PeriodSummary>(
+    `/api/groups/${encodeURIComponent(groupId)}/billing/summary${search}`,
+  );
+}

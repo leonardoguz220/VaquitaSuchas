@@ -1,6 +1,7 @@
 import { pendingCharge } from './__fixtures__/charges';
 import {
   confirmCharge,
+  getBillingSummary,
   getCharge,
   getReceiptFile,
   isFullCharge,
@@ -137,5 +138,15 @@ describe('services/charges (contrato 002): revisión del titular', () => {
         timeline: timeline.map(({ type, actor, occurredAt }) => ({ type, actor, occurredAt })),
       }),
     ).toBe(false);
+  });
+});
+
+describe('services/charges (contrato 002): resumen del mes', () => {
+  it('CA-002-17: getBillingSummary hace GET /api/groups/:id/billing/summary con o sin período', async () => {
+    mockedRequest.mockResolvedValue({});
+    await getBillingSummary('g2');
+    expect(mockedRequest).toHaveBeenLastCalledWith('/api/groups/g2/billing/summary');
+    await getBillingSummary('g2', '2026-09');
+    expect(mockedRequest).toHaveBeenLastCalledWith('/api/groups/g2/billing/summary?period=2026-09');
   });
 });

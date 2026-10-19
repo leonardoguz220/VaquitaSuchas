@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import {
   confirmCharge,
+  getBillingSummary,
   getCharge,
   getReceiptFile,
   listGroupCharges,
@@ -111,4 +112,16 @@ export function useGroupCharges(groupId: string, filters: ListGroupChargesParams
     [groupId, period, status, userId],
   );
   return usePaginatedResource(loadPage);
+}
+
+/**
+ * Resumen del mes del grupo (`GET /groups/:id/billing/summary`, RF-002-16 y RF-002-18). Con
+ * `period = null` el backend elige el último ciclo. Un `404` (sin ciclo) llega en `error`.
+ */
+export function useBillingSummary(groupId: string, period: string | null) {
+  const load = useCallback(
+    () => getBillingSummary(groupId, period ?? undefined),
+    [groupId, period],
+  );
+  return useApiResource(load);
 }
