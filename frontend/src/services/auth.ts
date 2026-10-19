@@ -129,6 +129,38 @@ export async function resetPassword(input: ResetPasswordRequest): Promise<void> 
   await apiRequest<void>('/api/auth/password/reset', { method: 'POST', body: input });
 }
 
+/** Cuerpo de `POST /auth/password/change`. */
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  newPasswordConfirmation: string;
+}
+
+/** Códigos de error propios de `POST /auth/password/change`. */
+export type ChangePasswordErrorCode =
+  'CURRENT_PASSWORD_WRONG' | 'VALIDATION_ERROR' | 'RATE_LIMITED';
+
+/**
+ * `POST /auth/password/change` (RF-003-15). El backend responde 200 `{ sessionToken }` con un
+ * token nuevo (cierra las demás sesiones, CA-003-16); el proxy lo guarda en la cookie
+ * `vq_session` y lo quita del cuerpo, así que aquí no hay nada que devolver (contrato 000 C).
+ * Lanza `ApiError`: `422 CURRENT_PASSWORD_WRONG`, `400 VALIDATION_ERROR` o `429 RATE_LIMITED`.
+ */
+export async function changePassword(input: ChangePasswordRequest): Promise<void> {
+  await apiRequest<Record<string, never>>('/api/auth/password/change', {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/**
+ * `POST /auth/logout` (RF-003-07). Responde 204; el proxy borra las cookies `vq_session` y
+ * `vq_reg` aunque el backend falle (contrato 000 C).
+ */
+export async function logout(): Promise<void> {
+  await apiRequest<void>('/api/auth/logout', { method: 'POST' });
+}
+
 /** Códigos de `rejected` en `GET /auth/register/status`. */
 export type RegisterRejectedCode =
   | 'REGISTRATION_NOT_ALLOWED'

@@ -1,9 +1,12 @@
 import {
+  changePassword,
   forgotPassword,
   getMe,
   getRegisterStatus,
   login,
+  logout,
   register,
+  type ChangePasswordRequest,
   resetPassword,
   type ForgotPasswordResponse,
   type ResetPasswordRequest,
@@ -170,5 +173,45 @@ describe('services/auth (contrato 003, verificación por Telegram)', () => {
     mockedRequest.mockResolvedValue(response);
     await expect(requestRegisterLink()).resolves.toEqual(response);
     expect(mockedRequest).toHaveBeenCalledWith('/api/auth/register/link', { method: 'POST' });
+  });
+});
+
+describe('services/auth (contrato 003, perfil: contraseña y cierre de sesión)', () => {
+  it('RF-003-15: changePassword hace POST /api/auth/password/change con el cuerpo exacto y resuelve sin valor', async () => {
+    // Lo que llega al navegador: el proxy movió sessionToken a la cookie y dejó `{}` (contrato 000 C).
+    mockedRequest.mockResolvedValue({});
+    const input: ChangePasswordRequest = {
+      currentPassword: 'vaquita2026',
+      newPassword: 'nuevaClave2027',
+      newPasswordConfirmation: 'nuevaClave2027',
+    };
+
+    await expect(changePassword(input)).resolves.toBeUndefined();
+    expect(mockedRequest).toHaveBeenCalledWith('/api/auth/password/change', {
+      method: 'POST',
+      body: input,
+    });
+  });
+
+  it('RF-003-15: changePassword propaga el 422 CURRENT_PASSWORD_WRONG sin transformarlo', async () => {
+    const error = new ApiError(
+      422,
+      'CURRENT_PASSWORD_WRONG',
+      'La contraseña actual no es correcta.',
+    );
+    mockedRequest.mockRejectedValue(error);
+    await expect(
+      changePassword({
+        currentPassword: 'equivocada1',
+        newPassword: 'nuevaClave2027',
+        newPasswordConfirmation: 'nuevaClave2027',
+      }),
+    ).rejects.toBe(error);
+  });
+
+  it('RF-003-07: logout hace POST /api/auth/logout sin cuerpo y resuelve sin valor (204)', async () => {
+    mockedRequest.mockResolvedValue(undefined);
+    await expect(logout()).resolves.toBeUndefined();
+    expect(mockedRequest).toHaveBeenCalledWith('/api/auth/logout', { method: 'POST' });
   });
 });
