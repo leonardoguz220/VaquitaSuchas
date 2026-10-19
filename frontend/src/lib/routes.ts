@@ -248,6 +248,9 @@ export function adminDisputePath(disputeId: string): string {
 /** Log de auditoría (plan 009 §6). */
 export const ADMIN_AUDIT_PATH = '/admin/auditoria';
 
+/** Catálogo de servicios e importación (plan 009 §6). */
+export const ADMIN_CATALOG_PATH = '/admin/catalogo';
+
 /** Indica si `pathname` es una ruta del panel de administración (`/admin` o una subruta). */
 export function isAdminPath(pathname: string): boolean {
   return matchesRoute(pathname, ADMIN_PATH);

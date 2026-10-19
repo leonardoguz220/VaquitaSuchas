@@ -184,3 +184,29 @@ export const DISPUTE_PARTY_LABEL: Record<DisputePartyRole, string> = {
   solicitante: 'solicitante',
   titular: 'titular',
 };
+
+/** Aviso de RF-009-05 al editar el catálogo. */
+export const CATALOG_COPY_NOTICE =
+  'Cambiar el catálogo no modifica las suscripciones que ya existen: cada una guarda su propia copia del plan.';
+
+/**
+ * Error al guardar un servicio o un plan (contrato 009 § Catálogo): `409 CONFLICT` por `slug`
+ * repetido (CA-009-03), `400 VALIDATION_ERROR` (cupos, montos), `403` y conexión.
+ */
+export function catalogErrorOutcome(error: ApiError): { message: string; field: 'slug' | null } {
+  if (error.statusCode === 409) {
+    return { message: 'Ya existe un servicio o un plan con ese código.', field: 'slug' };
+  }
+  if (error.statusCode === 403) return { message: ADMIN_MESSAGES.forbidden, field: null };
+  if (error.code === 'VALIDATION_ERROR') {
+    return {
+      message:
+        'Revisa los datos: el código usa minúsculas, números y guiones, los cupos van de 2 a 20 y los montos son positivos.',
+      field: null,
+    };
+  }
+  return {
+    message: isConnectionError(error) ? ADMIN_MESSAGES.connection : ADMIN_MESSAGES.unexpected,
+    field: null,
+  };
+}

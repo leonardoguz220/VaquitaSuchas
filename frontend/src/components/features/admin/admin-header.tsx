@@ -7,6 +7,7 @@ import { Logo } from '@/components/features/brand/logo';
 import { cx } from '@/components/ui/cx';
 import {
   ADMIN_AUDIT_PATH,
+  ADMIN_CATALOG_PATH,
   ADMIN_DISPUTES_PATH,
   ADMIN_HOSTS_PATH,
   ADMIN_USERS_PATH,
@@ -24,6 +25,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { href: ADMIN_DISPUTES_PATH, label: 'Reclamos' },
   { href: ADMIN_HOSTS_PATH, label: 'Titulares' },
   { href: ADMIN_AUDIT_PATH, label: 'Auditoría' },
+  { href: ADMIN_CATALOG_PATH, label: 'Catálogo' },
 ];
 
 function isCurrent(pathname: string, href: string): boolean {
