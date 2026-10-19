@@ -1,6 +1,6 @@
 import { startAuthApp, tokenFromUrl, type AuthTestApp } from './support/auth-app.js';
 
-// Spec 003 (US1). Se activa con T019-T020: hasta que existan el manejador y el estado, queda en skip.
+// Spec 003 (US1). Se activa con T020 (GET /auth/register/status); el manejador (T019) ya existe.
 // Requiere PostgreSQL (base temporal propia).
 const describeVerificacion = describe.skip;
 

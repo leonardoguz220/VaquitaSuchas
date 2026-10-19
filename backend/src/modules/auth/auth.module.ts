@@ -1,17 +1,31 @@
 import { Module, type OnModuleInit } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { UsersModule } from '../users/users.module.js';
 import { JobRegistry } from '../../shared/jobs/job-registry.js';
 import { AUTH_SESSION_PORT } from '../../shared/ports/auth-session.port.js';
+import { AuthController } from './controllers/auth.controller.js';
 import { SessionRenewalInterceptor } from './controllers/session-renewal.interceptor.js';
 import { PurgeUnverifiedJob } from './jobs/purge-unverified.job.js';
+import { PhoneTokensRepository } from './repositories/phone-tokens.repository.js';
+import { RateLimitRepository } from './repositories/rate-limit.repository.js';
+import { RegistrationRepository } from './repositories/registration.repository.js';
 import { AuthSessionRepository } from './repositories/auth-session.repository.js';
 import { UnverifiedUsersRepository } from './repositories/unverified-users.repository.js';
 import { AuthSessionService } from './services/auth-session.service.js';
+import { PasswordHasher } from './services/password-hasher.js';
+import { RegistrationService } from './services/registration.service.js';
 import { SessionService } from './services/session.service.js';
 
 // DbService, Clock, ConfigService y JobRegistry llegan de módulos globales.
 @Module({
+  imports: [UsersModule],
+  controllers: [AuthController],
   providers: [
+    PhoneTokensRepository,
+    RateLimitRepository,
+    RegistrationRepository,
+    PasswordHasher,
+    RegistrationService,
     AuthSessionRepository,
     UnverifiedUsersRepository,
     AuthSessionService,
