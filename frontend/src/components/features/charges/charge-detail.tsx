@@ -140,6 +140,8 @@ export interface ChargeDetailViewProps {
    * en T026). Solo se monta si la API permite alguna acción.
    */
   actions?: (charge: Charge, context: ChargeActionsContext) => ReactNode;
+  /** Aviso tras una acción (T026), bajo la cabecera del cobro. */
+  notice?: ReactNode;
 }
 
 /**
@@ -147,7 +149,7 @@ export interface ChargeDetailViewProps {
  * monto, estado, vencimiento, datos de pago, motivo del último rechazo y línea de tiempo.
  * `403` → «No tienes acceso a este cobro»; `404` → «Cobro no encontrado».
  */
-export function ChargeDetailView({ chargeId, actions }: ChargeDetailViewProps) {
+export function ChargeDetailView({ chargeId, actions, notice }: ChargeDetailViewProps) {
   const { state, retry, update } = useCharge(chargeId);
 
   return (
@@ -184,6 +186,7 @@ export function ChargeDetailView({ chargeId, actions }: ChargeDetailViewProps) {
       {state.status === 'success' && (
         <>
           <ChargeHeader charge={state.charge} />
+          {notice}
           {state.charge.member.isFormerMember && (
             <Alert variant="warning" title={FORMER_MEMBER_NOTICE} />
           )}

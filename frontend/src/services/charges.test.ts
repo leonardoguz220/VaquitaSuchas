@@ -1,5 +1,6 @@
 import {
   confirmCharge,
+  rejectCharge,
   getBillingSummary,
   getCharge,
   getGroupCharges,
@@ -94,8 +95,58 @@ describe('services/charges con datos simulados (T018, contrato 002)', () => {
       { statusCode: 409, code: 'INVALID_TRANSITION' },
     );
     await expectRejection(confirmCharge(MOCK_CHARGE_IDS.inReviewNoPaymentInfo), {
-      code: 'INVALID_TRANSITION',
+      statusCode: 403,
     });
+  });
+
+  it('T026: confirmar y rechazar como titular responden el cobro y los errores fijos', async () => {
+    const owner = MOCK_CHARGE_IDS.ownerInReview;
+    const inReview = await settle(getCharge(owner));
+    expect(inReview).toMatchObject({
+      status: 'en_revision',
+      allowedActions: ['confirm', 'reject'],
+    });
+
+    // CA-002-06: pagado con quién y cuándo.
+    const confirmed = await settle(confirmCharge(owner, { version: inReview.version }));
+    expect(confirmed).toMatchObject({
+      status: 'pagado',
+      settledBy: { fullName: 'Ana Quispe Mamani' },
+      paidAt: expect.any(String),
+      currentReceipt: { status: 'confirmado' },
+    });
+    expect(confirmed.timeline.at(-1)).toMatchObject({ type: 'confirmado', toStatus: 'pagado' });
+    await expectRejection(confirmCharge(owner, { version: 1 }), { code: 'STALE_STATE' });
+
+    // CA-002-07 y CA-002-30: pendiente si no venció, atrasado si ya venció.
+    const body = { reason: 'Monto distinto', invalidReceipt: true };
+    expect(await settle(rejectCharge(owner, body))).toMatchObject({
+      status: 'pendiente',
+      lastRejection: { reason: 'Monto distinto', invalidReceipt: true },
+    });
+    expect(await settle(rejectCharge(MOCK_CHARGE_IDS.ownerInReviewOverdue, body))).toMatchObject({
+      status: 'atrasado',
+    });
+    // CA-002-08: sin motivo.
+    await expectRejection(rejectCharge(owner, { reason: ' ', invalidReceipt: false }), {
+      statusCode: 400,
+      code: 'VALIDATION_ERROR',
+    });
+    await expectRejection(confirmCharge(MOCK_CHARGE_IDS.paid), { statusCode: 403 });
+
+    const receiptId = inReview.currentReceipt?.id ?? '';
+    expect(await settle(getReceiptFile(owner, receiptId))).toMatchObject({
+      url: expect.any(String),
+    });
+    const overdue = await settle(getCharge(MOCK_CHARGE_IDS.ownerInReviewOverdue));
+    await expectRejection(getReceiptFile(overdue.id, overdue.currentReceipt?.id ?? ''), {
+      statusCode: 410,
+      code: 'FILE_DELETED',
+    });
+    const queue = await settle(
+      getGroupCharges(MOCK_BILLING_GROUP_IDS.owner, { status: ['en_revision'] }),
+    );
+    expect(queue.items.map((charge) => charge.id)).toContain(owner);
   });
 
   it('T022: la subida simulada agrega el evento, reemplaza en revisión y responde los errores fijos', async () => {

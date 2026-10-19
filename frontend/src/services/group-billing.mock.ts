@@ -16,6 +16,7 @@ import type {
   GroupChargesParams,
   Page,
   PersonRef,
+  Receipt,
 } from './charges';
 
 export const MOCK_BILLING_GROUP_IDS = {
@@ -74,9 +75,12 @@ interface ChargeSeed {
   totalBsCents: number;
   memberCount: number;
   timeline: ChargeEvent[];
+  /** Solo los `en_revision` que revisa el titular (T026). */
+  firstSubmittedAt?: string;
+  currentReceipt?: Receipt;
 }
 
-/** `Charge` completo como lo recibe el titular; sin comprobantes para no inventar archivos. */
+/** `Charge` completo como lo recibe el titular; solo los `en_revision` traen comprobante. */
 function ownerCharge(seed: ChargeSeed): Charge {
   return {
     id: seed.id,
@@ -91,7 +95,7 @@ function ownerCharge(seed: ChargeSeed): Charge {
     timeline: seed.timeline,
     cycleId: id(`0000000007${seed.period.slice(5)}`),
     issuedAt: seed.issuedAt,
-    firstSubmittedAt: null,
+    firstSubmittedAt: seed.firstSubmittedAt ?? null,
     priceCents: 899,
     currency: 'USD',
     exchangeRate: '6.9600',
@@ -103,7 +107,7 @@ function ownerCharge(seed: ChargeSeed): Charge {
     manualNote: null,
     cancelReason: null,
     lastRejection: null,
-    currentReceipt: null,
+    currentReceipt: seed.currentReceipt ?? null,
     receipts: [],
     paymentInfo: null,
     allowedActions: seed.status === 'en_revision' ? ['confirm', 'reject'] : [],
@@ -167,6 +171,18 @@ const PRIME_OCT: ChargeSeed[] = [
       ev('generado', null, null, 'pendiente', PRIME_OCT_ISSUED),
       ev('comprobante_subido', DIEGO, 'pendiente', 'en_revision', '2026-10-18T14:42:00.000Z'),
     ],
+    firstSubmittedAt: '2026-10-18T14:42:00.000Z',
+    currentReceipt: {
+      id: id('000000001802'),
+      uploadedAt: '2026-10-18T14:42:00.000Z',
+      uploadedBy: DIEGO,
+      method: 'transferencia',
+      reference: 'TRX-77120',
+      mime: 'image/jpeg',
+      sizeBytes: 860_000,
+      status: 'vigente',
+      fileAvailable: true,
+    },
   },
   {
     id: id('000000001003'),
@@ -425,6 +441,12 @@ const SUMMARIES: Record<string, BillingSummary[]> = {
   [MOCK_BILLING_GROUP_IDS.owner]: PRIME_SUMMARIES,
   [MOCK_BILLING_GROUP_IDS.member]: SPOTIFY_SUMMARIES,
 };
+
+/** `Charge` completo de un cobro de un grupo donde la persona es titular (T026). */
+export function ownerGroupCharge(chargeId: string): Charge | undefined {
+  const found = HISTORY[MOCK_BILLING_GROUP_IDS.owner].find((charge) => charge.id === chargeId);
+  return found as Charge | undefined;
+}
 
 const notFound = () => new ApiError(404, 'NOT_FOUND', 'No encontrado.');
 

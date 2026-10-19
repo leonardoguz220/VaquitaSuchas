@@ -1,7 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getGroupCharges, type Charge, type ChargePublic } from '@/services/charges';
+import {
+  getGroupCharges,
+  type Charge,
+  type ChargePublic,
+  type ChargeStatus,
+} from '@/services/charges';
 import { toApiError, type ApiError } from '@/services/http';
 import { useUnauthorizedRedirect } from './use-unauthorized-redirect';
 
@@ -22,6 +27,10 @@ export type GroupChargesState =
   | { status: 'error'; error: ApiError }
   | { status: 'redirecting' };
 
+function statusParam(statusKey: string): { status?: ChargeStatus[] } {
+  return statusKey ? { status: statusKey.split(',') as ChargeStatus[] } : {};
+}
+
 export interface UseGroupChargesResult {
   state: GroupChargesState;
   retry: () => void;
@@ -31,14 +40,19 @@ export interface UseGroupChargesResult {
 /**
  * `GET /groups/:groupId/charges` (RF-002-17): historial del grupo por páginas, en el orden del
  * servidor. «Cargar más» pide la página siguiente con `nextCursor` y la agrega al final.
+ * `status` filtra en el servidor (por ejemplo, la cola «Por revisar» de T026 pide `en_revision`).
  */
-export function useGroupCharges(groupId: string): UseGroupChargesResult {
+export function useGroupCharges(
+  groupId: string,
+  status: readonly ChargeStatus[] = [],
+): UseGroupChargesResult {
+  const statusKey = status.join(',');
   const [attempt, setAttempt] = useState(0);
   const [settled, setSettled] = useState<{ key: string; state: GroupChargesState } | null>(null);
   const redirectIfUnauthorized = useUnauthorizedRedirect();
   const redirectRef = useRef(redirectIfUnauthorized);
   const moreRef = useRef<AbortController | null>(null);
-  const key = `${groupId}#${attempt}`;
+  const key = `${groupId}#${statusKey}#${attempt}`;
 
   useEffect(() => {
     redirectRef.current = redirectIfUnauthorized;
@@ -53,7 +67,7 @@ export function useGroupCharges(groupId: string): UseGroupChargesResult {
     const controller = new AbortController();
     getGroupCharges(
       groupId,
-      { limit: GROUP_CHARGES_PAGE_SIZE },
+      { limit: GROUP_CHARGES_PAGE_SIZE, ...statusParam(statusKey) },
       { signal: controller.signal },
     ).then(
       (page) => {
@@ -77,7 +91,7 @@ export function useGroupCharges(groupId: string): UseGroupChargesResult {
       controller.abort();
       moreRef.current?.abort();
     };
-  }, [groupId, key, failure]);
+  }, [groupId, statusKey, key, failure]);
 
   const current = settled?.key === key ? settled.state : null;
 
@@ -90,7 +104,7 @@ export function useGroupCharges(groupId: string): UseGroupChargesResult {
     setSettled({ key, state: { ...base, loadingMore: true, moreError: null } });
     getGroupCharges(
       groupId,
-      { limit: GROUP_CHARGES_PAGE_SIZE, cursor },
+      { limit: GROUP_CHARGES_PAGE_SIZE, cursor, ...statusParam(statusKey) },
       { signal: controller.signal },
     ).then(
       (page) => {
@@ -117,7 +131,7 @@ export function useGroupCharges(groupId: string): UseGroupChargesResult {
         });
       },
     );
-  }, [current, groupId, key]);
+  }, [current, groupId, statusKey, key]);
 
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
   return { state: current ?? { status: 'loading' }, retry, loadMore };

@@ -4,7 +4,7 @@
  * se calcula nada. Filtrar por la query de `GET /me/charges` simula al servidor. Nombres,
  * montos y cuentas inventados.
  */
-import { billingSummary, groupChargesPage } from './group-billing.mock';
+import { billingSummary, groupChargesPage, ownerGroupCharge } from './group-billing.mock';
 import { ApiError } from './http';
 import type {
   BillingSummary,
@@ -108,6 +108,10 @@ export const MOCK_CHARGE_IDS = {
   paid: uuid('000000000504'),
   entryPaid: uuid('000000000505'),
   cancelled: uuid('000000000506'),
+  /** Prime Video, la persona es titular: `en_revision` con comprobante y archivo (T026). */
+  ownerInReview: uuid('000000001002'),
+  /** Prime Video, titular: `en_revision` ya vencido; rechazar da `atrasado`; archivo `410`. */
+  ownerInReviewOverdue: uuid('000000000507'),
   /** De otro miembro del grupo: `403`. */
   forbidden: uuid('000000000599'),
 } as const;
@@ -395,6 +399,74 @@ const MY_CHARGES: MyCharge[] = [
   },
 ];
 
+const GABRIEL: PersonRef = {
+  userId: '9c4e2f10-0000-4000-8000-000000000306',
+  fullName: 'Gabriel Choque Limachi',
+};
+
+/**
+ * Cobro que la persona revisa como titular y que ya venció. Solo llega por `getCharge`: no está
+ * en el historial ni en el resumen de Prime Video para no alterar sus totales simulados.
+ */
+const OWNER_OVERDUE_IN_REVIEW: Charge = {
+  id: MOCK_CHARGE_IDS.ownerInReviewOverdue,
+  groupId: '5b0d7c3e-0000-4000-8000-000000000102',
+  cycleId: uuid('000000000709'),
+  period: '2026-09',
+  origin: 'ciclo',
+  member: { ...GABRIEL, isFormerMember: false },
+  amountCents: 1564,
+  status: 'en_revision',
+  issuedAt: '2026-09-17T04:00:00.000Z',
+  dueAt: '2026-09-21T03:59:59.000Z',
+  paidAt: null,
+  firstSubmittedAt: '2026-09-20T23:30:00.000Z',
+  priceCents: 899,
+  currency: 'USD',
+  exchangeRate: '6.9600',
+  totalBsCents: 6257,
+  memberCount: 4,
+  settlement: null,
+  settledBy: null,
+  manualNote: null,
+  cancelReason: null,
+  lastRejection: null,
+  currentReceipt: {
+    id: uuid('000000000807'),
+    uploadedAt: '2026-09-20T23:30:00.000Z',
+    uploadedBy: GABRIEL,
+    method: 'qr',
+    reference: 'QR-40021',
+    mime: 'image/png',
+    sizeBytes: 540_000,
+    status: 'vigente',
+    fileAvailable: true,
+  },
+  receipts: [],
+  timeline: [
+    event('0071', 'generado', null, null, 'pendiente', '2026-09-17T04:00:00.000Z'),
+    event(
+      '0072',
+      'comprobante_subido',
+      GABRIEL,
+      'pendiente',
+      'en_revision',
+      '2026-09-20T23:30:00.000Z',
+    ),
+  ],
+  paymentInfo: null,
+  allowedActions: ['confirm', 'reject'],
+  version: 2,
+};
+
+/** Comprobantes cuyo archivo ya se borró por antigüedad: `410 FILE_DELETED`. */
+const DELETED_RECEIPT_IDS = new Set([uuid('000000000807')]);
+
+/** Estado fijo que devuelve el servidor al rechazar cada cobro del titular. */
+const REJECT_RESULT: Record<string, 'pendiente' | 'atrasado'> = {
+  [MOCK_CHARGE_IDS.ownerInReviewOverdue]: 'atrasado',
+};
+
 const RECEIPTS: Record<string, Receipt[]> = {
   [MOCK_CHARGE_IDS.pendingRejected]: [
     {
@@ -433,7 +505,17 @@ export function listMyCharges(
 
 /** `403` para el cobro de otro miembro; `404` para cualquier id desconocido (CA-002-23). */
 export function getCharge(chargeId: string, signal?: AbortSignal): Promise<Charge> {
-  return delay(() => toCharge(find(chargeId)), signal);
+  return delay(() => findAny(chargeId).charge, signal);
+}
+
+/** `owned`: el cobro es de la persona (miembro); si no, la persona lo ve como titular. */
+function findAny(chargeId: string): { charge: Charge; owned: boolean } {
+  const asOwner =
+    chargeId === MOCK_CHARGE_IDS.ownerInReviewOverdue
+      ? OWNER_OVERDUE_IN_REVIEW
+      : ownerGroupCharge(chargeId);
+  if (asOwner) return { charge: asOwner, owned: false };
+  return { charge: toCharge(find(chargeId)), owned: true };
 }
 
 function find(chargeId: string) {
@@ -445,7 +527,10 @@ function find(chargeId: string) {
   return charge;
 }
 
-function requireAction(charge: MyCharge, action: Charge['allowedActions'][number]) {
+function requireAction(
+  charge: Pick<Charge, 'allowedActions' | 'status'>,
+  action: Charge['allowedActions'][number],
+) {
   if (!charge.allowedActions.includes(action)) {
     throw new ApiError(409, 'INVALID_TRANSITION', 'Este cobro ya no admite cambios.', {
       from: charge.status,
@@ -461,6 +546,12 @@ export const MOCK_RECEIPT_REFERENCES = {
   /** `503 SERVICE_UNAVAILABLE` (falla del almacén). */
   storageDown: 'TRX-SIN-ALMACEN',
 } as const;
+
+function checkVersion(charge: Pick<Charge, 'version'>, version: number | undefined) {
+  if (version !== undefined && version !== charge.version) {
+    throw new ApiError(409, 'STALE_STATE', 'El cobro cambió.');
+  }
+}
 
 const RECEIPT_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
 const RECEIPT_MAX_BYTES = 5 * 1024 * 1024;
@@ -479,9 +570,7 @@ function checkUpload(charge: MyCharge, input: UploadReceiptInput) {
     throw new ApiError(415, 'UNSUPPORTED_FILE_TYPE', 'Tipo de archivo no permitido.');
   }
   requireAction(charge, 'uploadReceipt');
-  if (input.version !== undefined && input.version !== charge.version) {
-    throw new ApiError(409, 'STALE_STATE', 'El cobro cambió.');
-  }
+  checkVersion(charge, input.version);
   if (reference === MOCK_RECEIPT_REFERENCES.alreadyUsed) {
     throw new ApiError(409, 'REFERENCE_ALREADY_USED', 'Esa referencia ya fue usada en este grupo.');
   }
@@ -544,29 +633,81 @@ export function getReceiptFile(
   signal?: AbortSignal,
 ): Promise<ReceiptFile> {
   return delay(() => {
-    const charge = toCharge(find(chargeId));
+    const { charge } = findAny(chargeId);
     const receipt = [charge.currentReceipt, ...charge.receipts].find(
       (candidate) => candidate?.id === receiptId,
     );
     if (!receipt) throw new ApiError(404, 'NOT_FOUND', 'Comprobante no encontrado.');
+    if (DELETED_RECEIPT_IDS.has(receipt.id)) {
+      throw new ApiError(410, 'FILE_DELETED', 'El archivo fue eliminado.');
+    }
     return { url: QR_URL, expiresAt: '2026-10-19T15:10:00.000Z', mime: receipt.mime };
   }, signal);
 }
 
-/** Los cobros simulados son de la persona, que no es titular: confirmar responde `403`. */
-export function confirmCharge(chargeId: string, _input: ConfirmChargeInput): Promise<Charge> {
+const forbiddenForMember = () =>
+  new ApiError(403, 'FORBIDDEN', 'Solo el titular puede revisar este cobro.');
+
+/**
+ * `200` con el cobro `pagado`, quién y cuándo, el comprobante confirmado y el evento. A la
+ * persona sobre sus propios cobros responde `403` (CA-002-12). No guarda el cambio.
+ */
+export function confirmCharge(chargeId: string, input: ConfirmChargeInput): Promise<Charge> {
   return delay(() => {
-    const charge = find(chargeId);
+    const { charge, owned } = findAny(chargeId);
+    if (owned) throw forbiddenForMember();
     requireAction(charge, 'confirm');
-    return toCharge(charge);
+    checkVersion(charge, input.version);
+    const at = '2026-10-19T15:30:00.000Z';
+    return {
+      ...charge,
+      status: 'pagado',
+      paidAt: at,
+      settlement: 'comprobante',
+      settledBy: ME,
+      currentReceipt: charge.currentReceipt && { ...charge.currentReceipt, status: 'confirmado' },
+      paymentInfo: null,
+      allowedActions: [],
+      version: charge.version + 1,
+      timeline: [...charge.timeline, event('0098', 'confirmado', ME, 'en_revision', 'pagado', at)],
+    };
   });
 }
 
-export function rejectCharge(chargeId: string, _input: RejectChargeInput): Promise<Charge> {
+/**
+ * `200` con el cobro en el estado fijo de `REJECT_RESULT` (`pendiente` por defecto), el último
+ * rechazo y el evento. Motivo de 5 a 200 caracteres o `400 VALIDATION_ERROR`.
+ */
+export function rejectCharge(chargeId: string, input: RejectChargeInput): Promise<Charge> {
   return delay(() => {
-    const charge = find(chargeId);
+    const { charge, owned } = findAny(chargeId);
+    if (owned) throw forbiddenForMember();
+    const reason = input.reason.trim();
+    if (reason.length < 5 || reason.length > 200) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Datos inválidos.', {
+        fields: [{ field: 'reason', message: 'Entre 5 y 200 caracteres.' }],
+      });
+    }
     requireAction(charge, 'reject');
-    return toCharge(charge);
+    checkVersion(charge, input.version);
+    const at = '2026-10-19T15:30:00.000Z';
+    const next = REJECT_RESULT[charge.id] ?? 'pendiente';
+    const rejected: Receipt[] = charge.currentReceipt
+      ? [{ ...charge.currentReceipt, status: 'rechazado' }]
+      : [];
+    return {
+      ...charge,
+      status: next,
+      lastRejection: { reason, invalidReceipt: input.invalidReceipt, at },
+      currentReceipt: null,
+      receipts: [...rejected, ...charge.receipts],
+      allowedActions: ['manualPayment', 'cancel'],
+      version: charge.version + 1,
+      timeline: [
+        ...charge.timeline,
+        event('0097', 'rechazado', ME, 'en_revision', next, at, reason),
+      ],
+    };
   });
 }
 
