@@ -68,4 +68,16 @@ describe('useMe (GET /auth/me)', () => {
     expect(result.current.user).toEqual(user);
     expect(mockedGetMe).toHaveBeenCalledTimes(2);
   });
+
+  it('RF-003-14: replaceUser muestra el UserSelf que devolvió la API sin volver a pedir /auth/me', async () => {
+    mockedGetMe.mockResolvedValue(user);
+    const { result } = renderHook(() => useMe());
+    await waitFor(() => expect(result.current.status).toBe('success'));
+
+    const updated: UserSelf = { ...user, fullName: 'Ana Quispe' };
+    act(() => result.current.replaceUser(updated));
+    expect(result.current.user).toEqual(updated);
+    expect(result.current.status).toBe('success');
+    expect(mockedGetMe).toHaveBeenCalledTimes(1);
+  });
 });

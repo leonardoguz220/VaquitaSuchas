@@ -60,5 +60,13 @@ export function useMe() {
     setAttempt((current) => current + 1);
   }, []);
 
-  return { ...state, reload };
+  /**
+   * Reemplaza la persona por el `UserSelf` que devolvió otra llamada (por ejemplo
+   * `PATCH /users/me` o el cambio de celular verificado), sin volver a pedir `GET /auth/me`.
+   */
+  const replaceUser = useCallback((user: UserSelf) => {
+    setState({ status: 'success', user, error: null });
+  }, []);
+
+  return { ...state, reload, replaceUser };
 }
