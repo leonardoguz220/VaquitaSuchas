@@ -1,5 +1,6 @@
 // PreToolUse (Read, Edit, Write, MultiEdit, NotebookEdit).
 // - Bloquea leer o escribir archivos con secretos (.env, claves, credenciales).
+// - Bloquea que un agente edite los hooks, los agentes o .claude/settings.json (salvo VAQUITA_ALLOW_CLAUDE_CONFIG=1).
 // - Bloquea editar una migración que ya está en main (RN-000-02: los cambios van en una migración nueva).
 // - Avisa, sin bloquear, al tocar documentos que gobiernan a las tres capas o tests ligados a criterios CA.
 import { existsSync } from 'node:fs';
@@ -30,6 +31,13 @@ if (isSecretPath(rel)) {
 }
 
 if (tool === 'Read' || !isInsideRepo(rel)) process.exit(0);
+
+if (/^\.claude\/(hooks\/|agents\/|settings\.json$)/.test(rel) && process.env.VAQUITA_ALLOW_CLAUDE_CONFIG !== '1') {
+  denyPreToolUse(
+    `"${rel}" es parte de las reglas que vigilan a los agentes y un agente no la modifica. ` +
+      'Un cambio ahí lo hace una persona por PR (ia/herramientas-y-skills.md §7).',
+  );
+}
 
 if (/^database\/migrations\/[^/]+\.sql$/.test(rel) && existsInMain(rel)) {
   denyPreToolUse(

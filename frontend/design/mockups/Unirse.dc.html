@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Unirme con un código</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid #D9DDD7; background: #FFFFFF">
+    <a href="Grupos.dc.html" style="display: flex; align-items: center; gap: 10px; color: #17201C; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#1E6B4E"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#F5F6F2" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#F5F6F2"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">vaquita</span>
+    </a>
+    <nav aria-label="Principal" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="Grupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis suscripciones</a>
+      <a href="MisCobros.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
+      <a href="Solicitudes.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border-radius: 10px; color: #17201C; text-decoration: none">Mis solicitudes<span aria-label="2 mensajes sin leer" style="min-width: 22px; height: 22px; border-radius: 999px; background: #B42318; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span></a>
+      <a href="Cupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Cupos libres</a>
+    </nav>
+    <a href="Perfil.dc.html" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1080px; margin: 0 auto; padding: 40px 32px 48px; display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; flex-direction: column; gap: 8px; max-width: 680px">
+      <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 40px; letter-spacing: -1px">Unirme con un código</h1>
+      <p style="margin: 0; font-size: 17px; line-height: 1.5; color: #4F5A55">El código no te une directamente: abre una solicitud con el titular. Entras cuando él confirma tu pago.</p>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <form style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; padding: 24px; display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap">
+          <div style="flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 6px">
+            <label for="codigo" style="font-weight: 700; font-size: 15px">Código de invitación (8 caracteres)</label>
+            <input id="codigo" type="text" value="R4XN8WQE" maxlength="8" autocapitalize="characters" style="height: 52px; box-sizing: border-box; border: 1.5px solid #1E6B4E; border-radius: 12px; padding: 0 16px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: 4px; color: #17201C">
+          </div>
+          <button type="button" style="min-height: 52px; padding: 0 22px; border-radius: 12px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; font-weight: 700; cursor: pointer">Buscar grupo</button>
+        </form>
+        <section aria-labelledby="grupo-encontrado" style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+          <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
+            <span aria-hidden="true" style="width: 56px; height: 56px; border-radius: 14px; background: #4B2A8C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 26px">M</span>
+            <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 2px">
+              <h2 id="grupo-encontrado" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px">Max de amigos</h2>
+              <span style="font-size: 15px; color: #4F5A55">Max · Estándar · cobro el día 17 de cada mes</span>
+            </div>
+            <span style="border-radius: 999px; padding: 4px 12px; font-size: 14px; font-weight: 700; background: #D7EFE2; color: #17573F">1 cupo disponible</span>
+          </div>
+          <dl style="margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px">
+            <div style="background: #F5F6F2; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 4px"><dt style="font-size: 14px; color: #4F5A55">Cuota estimada</dt><dd style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px">Bs 21,00</dd></div>
+            <div style="background: #F5F6F2; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 4px"><dt style="font-size: 14px; color: #4F5A55">Titular</dt><dd style="margin: 0; font-weight: 700; font-size: 17px">Rodrigo Salazar</dd><dd style="margin: 0; font-size: 15px; color: #7A4B00" aria-label="Calificación 4,5 de 5 estrellas">★★★★½ 4,5</dd></div>
+            <div style="background: #F5F6F2; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 4px"><dt style="font-size: 14px; color: #4F5A55">Ventana de ingreso</dt><dd style="margin: 0; font-weight: 700; font-size: 17px">Abierta hasta el 19 oct.</dd><dd style="margin: 0; font-size: 15px; color: #4F5A55">a las 23:59</dd></div>
+          </dl>
+          <p style="margin: 0; font-size: 15px; color: #4F5A55">La cuota final la fija el sistema cuando el titular te envía los datos de pago: el precio del mes entre los miembros, contándote a ti.</p>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end">
+            <a href="Solicitud.dc.html" style="min-height: 52px; padding: 0 28px; display: flex; align-items: center; background: #1E6B4E; color: #FFFFFF; border-radius: 12px; font-weight: 700; font-size: 17px; text-decoration: none">Abrir solicitud y chatear con el titular</a>
+          </div>
+        </section>
+      </div>
+      <aside style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+        <div style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+          <h2 style="margin: 0; font-size: 18px">Cómo funciona</h2>
+          <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px; font-size: 15px; line-height: 1.4">
+            <sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+              <li style="display: flex; gap: 12px"><span style="flex: none; width: 28px; height: 28px; border-radius: 999px; background: #E3F1EA; color: #14503A; font-weight: 700; display: flex; align-items: center; justify-content: center">{{s.n}}</span><span>{{s.text}}</span></li>
+            </sc-for>
+          </ol>
+        </div>
+        <div role="note" style="background: #FCEBC7; color: #5C3900; border-radius: 16px; padding: 18px; display: flex; gap: 12px">
+          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" style="flex: none"><path d="M12 3 L22 20 H2 Z M12 10 V14 M12 17 V17.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path></svg>
+          <p style="margin: 0; font-size: 15px; line-height: 1.45">Vaquita no recibe, no guarda ni devuelve dinero, y no puede obligar al titular a devolverlo. Si pagas y no te agregan, puedes abrir un reclamo: sirve para sancionar y dejar constancia.</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      steps: [
+        { n: '1', text: 'Abres la solicitud y conversas con el titular en un chat privado.' },
+        { n: '2', text: 'El titular te envía sus datos de pago y se reserva tu cupo.' },
+        { n: '3', text: 'Tienes 15 minutos para pagar y subir el comprobante con su referencia.' },
+        { n: '4', text: 'El titular confirma en hasta 60 minutos y ya eres miembro.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

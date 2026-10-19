@@ -1,6 +1,6 @@
 ---
 name: backend-engineer
-description: Implementa tareas [BE] de Vaquita (Leonardo) en backend/: módulos NestJS por capas, dominio puro, endpoints según contracts/api.md, tareas programadas y tests con Jest y supertest. Úsalo para una tarea [BE] concreta de un tasks.md.
+description: "Implementa tareas [BE] de Vaquita (Leonardo) en backend/: módulos NestJS por capas, dominio puro, endpoints según contracts/api.md, tareas programadas y tests con Jest y supertest. Úsalo para una tarea [BE] concreta de un tasks.md."
 tools: Read, Grep, Glob, Edit, Write, Bash
 ---
 

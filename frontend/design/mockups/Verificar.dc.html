@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Verificar celular</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid #D9DDD7; background: #FFFFFF">
+    <a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; color: #17201C; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#1E6B4E"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#F5F6F2" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#F5F6F2"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">vaquita</span>
+    </a>
+    <span style="font-size: 16px; font-weight: 700; color: #4F5A55">Paso 2 de 2</span>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 980px; margin: 0 auto; padding: 48px 24px; display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; flex-direction: column; gap: 10px; max-width: 640px">
+      <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 40px; line-height: 1.05; letter-spacing: -1px">Verifica tu celular con Telegram</h1>
+      <p style="margin: 0; font-size: 17px; line-height: 1.5; color: #4F5A55">Necesitas una cuenta de Telegram. Abre nuestro bot y toca <strong style="color: #17201C">Compartir mi contacto</strong>: así sabemos que el celular es tuyo, sin SMS y sin costo.</p>
+    </div>
+    <section style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 20px; padding: 32px; display: flex; flex-wrap: wrap; gap: 40px; align-items: center">
+      <div style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 22px">
+        <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px; font-size: 17px">
+          <li style="display: flex; gap: 12px"><span style="font-weight: 700; color: #1E6B4E">1.</span>Toca <strong>Abrir Telegram</strong> (o escanea el código con tu celular).</li>
+          <li style="display: flex; gap: 12px"><span style="font-weight: 700; color: #1E6B4E">2.</span>En el chat con el bot, toca <strong>Iniciar</strong>.</li>
+          <li style="display: flex; gap: 12px"><span style="font-weight: 700; color: #1E6B4E">3.</span>Toca <strong>Compartir mi contacto</strong> y vuelve aquí.</li>
+        </ol>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap">
+          <a href="#" style="height: 52px; padding: 0 28px; display: flex; align-items: center; gap: 10px; background: #1E6B4E; color: #FFFFFF; border-radius: 12px; font-weight: 700; font-size: 17px; text-decoration: none">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4 L3 11 L10 13 L12 20 L21 4 Z M10 13 L21 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg>
+            Abrir Telegram
+          </a>
+          <a href="Grupos.dc.html" style="height: 52px; padding: 0 22px; display: flex; align-items: center; border: 1.5px solid #C9CFC8; color: #17201C; border-radius: 12px; font-weight: 700; font-size: 16px; text-decoration: none">Ver cómo se ve verificado</a>
+        </div>
+        <div role="status" aria-live="polite" style="display: flex; align-items: center; gap: 14px; background: #DCE6FB; color: #1C3F94; border-radius: 14px; padding: 14px 18px">
+          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M12 7 V12 L15.5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font-weight: 700; font-size: 16px">Esperando que compartas tu contacto…</span>
+            <span style="font-size: 15px">El enlace vence en <strong>09:42</strong>. ¿Venció? <a href="#" style="color: #1C3F94; font-weight: 700">Pide un enlace nuevo</a></span>
+          </div>
+        </div>
+      </div>
+      <figure style="flex: 0 1 260px; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 12px">
+        <div role="img" aria-label="Código QR del enlace al bot de Telegram" style="width: 220px; height: 220px; box-sizing: border-box; border: 2px dashed #A9B1AC; border-radius: 16px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; color: #4F5A55; font-size: 15px">Código QR del enlace al bot</div>
+        <figcaption style="font-size: 14px; color: #4F5A55; text-align: center">¿Estás en la computadora? Escanéalo con la cámara de tu celular.</figcaption>
+      </figure>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

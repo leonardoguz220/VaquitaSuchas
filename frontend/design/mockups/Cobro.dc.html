@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Mi cobro de Spotify</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid #D9DDD7; background: #FFFFFF">
+    <a href="Grupos.dc.html" style="display: flex; align-items: center; gap: 10px; color: #17201C; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#1E6B4E"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#F5F6F2" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#F5F6F2"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">vaquita</span>
+    </a>
+    <nav aria-label="Principal" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="Grupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis suscripciones</a>
+      <a href="MisCobros.dc.html" aria-current="page" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; background: #E3F1EA; color: #14503A; font-weight: 700; text-decoration: none">Mis cobros</a>
+      <a href="Solicitudes.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis solicitudes</a>
+      <a href="Cupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Cupos libres</a>
+    </nav>
+    <a href="Perfil.dc.html" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1180px; margin: 0 auto; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 24px">
+    <a href="MisCobros.dc.html" style="align-self: flex-start; min-height: 44px; display: flex; align-items: center; gap: 6px; font-weight: 700; text-decoration: none"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 L8 12 L15 19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg>Mis cobros</a>
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 16px; color: #4F5A55">Spotify depa · Octubre 2026</span>
+        <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
+          <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 48px; letter-spacing: -1.2px">Bs 19,80</h1>
+          <span style="border-radius: 999px; padding: 5px 14px; font-size: 15px; font-weight: 700; background: #FCEBC7; color: #7A4B00">Pendiente</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; background: #FCEBC7; color: #7A4B00; border-radius: 14px; padding: 12px 18px">
+        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"></circle><path d="M12 7 V12 L15.5 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>
+        <div style="display: flex; flex-direction: column">
+          <span style="font-weight: 700">Vence el 21 oct. a las 23:59</span>
+          <span style="font-size: 14px">Faltan 3 días. Si no pagas, se te retira del grupo.</span>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <section aria-labelledby="pagar" style="flex: 1 1 340px; min-width: 0; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+        <h2 id="pagar" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px">1. Paga a Marco Vargas</h2>
+        <p style="margin: 0; font-size: 15px; color: #4F5A55">Paga fuera de Vaquita, por transferencia o QR. Vaquita no recibe ni guarda dinero.</p>
+        <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center">
+          <div role="img" aria-label="QR de pago del titular" style="width: 140px; height: 140px; box-sizing: border-box; border: 2px dashed #A9B1AC; border-radius: 14px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 12px; font-size: 14px; color: #4F5A55">QR de pago del titular</div>
+          <div style="flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 8px; font-size: 15px">
+            <span>BNB · Cuenta 4501-998877</span>
+            <span>Marco Vargas Rojas</span>
+            <span style="color: #4F5A55">Cel. 7*** 4521</span>
+            <button type="button" style="align-self: flex-start; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1.5px solid #1E6B4E; background: #FFFFFF; color: #1E6B4E; font: inherit; font-weight: 700; cursor: pointer">Copiar datos</button>
+          </div>
+        </div>
+      </section>
+      <form aria-labelledby="subir" style="flex: 999 1 520px; min-width: 0; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+        <h2 id="subir" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px">2. Sube tu comprobante</h2>
+        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; background: #F5F6F2; border-radius: 14px; padding: 14px 16px">
+          <div aria-hidden="true" style="width: 56px; height: 72px; border-radius: 8px; background: #DDE2DC; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #4F5A55">JPG</div>
+          <div style="flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-weight: 700">comprobante-spotify-oct.jpg</span>
+            <span style="font-size: 14px; color: #4F5A55">1,2 MB · JPG, PNG o PDF hasta 5 MB</span>
+          </div>
+          <button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; font-weight: 700; cursor: pointer">Cambiar archivo</button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="metodo" style="font-weight: 700; font-size: 15px">Método</label>
+            <select id="metodo" style="height: 48px; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 12px; font: inherit; font-size: 16px; background: #FFFFFF; color: #17201C"><option>Transferencia</option><option selected>QR</option></select>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="ref" style="font-weight: 700; font-size: 15px">Referencia (obligatoria)</label>
+            <input id="ref" type="text" value="QR-20261018-55312" aria-describedby="ref-ayuda" style="height: 48px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 16px; color: #17201C">
+            <span id="ref-ayuda" style="font-size: 14px; color: #4F5A55">El número que aparece en tu comprobante.</span>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end">
+          <a href="Revisar.dc.html" style="min-height: 52px; padding: 0 32px; display: flex; align-items: center; background: #1E6B4E; color: #FFFFFF; border-radius: 12px; font-weight: 700; font-size: 17px; text-decoration: none">Enviar al titular</a>
+        </div>
+      </form>
+    </div>
+    <section aria-labelledby="historia" style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+      <h2 id="historia" style="margin: 0; font-size: 17px">Historial de este cobro</h2>
+      <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 15px">
+        <li style="display: flex; gap: 12px; align-items: baseline"><span style="width: 10px; height: 10px; border-radius: 999px; background: #7A4B00; flex: none"></span><span><strong>Emitido</strong> · 18 oct. 2026, 00:00 · Bs 19,80 (USD 17,07 × 6,96 entre 6 miembros)</span></li>
+      </ol>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
