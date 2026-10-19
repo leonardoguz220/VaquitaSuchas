@@ -121,3 +121,43 @@ export function validateRegisterForm(values: RegisterFormValues): RegisterFieldE
 export function firstFieldWithError(errors: RegisterFieldErrors): RegisterField | undefined {
   return REGISTER_FIELDS.find((field) => errors[field] !== undefined);
 }
+
+/* ---------- Inicio de sesión (spec 003 T029) ---------- */
+
+export interface LoginFormValues {
+  email: string;
+  password: string;
+}
+
+export type LoginField = keyof LoginFormValues;
+
+/** Orden de los campos de `/ingresar`; decide a cuál va el foco tras un envío fallido. */
+export const LOGIN_FIELDS: readonly LoginField[] = ['email', 'password'];
+
+export type LoginFieldErrors = Partial<Record<LoginField, string>>;
+
+export const EMPTY_LOGIN_VALUES: LoginFormValues = { email: '', password: '' };
+
+export const LOGIN_MESSAGES = {
+  emailRequired: REGISTER_MESSAGES.emailRequired,
+  emailInvalid: REGISTER_MESSAGES.emailInvalid,
+  passwordRequired: 'Escribe tu contraseña.',
+} as const;
+
+/**
+ * Validación de ayuda de `/ingresar`: solo la forma del correo y que haya contraseña. No se
+ * revisan las reglas de la contraseña (eso diría algo de la cuenta): el servidor decide.
+ */
+export function validateLoginForm(values: LoginFormValues): LoginFieldErrors {
+  const errors: LoginFieldErrors = {};
+  const email = values.email.trim();
+  if (email === '') errors.email = LOGIN_MESSAGES.emailRequired;
+  else if (!EMAIL_PATTERN.test(email)) errors.email = LOGIN_MESSAGES.emailInvalid;
+  if (values.password === '') errors.password = LOGIN_MESSAGES.passwordRequired;
+  return errors;
+}
+
+/** Primer campo de `/ingresar` con error según el orden de la pantalla. */
+export function firstLoginFieldWithError(errors: LoginFieldErrors): LoginField | undefined {
+  return LOGIN_FIELDS.find((field) => errors[field] !== undefined);
+}

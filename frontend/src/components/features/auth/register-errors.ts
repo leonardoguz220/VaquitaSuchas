@@ -44,7 +44,8 @@ const FIELD_CODE_MESSAGES: Record<string, string> = {
   INVALID_EMAIL: REGISTER_MESSAGES.emailInvalid,
 };
 
-function rateLimitedMessage(details: ApiError['details']): string {
+/** Mensaje de `RATE_LIMITED` con la espera en minutos (`details.retryAfterSeconds`). */
+export function rateLimitedMessage(details: ApiError['details']): string {
   const seconds = details?.retryAfterSeconds;
   if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds <= 0) {
     return REGISTER_ERROR_MESSAGES.rateLimited;
