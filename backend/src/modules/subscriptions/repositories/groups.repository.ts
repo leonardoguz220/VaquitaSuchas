@@ -76,6 +76,23 @@ export class GroupsRepository {
     return result.rows[0] ?? null;
   }
 
+  /** Grupo bloqueado con `FOR UPDATE` hasta el fin de la transacción (generación de ciclos, spec 002). */
+  async findByIdForUpdate(q: Queryable, groupId: string): Promise<GroupRow | null> {
+    const result = await q.query<GroupRow>(
+      `SELECT ${COLUMNS} FROM groups WHERE id = $1 FOR UPDATE`,
+      [groupId],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  /** Ids de los grupos activos y no congelados: los únicos que generan cobros (spec 002, R5). */
+  async listActiveUnfrozenIds(q: Queryable): Promise<string[]> {
+    const result = await q.query<{ id: string }>(
+      `SELECT id FROM groups WHERE status = 'activo' AND frozen_at IS NULL ORDER BY created_at, id`,
+    );
+    return result.rows.map((row) => row.id);
+  }
+
   async findByInviteCode(q: Queryable, code: string): Promise<GroupRow | null> {
     const result = await q.query<GroupRow>(`SELECT ${COLUMNS} FROM groups WHERE invite_code = $1`, [
       code,
