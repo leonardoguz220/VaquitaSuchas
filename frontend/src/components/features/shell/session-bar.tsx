@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/features/brand/logo';
+import { RequestsNavLink } from '@/components/features/join-requests/requests-nav-link';
 import { NotificationBell } from '@/components/features/notifications/notification-bell';
 import { isPublicPath } from '@/lib/routes';
 
@@ -24,7 +25,10 @@ export function SessionBar() {
         >
           <Logo />
         </Link>
-        <NotificationBell />
+        <div className="flex items-center gap-1">
+          <RequestsNavLink />
+          <NotificationBell />
+        </div>
       </div>
     </header>
   );

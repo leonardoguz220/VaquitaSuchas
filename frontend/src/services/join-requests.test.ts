@@ -1,4 +1,4 @@
-import { getJoinRequest, listDisputes, openDispute, respondDispute } from './join-requests';
+import { listDisputes, openDispute, respondDispute } from './join-requests';
 import { MOCK_JOIN_REQUEST_IDS as IDS } from './join-requests.mock';
 
 // Los reclamos (T040) siguen con datos simulados. Las decisiones y el chat se prueban en
@@ -30,7 +30,7 @@ describe('services/join-requests con datos simulados (contrato 010): reclamos', 
   });
 
   it('RF-010-22: respondDispute rechaza a quien no puede responder', async () => {
-    const [ref] = (await settle(getJoinRequest(IDS.unanswered))).disputes;
+    const [ref] = (await settle(listDisputes(IDS.unanswered))).items;
     await expectRejection(respondDispute(IDS.unanswered, ref.id, { text: 'Respuesta' }), {
       code: 'DISPUTE_ALREADY_RESPONDED',
     });

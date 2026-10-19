@@ -34,7 +34,7 @@
 - [x] T015 [P] [US1] [BE] `backend/test/join-requests.permissions.e2e-spec.ts` y `join-requests.timeline.e2e-spec.ts`: CA-010-20 (ajeno `404`, miembro no participante `403`), tabla de acciones por rol del plan §7 y CA-010-35 (línea de tiempo con tipo, autor y fecha, sin operaciones de edición) — Depende: T012 · Cubre: CA-010-20, CA-010-35, RF-010-27, RNF-010-01, RNF-010-02
 - [x] T016 [US1] [BE] Línea de tiempo en `GET /join-requests/:id` y registro de cada cambio de estado en `join_request_events` dentro de la misma transacción — Depende: T014, T015 · Cubre: RF-010-27, RNF-010-08, CA-010-35
 - [x] T017 [P] [US1] [FE] `/unirse` (campo de 8 caracteres en mayúsculas, acepta `?codigo=`, explicación solicitud → chat → pago → confirmación y el texto de RF-010-25, fecha de apertura si la ventana está cerrada) y `/solicitudes` («Mis solicitudes»: tarjetas con estado, cuota, cuenta regresiva y no leídos; filtro activas/historial) con mock — Depende: spec 000 T036 · Cubre: RF-010-01, RF-010-03, RF-010-25, RF-010-26, RNF-010-06
-- [ ] T018 [US1] [FE] Conectar `/unirse`, `/solicitudes` y la pestaña **Solicitudes** del titular en `/grupos/[id]` (cola con calificación, estado y plazo; cupos total/miembros/reservados; ventana abierta o fecha de apertura) con `POST /join-requests`, `GET /join-requests` y `GET /groups/:id/join-requests`; avisos de la barra con `GET /me/join-requests/summary` cada 30 s; errores por `code` — Depende: T014, T017 · Cubre: RF-010-26, RF-010-04
+- [x] T018 [US1] [FE] Conectar `/unirse`, `/solicitudes` y la pestaña **Solicitudes** del titular en `/grupos/[id]` (cola con calificación, estado y plazo; cupos total/miembros/reservados; ventana abierta o fecha de apertura) con `POST /join-requests`, `GET /join-requests` y `GET /groups/:id/join-requests`; avisos de la barra con `GET /me/join-requests/summary` cada 30 s; errores por `code` — Depende: T014, T017 · Cubre: RF-010-26, RF-010-04
 
 **Punto de control:** se puede abrir y ver una solicitud de punta a punta sin pago.
 
@@ -47,7 +47,7 @@
 - [x] T020 [US2] [BE] `services/entry-payment.service.ts` `sendPaymentData` (bloquea solicitud y luego grupo, comprueba ventana y cupos, cotiza con `quoteEntryShare`, copia datos de pago y QR a la solicitud con `FileStorage.copy`, fija el plazo, evento y `PaymentDataSent`) y `extend` (una sola vez, +15 min); `POST /join-requests/:id/payment-data` y `/extend`; `GET /join-requests/:id/payment-qr` con URL firmada — Depende: T019, T014, spec 000 T026 · Cubre: RF-010-11, RF-010-12, RF-010-28, RN-010-01, RN-010-02, RN-010-12, CA-010-04, CA-010-06, CA-010-26, CA-010-42
 - [x] T021 [P] [US2] [BE] En `join-requests.payment.e2e-spec.ts` agregar CA-010-42 (la prórroga se concede una sola vez; la segunda → `ALREADY_EXTENDED`) — Depende: T019 · Cubre: CA-010-42
 - [x] T022 [P] [US2] [FE] En `/solicitudes/[id]` con mock: cabecera (servicio, titular y calificación, cuota, plazo con cuenta regresiva corregida con `serverNow`), acciones del titular **Enviar datos de pago** (texto/QR del grupo o subir otro) y **Prorrogar**, y vista del solicitante con QR/texto y botón copiar monto; barra fija inferior en móvil — Depende: T017 · Cubre: RF-010-11, RF-010-28, RNF-010-06
-- [ ] T023 [US2] [FE] Conectar datos de pago y prórroga con el backend; al llegar la cuenta regresiva a 0 recargar la solicitud — Depende: T020, T022 · Cubre: RF-010-11, RF-010-28
+- [x] T023 [US2] [FE] Conectar datos de pago y prórroga con el backend; al llegar la cuenta regresiva a 0 recargar la solicitud — Depende: T020, T022 · Cubre: RF-010-11, RF-010-28
 
 ## Fase 4: US3 — Subir el comprobante (Prioridad: P0) 🎯 MVP
 
@@ -57,7 +57,7 @@
 - [x] T024 [P] [US3] [BE] En `join-requests.payment.e2e-spec.ts` agregar CA-010-07 (comprobante a tiempo), CA-010-08 (6 MB y `.exe`), CA-010-10 (plazo vencido → `PAYMENT_DEADLINE_PASSED`), CA-010-40 (sin referencia), CA-010-41 (referencia repetida en el grupo, liberada tras rechazo) — Depende: T019 · Cubre: CA-010-07, CA-010-08, CA-010-10, CA-010-40, CA-010-41, RN-010-14
 - [x] T025 [US3] [BE] `EntryPaymentService.uploadProof` (misma subida segura de la spec 002 T021: firma binaria, 5 MB, `PaymentReferenceService.reserve`, clave generada, compensación si falla; plazo de decisión de 60 min) con `POST /join-requests/:id/proof` y `GET /join-requests/:id/proof/file` (URL firmada ≤ 10 min) — Depende: T024, T020, spec 002 T021 · Cubre: RF-010-13, RN-010-14, RNF-010-02, CA-010-07, CA-010-08, CA-010-10, CA-010-40, CA-010-41
 - [x] T026 [P] [US3] [FE] Subida del comprobante en `/solicitudes/[id]` con mock (método, referencia obligatoria, archivo JPG/PNG/PDF hasta 5 MB, vista previa) y errores `REFERENCE_ALREADY_USED`, `PAYMENT_DEADLINE_PASSED` y `503` — Depende: T022 · Cubre: RF-010-13
-- [ ] T027 [US3] [FE] Conectar la subida con `POST /join-requests/:id/proof` y «Ver comprobante» para el titular — Depende: T025, T026 · Cubre: RF-010-13
+- [x] T027 [US3] [FE] Conectar la subida con `POST /join-requests/:id/proof` y «Ver comprobante» para el titular — Depende: T025, T026 · Cubre: RF-010-13
 
 ## Fase 5: US4 — Confirmar, efectivo, rechazar y cancelar (Prioridad: P0) 🎯 MVP
 
