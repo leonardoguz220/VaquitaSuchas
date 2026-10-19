@@ -20,6 +20,7 @@ import { GroupTabs, panelId, tabId, type GroupTab } from './group-tabs';
 const GROUPS_PATH = '/grupos';
 const SEARCH_PATH = '/cupos';
 const TABS_PREFIX = 'grupo';
+const OWNER_TAB_IDS: readonly GroupTabId[] = ['solicitudes', 'cobranza', 'publicar', 'ajustes'];
 
 /**
  * Pestañas de T020, Cobros (002 T037), Ranking (007 T026), Cobranza del titular (006 T014) y
@@ -197,7 +198,10 @@ export function GroupDetailView({
   adminPanel,
 }: GroupDetailViewProps) {
   const { state, retry, update } = useGroup(groupId);
-  const [tab, setTab] = useState<GroupTabId>('resumen');
+  const [selectedTab, setTab] = useState<GroupTabId>('resumen');
+  const myRole = state.status === 'success' ? state.group.myRole : null;
+  // Si el titular transfiere el grupo, sus pestañas desaparecen: se muestra Resumen.
+  const tab = myRole === 'miembro' && OWNER_TAB_IDS.includes(selectedTab) ? 'resumen' : selectedTab;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-10">

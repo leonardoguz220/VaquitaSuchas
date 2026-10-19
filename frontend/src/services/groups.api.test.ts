@@ -1,6 +1,7 @@
 import { apiRequest } from './http';
 import {
   buildListGroupsQuery,
+  closeGroup,
   createGroup,
   getGroup,
   getHostEligibility,
@@ -9,6 +10,7 @@ import {
   quoteGroup,
   regenerateInviteCode,
   removeMember,
+  transferOwnership,
   updateGroup,
   updatePaymentInfo,
 } from './groups';
@@ -229,6 +231,35 @@ describe('services/groups conectado al backend (contrato 001, T017 y T021)', () 
     await expect(leaveGroup(GROUP_ID)).resolves.toBeUndefined();
     expect(lastCall()).toEqual({
       path: `/api/groups/${GROUP_ID}/leave`,
+      options: { method: 'POST' },
+    });
+  });
+
+  it('RF-001-17: POST …/transfer-ownership manda el id del nuevo titular', async () => {
+    const NEW_OWNER = '5b0d7c3e-0000-4000-8000-0000000000c3';
+    mockedRequest.mockResolvedValueOnce({ id: GROUP_ID } as never);
+    await transferOwnership(GROUP_ID, NEW_OWNER);
+    expect(lastCall()).toEqual({
+      path: `/api/groups/${GROUP_ID}/transfer-ownership`,
+      options: { method: 'POST', body: { toUserId: NEW_OWNER } },
+    });
+  });
+
+  it('CA-001-13: un 422 RN-010-09 al transferir llega con sus bloqueos', async () => {
+    const blocked = Object.assign(new Error('Hay solicitudes en pago.'), {
+      statusCode: 422,
+      code: 'BUSINESS_RULE',
+      details: { rule: 'RN-010-09', blockers: [] },
+    });
+    mockedRequest.mockRejectedValueOnce(blocked);
+    await expect(transferOwnership(GROUP_ID, 'otro')).rejects.toBe(blocked);
+  });
+
+  it('RF-001-18: POST …/close cierra el grupo y devuelve el detalle', async () => {
+    mockedRequest.mockResolvedValueOnce({ id: GROUP_ID, status: 'cerrado' } as never);
+    await expect(closeGroup(GROUP_ID)).resolves.toMatchObject({ status: 'cerrado' });
+    expect(lastCall()).toEqual({
+      path: `/api/groups/${GROUP_ID}/close`,
       options: { method: 'POST' },
     });
   });
