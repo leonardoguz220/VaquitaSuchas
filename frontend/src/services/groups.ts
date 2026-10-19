@@ -270,6 +270,21 @@ export function updatePaymentInfo(
   );
 }
 
+/** `POST /groups/:groupId/transfer-ownership` (RF-001-17): el titular pasa a ser miembro. */
+export function transferOwnership(groupId: string, toUserId: string): Promise<GroupDetail> {
+  return apiRequest<GroupDetail>(`/api/groups/${encodeURIComponent(groupId)}/transfer-ownership`, {
+    method: 'POST',
+    body: { toUserId },
+  });
+}
+
+/** `POST /groups/:groupId/close` (RF-001-18): el grupo queda de solo lectura. */
+export function closeGroup(groupId: string): Promise<GroupDetail> {
+  return apiRequest<GroupDetail>(`/api/groups/${encodeURIComponent(groupId)}/close`, {
+    method: 'POST',
+  });
+}
+
 /** `POST /groups/:groupId/invite-code/regenerate` (RF-001-08). */
 export function regenerateInviteCode(groupId: string): Promise<{ inviteCode: string }> {
   return apiRequest<{ inviteCode: string }>(

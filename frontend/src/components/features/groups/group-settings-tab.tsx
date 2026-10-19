@@ -5,6 +5,7 @@ import { Alert, Card, Switch } from '@/components/ui';
 import { useGroupInviteActions } from '@/hooks/use-group-invite-actions';
 import type { GroupDetail } from '@/services/groups';
 import { invitePanelErrorMessage } from './group-invite-errors';
+import { GroupOwnerActions } from './group-owner-actions';
 import { GroupSettingsForm } from './group-settings-form';
 
 export interface GroupSettingsTabProps {
@@ -69,6 +70,7 @@ export function GroupSettingsTab({ group, onGroupChange }: GroupSettingsTabProps
         )}
         <GroupSettingsForm group={group} onGroupChange={onGroupChange} disabled={locked} />
       </Card>
+      <GroupOwnerActions group={group} onGroupChange={onGroupChange} />
     </div>
   );
 }
