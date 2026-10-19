@@ -2,7 +2,7 @@
 
 - **Responsable:** Camila Fuentes (Base de datos)
 - **Migraciones:** `0010` a `0019`
-- **Estado:** propuesto; se congela al aprobar el plan
+- **Estado:** congelado (plan aprobado); cambio del secreto de registro aprobado el 2026-10-18 (PR #31)
 - Convenciones de `specs/000-setup-del-proyecto/data-model.md` (uuid, `timestamptz`, `snake_case`, `created_at`/`updated_at`).
 
 ## 1. Tablas
@@ -27,7 +27,12 @@ users
 - data_policy_version: text (NOT NULL)
 - session_version: integer (NOT NULL, default 0)   CHECK >= 0
 - last_login_at: timestamptz (NULL)
+- registration_secret_hash: text (NULL, UNIQUE)   SHA-256 del secreto de sondeo del registro (cambio aprobado 2026-10-18, PR #31)
+- registration_secret_expires_at: timestamptz (NULL)  creación del secreto + 24 h
+- registration_secret_redeemed_at: timestamptz (NULL) cuándo el sondeo entregó la sesión (una sola vez, CA-003-27)
 - created_at, updated_at
+CHECK users_registration_secret_pair:
+  (registration_secret_hash IS NULL) = (registration_secret_expires_at IS NULL)
 CHECK users_verified_requires_identity:
   verified_at IS NULL OR role = 'admin' OR (phone_e164 IS NOT NULL AND telegram_user_id IS NOT NULL)
 INDEX users_unverified_idx (created_at) WHERE verified_at IS NULL           -- limpieza a las 24 h
@@ -40,6 +45,7 @@ Notas de integridad:
 - El administrador creado por comando puede no tener celular ni Telegram (CHECK de arriba). Un usuario común verificado siempre los tiene (RN-003-03).
 - La CI nunca se guarda en claro. `ci_fingerprint` sirve para la unicidad y para el bloqueo de baneo.
 - El **estado de verificación** no es un valor de `status`: se deduce de `verified_at`.
+- **Secreto de sondeo del registro** (cambio aprobado 2026-10-18, PR #31): vive en la cuenta sin verificar y no en cada token, porque dura 24 h y sobrevive a `POST /auth/register/link`. El sondeo busca por `registration_secret_hash` (único, sirve de índice) y, al entregar la sesión, marca `registration_secret_redeemed_at` sin borrar el hash; después de eso responde `401`.
 
 ### `phone_verification_tokens` — `0011_phone_verification_tokens.sql`
 
@@ -51,7 +57,6 @@ phone_verification_tokens
 - user_id: uuid (NOT NULL, FK users ON DELETE CASCADE)
 - purpose: text (NOT NULL)                         CHECK IN ('registro','cambio_celular')
 - token_hash: text (NOT NULL, UNIQUE)              SHA-256 del token que va en el enlace al bot
-- registration_secret_hash: text (NULL)            SHA-256 del secreto de sondeo; solo en 'registro'
 - expires_at: timestamptz (NOT NULL)               creación + 10 min
 - started_at: timestamptz (NULL)                   cuando el bot recibió /start con el token
 - started_by_telegram_id: bigint (NULL)            cuenta de Telegram que pulsó Iniciar
@@ -59,7 +64,6 @@ phone_verification_tokens
 - outcome: text (NULL)                             CHECK IN ('verificado','rechazado_no_boliviano','rechazado_contacto_ajeno','rechazado_duplicado','rechazado_bloqueado')
 - requested_ip_hash: text (NOT NULL)               HMAC de la IP (sin guardar la IP)
 - created_at, updated_at
-CHECK (purpose <> 'registro' OR registration_secret_hash IS NOT NULL)
 INDEX phone_tokens_user_idx (user_id, created_at DESC)
 INDEX phone_tokens_started_idx (started_by_telegram_id) WHERE used_at IS NULL AND started_at IS NOT NULL
 ```
@@ -126,3 +130,4 @@ No es de solo anexado: revertir un baneo (spec 009, RF-009-23) borra las filas c
 | `banned_identities` rechaza una huella repetida del mismo `kind` | RF-003-19 |
 | No existe en el esquema ninguna columna de `banned_identities` que guarde correo, celular, CI o Telegram en claro (revisión del catálogo de columnas) | CA-003-24 |
 | Borrar un usuario borra sus tokens de verificación y de recuperación | caso borde "sin verificar a las 24 h" |
+| Dos cuentas con el mismo `registration_secret_hash` fallan; un hash sin vencimiento (o al revés) falla | CA-003-27 |
