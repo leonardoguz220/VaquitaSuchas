@@ -16,6 +16,8 @@ export interface AdminActionDialogProps {
   danger?: boolean;
   /** Motivo obligatorio de 10 a 300 caracteres; las acciones que lo dejan opcional lo indican. */
   reasonRequired?: boolean;
+  /** Sin campo de motivo: la acción no lo recibe (por ejemplo, activar o desactivar un plan). */
+  withReason?: boolean;
   /** Envía la acción con el motivo; con éxito la pantalla cierra el diálogo. */
   onConfirm: (reason: string) => Promise<ApiSubmitResult<unknown> | null>;
 }
@@ -33,6 +35,7 @@ export function AdminActionDialog({
   confirmLabel,
   danger = false,
   reasonRequired = true,
+  withReason = true,
   onConfirm,
 }: AdminActionDialogProps) {
   const formId = useId();
@@ -58,13 +61,14 @@ export function AdminActionDialog({
     event.preventDefault();
     const trimmed = reason.trim();
     if (
+      withReason &&
       reasonRequired &&
       (trimmed.length < REASON_LIMITS.min || trimmed.length > REASON_LIMITS.max)
     ) {
       setReasonError(`El motivo va de ${REASON_LIMITS.min} a ${REASON_LIMITS.max} caracteres.`);
       return;
     }
-    if (!reasonRequired && trimmed.length > REASON_LIMITS.max) {
+    if (withReason && !reasonRequired && trimmed.length > REASON_LIMITS.max) {
       setReasonError(`El motivo va de ${REASON_LIMITS.min} a ${REASON_LIMITS.max} caracteres.`);
       return;
     }
@@ -102,21 +106,23 @@ export function AdminActionDialog({
       }
     >
       <form id={formId} onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-        <Textarea
-          name="reason"
-          label={
-            reasonRequired
-              ? 'Motivo (de 10 a 300 caracteres)'
-              : 'Motivo (opcional, hasta 300 caracteres)'
-          }
-          hint={`${reason.length} / ${REASON_LIMITS.max} · queda en auditoría`}
-          value={reason}
-          maxLength={REASON_LIMITS.max}
-          rows={3}
-          error={reasonError}
-          disabled={isSubmitting}
-          onChange={(event) => setReason(event.target.value)}
-        />
+        {withReason && (
+          <Textarea
+            name="reason"
+            label={
+              reasonRequired
+                ? 'Motivo (de 10 a 300 caracteres)'
+                : 'Motivo (opcional, hasta 300 caracteres)'
+            }
+            hint={`${reason.length} / ${REASON_LIMITS.max} · queda en auditoría`}
+            value={reason}
+            maxLength={REASON_LIMITS.max}
+            rows={3}
+            error={reasonError}
+            disabled={isSubmitting}
+            onChange={(event) => setReason(event.target.value)}
+          />
+        )}
         {errorText && <Alert variant="error">{errorText}</Alert>}
       </form>
     </Modal>
