@@ -11,6 +11,7 @@ import {
   ADMIN_DISPUTES_PATH,
   ADMIN_HOSTS_PATH,
   ADMIN_MODERATION_PATH,
+  ADMIN_PATH,
   ADMIN_USERS_PATH,
   GROUPS_PATH,
 } from '@/lib/routes';
@@ -22,6 +23,7 @@ interface AdminNavItem {
 
 /** Secciones del panel de administración (plan 009 §6; mockup `AdminUsuarios.dc.html`). */
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
+  { href: ADMIN_PATH, label: 'Tablero' },
   { href: ADMIN_USERS_PATH, label: 'Usuarios' },
   { href: ADMIN_DISPUTES_PATH, label: 'Reclamos' },
   { href: ADMIN_HOSTS_PATH, label: 'Titulares' },
@@ -30,7 +32,9 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { href: ADMIN_MODERATION_PATH, label: 'Moderación' },
 ];
 
+/** El tablero (`/admin`) solo se marca en su propia ruta; las secciones, también en sus subrutas. */
 function isCurrent(pathname: string, href: string): boolean {
+  if (href === ADMIN_PATH) return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -48,7 +52,7 @@ export function AdminHeader() {
       <div className="mx-auto flex w-full max-w-[1180px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
         <Link
           href={ADMIN_NAV_ITEMS[0].href}
-          aria-label="Vaquita admin, ir a Usuarios"
+          aria-label="Vaquita admin, ir al tablero"
           className="inline-flex min-h-11 items-center gap-2 rounded-field no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           <Logo />

@@ -6,6 +6,7 @@ import type { AuditEntry } from '../admin-audit';
 import type { AdminDisputeEvidence, AdminDisputeRow } from '../admin-disputes';
 import type { HostEnablementRow } from '../admin-hosts';
 import type { ReportedListing } from '../admin-listings';
+import type { AdminStats } from '../admin-stats';
 import type { AdminUserDetail, AdminUserRow } from '../admin-users';
 
 /** Fila de la lista de usuarios: Camila, activa y usuaria (CA-009-07). */
@@ -199,6 +200,28 @@ export function reportedListing(overrides: Partial<ReportedListing> = {}): Repor
         createdAt: '2026-10-17T14:00:00.000Z',
       },
     ],
+    ...overrides,
+  };
+}
+
+/** Estadísticas de octubre de 2026 (contrato 009 § Estadísticas). */
+export function adminStats(overrides: Partial<AdminStats> = {}): AdminStats {
+  return {
+    users: { total: 87, newThisMonth: 12, active30d: 64 },
+    groups: { active: 24, closed: 3 },
+    charges: {
+      period: '2026-10',
+      byStatus: { pendiente: 14, en_revision: 9, pagado: 61, atrasado: 3, cancelado: 1 },
+      managedCents: 254_350,
+    },
+    punctualityRate: 0.92,
+    topServices: [
+      { name: 'Netflix', groups: 9 },
+      { name: 'Spotify', groups: 7 },
+    ],
+    listings: { active: 5 },
+    joinRequestsThisMonth: 31,
+    disputesOpen: 2,
     ...overrides,
   };
 }
