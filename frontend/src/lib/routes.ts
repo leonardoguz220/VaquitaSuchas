@@ -234,3 +234,6 @@ export const ADMIN_CATALOG_PATH = '/admin/catalogo';
 
 /** Publicaciones reportadas u ocultas de cupos (spec 009, RF-009-12). */
 export const ADMIN_MODERATION_PATH = '/admin/moderacion';
+
+/** Log de auditoría de las acciones de administración, solo lectura (spec 009, RF-009-18). */
+export const ADMIN_AUDIT_PATH = '/admin/auditoria';

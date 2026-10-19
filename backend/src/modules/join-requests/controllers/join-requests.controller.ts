@@ -39,9 +39,11 @@ import type {
   JoinRequestView,
 } from '../services/request-views.js';
 import {
+  DecisionDto,
   ListJoinRequestsQueryDto,
   OpenJoinRequestDto,
   PaymentDataDto,
+  RejectDto,
   UploadProofDto,
   type UploadedRequestFile,
 } from './join-requests.dto.js';
@@ -186,6 +188,74 @@ export class JoinRequestsController {
       reference: body.reference,
       version: body.version ?? null,
     });
+  }
+
+  @Post('join-requests/:id/confirm')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'El titular confirma el pago y la persona entra al grupo (RF-010-17)' })
+  @ApiForbiddenResponse({ description: 'FORBIDDEN: no es el titular.' })
+  @ApiNotFoundResponse({ description: 'NOT_FOUND: la solicitud no existe o es ajena.' })
+  @ApiConflictResponse({ description: 'INVALID_TRANSITION o STALE_STATE.' })
+  @ApiUnprocessableEntityResponse({ description: 'GROUP_FROZEN o sin cupos (BUSINESS_RULE).' })
+  confirm(
+    @Req() request: AuthenticatedRequest,
+    @Param('id', uuidParam()) id: string,
+    @Body() body: DecisionDto,
+  ): Promise<JoinRequestView> {
+    return this.payments.confirm(requireUserId(request), id, { version: body.version ?? null });
+  }
+
+  @Post('join-requests/:id/cash-payment')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'El titular registra un pago en efectivo (RF-010-18)' })
+  @ApiForbiddenResponse({ description: 'FORBIDDEN: no es el titular.' })
+  @ApiNotFoundResponse({ description: 'NOT_FOUND: la solicitud no existe o es ajena.' })
+  @ApiConflictResponse({ description: 'INVALID_TRANSITION o STALE_STATE.' })
+  @ApiUnprocessableEntityResponse({ description: 'GROUP_FROZEN o sin cupos (BUSINESS_RULE).' })
+  cashPayment(
+    @Req() request: AuthenticatedRequest,
+    @Param('id', uuidParam()) id: string,
+    @Body() body: DecisionDto,
+  ): Promise<JoinRequestView> {
+    return this.payments.cashPayment(requireUserId(request), id, {
+      version: body.version ?? null,
+    });
+  }
+
+  @Post('join-requests/:id/reject')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'El titular rechaza la solicitud con un motivo (RF-010-16)' })
+  @ApiForbiddenResponse({ description: 'FORBIDDEN: no es el titular.' })
+  @ApiNotFoundResponse({ description: 'NOT_FOUND: la solicitud no existe o es ajena.' })
+  @ApiConflictResponse({ description: 'INVALID_TRANSITION o STALE_STATE.' })
+  @ApiUnprocessableEntityResponse({
+    description: 'BUSINESS_RULE: markProofAsFalse sin comprobante.',
+  })
+  reject(
+    @Req() request: AuthenticatedRequest,
+    @Param('id', uuidParam()) id: string,
+    @Body() body: RejectDto,
+  ): Promise<JoinRequestView> {
+    return this.payments.reject(requireUserId(request), id, {
+      reason: body.reason,
+      markProofAsFalse: body.markProofAsFalse ?? false,
+      version: body.version ?? null,
+    });
+  }
+
+  @Post('join-requests/:id/cancel')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'El solicitante cancela mientras esté abierta o esperando pago (RF-010-15)',
+  })
+  @ApiForbiddenResponse({ description: 'FORBIDDEN: no es el solicitante.' })
+  @ApiNotFoundResponse({ description: 'NOT_FOUND: la solicitud no existe o es ajena.' })
+  @ApiConflictResponse({ description: 'INVALID_TRANSITION: pago informado o estado final.' })
+  cancel(
+    @Req() request: AuthenticatedRequest,
+    @Param('id', uuidParam()) id: string,
+  ): Promise<JoinRequestView> {
+    return this.payments.cancel(requireUserId(request), id);
   }
 
   @Get('join-requests/:id/proof/file')

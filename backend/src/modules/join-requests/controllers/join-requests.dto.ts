@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -118,4 +119,26 @@ export class UploadProofDto {
   @IsInt()
   @Min(1)
   version?: number;
+}
+
+/** Cuerpo de `POST /join-requests/:id/{confirm,cash-payment}`. */
+export class DecisionDto {
+  @ApiPropertyOptional({ description: 'Versión de la solicitud que el titular tenía en pantalla.' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  version?: number;
+}
+
+/** Cuerpo de `POST /join-requests/:id/reject` (RF-010-16); el largo del motivo lo valida el servicio. */
+export class RejectDto extends DecisionDto {
+  @ApiProperty({ minLength: 5, maxLength: 200 })
+  @IsString()
+  @MaxLength(1000)
+  reason!: string;
+
+  @ApiPropertyOptional({ description: 'Solo en pago_informado: el comprobante parece falso.' })
+  @IsOptional()
+  @IsBoolean()
+  markProofAsFalse?: boolean;
 }

@@ -64,6 +64,7 @@ export interface JoinRequestView {
   finalReason: string | null;
   rejectReason: string | null;
   rejectedAsFalse: boolean;
+  acceptedMethod: 'comprobante' | 'efectivo' | null;
   chargeId: string | null;
   unreadCount: number;
   disputes: {

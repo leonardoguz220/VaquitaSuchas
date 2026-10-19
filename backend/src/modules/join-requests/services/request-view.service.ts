@@ -228,6 +228,7 @@ export class RequestViewService {
       finalReason: status === stored ? record.finalReason : effective.reason,
       rejectReason: record.rejectReason,
       rejectedAsFalse: record.rejectedAsFalse,
+      acceptedMethod: record.acceptedMethod,
       chargeId: record.chargeId,
       unreadCount: await this.messages.unreadCount(q, record.id, viewerId),
       disputes: disputeRecords.map((d) => ({

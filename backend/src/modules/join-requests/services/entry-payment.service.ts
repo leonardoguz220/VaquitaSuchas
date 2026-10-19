@@ -5,12 +5,20 @@ import { DbService, type DbTransaction } from '../../../shared/db/db.service.js'
 import { DomainError } from '../../../shared/errors/domain-error.js';
 import { DEFAULT_MESSAGES, ErrorCode } from '../../../shared/errors/error-codes.js';
 import type {
+  JoinRequestAccepted,
+  JoinRequestCancelled,
+  JoinRequestRejected,
   PaymentDataSent,
   ProofSubmitted,
 } from '../../../shared/events/join-request-events.js';
 import { TxEventBus } from '../../../shared/events/tx-event-bus.js';
 import { FileStorage, StorageObjectNotFoundError } from '../../../shared/ports/file-storage.js';
 import { MAX_REFERENCE_LENGTH } from '../../billing/domain/reference.js';
+import type { Currency } from '../../subscriptions/domain/money.js';
+import { receiptStorageKey, type ReceiptMimeType } from '../../billing/domain/receipt-file.js';
+import { BillingCyclesService } from '../../billing/services/billing-cycles.service.js';
+import { ChargesService, type EntryProof } from '../../billing/services/charges.service.js';
+import { MembershipService } from '../../subscriptions/services/membership.service.js';
 import { checkReceiptFile } from '../../billing/domain/file-signature.js';
 import {
   mimeOfFileType,
@@ -53,6 +61,18 @@ export interface UploadProofInput {
   reference: string;
   version: number | null;
 }
+
+export interface DecisionInput {
+  version: number | null;
+}
+
+export interface RejectInput extends DecisionInput {
+  reason: string;
+  markProofAsFalse: boolean;
+}
+
+export const MIN_REJECT_REASON = 5;
+export const MAX_REJECT_REASON = 200;
 
 export interface SignedFile {
   url: string;
@@ -124,6 +144,9 @@ export class EntryPaymentService {
     private readonly members: MembersRepository,
     private readonly lifecycle: RequestLifecycle,
     private readonly references: PaymentReferenceService,
+    private readonly membership: MembershipService,
+    private readonly billingCycles: BillingCyclesService,
+    private readonly charges: ChargesService,
   ) {}
 
   /**
@@ -364,6 +387,310 @@ export class EntryPaymentService {
       throw error;
     }
     return this.requestsService.get(userId, requestId);
+  }
+
+  /**
+   * `POST /join-requests/:id/confirm` (titular; RF-010-17, CA-010-11): acepta una solicitud
+   * `pago_informado` con el comprobante, en una sola transacción (research R2).
+   */
+  async confirm(userId: string, requestId: string, input: DecisionInput): Promise<JoinRequestView> {
+    await this.accept(userId, requestId, 'confirm', input.version);
+    return this.requestsService.get(userId, requestId);
+  }
+
+  /**
+   * `POST /join-requests/:id/cash-payment` (titular; RF-010-18, CA-010-16): acepta desde
+   * `esperando_pago` sin comprobante, con el mismo efecto que `confirm`.
+   */
+  async cashPayment(
+    userId: string,
+    requestId: string,
+    input: DecisionInput,
+  ): Promise<JoinRequestView> {
+    await this.accept(userId, requestId, 'cashPayment', input.version);
+    return this.requestsService.get(userId, requestId);
+  }
+
+  /**
+   * `POST /join-requests/:id/reject` (titular; RF-010-16, CA-010-17): rechaza una solicitud
+   * activa con motivo de 5 a 200 caracteres; libera el cupo (deja de estar activa) y la referencia.
+   */
+  async reject(userId: string, requestId: string, input: RejectInput): Promise<JoinRequestView> {
+    const access = await this.requestsService.access(this.db, requestId, userId);
+    if (access.role !== 'titular') throw forbidden();
+    const reason = input.reason.trim();
+    if (reason.length < MIN_REJECT_REASON || reason.length > MAX_REJECT_REASON) {
+      throw validationError('reason', reason.length < MIN_REJECT_REASON ? 'TOO_SHORT' : 'TOO_LONG');
+    }
+    const outcome = await this.db.withTransaction<Outcome>(async (tx) => {
+      const now = this.clock.now();
+      const { record } = await this.lockAndExpire(tx, requestId, input.version, now);
+      if (record.status === 'expirada') return { error: invalidTransition('expirada', 'reject') };
+      if (
+        input.markProofAsFalse &&
+        (record.status !== 'pago_informado' || record.proofUploadedAt === null)
+      ) {
+        throw new DomainError(
+          ErrorCode.BUSINESS_RULE,
+          422,
+          'Solo se puede marcar el comprobante como falso si la persona ya lo subió.',
+          { rule: 'RF-010-16' },
+        );
+      }
+      transition(record.status, 'reject', this.contextOf(record, now));
+      await this.requests.recordRejection(tx, record.id, record.status, {
+        reason,
+        rejectedAsFalse: input.markProofAsFalse,
+        decidedBy: userId,
+        now,
+      });
+      await this.references.release(tx, 'join_request', record.id, now);
+      await this.events.insert(tx, {
+        requestId: record.id,
+        type: 'rechazada',
+        actorId: userId,
+        fromStatus: record.status,
+        toStatus: 'rechazada',
+        reason,
+        metadata: { rejectedAsFalse: input.markProofAsFalse },
+        occurredAt: now,
+      });
+      const event: JoinRequestRejected = {
+        type: 'join-requests.rejected',
+        requestId: record.id,
+        groupId: record.groupId,
+        applicantId: record.applicantId,
+        hostId: access.group.owner_id,
+        reason,
+        byHost: true,
+        rejectedAsFalse: input.markProofAsFalse,
+      };
+      await this.bus.publish(tx, event);
+      return {};
+    });
+    if (outcome.error) throw outcome.error;
+    return this.requestsService.get(userId, requestId);
+  }
+
+  /** `POST /join-requests/:id/cancel` (solicitante; RF-010-15, CA-010-18): solo `abierta` y `esperando_pago`. */
+  async cancel(userId: string, requestId: string): Promise<JoinRequestView> {
+    const access = await this.requestsService.access(this.db, requestId, userId);
+    if (access.role !== 'solicitante') throw forbidden();
+    const outcome = await this.db.withTransaction<Outcome>(async (tx) => {
+      const now = this.clock.now();
+      const { record } = await this.lockAndExpire(tx, requestId, null, now);
+      if (record.status === 'expirada') return { error: invalidTransition('expirada', 'cancel') };
+      transition(record.status, 'cancel', this.contextOf(record, now));
+      await this.requests.recordCancellation(
+        tx,
+        record.id,
+        record.status,
+        'cancelada_solicitante',
+        now,
+      );
+      await this.references.release(tx, 'join_request', record.id, now);
+      await this.events.insert(tx, {
+        requestId: record.id,
+        type: 'cancelada',
+        actorId: userId,
+        fromStatus: record.status,
+        toStatus: 'cancelada',
+        reason: 'cancelada_solicitante',
+        occurredAt: now,
+      });
+      const event: JoinRequestCancelled = {
+        type: 'join-requests.cancelled',
+        requestId: record.id,
+        groupId: record.groupId,
+        applicantId: record.applicantId,
+        hostId: access.group.owner_id,
+        reason: 'cancelada_solicitante',
+        bySystem: false,
+      };
+      await this.bus.publish(tx, event);
+      return {};
+    });
+    if (outcome.error) throw outcome.error;
+    return this.requestsService.get(userId, requestId);
+  }
+
+  /**
+   * Aceptación atómica (research R2). Orden: solicitud (bloqueada) → grupo (bloqueado) → ciclo
+   * vigente → alta del miembro → cobro de ingreso → solicitud `aceptada` → cancelar las abiertas
+   * del mismo servicio. Todo en UNA transacción: si cualquier paso falla se deshace todo y se
+   * borra la copia del comprobante que se haya guardado.
+   */
+  private async accept(
+    userId: string,
+    requestId: string,
+    action: 'confirm' | 'cashPayment',
+    version: number | null,
+  ): Promise<void> {
+    const access = await this.requestsService.access(this.db, requestId, userId);
+    if (access.role !== 'titular') throw forbidden();
+    const stored: string[] = [];
+    try {
+      const outcome = await this.db.withTransaction<Outcome>(async (tx) => {
+        const now = this.clock.now();
+        const { record } = await this.lockAndExpire(tx, requestId, version, now);
+        if (record.status === 'expirada') return { error: invalidTransition('expirada', action) };
+        transition(record.status, action, this.contextOf(record, now));
+        const group = (await this.groups.findByIdForUpdate(tx, record.groupId)) as GroupRow;
+        if (group.owner_id !== userId) throw forbidden();
+        if (group.frozen_at !== null) {
+          throw new DomainError(
+            'GROUP_FROZEN',
+            422,
+            'El grupo está congelado y solo se puede consultar.',
+            { rule: 'RF-009-22' },
+          );
+        }
+        // El ciclo del último corte va ANTES del alta: si no, la generación crearía un segundo
+        // cobro para la persona (CA-002-24, CA-010-12).
+        await this.billingCycles.ensureCurrentCycle(tx, group.id, now);
+        await this.membership.addMemberTx(tx, group.id, record.applicantId, 'solicitud', record.id);
+        const method = action === 'confirm' ? 'comprobante' : 'efectivo';
+        const proof =
+          method === 'comprobante' ? await this.copyProof(group.id, record, stored) : null;
+        const entry = await this.charges.createEntryCharge(tx, {
+          groupId: group.id,
+          userId: record.applicantId,
+          joinRequestId: record.id,
+          amountCents: record.quoteAmountCents as number,
+          snapshot: {
+            priceCents: record.quotePriceCents as number,
+            currency: record.quoteCurrency as Currency,
+            exchangeRate: record.quoteExchangeRate,
+            totalBsCents: record.quoteTotalBsCents as number,
+            memberCount: record.quoteMemberCount as number,
+          },
+          proof,
+        });
+        if (!entry.created) {
+          // No debería ocurrir (RN-010-13 y R6 impiden abrir con cobros): todo se deshace.
+          throw new Error('El cobro de ingreso ya existía para el período vigente.');
+        }
+        await this.requests.recordAcceptance(tx, record.id, record.status, {
+          method,
+          chargeId: entry.charge.id,
+          decidedBy: userId,
+          now,
+        });
+        await this.events.insert(tx, {
+          requestId: record.id,
+          type: method === 'efectivo' ? 'efectivo_registrado' : 'confirmada',
+          actorId: userId,
+          fromStatus: record.status,
+          toStatus: 'aceptada',
+          metadata: { chargeId: entry.charge.id },
+          occurredAt: now,
+        });
+        const event: JoinRequestAccepted = {
+          type: 'join-requests.accepted',
+          requestId: record.id,
+          groupId: group.id,
+          applicantId: record.applicantId,
+          hostId: group.owner_id,
+          chargeId: entry.charge.id,
+          method,
+          listingId: record.listingId,
+        };
+        await this.bus.publish(tx, event);
+        await this.cancelOpenInSameService(tx, record, now);
+        return {};
+      });
+      if (outcome.error) throw outcome.error;
+    } catch (error) {
+      await this.discard(stored);
+      throw error;
+    }
+  }
+
+  /** CA-010-47: las demás solicitudes `abierta` de la persona al mismo servicio las cancela el sistema. */
+  private async cancelOpenInSameService(
+    tx: DbTransaction,
+    accepted: JoinRequestRecord,
+    now: Date,
+  ): Promise<void> {
+    const others = await this.requests.listOpenInSameServiceForUpdate(
+      tx,
+      accepted.applicantId,
+      accepted.groupId,
+      accepted.id,
+    );
+    for (const locked of others) {
+      const record = await this.lifecycle.expireIfDue(tx, locked, now);
+      if (record.status !== 'abierta') continue;
+      transition(record.status, 'systemCancel', {
+        ...this.contextOf(record, now),
+        reason: 'otro_grupo',
+      });
+      await this.requests.recordCancellation(
+        tx,
+        record.id,
+        record.status,
+        'aceptado_en_otro_grupo',
+        now,
+      );
+      await this.events.insert(tx, {
+        requestId: record.id,
+        type: 'cancelada',
+        actorId: null,
+        fromStatus: record.status,
+        toStatus: 'cancelada',
+        reason: 'aceptado_en_otro_grupo',
+        occurredAt: now,
+      });
+      const group = (await this.groups.findById(tx, record.groupId)) as GroupRow;
+      const event: JoinRequestCancelled = {
+        type: 'join-requests.cancelled',
+        requestId: record.id,
+        groupId: record.groupId,
+        applicantId: record.applicantId,
+        hostId: group.owner_id,
+        reason: 'aceptado_en_otro_grupo',
+        bySystem: true,
+      };
+      await this.bus.publish(tx, event);
+    }
+  }
+
+  /**
+   * El comprobante de la solicitud pasa a ser el del cobro de ingreso (RF-002-19): se copia al
+   * espacio de comprobantes (la retención de la solicitud no lo borra).
+   */
+  private async copyProof(
+    groupId: string,
+    record: JoinRequestRecord,
+    stored: string[],
+  ): Promise<EntryProof> {
+    const mime = record.proofMime as ReceiptMimeType;
+    const type = mime === 'image/png' ? 'png' : mime === 'application/pdf' ? 'pdf' : 'jpeg';
+    const key = receiptStorageKey({
+      groupId,
+      chargeId: `ingreso-${record.id}`,
+      fileId: randomUUID(),
+      type,
+    });
+    try {
+      await this.storage.copy(record.proofKey as string, key);
+      stored.push(key);
+    } catch {
+      this.logger.warn('El almacén de archivos falló al copiar el comprobante de una solicitud.');
+      throw storageUnavailable();
+    }
+    return {
+      fileKey: key,
+      mime,
+      sizeBytes: record.proofSizeBytes as number,
+      method: record.proofMethod as 'qr' | 'transferencia',
+      reference: record.proofReference as string,
+      uploadedAt: record.proofUploadedAt as Date,
+    };
+  }
+
+  private contextOf(record: JoinRequestRecord, now: Date) {
+    return { now, windowOpen: true, slotAvailable: true, deadlineAt: currentDeadline(record) };
   }
 
   /** `GET /join-requests/:id/proof/file` (solicitante o titular; RNF-010-02). */

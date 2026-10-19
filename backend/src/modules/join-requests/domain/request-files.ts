@@ -16,3 +16,7 @@ export const proofKeyOf = (i: KeyInput): string =>
 /** Clave de la copia propia del QR de pago de la solicitud (plan, decisión de archivos). */
 export const paymentQrKeyOf = (i: KeyInput): string =>
   `join-requests/${i.groupId}/${i.requestId}/qr-${i.fileId}.${EXTENSION[i.type]}`;
+
+/** Clave de una imagen del chat (RF-010-05): generada por el servidor, sin el nombre original. */
+export const chatImageKeyOf = (i: KeyInput): string =>
+  `join-requests/${i.groupId}/${i.requestId}/chat-${i.fileId}.${EXTENSION[i.type]}`;
