@@ -4,17 +4,21 @@ import { useCallback } from 'react';
 import {
   createGroupListing,
   getGroupListing,
+  getListing,
   isOwnerListing,
+  listListings,
   renewGroupListing,
   updateGroupListing,
   withdrawGroupListing,
   type CreateListingRequest,
   type GroupListingSummary,
+  type ListListingsParams,
   type OwnerListing,
   type UpdateListingRequest,
 } from '@/services/listings';
 import { useApiResource } from './use-api-resource';
 import { useApiSubmit } from './use-api-submit';
+import { usePaginatedResource } from './use-paginated-resource';
 
 /**
  * Publicación del grupo vista por el titular (`GET /groups/:id/listing`, plan 008 §6): `null` si
@@ -66,4 +70,35 @@ export function useRenewListing(groupId: string) {
 export function useWithdrawListing(groupId: string) {
   const request = useCallback(() => withdrawGroupListing(groupId), [groupId]);
   return useApiSubmit<void, void>(request);
+}
+
+/** Publicaciones por página de `/cupos` (contrato 008: hasta 50). */
+export const LISTINGS_PAGE_SIZE = 20;
+
+export type ListingFilters = Pick<
+  ListListingsParams,
+  'serviceId' | 'category' | 'maxShareCents' | 'sort'
+>;
+
+/** Búsqueda de cupos (`GET /listings`, RF-008-07 a RF-008-09) con «Cargar más» por cursor. */
+export function useListings({ serviceId, category, maxShareCents, sort }: ListingFilters) {
+  const loadPage = useCallback(
+    (cursor?: string) =>
+      listListings({
+        ...(serviceId ? { serviceId } : {}),
+        ...(category ? { category } : {}),
+        ...(maxShareCents !== undefined ? { maxShareCents } : {}),
+        ...(sort ? { sort } : {}),
+        limit: LISTINGS_PAGE_SIZE,
+        ...(cursor ? { cursor } : {}),
+      }),
+    [serviceId, category, maxShareCents, sort],
+  );
+  return usePaginatedResource(loadPage);
+}
+
+/** Detalle de una publicación (`GET /listings/:id`). `404` llega en `error`. */
+export function useListing(listingId: string) {
+  const load = useCallback(() => getListing(listingId), [listingId]);
+  return useApiResource(load);
 }

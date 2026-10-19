@@ -138,3 +138,45 @@ export function renewGroupListing(groupId: string): Promise<OwnerListing> {
 export function withdrawGroupListing(groupId: string): Promise<void> {
   return apiRequest<void>(groupListingPath(groupId), { method: 'DELETE' });
 }
+
+export type ListingSort = 'cuota' | 'fecha' | 'puntualidad';
+
+export interface ListListingsParams {
+  serviceId?: string;
+  q?: string;
+  category?: string;
+  minShareCents?: number;
+  maxShareCents?: number;
+  sort?: ListingSort;
+  /** Hasta 50. */
+  limit?: number;
+  cursor?: string;
+}
+
+export interface ListingsPage {
+  items: ListingView[];
+  nextCursor: string | null;
+}
+
+/**
+ * `GET /listings` (RF-008-07 a RF-008-09): solo publicaciones activas con cupo, sin las propias
+ * ni las de grupos donde ya es miembro (RF-008-08). Los filtros y el orden los aplica la API.
+ */
+export function listListings(params: ListListingsParams = {}): Promise<ListingsPage> {
+  const query = new URLSearchParams();
+  if (params.serviceId) query.set('serviceId', params.serviceId);
+  if (params.q) query.set('q', params.q);
+  if (params.category) query.set('category', params.category);
+  if (params.minShareCents !== undefined) query.set('minShareCents', String(params.minShareCents));
+  if (params.maxShareCents !== undefined) query.set('maxShareCents', String(params.maxShareCents));
+  if (params.sort) query.set('sort', params.sort);
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.cursor) query.set('cursor', params.cursor);
+  const search = query.toString();
+  return apiRequest<ListingsPage>(`/api/listings${search ? `?${search}` : ''}`);
+}
+
+/** `GET /listings/:id`: `404 LISTING_NOT_FOUND` si no está activa, es propia o ya es miembro. */
+export function getListing(listingId: string): Promise<ListingView> {
+  return apiRequest<ListingView>(`/api/listings/${encodeURIComponent(listingId)}`);
+}

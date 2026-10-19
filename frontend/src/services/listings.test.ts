@@ -2,7 +2,9 @@ import { apiRequest } from './http';
 import {
   createGroupListing,
   getGroupListing,
+  getListing,
   isOwnerListing,
+  listListings,
   renewGroupListing,
   updateGroupListing,
   withdrawGroupListing,
@@ -58,5 +60,35 @@ describe('services/listings (contrato 008): publicación del titular', () => {
     expect(isOwnerListing(null)).toBe(false);
     expect(isOwnerListing({ active: true, slotsOffered: 2, expiresAt: null })).toBe(false);
     expect(isOwnerListing({ status: 'activa' } as Parameters<typeof isOwnerListing>[0])).toBe(true);
+  });
+});
+
+describe('services/listings (contrato 008): búsqueda', () => {
+  it('RF-008-07: listListings hace GET /api/listings sin query por defecto', async () => {
+    mockedRequest.mockResolvedValue({ items: [], nextCursor: null });
+    await listListings();
+    expect(mockedRequest).toHaveBeenCalledWith('/api/listings');
+  });
+
+  it('CA-008-06: listListings manda servicio, categoría, rango, orden, límite y cursor', async () => {
+    mockedRequest.mockResolvedValue({ items: [], nextCursor: null });
+    await listListings({
+      serviceId: 's1',
+      category: 'video',
+      minShareCents: 0,
+      maxShareCents: 1500,
+      sort: 'cuota',
+      limit: 20,
+      cursor: 'k',
+    });
+    expect(mockedRequest).toHaveBeenCalledWith(
+      '/api/listings?serviceId=s1&category=video&minShareCents=0&maxShareCents=1500&sort=cuota&limit=20&cursor=k',
+    );
+  });
+
+  it('RF-008-03: getListing hace GET /api/listings/:id con el id codificado', async () => {
+    mockedRequest.mockResolvedValue({});
+    await getListing('l/1');
+    expect(mockedRequest).toHaveBeenCalledWith('/api/listings/l%2F1');
   });
 });

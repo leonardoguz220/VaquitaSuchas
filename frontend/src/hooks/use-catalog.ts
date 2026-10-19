@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import {
   getCatalogService,
+  listCatalogCategories,
   listCatalogServices,
   type ListCatalogServicesParams,
 } from '@/services/catalog';
@@ -40,4 +41,9 @@ export function useCatalogServices(filters: Filters = {}) {
 export function useCatalogService(slug: string) {
   const load = useCallback(() => getCatalogService(slug), [slug]);
   return useApiResource(load);
+}
+
+/** Las categorías del catálogo con su texto (`GET /catalog/categories`, RF-004-03). */
+export function useCatalogCategories() {
+  return useApiResource(listCatalogCategories);
 }

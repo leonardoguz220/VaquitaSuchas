@@ -34,6 +34,14 @@ describe('AppHeader (plan 001 §6)', () => {
     );
   });
 
+  it('RF-008-07: "Cupos libres" lleva a /cupos y se marca en el detalle de un cupo', () => {
+    mockedPathname.mockReturnValue('/cupos/l1');
+    render(<AppHeader />);
+    const link = screen.getByRole('link', { name: 'Cupos libres' });
+    expect(link).toHaveAttribute('href', '/cupos');
+    expect(link).toHaveAttribute('aria-current', 'page');
+  });
+
   it('RF-010-26: "Mis solicitudes" lleva a /solicitudes y se marca en el detalle', () => {
     mockedPathname.mockReturnValue('/solicitudes/jr1');
     render(<AppHeader />);

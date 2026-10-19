@@ -6,22 +6,27 @@ import type { ReactNode } from 'react';
 import { Logo } from '@/components/features/brand/logo';
 import { NotificationBell } from '@/components/features/notifications/notification-bell';
 import { cx } from '@/components/ui/cx';
-import { CHARGES_PATH, GROUPS_PATH, PANEL_PATH, REQUESTS_PATH } from '@/lib/routes';
-
-/** Pantalla "Mi perfil" (spec 003). */
-const PROFILE_PATH = '/perfil';
+import {
+  CHARGES_PATH,
+  GROUPS_PATH,
+  LISTINGS_PATH,
+  PANEL_PATH,
+  PROFILE_PATH,
+  REQUESTS_PATH,
+} from '@/lib/routes';
 
 interface NavItem {
   href: string;
   label: string;
 }
 
-/** Solo las pantallas que ya existen; las demás (cupos) llegan con sus specs. */
+/** Secciones principales de quien tiene sesión (mockup `Grupos.dc.html`). */
 const NAV_ITEMS: NavItem[] = [
   { href: PANEL_PATH, label: 'Panel' },
   { href: GROUPS_PATH, label: 'Mis suscripciones' },
   { href: CHARGES_PATH, label: 'Mis cobros' },
   { href: REQUESTS_PATH, label: 'Mis solicitudes' },
+  { href: LISTINGS_PATH, label: 'Cupos libres' },
   { href: PROFILE_PATH, label: 'Mi perfil' },
 ];
 

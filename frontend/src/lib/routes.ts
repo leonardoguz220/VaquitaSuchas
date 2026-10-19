@@ -214,3 +214,11 @@ export const PROFILE_REPUTATION_PATH = '/perfil/reputacion';
 
 /** "Mis insignias": obtenidas y por obtener con su avance (plan 007 §6). Protegida. */
 export const PROFILE_BADGES_PATH = '/perfil/insignias';
+
+/** "Cupos libres": búsqueda de publicaciones (plan 008 §6). Ruta protegida. */
+export const LISTINGS_PATH = '/cupos';
+
+/** Detalle de una publicación de cupos (plan 008 §6). Ruta protegida. */
+export function listingPath(listingId: string): string {
+  return `${LISTINGS_PATH}/${encodeURIComponent(listingId)}`;
+}
