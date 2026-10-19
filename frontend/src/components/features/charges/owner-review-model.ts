@@ -4,13 +4,18 @@ import type { Charge } from '@/services/charges';
 
 export const REASON_MIN_LENGTH = 5;
 export const REASON_MAX_LENGTH = 200;
+export const MANUAL_NOTE_MAX_LENGTH = 200;
+/** La Paz no tiene horario de verano: UTC-4 todo el año. */
+const LA_PAZ_OFFSET = '-04:00';
 
-export type ReviewAction = 'confirm' | 'reject';
+export type ReviewAction = 'confirm' | 'reject' | 'manualPayment' | 'cancel';
 
 export const REVIEW_MESSAGES = {
   forbidden: {
     confirm: 'Solo el titular puede confirmar este cobro',
     reject: 'Solo el titular puede rechazar este cobro',
+    manualPayment: 'Solo el titular puede registrar el pago de este cobro',
+    cancel: 'Solo el titular puede cancelar este cobro',
   },
   invalidTransition: 'Este cobro ya no admite cambios.',
   stale: 'Otra persona modificó el cobro; recargamos los datos',
@@ -21,9 +26,17 @@ export const REVIEW_MESSAGES = {
   generic: {
     confirm: 'No pudimos confirmar el pago. Intenta de nuevo.',
     reject: 'No pudimos rechazar el comprobante. Intenta de nuevo.',
+    manualPayment: 'No pudimos registrar el pago en efectivo. Intenta de nuevo.',
+    cancel: 'No pudimos cancelar el cobro. Intenta de nuevo.',
   },
   confirmed: 'Pago confirmado',
   rejected: 'Comprobante rechazado',
+  paid: 'Pago en efectivo registrado',
+  cancelled: 'Cobro cancelado',
+  paidAtBeforeIssue: 'La fecha del pago no puede ser anterior a la emisión del cobro.',
+  paidAtFuture: 'La fecha del pago no puede estar en el futuro.',
+  paidAtInvalid: 'Revisa la fecha y la nota del pago.',
+  noteLength: `La nota no puede pasar de ${MANUAL_NOTE_MAX_LENGTH} caracteres.`,
   fileDeleted: 'El comprobante ya fue eliminado por antigüedad',
   fileForbidden: 'No tienes acceso a este comprobante',
   fileNotFound: 'No encontramos este comprobante',
@@ -72,9 +85,13 @@ export function reviewError(error: ApiError, action: ReviewAction): ReviewError 
     case 'GROUP_FROZEN':
       return { target: 'page', notice: { variant: 'error', title: REVIEW_MESSAGES.frozen } };
     case 'VALIDATION_ERROR':
-      return action === 'reject'
-        ? { target: 'reason', message: REVIEW_MESSAGES.reasonLength }
-        : { target: 'modal', message: REVIEW_MESSAGES.generic.confirm };
+      if (action === 'reject' || action === 'cancel') {
+        return { target: 'reason', message: REVIEW_MESSAGES.reasonLength };
+      }
+      if (action === 'manualPayment') {
+        return { target: 'modal', message: REVIEW_MESSAGES.paidAtInvalid };
+      }
+      return { target: 'modal', message: REVIEW_MESSAGES.generic.confirm };
     default:
       if (error.code === NETWORK_ERROR_CODE || isConnectionError(error)) {
         return { target: 'modal', message: REVIEW_MESSAGES.offline };
@@ -87,18 +104,57 @@ export function reviewError(error: ApiError, action: ReviewAction): ReviewError 
 export function reviewSuccess(charge: Charge, action: ReviewAction): ReviewNotice {
   const name = charge.member.fullName;
   const status = `«${chargeStatusLabel[charge.status]}»`;
-  if (action === 'confirm') {
-    return {
-      variant: 'success',
-      title: REVIEW_MESSAGES.confirmed,
-      detail: `El cobro de ${name} quedó ${status}.`,
-    };
+  switch (action) {
+    case 'confirm':
+      return {
+        variant: 'success',
+        title: REVIEW_MESSAGES.confirmed,
+        detail: `El cobro de ${name} quedó ${status}.`,
+      };
+    case 'manualPayment':
+      return {
+        variant: 'success',
+        title: REVIEW_MESSAGES.paid,
+        detail: `El cobro de ${name} quedó ${status}.`,
+      };
+    case 'cancel':
+      return {
+        variant: 'success',
+        title: REVIEW_MESSAGES.cancelled,
+        detail: `El cobro de ${name} quedó ${status} y ya no cuenta como deuda.`,
+      };
+    case 'reject':
+      return {
+        variant: 'success',
+        title: REVIEW_MESSAGES.rejected,
+        detail: `El cobro de ${name} quedó ${status}. ${name} verá el motivo.`,
+      };
   }
-  return {
-    variant: 'success',
-    title: REVIEW_MESSAGES.rejected,
-    detail: `El cobro de ${name} quedó ${status}. ${name} verá el motivo.`,
-  };
+}
+
+/**
+ * Convierte la fecha y hora de un `datetime-local` (`2026-10-19T14:30`, hora de La Paz) en ISO
+ * 8601 con el desfase de La Paz, que es el formato que pide la API.
+ */
+export function laPazInputToIso(value: string): string {
+  return `${value}:00${LA_PAZ_OFFSET}`;
+}
+
+/**
+ * Ayuda en el cliente para la fecha del pago (CA-002-14): no puede ser anterior a la emisión ni
+ * estar en el futuro. Sin fecha, el servidor usa la hora actual. Devuelve `null` si es válida.
+ */
+export function validatePaidAt(paidAtIso: string, issuedAt: string, now: Date): string | null {
+  const paid = Date.parse(paidAtIso);
+  if (Number.isNaN(paid)) return REVIEW_MESSAGES.paidAtInvalid;
+  if (paid < Date.parse(issuedAt)) return REVIEW_MESSAGES.paidAtBeforeIssue;
+  if (paid > now.getTime() + 60_000) return REVIEW_MESSAGES.paidAtFuture;
+  return null;
+}
+
+/** Ayuda en el cliente para la nota del pago en efectivo (CA-002-14, ≤200 caracteres). */
+export function validateManualNote(note: string): string | null {
+  return note.trim().length > MANUAL_NOTE_MAX_LENGTH ? REVIEW_MESSAGES.noteLength : null;
 }
 
 /** Error al pedir la URL firmada del comprobante. */

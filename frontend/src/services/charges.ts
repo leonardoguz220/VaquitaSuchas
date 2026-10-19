@@ -1,11 +1,9 @@
 /**
  * Cliente de cobros y pagos (`specs/002-cobros-y-pagos/contracts/api.md`). Reúne los tipos de
  * toda la spec 002 para que los reutilicen T022 (subida), T026 (confirmar y rechazar) y T037
- * (historial y resumen del grupo). `listMyCharges`, `getCharge`, `uploadReceipt` y
- * `getReceiptFile` llaman al backend (T019 y T023); el resto responde con datos simulados de
- * `charges.mock.ts` hasta que su endpoint exista.
+ * (historial y resumen del grupo). Todas las funciones llaman al backend por el proxy `/api`; los
+ * datos simulados de `charges.mock.ts` solo los usan los tests.
  */
-import * as mock from './charges.mock';
 import { apiRequest } from './http';
 import type { GroupCurrency, PaymentInfo } from './groups';
 
@@ -162,6 +160,20 @@ export interface RejectChargeInput {
   version?: number;
 }
 
+export interface ManualPaymentInput {
+  /** Hasta 200 caracteres. */
+  note?: string;
+  /** ISO 8601, entre la emisión y ahora. Sin valor, el servidor usa la hora actual. */
+  paidAt?: string;
+  version?: number;
+}
+
+export interface CancelChargeInput {
+  /** 5 a 200 caracteres. */
+  reason: string;
+  version?: number;
+}
+
 export interface GroupChargesParams {
   period?: string;
   status?: ChargeStatus[];
@@ -274,30 +286,83 @@ export function getReceiptFile(
   );
 }
 
-/** `POST /charges/:chargeId/confirm` (RF-002-10): solo el titular. */
+/** `POST /charges/:chargeId/confirm` (RF-002-10): solo el titular. `409 STALE_STATE` si cambió. */
 export function confirmCharge(chargeId: string, input: ConfirmChargeInput = {}): Promise<Charge> {
-  return mock.confirmCharge(chargeId, input);
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/confirm`, {
+    method: 'POST',
+    body: input,
+  });
 }
 
 /** `POST /charges/:chargeId/reject` (RF-002-11): solo el titular, con motivo. */
 export function rejectCharge(chargeId: string, input: RejectChargeInput): Promise<Charge> {
-  return mock.rejectCharge(chargeId, input);
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/reject`, {
+    method: 'POST',
+    body: input,
+  });
 }
 
-/** `GET /groups/:groupId/charges` (RF-002-17): el titular recibe `Charge` completo. */
+/** `POST /charges/:chargeId/manual-payment` (RF-002-12, CA-002-14): pago en efectivo del titular. */
+export function registerManualPayment(
+  chargeId: string,
+  input: ManualPaymentInput = {},
+): Promise<Charge> {
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/manual-payment`, {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/** `POST /charges/:chargeId/cancel` (RF-002-13, CA-002-15): cancela con motivo, solo el titular. */
+export function cancelCharge(chargeId: string, input: CancelChargeInput): Promise<Charge> {
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/cancel`, {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/**
+ * Query de `GET /groups/:groupId/charges`: `status` se repite por cada estado y los demás filtros
+ * solo van si vienen, igual que en `GET /me/charges`.
+ */
+export function buildGroupChargesQuery(params: GroupChargesParams): string {
+  const query = new URLSearchParams();
+  if (params.period) query.set('period', params.period);
+  params.status?.forEach((status) => query.append('status', status));
+  if (params.userId) query.set('userId', params.userId);
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.cursor) query.set('cursor', params.cursor);
+  const text = query.toString();
+  return text ? `?${text}` : '';
+}
+
+/**
+ * `GET /groups/:groupId/charges` (RF-002-17): historial del grupo. Sin comprobantes ni referencias;
+ * el titular recibe `Charge` completo en cada ítem.
+ */
 export function getGroupCharges(
   groupId: string,
   params: GroupChargesParams = {},
   options: ChargesRequestOptions = {},
 ): Promise<Page<ChargePublic | Charge>> {
-  return mock.getGroupCharges(groupId, params, options.signal);
+  return apiRequest<Page<ChargePublic | Charge>>(
+    `/api/groups/${encodeURIComponent(groupId)}/charges${buildGroupChargesQuery(params)}`,
+    { signal: options.signal },
+  );
 }
 
-/** `GET /groups/:groupId/billing/summary` (RF-002-16, RF-002-18): `404` si no hay ciclo. */
+/**
+ * `GET /groups/:groupId/billing/summary` (RF-002-16, RF-002-18): sin `period`, el backend usa el
+ * del último ciclo. `404` si el grupo no tiene ciclo en ese período.
+ */
 export function getBillingSummary(
   groupId: string,
   period?: string,
   options: ChargesRequestOptions = {},
 ): Promise<BillingSummary> {
-  return mock.getBillingSummary(groupId, period, options.signal);
+  const query = period ? `?${new URLSearchParams({ period }).toString()}` : '';
+  return apiRequest<BillingSummary>(
+    `/api/groups/${encodeURIComponent(groupId)}/billing/summary${query}`,
+    { signal: options.signal },
+  );
 }

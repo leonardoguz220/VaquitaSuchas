@@ -63,7 +63,7 @@
 - [x] T024 [P] [US3] [BE] `backend/test/charges.review.e2e-spec.ts`: CA-002-06 (confirmar), CA-002-07 (rechazar → `pendiente` o `atrasado`), CA-002-08 (rechazo sin motivo), CA-002-11 (`pagado` no admite cambios), CA-002-30 (rechazo tras vencer: `atrasado` sin retiro) y `charges.concurrency.e2e-spec.ts` (CA-002-19: dos `confirm`/`cancel` en paralelo, una gana y la otra recibe `409 INVALID_TRANSITION` o `STALE_STATE`) — Depende: T011 · Cubre: CA-002-06, CA-002-07, CA-002-08, CA-002-11, CA-002-19, CA-002-30
 - [x] T025 [US3] [BE] `services/charges.service.ts`: `confirm` y `reject` (bloquea el cobro `FOR UPDATE`, ejecuta `sweepGroup` antes (**enganche pendiente hasta T032**: `OverdueService` aún no existe y `ChargesService.open` lo deja documentado), valida acceso, estado de grupo y `version`, aplica `transition`, escribe el evento, publica `ChargeConfirmed`/`ChargeRejected`; `reject` exige motivo y admite `invalidReceipt`), con `POST /charges/:id/confirm` y `POST /charges/:id/reject` — Depende: T024, T021 · Cubre: RF-002-10, RF-002-11, RNF-002-03, CA-002-06, CA-002-07, CA-002-08, CA-002-19, CA-002-30
 - [x] T026 [P] [US3] [FE] Acciones del titular en `/cobros/[id]` con mock: **Confirmar**, **Rechazar** (modal con motivo y casilla «comprobante inválido»), «Ver comprobante»; cola «Por revisar» en la pestaña **Cobros**; botones según `allowedActions` (el frontend no decide) — Depende: T018 · Cubre: RF-002-10, RF-002-11
-- [ ] T027 [US3] [FE] Conectar confirmar y rechazar con el backend y manejar `409 STALE_STATE` (recarga y aviso) — Depende: T025, T026 · Cubre: RF-002-10, RF-002-11
+- [x] T027 [US3] [FE] Conectar confirmar y rechazar con el backend y manejar `409 STALE_STATE` (recarga y aviso) — Depende: T025, T026 · Cubre: RF-002-10, RF-002-11
 
 ## Fase 6: US4 y US7 — Pago en efectivo y cancelar un cobro (Prioridad: P0)
 
@@ -72,7 +72,7 @@
 
 - [x] T028 [P] [US4] [BE] En `charges.review.e2e-spec.ts` agregar CA-002-14 (pago manual con `paid_at` no anterior a la emisión y nota ≤ 200 caracteres) y CA-002-15 (cancelar un cobro `atrasado` con motivo de 5 a 200 caracteres; `cancelado` no cuenta como deuda) — Depende: T024 · Cubre: CA-002-14, CA-002-15
 - [x] T029 [US4] [BE] `ChargesService.manualPayment` y `cancel` con `POST /charges/:id/manual-payment` (`settlement = 'manual'`, `paid_at`, `manual_note`) y `POST /charges/:id/cancel` (`cancel_reason`; libera la referencia reservada si la hubiera) — Depende: T025, T028 · Cubre: RF-002-12, RF-002-13, RN-002-07, RN-002-08, CA-002-14, CA-002-15
-- [ ] T030 [US7] [FE] Acciones **Pago en efectivo** (fecha y nota) y **Cancelar** (modal con motivo) del titular, conectadas con el backend — Depende: T026, T029 · Cubre: RF-002-12, RF-002-13
+- [x] T030 [US7] [FE] Acciones **Pago en efectivo** (fecha y nota) y **Cancelar** (modal con motivo) del titular, conectadas con el backend — Depende: T026, T029 · Cubre: RF-002-12, RF-002-13
 
 ## Fase 7: US8 — Atrasos, retiro por mora y deuda del retirado (Prioridad: P0) 🎯 MVP
 
@@ -92,7 +92,7 @@
 - [x] T035 [P] [US5] [BE] `backend/test/billing.summary.e2e-spec.ts`: CA-002-17 (resumen sin comprobantes ajenos), CA-002-18 (historial con línea de tiempo), CA-002-20 (totales del titular: esperado, cobrado, pendiente, atrasado) — Depende: T011 · Cubre: CA-002-17, CA-002-18, CA-002-20, RNF-002-07
 - [x] T036 [US5] [BE] `controllers/group-billing.controller.ts`: `GET /groups/:groupId/billing/summary?period=` (`PeriodSummary` más `availablePeriods`; `404` si el grupo no tiene ciclo en ese período) y `GET /groups/:groupId/charges` (historial paginado por `period`, `status`, `userId`; `ChargePublic` sin comprobantes ni referencias, `Charge` completo para el titular; los motivos no se exponen en el historial público) — Depende: T035, T017 · Cubre: RF-002-16, RF-002-17, RF-002-18, RNF-002-07, CA-002-17, CA-002-18, CA-002-20
 - [x] T037 [P] [US5] [FE] Pestaña **Cobros** de `/grupos/[id]` con mock: selector de período, resumen del mes con estado y monto por miembro (y totales para el titular), historial paginado con línea de tiempo por cobro — Depende: spec 001 T020 · Cubre: RF-002-16, RF-002-17, RF-002-18
-- [ ] T038 [US5] [FE] Conectar la pestaña **Cobros** con `GET /groups/:id/billing/summary` y `GET /groups/:id/charges` — Depende: T036, T037 · Cubre: RF-002-16, RF-002-17
+- [x] T038 [US5] [FE] Conectar la pestaña **Cobros** con `GET /groups/:id/billing/summary` y `GET /groups/:id/charges` — Depende: T036, T037 · Cubre: RF-002-16, RF-002-17
 
 ## Fase 9: Integración con otras specs, retención y cierre
 

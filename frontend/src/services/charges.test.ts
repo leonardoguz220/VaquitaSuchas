@@ -1,5 +1,6 @@
 import {
   buildListMyChargesQuery,
+  cancelCharge,
   confirmCharge,
   rejectCharge,
   getBillingSummary,
@@ -7,6 +8,7 @@ import {
   getGroupCharges,
   getReceiptFile,
   listMyCharges,
+  registerManualPayment,
   uploadReceipt,
   type ChargeStatus,
 } from './charges';
@@ -46,6 +48,32 @@ async function fakeBackend(url: string, init?: RequestInit): Promise<Response> {
       );
       return jsonResponse(200, page);
     }
+    const groupMatch = /^\/api\/groups\/([^/]+)\/(charges|billing\/summary)$/.exec(target.pathname);
+    if (groupMatch) {
+      const groupId = decodeURIComponent(groupMatch[1]);
+      const params = target.searchParams;
+      if (groupMatch[2] === 'charges') {
+        const limit = params.get('limit');
+        const page = await mock.getGroupCharges(
+          groupId,
+          {
+            period: params.get('period') ?? undefined,
+            status: params.getAll('status') as ChargeStatus[],
+            userId: params.get('userId') ?? undefined,
+            limit: limit === null ? undefined : Number(limit),
+            cursor: params.get('cursor') ?? undefined,
+          },
+          signal,
+        );
+        return jsonResponse(200, page);
+      }
+      const summary = await mock.getBillingSummary(
+        groupId,
+        params.get('period') ?? undefined,
+        signal,
+      );
+      return jsonResponse(200, summary);
+    }
     const receiptMatch = /^\/api\/charges\/([^/]+)\/receipts$/.exec(target.pathname);
     if (receiptMatch && init?.method === 'POST' && init.body instanceof FormData) {
       const form = init.body;
@@ -66,6 +94,20 @@ async function fakeBackend(url: string, init?: RequestInit): Promise<Response> {
         signal,
       );
       return jsonResponse(200, file);
+    }
+    const actionMatch = /^\/api\/charges\/([^/]+)\/(confirm|reject|manual-payment|cancel)$/.exec(
+      target.pathname,
+    );
+    if (actionMatch && init?.method === 'POST') {
+      const chargeId = decodeURIComponent(actionMatch[1]);
+      const body = JSON.parse(String(init.body ?? '{}'));
+      const actions = {
+        confirm: () => mock.confirmCharge(chargeId, body),
+        reject: () => mock.rejectCharge(chargeId, body),
+        'manual-payment': () => mock.manualPayment(chargeId, body),
+        cancel: () => mock.cancelCharge(chargeId, body),
+      };
+      return jsonResponse(200, await actions[actionMatch[2] as keyof typeof actions]());
     }
     const match = /^\/api\/charges\/([^/]+)$/.exec(target.pathname);
     if (match) {
@@ -230,6 +272,109 @@ describe('services/charges conectado a GET /me/charges y GET /charges/:id (T019,
       getGroupCharges(MOCK_BILLING_GROUP_IDS.owner, { status: ['en_revision'] }),
     );
     expect(queue.items.map((charge) => charge.id)).toContain(owner);
+  });
+
+  it('T027: confirmar y rechazar salen por POST al proxy con version y motivo (CA-002-06, CA-002-07, CA-002-08)', async () => {
+    const owner = MOCK_CHARGE_IDS.ownerInReview;
+    const inReview = await settle(getCharge(owner));
+    fetchMock.mockClear();
+
+    await settle(confirmCharge(owner, { version: inReview.version }));
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/charges/${owner}/confirm`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ version: inReview.version }),
+      }),
+    );
+
+    await settle(rejectCharge(owner, { reason: 'Monto distinto', invalidReceipt: true }));
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/charges/${owner}/reject`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ reason: 'Monto distinto', invalidReceipt: true }),
+      }),
+    );
+  });
+
+  it('T030: pago en efectivo y cancelar salen por POST con su cuerpo (CA-002-14, CA-002-15)', async () => {
+    const owner = MOCK_CHARGE_IDS.ownerOverdue;
+    const current = await settle(getCharge(owner));
+    fetchMock.mockClear();
+
+    const paid = await settle(
+      registerManualPayment(owner, { note: ' Entregó en mano ', version: current.version }),
+    );
+    expect(paid).toMatchObject({
+      status: 'pagado',
+      settlement: 'manual',
+      manualNote: 'Entregó en mano',
+    });
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/charges/${owner}/manual-payment`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ note: ' Entregó en mano ', version: current.version }),
+      }),
+    );
+
+    const cancelled = await settle(cancelCharge(owner, { reason: 'Se dio de baja' }));
+    expect(cancelled).toMatchObject({ status: 'cancelado', cancelReason: 'Se dio de baja' });
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/charges/${owner}/cancel`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ reason: 'Se dio de baja' }),
+      }),
+    );
+  });
+
+  it('T030: un cobro que no admite pago ni cancelación, o un motivo corto responden 409 y 400 (CA-002-14, CA-002-15)', async () => {
+    await expectRejection(registerManualPayment(MOCK_CHARGE_IDS.ownerInReview), {
+      statusCode: 409,
+      code: 'INVALID_TRANSITION',
+    });
+    await expectRejection(cancelCharge(MOCK_CHARGE_IDS.ownerInReview, { reason: 'Motivo' }), {
+      statusCode: 409,
+      code: 'INVALID_TRANSITION',
+    });
+    await expectRejection(cancelCharge(MOCK_CHARGE_IDS.ownerInReviewOverdue, { reason: 'no' }), {
+      statusCode: 400,
+      code: 'VALIDATION_ERROR',
+    });
+  });
+
+  it('T038: historial y resumen del grupo salen por GET al proxy con su query (CA-002-17, CA-002-18, CA-002-20)', async () => {
+    const owner = MOCK_BILLING_GROUP_IDS.owner;
+    fetchMock.mockClear();
+
+    await settle(
+      getGroupCharges(owner, { period: '2026-10', status: ['pagado', 'atrasado'], limit: 5 }),
+    );
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/groups/${owner}/charges?period=2026-10&status=pagado&status=atrasado&limit=5`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+
+    await settle(getBillingSummary(owner, '2026-09'));
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/groups/${owner}/billing/summary?period=2026-09`,
+      expect.anything(),
+    );
+
+    await settle(getBillingSummary(owner));
+    expect(fetchMock.mock.calls[fetchMock.mock.calls.length - 1]?.[0]).toBe(
+      `/api/groups/${owner}/billing/summary`,
+    );
+  });
+
+  it('CA-002-19: un 409 STALE_STATE llega como ApiError con su código', async () => {
+    const owner = MOCK_CHARGE_IDS.ownerInReview;
+    await expectRejection(confirmCharge(owner, { version: 1 }), {
+      statusCode: 409,
+      code: 'STALE_STATE',
+    });
   });
 
   it('T022: la subida simulada agrega el evento, reemplaza en revisión y responde los errores fijos', async () => {
