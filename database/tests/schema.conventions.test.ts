@@ -25,14 +25,9 @@ const NATURAL_KEY_TABLES: Readonly<Record<string, string>> = {
   notification_preferences: 'user_id',
 };
 
-// Claves foráneas que pueden borrar en cascada ('tabla.restricción'). Ningún historial se borra en
-// cascada (data-model.md §1, "Claves foráneas"); cada excepción la justifica el modelo de su spec:
-//  - tokens de verificación y de recuperación: datos técnicos descartables de la cuenta
-//    (specs/003-usuarios-y-autenticacion/data-model.md §1).
-const CASCADE_FK_EXCEPTIONS: readonly string[] = [
-  'phone_verification_tokens.phone_verification_tokens_user_id_fkey',
-  'password_reset_tokens.password_reset_tokens_user_id_fkey',
-];
+// Claves foráneas que pueden borrar en cascada ('tabla.restricción'). Vacía: ningún historial se
+// borra en cascada (data-model.md §1, "Claves foráneas").
+const CASCADE_FK_EXCEPTIONS: readonly string[] = [];
 
 const SNAKE_CASE = /^[a-z][a-z0-9_]*$/;
 const EXCLUDED = 'schema_migrations';
