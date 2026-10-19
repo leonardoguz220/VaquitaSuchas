@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { receiptFileType } from '@/lib/receipt-file';
+export { groupPath } from '@/lib/routes';
 import type { JoinPaymentMethod } from '@/services/join-requests';
 
 /** Textos del comprobante de ingreso; los mismos que el comprobante de un cobro (spec 002). */
@@ -19,11 +20,6 @@ export const PAYMENT_METHOD_LABEL: Record<JoinPaymentMethod, string> = {
 /** Número con coma decimal, como las estrellas de la reputación: `4,5`. */
 export function formatDecimal(value: number): string {
   return String(value).replace('.', ',');
-}
-
-/** Detalle de un grupo (plan 001 §6). */
-export function groupPath(groupId: string): string {
-  return `/grupos/${encodeURIComponent(groupId)}`;
 }
 
 /** URL local para la vista previa de una imagen; se libera al cambiar de archivo o al desmontar. */

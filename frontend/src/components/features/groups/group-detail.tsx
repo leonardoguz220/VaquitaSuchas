@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import { GroupChargesTab } from '@/components/features/charges/group-charges-tab';
+import { GroupCollectionTab } from '@/components/features/dashboard/group-collection-tab';
 import { ServiceLogo } from '@/components/features/catalog/ServiceLogo';
 import { Badge, Button, Card } from '@/components/ui';
 import { useGroup } from '@/hooks/use-group';
@@ -16,13 +17,21 @@ import { GroupTabs, panelId, tabId, type GroupTab } from './group-tabs';
 const GROUPS_PATH = '/grupos';
 const TABS_PREFIX = 'grupo';
 
-/** Pestañas de T020 y Cobros (002 T037). Solicitudes y Ajustes se agregan en sus tareas. */
-type GroupTabId = 'resumen' | 'miembros' | 'cobros';
+/**
+ * Pestañas de T020, Cobros (002 T037) y Cobranza del titular (006 T014). Solicitudes y Ajustes
+ * se agregan en sus tareas.
+ */
+type GroupTabId = 'resumen' | 'miembros' | 'cobros' | 'cobranza';
 
 const TABS: readonly GroupTab<GroupTabId>[] = [
   { id: 'resumen', label: 'Resumen' },
   { id: 'miembros', label: 'Miembros' },
   { id: 'cobros', label: 'Cobros' },
+];
+
+const OWNER_TABS: readonly GroupTab<GroupTabId>[] = [
+  ...TABS,
+  { id: 'cobranza', label: 'Cobranza' },
 ];
 
 function DetailSkeleton() {
@@ -155,7 +164,7 @@ export function GroupDetailView({ groupId, ownerPanel, reviewQueue }: GroupDetai
           <GroupTabs
             idPrefix={TABS_PREFIX}
             label="Secciones del grupo"
-            tabs={TABS}
+            tabs={state.group.myRole === 'titular' ? OWNER_TABS : TABS}
             selected={tab}
             onSelect={setTab}
           />
@@ -174,6 +183,9 @@ export function GroupDetailView({ groupId, ownerPanel, reviewQueue }: GroupDetai
                 isOwner={state.group.myRole === 'titular'}
                 reviewQueue={reviewQueue?.(state.group)}
               />
+            )}
+            {tab === 'cobranza' && state.group.myRole === 'titular' && (
+              <GroupCollectionTab groupId={state.group.id} />
             )}
           </div>
         </>

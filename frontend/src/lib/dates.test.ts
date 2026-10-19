@@ -4,6 +4,7 @@ import {
   formatDateTimeLaPaz,
   formatPeriod,
   formatClock,
+  formatPeriodShort,
   formatRemaining,
   formatTimeLeft,
   lapazDayOf,
@@ -143,5 +144,13 @@ describe('formatClock (spec 010)', () => {
     expect(formatClock(5)).toBe('00:05');
     expect(formatClock(3725)).toBe('1:02:05');
     expect(formatClock(-3)).toBe('00:00');
+  });
+});
+
+describe('formatPeriodShort (spec 006)', () => {
+  it('RF-006-07: da el mes abreviado y el año para los ejes de los gráficos', () => {
+    expect(formatPeriodShort('2026-10')).toBe('oct 2026');
+    expect(formatPeriodShort('2027-01')).toBe('ene 2027');
+    expect(() => formatPeriodShort('2026-13')).toThrow(RangeError);
   });
 });
