@@ -10,6 +10,7 @@ export const REPUTATION_MESSAGES = {
   connection: REGISTER_ERROR_MESSAGES.connection,
   unexpected: REGISTER_ERROR_MESSAGES.unexpected,
   loadFailed: 'No pudimos cargar tu reputación.',
+  badgesLoadFailed: 'No pudimos cargar tus insignias.',
 } as const;
 
 /** Detalle del aviso cuando falla una carga de la reputación que no es un `401`. */

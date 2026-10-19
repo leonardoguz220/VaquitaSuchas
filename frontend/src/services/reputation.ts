@@ -60,3 +60,31 @@ export interface ReputationDetail extends Rating {
 export function getMyReputation(): Promise<ReputationDetail> {
   return apiRequest<ReputationDetail>('/api/users/me/reputation');
 }
+
+/** Insignia obtenida (RF-007-07). Se conserva aunque se rompa la racha (RF-007-08). */
+export interface EarnedBadge {
+  code: string;
+  name: string;
+  description: string;
+  /** ISO 8601 en UTC. */
+  earnedAt: string;
+}
+
+/** Insignia por obtener con el avance que calcula el backend (RF-007-07). */
+export interface PendingBadge {
+  code: string;
+  name: string;
+  description: string;
+  condition: string;
+  progress: { current: number; target: number };
+}
+
+export interface MyBadges {
+  earned: EarnedBadge[];
+  pending: PendingBadge[];
+}
+
+/** `GET /users/me/badges` (RF-007-06 a RF-007-08). */
+export function getMyBadges(): Promise<MyBadges> {
+  return apiRequest<MyBadges>('/api/users/me/badges');
+}

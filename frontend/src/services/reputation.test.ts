@@ -1,5 +1,5 @@
 import { apiRequest } from './http';
-import { getMyReputation } from './reputation';
+import { getMyBadges, getMyReputation } from './reputation';
 
 jest.mock('./http', () => ({
   ...jest.requireActual('./http'),
@@ -15,5 +15,11 @@ describe('services/reputation (contrato 007)', () => {
     mockedRequest.mockResolvedValue({});
     await getMyReputation();
     expect(mockedRequest).toHaveBeenCalledWith('/api/users/me/reputation');
+  });
+
+  it('RF-007-07: getMyBadges hace GET /api/users/me/badges', async () => {
+    mockedRequest.mockResolvedValue({ earned: [], pending: [] });
+    await getMyBadges();
+    expect(mockedRequest).toHaveBeenCalledWith('/api/users/me/badges');
   });
 });

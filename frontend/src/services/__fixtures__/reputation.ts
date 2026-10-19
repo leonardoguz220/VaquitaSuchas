@@ -2,7 +2,7 @@
  * Datos simulados que respetan el contrato 007 (`contracts/api.md`), solo para las pruebas.
  * Nombres, períodos y fechas son inventados.
  */
-import type { ReputationDetail, ReputationRecentCharge } from '../reputation';
+import type { MyBadges, ReputationDetail, ReputationRecentCharge } from '../reputation';
 
 export function recentCharge(
   overrides: Partial<ReputationRecentCharge> = {},
@@ -78,4 +78,36 @@ export function newcomerReputation(overrides: Partial<ReputationDetail> = {}): R
     },
     ...overrides,
   });
+}
+
+/** CA-007-09: «Racha 3» obtenida que se conserva; la racha de 12 vuelve a empezar. */
+export function myBadges(overrides: Partial<MyBadges> = {}): MyBadges {
+  return {
+    earned: [
+      {
+        code: 'first_payment',
+        name: 'Primer pago',
+        description: 'Subiste tu primer comprobante a tiempo.',
+        // 6 mar 2026, 10:00 en La Paz.
+        earnedAt: '2026-03-06T14:00:00.000Z',
+      },
+      {
+        code: 'streak_3',
+        name: 'Racha 3',
+        description: '3 pagos puntuales seguidos.',
+        // 15 may 2026, 23:30 en La Paz (16 may en UTC).
+        earnedAt: '2026-05-16T03:30:00.000Z',
+      },
+    ],
+    pending: [
+      {
+        code: 'streak_12',
+        name: 'Racha 12',
+        description: '12 pagos puntuales seguidos.',
+        condition: 'Paga a tiempo 12 cobros seguidos.',
+        progress: { current: 2, target: 12 },
+      },
+    ],
+    ...overrides,
+  };
 }

@@ -211,3 +211,6 @@ export const PROFILE_PATH = '/perfil';
 
 /** "Mi reputación": calificación, detalle y habilitación como titular (plan 007 §6). Protegida. */
 export const PROFILE_REPUTATION_PATH = '/perfil/reputacion';
+
+/** "Mis insignias": obtenidas y por obtener con su avance (plan 007 §6). Protegida. */
+export const PROFILE_BADGES_PATH = '/perfil/insignias';
