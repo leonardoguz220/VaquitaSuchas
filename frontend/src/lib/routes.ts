@@ -192,3 +192,6 @@ export const PROFILE_PATH = '/perfil';
 
 /** Mi reputación y habilitación como titular (spec 007, plan §6). Ruta protegida. */
 export const REPUTATION_PATH = '/perfil/reputacion';
+
+/** Mis insignias: obtenidas y pendientes con su avance (spec 007, plan §6). Ruta protegida. */
+export const BADGES_PATH = '/perfil/insignias';

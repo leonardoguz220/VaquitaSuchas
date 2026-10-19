@@ -174,6 +174,7 @@ export const MOCK_REPUTATION = {
   notEligible: NOT_ELIGIBLE,
 } as const;
 
+/** Insignias de una persona con dos ganadas, una lejos de su meta y otra casi completa (CA-007-08, 09). */
 const BADGES: BadgesResponse = {
   earned: [
     {
@@ -181,6 +182,12 @@ const BADGES: BadgesResponse = {
       name: 'Primer cobro puntual',
       description: 'Pagaste a tiempo tu primer cobro.',
       earnedAt: '2026-08-18T14:00:00.000Z',
+    },
+    {
+      code: 'racha_3',
+      name: 'Racha de 3',
+      description: 'Tres cobros seguidos a tiempo.',
+      earnedAt: '2026-09-15T14:00:00.000Z',
     },
   ],
   pending: [
@@ -191,8 +198,21 @@ const BADGES: BadgesResponse = {
       condition: 'Paga 10 cobros seguidos a tiempo.',
       progress: { current: 2, target: 10 },
     },
+    {
+      code: 'seis_meses_sin_atrasos',
+      name: 'Seis meses sin atrasos',
+      description: 'Seis meses sin cobros atrasados.',
+      condition: 'Cumple 6 meses seguidos sin cobros atrasados.',
+      progress: { current: 5, target: 6 },
+    },
   ],
 };
+
+/** Respuesta de `GET /users/me/badges` con insignias (copia del simulador en `getMyBadges`). */
+export const MOCK_BADGES = {
+  withBadges: BADGES,
+  empty: { earned: [], pending: [] } satisfies BadgesResponse,
+} as const;
 
 const RANKING: GroupRanking = {
   items: [
@@ -224,7 +244,7 @@ export function getMyReputation(options: ReputationRequestOptions = {}) {
 
 /** `GET /users/me/badges` (P2). */
 export function getMyBadges(options: ReputationRequestOptions = {}) {
-  return delay(() => copy(BADGES), options.signal);
+  return delay(() => copy(MOCK_BADGES.withBadges), options.signal);
 }
 
 /** `GET /groups/:groupId/ranking` (P2). */

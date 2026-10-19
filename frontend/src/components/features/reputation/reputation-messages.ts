@@ -21,6 +21,7 @@ export const REPUTATION_MESSAGES = {
   unexpected: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
   retry: 'Reintentar',
   backToProfile: 'Volver a mi perfil',
+  badgesLink: 'Ver mis insignias',
   loading: 'Cargando tu reputación…',
   ratingTitle: 'Tu calificación',
   newRating: 'Todavía no tienes calificación.',

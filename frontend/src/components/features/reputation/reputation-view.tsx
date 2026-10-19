@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Alert, Button } from '@/components/ui';
 import { useMyReputation } from '@/hooks/use-my-reputation';
-import { PROFILE_PATH } from '@/lib/routes';
+import { BADGES_PATH, PROFILE_PATH } from '@/lib/routes';
 import { FormulaCard } from './formula-card';
 import { HostStatusCard } from './host-status-card';
 import { loadErrorOutcome, REPUTATION_MESSAGES } from './reputation-messages';
@@ -51,6 +51,12 @@ export function ReputationView() {
           {REPUTATION_MESSAGES.title}
         </h1>
         <p className="text-muted">{REPUTATION_MESSAGES.intro}</p>
+        <Link
+          href={BADGES_PATH}
+          className="inline-flex min-h-11 items-center self-start rounded-field font-bold text-primary no-underline hover:text-primary-hover hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          {REPUTATION_MESSAGES.badgesLink}
+        </Link>
       </div>
 
       {(status === 'loading' || status === 'redirecting') && <ReputationSkeleton />}

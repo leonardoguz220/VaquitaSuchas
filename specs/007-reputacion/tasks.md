@@ -45,7 +45,7 @@
 - [ ] T018 [P] [US2] [BE] `domain/badges-rules.ts` (`badgesEarned(facts, existing)`: Primer pago, Racha 3 y demás reglas versionadas; avance `current/target` calculado) y `badges-rules.spec.ts` (CA-007-08, 09) — Depende: T006 · Cubre: RF-007-06, RF-007-07, RF-007-08, RN-007-07, CA-007-08, CA-007-09
 - [ ] T019 [P] [US2] [BE] `backend/test/badges.e2e-spec.ts`: CA-007-08 (Racha 3), CA-007-09 (se conserva la insignia, racha a 0) y `GET /users/me/badges` — Depende: T017 · Cubre: CA-007-08, CA-007-09
 - [ ] T020 [US2] [BE] `services/badges.service.ts` (otorga y conserva en cada recálculo; avance calculado), tarea `reputation.badges` y `controllers/badges.controller.ts` `GET /users/me/badges` — Depende: T018, T019, T009 · Cubre: RF-007-06, RF-007-07, RF-007-08
-- [ ] T021 [P] [US2] [FE] `/perfil/insignias` con mock: obtenidas con fecha y pendientes con barra de avance, distinguidas por texto e icono — Depende: T015 · Cubre: RF-007-07, RNF-007-06
+- [x] T021 [P] [US2] [FE] `/perfil/insignias` con mock: obtenidas con fecha y pendientes con barra de avance, distinguidas por texto e icono — Depende: T015 · Cubre: RF-007-07, RNF-007-06
 - [ ] T022 [US2] [FE] Conectar `/perfil/insignias` con `GET /users/me/badges` — Depende: T020, T021 · Cubre: RF-007-07
 
 ## Fase 4: US3 — Ranking del grupo (Prioridad: P2)

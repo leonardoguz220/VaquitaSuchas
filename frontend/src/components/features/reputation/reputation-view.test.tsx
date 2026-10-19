@@ -143,3 +143,13 @@ describe('/perfil/reputacion: habilitación como titular', () => {
     expect(screen.getByText('Un administrador te habilitó como titular.')).toBeInTheDocument();
   });
 });
+
+describe('/perfil/reputacion: enlace a insignias', () => {
+  it('RF-007-07: la pantalla enlaza a «Mis insignias» en /perfil/insignias', async () => {
+    await renderWith(MOCK_REPUTATION.hostEligible);
+    expect(screen.getByRole('link', { name: 'Ver mis insignias' })).toHaveAttribute(
+      'href',
+      '/perfil/insignias',
+    );
+  });
+});
