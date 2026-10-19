@@ -45,7 +45,7 @@ Módulo `notifications` con un **catálogo de avisos** (tipo → destinatario, c
 
 ## 3. Modelo de datos — _Camila (BD)_
 
-Detalle en [`data-model.md`](data-model.md): `notifications` (0070, núcleo), `notification_preferences` (0071), `notification_deliveries` (0072), `group_invitations` (0073), disparadores (0074). Pruebas de integridad en `database/tests/notifications.integrity.test.ts`.
+Detalle en [`data-model.md`](data-model.md): `notifications` (0070, núcleo, con el disparador de contenido inmutable), `notification_preferences` (0071), `notification_deliveries` (0072), `group_invitations` (0073), disparador de envíos (0074). Pruebas de integridad en `database/tests/notifications.integrity.test.ts`.
 
 ## 4. Contratos de API — _Leonardo (Backend)_
 
@@ -114,7 +114,7 @@ El titular **no** recibe avisos de cobro como miembro (RN-005-03). Los avisos de
 - **`ScheduleService.run(now)`** (`notifications.schedule`): solo actúa si son las 08:00 de La Paz o más y aún no hay un `job_runs` correcto de hoy para la parte diaria; la parte de 48 h corre en cada tick. Todo con claves únicas, así que se puede repetir (CA-005-10).
 - **`DeliveryService.deliver(now)`** (`notifications.deliver`): toma lotes con `FOR UPDATE SKIP LOCKED`; vuelve a comprobar suspensión y preferencias; respeta la ventana; envía con `MailService` o `TelegramGateway`; si falla programa el reintento; si Telegram responde que el bot fue bloqueado marca `telegram_blocked_at` (CA-005-33) y el resto de los envíos de Telegram pasan a `skipped`.
 - **`InvitationsService`**: límite de 10 por hora por titular (`rate_limit_events`), crea la invitación y su envío; el correo sale por el mismo buzón.
-- **`PurgeService`** (`notifications.purge`, diaria): borra notificaciones de más de 90 días y direcciones de invitaciones de más de 30.
+- **`PurgeService`** (`notifications.purge`, diaria): borra notificaciones de más de 90 días y direcciones de invitaciones de más de 30. Por la FK `RESTRICT` desde `notification_deliveries`, en la misma transacción borra **primero** los envíos de esas notificaciones y después las notificaciones (lo prueba `notifications.integrity.test.ts`).
 - **Manejadores de eventos** (`handlers/`): traducen cada evento del catálogo; cargan datos con los servicios de lectura de otros módulos (nunca sus repositorios) y llaman a `notify`.
 - **Telegram** (parte C): la actualización `my_chat_member` (bloqueo del bot) llega al webhook de la spec 000; esta spec registra el manejador. Se pide a Telegram `allowed_updates` que incluya `message` y `my_chat_member`.
 

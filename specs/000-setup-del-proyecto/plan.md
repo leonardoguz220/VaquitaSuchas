@@ -61,7 +61,7 @@ Un repositorio con tres paquetes (`database`, `backend`, `frontend`) coordinados
 | Logs | `nestjs-pino` con redacción | `console.log` | La definición de terminado prohíbe `console.log` de depuración. |
 | Reloj | Dependencia `Clock` inyectable en servicios; las funciones de dominio reciben `now` como parámetro | `new Date()` en el dominio | Pruebas de plazos sin esperas y dominio puro. |
 | Despliegue de migraciones | Workflow manual `Migrate staging` y comando documentado | Migrar al arrancar | RF-000-21: no migrar automáticamente en cada arranque. |
-| Ramas y fusión | Squash merge; `main` protegida con 1 aprobación y checks obligatorios | Merge commits | Historial lineal y trazabilidad por tarea. |
+| Ramas y fusión | Squash hacia `dev`; merge commit en `dev` → `qa` y `qa` → `main`; ramas protegidas con checks obligatorios y sin aprobación humana (2026-10-18) | Squash en todo | Squash hacia `dev` da un commit por tarea. Con squash también en las promociones, `dev` y `main` se desfasan y cada PR choca. |
 
 ## 3. Modelo de datos — _Camila (BD)_
 
@@ -176,7 +176,7 @@ frontend/
 ## 7. Seguridad y permisos — _Leonardo (Backend), con revisión de BD_
 
 - **Secretos:** solo variables de entorno; `.env*` en `.gitignore` (CA-000-16); `.env.example` sin valores. **gitleaks** corre en cada PR sobre el diff y semanalmente sobre todo el historial (RNF-000-02, CA-000-18). Si se filtra un secreto, se rota (no basta con borrar el commit).
-- **Rama `main` protegida (RF-000-02, CA-000-15):** sin push directo, 1 aprobación como mínimo, checks `lint`, `build`, `test-backend`, `test-frontend`, `test-database`, `gitleaks` obligatorios, ramas actualizadas antes de fusionar, historial lineal. `CODEOWNERS` pide revisión de la persona de la capa distinta a la del autor (`database/` → Camila, `backend/` → Leonardo, `frontend/` → Adrian; `specs/` y `context/` → las tres personas).
+- **Rama `main` protegida (RF-000-02, CA-000-15):** sin push directo, sin aprobación humana obligatoria (decisión del 2026-10-18, el filtro son los checks), flujo `dev` → `qa` → `main` impuesto por el check `flow` (`.github/workflows/branch-flow.yml`), auto-merge (`.github/workflows/auto-merge.yml`), checks `lint`, `build`, `test-backend`, `test-frontend`, `test-database`, `gitleaks` obligatorios, ramas actualizadas antes de fusionar. Historial lineal y squash solo en `dev`; `qa` y `main` aceptan merge commit. `CODEOWNERS` queda como aviso, sin exigir revisión de la persona de la capa distinta a la del autor (`database/` → Camila, `backend/` → Leonardo, `frontend/` → Adrian; `specs/` y `context/` → las tres personas).
 - **Disparador de tareas:** `JOBS_TOKEN` aleatorio de 32 bytes, comparación en tiempo constante, y límite de 1 llamada por segundo.
 - **Webhook de Telegram:** secreto del encabezado; rutas `dev` inexistentes fuera de `TELEGRAM_MODE=dev` (se prueba que respondan `404` en `test` con modo `prod` simulado).
 - **Swagger** solo en `development` y `test`.

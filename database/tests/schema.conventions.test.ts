@@ -19,9 +19,12 @@ const quiet = (): void => undefined;
 // de la spec correspondiente la defina así.
 //  - telegram_updates: PK update_id bigint (data-model.md §3, research.md R2; hallazgo F1).
 //  - user_reputation: PK user_id uuid, una fila por usuario (specs/007-reputacion/data-model.md §2).
+//  - notification_preferences: PK user_id uuid, una fila por usuario
+//    (specs/005-notificaciones/data-model.md §1).
 const NATURAL_KEY_TABLES: Readonly<Record<string, string>> = {
   telegram_updates: 'update_id',
   user_reputation: 'user_id',
+  notification_preferences: 'user_id',
 };
 
 // Claves foráneas que pueden borrar en cascada ('tabla.restricción'). Ningún historial se borra en
