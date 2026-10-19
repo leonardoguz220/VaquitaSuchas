@@ -1,6 +1,8 @@
 'use client';
 
 import { ReviewQueue } from '@/components/features/charges/review-queue';
+import { GroupListingBadge } from '@/components/features/listings/group-listing-badge';
+import { GroupListingTab } from '@/components/features/listings/group-listing-tab';
 import { GroupDetailView } from './group-detail';
 import { GroupInvitePanel } from './group-invite-panel';
 
@@ -16,6 +18,8 @@ export function GroupPageView({ groupId }: { groupId: string }) {
         <GroupInvitePanel group={group} onGroupChange={onGroupChange} />
       )}
       reviewQueue={(group) => <ReviewQueue groupId={group.id} />}
+      listingTab={(group) => <GroupListingTab group={group} />}
+      memberBadge={(group) => <GroupListingBadge groupId={group.id} />}
     />
   );
 }

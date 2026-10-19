@@ -22,7 +22,7 @@ const TABS_PREFIX = 'grupo';
  * Pestañas de T020, Cobros (002 T037), Ranking (007 T026) y Cobranza del titular (006 T014).
  * Solicitudes y Ajustes se agregan en sus tareas.
  */
-type GroupTabId = 'resumen' | 'miembros' | 'cobros' | 'ranking' | 'cobranza';
+type GroupTabId = 'resumen' | 'miembros' | 'cobros' | 'ranking' | 'cobranza' | 'publicar';
 
 const TABS: readonly GroupTab<GroupTabId>[] = [
   { id: 'resumen', label: 'Resumen' },
@@ -34,6 +34,7 @@ const TABS: readonly GroupTab<GroupTabId>[] = [
 const OWNER_TABS: readonly GroupTab<GroupTabId>[] = [
   ...TABS,
   { id: 'cobranza', label: 'Cobranza' },
+  { id: 'publicar', label: 'Publicar cupos' },
 ];
 
 function DetailSkeleton() {
@@ -129,13 +130,23 @@ export interface GroupDetailViewProps {
   ownerPanel?: (group: GroupDetail, actions: OwnerPanelActions) => ReactNode;
   /** Cola «Por revisar» del titular dentro de la pestaña Cobros (002 T026). */
   reviewQueue?: (group: GroupDetail) => ReactNode;
+  /** Pestaña «Publicar cupos» del titular (008 T011). */
+  listingTab?: (group: GroupDetail) => ReactNode;
+  /** Insignia «El grupo publicó cupos» que ven los miembros (008 T011). */
+  memberBadge?: (group: GroupDetail) => ReactNode;
 }
 
 /**
  * Pantalla `/grupos/[id]` (plan 001 §6): cabecera del grupo y pestañas Resumen, Miembros y Cobros.
  * Un `404` de la API (grupo ajeno o inexistente) muestra «Grupo no encontrado» (CA-001-10).
  */
-export function GroupDetailView({ groupId, ownerPanel, reviewQueue }: GroupDetailViewProps) {
+export function GroupDetailView({
+  groupId,
+  ownerPanel,
+  reviewQueue,
+  listingTab,
+  memberBadge,
+}: GroupDetailViewProps) {
   const { state, retry, update } = useGroup(groupId);
   const [tab, setTab] = useState<GroupTabId>('resumen');
 
@@ -163,6 +174,7 @@ export function GroupDetailView({ groupId, ownerPanel, reviewQueue }: GroupDetai
         <>
           <GroupHeader group={state.group} />
           {state.group.myRole === 'titular' && ownerPanel?.(state.group, { onGroupChange: update })}
+          {state.group.myRole !== 'titular' && memberBadge?.(state.group)}
           <GroupTabs
             idPrefix={TABS_PREFIX}
             label="Secciones del grupo"
@@ -190,6 +202,7 @@ export function GroupDetailView({ groupId, ownerPanel, reviewQueue }: GroupDetai
             {tab === 'cobranza' && state.group.myRole === 'titular' && (
               <GroupCollectionTab groupId={state.group.id} />
             )}
+            {tab === 'publicar' && state.group.myRole === 'titular' && listingTab?.(state.group)}
           </div>
         </>
       )}
