@@ -99,6 +99,8 @@ export function ChangePasswordForm({ email }: ChangePasswordFormProps) {
       return;
     }
     const view = mapChangePasswordError(result.error);
+    // Solo un error de conexión ofrece Reintentar; en los demás no se guardan las contraseñas.
+    if (view.formError?.kind !== 'connection') forget();
     setServerErrors(view.fieldErrors);
     setFormError(view.formError);
     const firstField = firstChangePasswordFieldWithError(view.fieldErrors);
