@@ -15,3 +15,9 @@ export interface UserBanned extends DomainEvent {
   readonly type: 'users.banned';
   readonly userId: string;
 }
+
+/** Publicado por la spec 009 al revertir un baneo; la spec 001 descongela los grupos que ese baneo congeló. */
+export interface UserUnbanned extends DomainEvent {
+  readonly type: 'users.unbanned';
+  readonly userId: string;
+}

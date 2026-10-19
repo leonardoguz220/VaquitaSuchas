@@ -200,4 +200,45 @@ export class GroupsRepository {
     );
     return (result.rowCount ?? 0) > 0;
   }
+
+  /** Ids de los grupos que posee la persona (activos o cerrados), en orden estable para bloquearlos sin interbloqueos. */
+  async listOwnedIds(q: Queryable, ownerId: string): Promise<string[]> {
+    const result = await q.query<{ id: string }>(
+      'SELECT id FROM groups WHERE owner_id = $1 ORDER BY id',
+      [ownerId],
+    );
+    return result.rows.map((row) => row.id);
+  }
+
+  /** Ids de los grupos de la persona congelados por baneo, en orden estable. */
+  async listFrozenByBanIds(q: Queryable, ownerId: string): Promise<string[]> {
+    const result = await q.query<{ id: string }>(
+      `SELECT id FROM groups WHERE owner_id = $1 AND frozen_reason = 'titular_baneado' ORDER BY id`,
+      [ownerId],
+    );
+    return result.rows.map((row) => row.id);
+  }
+
+  /**
+   * Congela por baneo del titular. No incrementa `version`: en un grupo cerrado el disparador
+   * `groups_closed_readonly` solo admite cambiar `frozen_*` y `updated_at`. Idempotente.
+   */
+  async freezeForBan(q: Queryable, groupId: string, now: Date): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE groups SET frozen_at = $2, frozen_reason = 'titular_baneado'
+        WHERE id = $1 AND frozen_at IS NULL`,
+      [groupId, now],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Descongela solo si lo congeló un baneo. Sin `version`, igual que `freezeForBan`. Idempotente. */
+  async unfreezeForBan(q: Queryable, groupId: string): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE groups SET frozen_at = NULL, frozen_reason = NULL
+        WHERE id = $1 AND frozen_reason = 'titular_baneado'`,
+      [groupId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
 }
