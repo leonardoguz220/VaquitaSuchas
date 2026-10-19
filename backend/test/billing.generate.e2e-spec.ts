@@ -9,6 +9,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { Client, Pool } from 'pg';
 import { BillingModule } from '../src/modules/billing/billing.module.js';
 import { BillingCyclesService } from '../src/modules/billing/services/billing-cycles.service.js';
+import { OverdueService } from '../src/modules/billing/services/overdue.service.js';
 import { Clock } from '../src/shared/clock/clock.js';
 import { ClockModule } from '../src/shared/clock/clock.module.js';
 import { FakeClock } from '../src/shared/clock/fake-clock.js';
@@ -477,6 +478,54 @@ describe('Generación automática de cobros contra PostgreSQL real', () => {
       expect(charge.issued_at).toEqual(new Date('2026-10-17T10:00:00Z'));
       expect(charge.due_at).toEqual(new Date('2026-10-20T10:00:00Z'));
     }
+  });
+
+  it('CA-002-28 y RF-002-03: el cobro emitido tarde no se marca atrasado hasta cumplir sus 72 h (T033)', async () => {
+    const group = await createGroup({
+      createdAt: '2026-09-02T16:00:00Z',
+      billingDay: 15,
+      members: 2,
+    });
+    setNow('2026-10-17T10:00:00Z');
+    await runGenerate();
+    const overdue = moduleRef.get(OverdueService);
+
+    // El plazo normal (corte + 4, el 19 a las 00:00 de La Paz) ya pasó, pero la gracia no.
+    setNow('2026-10-20T09:59:59Z');
+    expect(await overdue.sweep(clock.now())).toBe(0);
+    expect((await charges(group.id)).every((c) => c.status === 'pendiente')).toBe(true);
+
+    setNow('2026-10-20T10:00:00Z');
+    expect(await overdue.sweep(clock.now())).toBe(2);
+    expect((await charges(group.id)).every((c) => c.status === 'atrasado')).toBe(true);
+    const left = await inspect.query(
+      `SELECT count(*)::int AS n FROM group_members
+        WHERE group_id = $1 AND left_reason = 'mora'`,
+      [group.id],
+    );
+    expect(left.rows[0].n).toBe(2);
+  });
+
+  it('RF-002-05 y R5: cerrado el grupo no se genera el siguiente período ni se marcan atrasos (T033)', async () => {
+    const group = await createGroup({
+      createdAt: '2026-09-02T16:00:00Z',
+      billingDay: 15,
+      members: 2,
+    });
+    setNow('2026-10-15T04:00:00Z');
+    await runGenerate();
+    await inspect.query(
+      `UPDATE groups SET status = 'cerrado', closed_at = '2026-10-16T00:00:00Z' WHERE id = $1`,
+      [group.id],
+    );
+    const overdue = moduleRef.get(OverdueService);
+
+    setNow('2026-11-20T10:00:00Z');
+    await runGenerate();
+    expect(await overdue.sweep(clock.now())).toBe(0);
+
+    expect(await cycles(group.id)).toHaveLength(1);
+    expect((await charges(group.id)).every((c) => c.status === 'pendiente')).toBe(true);
   });
 
   it('CA-002-22: sin períodos perdidos no deja advertencia', async () => {

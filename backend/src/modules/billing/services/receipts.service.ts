@@ -23,6 +23,7 @@ import { ReceiptsRepository, type PaymentMethod } from '../repositories/receipts
 import { BillingReadService } from './billing-read.service.js';
 import { ChargeAccessService, forbidden, notFound } from './charge-access.service.js';
 import type { ChargeView } from './charge-views.js';
+import { OverdueService } from './overdue.service.js';
 import { PaymentReferenceService, referenceAlreadyUsed } from './payment-reference.service.js';
 
 export interface UploadReceiptInput {
@@ -88,6 +89,7 @@ export class ReceiptsService {
     private readonly events: ChargeEventsRepository,
     private readonly references: PaymentReferenceService,
     private readonly reads: BillingReadService,
+    private readonly overdue: OverdueService,
   ) {}
 
   /**
@@ -102,6 +104,8 @@ export class ReceiptsService {
    * revierte con la transacción.
    */
   async upload(userId: string, chargeId: string, input: UploadReceiptInput): Promise<ChargeView> {
+    // Un vencimiento aún no barrido se marca antes de decidir (research R2, RN-002-11).
+    await this.overdue.sweepForCharge(chargeId, this.clock.now());
     const context = await this.access.resolve(this.db, userId, chargeId);
     // El titular y quien solo mira no suben comprobantes de otro (plan §7).
     if (context.access === 'titular') throw forbidden();
@@ -147,6 +151,7 @@ export class ReceiptsService {
 
   /** `GET /charges/:chargeId/receipts/:receiptId/file` (RNF-002-01). */
   async fileUrl(userId: string, chargeId: string, receiptId: string): Promise<ReceiptFileUrl> {
+    await this.overdue.sweepForCharge(chargeId, this.clock.now());
     const { access } = await this.access.resolve(this.db, userId, chargeId);
     const receipt = await this.receipts.findById(this.db, receiptId);
     if (!receipt || receipt.chargeId !== chargeId) throw notFound();

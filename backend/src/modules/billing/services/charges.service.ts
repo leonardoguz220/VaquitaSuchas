@@ -24,6 +24,7 @@ import { BillingCyclesService } from './billing-cycles.service.js';
 import { BillingReadService } from './billing-read.service.js';
 import { ChargeAccessService, forbidden, type ChargeContext } from './charge-access.service.js';
 import type { ChargeView } from './charge-views.js';
+import { OverdueService } from './overdue.service.js';
 import { PaymentReferenceService } from './payment-reference.service.js';
 
 export interface ReviewInput {
@@ -107,6 +108,7 @@ export class ChargesService {
     private readonly groups: GroupsRepository,
     private readonly cycles: CyclesRepository,
     private readonly billingCycles: BillingCyclesService,
+    private readonly overdue: OverdueService,
   ) {}
 
   /**
@@ -354,9 +356,8 @@ export class ChargesService {
    * quien ya se retiró reciben 403); el grupo congelado no admite escrituras.
    */
   private async open(tx: Tx, userId: string, chargeId: string): Promise<ChargeContext> {
-    // Enganche pendiente (T032): aquí debe correr `OverdueService.sweepGroup(groupId, now)` antes
-    // de leer el cobro, para que un vencimiento aún no barrido se vea como `atrasado`. Mientras
-    // `OverdueService` no exista no se invoca nada (el rechazo ya decide `atrasado` por `dueAt`).
+    // Antes de leer el cobro, un vencimiento aún no barrido se marca `atrasado` (research R2).
+    await this.overdue.sweepForCharge(chargeId, this.clock.now(), tx);
     const context = await this.access.resolve(tx, userId, chargeId, { lock: true });
     if (context.access !== 'titular') throw forbidden();
     if (context.group.frozen_at !== null) throw groupFrozen();

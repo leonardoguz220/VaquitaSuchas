@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Clock } from '../../../shared/clock/clock.js';
 import { DbService } from '../../../shared/db/db.service.js';
 import { DomainError } from '../../../shared/errors/domain-error.js';
 import { DEFAULT_MESSAGES, ErrorCode } from '../../../shared/errors/error-codes.js';
@@ -18,6 +19,7 @@ import { CyclesRepository } from '../repositories/cycles.repository.js';
 import { ChargeEventsRepository } from '../repositories/events.repository.js';
 import { BillingReadService, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from './billing-read.service.js';
 import { notFound } from './charge-access.service.js';
+import { OverdueService } from './overdue.service.js';
 import { presentPublicCharge } from './charge-presenter.js';
 import type { ChargePublicView, GroupChargesPage, PeriodSummaryView } from './charge-views.js';
 
@@ -49,6 +51,8 @@ export class GroupBillingService {
     private readonly events: ChargeEventsRepository,
     private readonly reads: ChargeReadRepository,
     private readonly billingReads: BillingReadService,
+    private readonly clock: Clock,
+    private readonly overdue: OverdueService,
   ) {}
 
   /** `GET /groups/:groupId/billing/summary` (CA-002-17, CA-002-20). */
@@ -57,6 +61,7 @@ export class GroupBillingService {
     groupId: string,
     period: string | null,
   ): Promise<PeriodSummaryView> {
+    await this.overdue.sweepGroup(groupId, this.clock.now());
     const group = await this.requireMember(userId, groupId);
     const availablePeriods = await this.cycles.listPeriods(this.db, groupId);
     // Por omisión, el período del último ciclo; sin ciclo para el período pedido, 404.
@@ -90,6 +95,7 @@ export class GroupBillingService {
     groupId: string,
     query: GroupChargesQuery,
   ): Promise<GroupChargesPage> {
+    await this.overdue.sweepGroup(groupId, this.clock.now());
     const group = await this.requireMember(userId, groupId);
     const after = query.cursor === null ? null : decodeHistoryCursor(query.cursor);
     if (query.cursor !== null && after === null) {

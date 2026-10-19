@@ -2,6 +2,10 @@ import request from 'supertest';
 import { BillingHarness, type TestGroup } from './support/billing-harness.js';
 
 // Resumen del mes e historial del grupo (spec 002, US5, T035/T036) contra PostgreSQL real.
+// Los cobros `pendiente` de períodos viejos vencen en el futuro: uno ya vencido lo barrería el
+// sistema al consultar el grupo (spec 002, research R2) y esta prueba trata de otra cosa.
+const FUTURE_DUE = '2099-01-01T04:00:00.000Z';
+
 describe('Resumen del mes e historial del grupo', () => {
   const harness = new BillingHarness();
   let group: TestGroup;
@@ -17,7 +21,7 @@ describe('Resumen del mes e historial del grupo', () => {
   async function insertPaid(userId: string, period = '2026-10'): Promise<string> {
     const id = await harness.insertCharge(group, userId, {
       period,
-      dueAt: period === '2026-10' ? undefined : `${period}-19T04:00:00.000Z`,
+      dueAt: period === '2026-10' ? undefined : FUTURE_DUE,
     });
     await harness.pool.query(
       `UPDATE charges SET status = 'pagado', paid_at = '2026-10-16T12:00:00Z', settled_by = $2,
@@ -34,21 +38,14 @@ describe('Resumen del mes e historial del grupo', () => {
       [group.id, period],
     );
     if (!cycle.rows[0]) {
-      return harness.insertCharge(group, userId, { period, dueAt: `${period}-19T04:00:00.000Z` });
+      return harness.insertCharge(group, userId, { period, dueAt: FUTURE_DUE });
     }
     const result = await harness.pool.query<{ id: string }>(
       `INSERT INTO charges (group_id, user_id, cycle_id, period, origin, status, amount_cents,
                             price_cents, currency, total_bs_cents, member_count, issued_at, due_at)
        VALUES ($1, $2, $3, $4, 'ciclo', 'pendiente', 3333, 10001, 'BS', 10001, 3,
                $5::timestamptz, $6) RETURNING id`,
-      [
-        group.id,
-        userId,
-        cycle.rows[0].id,
-        period,
-        `${period}-15T04:00:00Z`,
-        `${period}-19T04:00:00.000Z`,
-      ],
+      [group.id, userId, cycle.rows[0].id, period, `${period}-15T04:00:00Z`, FUTURE_DUE],
     );
     return (result.rows[0] as { id: string }).id;
   }
@@ -175,7 +172,7 @@ describe('Resumen del mes e historial del grupo', () => {
     it('RF-002-16: por omisión usa el último ciclo y lista los períodos disponibles', async () => {
       await harness.insertCharge(group, members[0] as string, {
         period: '2026-09',
-        dueAt: '2026-09-19T04:00:00.000Z',
+        dueAt: FUTURE_DUE,
       });
       await harness.insertCharge(group, members[0] as string);
 
@@ -366,7 +363,7 @@ describe('Resumen del mes e historial del grupo', () => {
       await harness.insertCharge(group, members[1] as string, { status: 'atrasado' });
       await harness.insertCharge(group, members[0] as string, {
         period: '2026-09',
-        dueAt: '2026-09-19T04:00:00.000Z',
+        dueAt: FUTURE_DUE,
       });
 
       const byPeriod = await get(

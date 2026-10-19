@@ -22,6 +22,7 @@ import {
 import type { AuthenticatedRequest } from '../../../shared/guards/authenticated-request.js';
 import { AuthGuard } from '../../../shared/guards/auth.guard.js';
 import { requireUserId, uuidParam } from '../../../shared/http/request-user.js';
+import { GroupMemberGuard } from './group-member.guard.js';
 import { GroupOwnerGuard } from './group-owner.guard.js';
 import { CreateGroupDto, QuoteGroupDto } from './groups.dto.js';
 import { GroupsService, type HostEligibilityView } from '../services/groups.service.js';
@@ -103,5 +104,27 @@ export class MembersController {
     @Param('userId', uuidParam()) userId: string,
   ): Promise<{ removedUserId: string; openCharges: number }> {
     return this.membership.removeMember(groupId, userId, 'quitado');
+  }
+}
+
+/** Abandonar el grupo (spec 001, US5, RF-001-16). Cualquier miembro activo; el servicio decide si puede. */
+@ApiTags('groups')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'UNAUTHENTICATED: sin sesión válida.' })
+@ApiNotFoundResponse({ description: 'NOT_FOUND: el grupo no existe o no eres miembro activo.' })
+@UseGuards(AuthGuard, GroupMemberGuard)
+@Controller('groups/:id/leave')
+export class LeaveController {
+  constructor(private readonly membership: MembershipService) {}
+
+  @Post()
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Abandonar el grupo (RF-001-16)' })
+  @ApiUnprocessableEntityResponse({
+    description:
+      'BUSINESS_RULE: RN-001-08 (el titular no abandona; hint TRANSFER_OR_CLOSE) o RF-001-16 (cobros sin pagar; details.openCharges).',
+  })
+  async leave(@Param('id') groupId: string, @Req() request: AuthenticatedRequest): Promise<void> {
+    await this.membership.leave(groupId, requireUserId(request));
   }
 }
