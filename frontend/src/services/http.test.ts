@@ -128,6 +128,21 @@ describe('services/http (contrato 000 A.2 y C)', () => {
     expect(isConnectionError(error)).toBe(true);
   });
 
+  it('RF-000-18: pasa la señal de cancelación a fetch y una petición cancelada es error de conexión', async () => {
+    const controller = new AbortController();
+    fetchMock.mockRejectedValue(new DOMException('aborted', 'AbortError'));
+
+    const error = await apiRequest('/api/health', { signal: controller.signal }).catch(
+      (e: unknown) => e,
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/health',
+      expect.objectContaining({ signal: controller.signal }),
+    );
+    expect(isConnectionError(error)).toBe(true);
+  });
+
   it('RF-000-11: toApiError conserva un ApiError y envuelve cualquier otro error', () => {
     const original = new ApiError(409, 'EMAIL_TAKEN', 'Ese correo ya está registrado.');
     expect(toApiError(original)).toBe(original);
