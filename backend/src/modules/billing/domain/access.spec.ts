@@ -1,4 +1,4 @@
-import { allowedActions, resolveAccess } from './access.js';
+import { allowedActions, groupStateOf, resolveAccess } from './access.js';
 
 const group = { ownerId: 'owner' };
 const charge = { userId: 'ana', status: 'pendiente' as const };
@@ -67,7 +67,7 @@ describe('allowedActions', () => {
   it('CA-002-12: el dueño del cobro solo sube comprobante y nunca confirma el suyo', () => {
     expect(allowedActions('dueno', 'pendiente', 'activo')).toEqual(['uploadReceipt']);
     expect(allowedActions('dueno', 'atrasado', 'activo')).toEqual(['uploadReceipt']);
-    expect(allowedActions('dueno', 'en_revision', 'activo')).toEqual([]);
+    expect(allowedActions('dueno', 'en_revision', 'activo')).toEqual(['uploadReceipt']); // RF-002-08
     expect(allowedActions('dueno_retirado', 'atrasado', 'activo')).toEqual(['uploadReceipt']);
   });
 
@@ -80,5 +80,12 @@ describe('allowedActions', () => {
     expect(allowedActions('titular', 'en_revision', 'cerrado')).toEqual(['confirm', 'reject']);
     expect(allowedActions('titular', 'en_revision', 'congelado')).toEqual([]);
     expect(allowedActions('dueno', 'pendiente', 'congelado')).toEqual([]);
+  });
+
+  it('RF-002-05: el estado del grupo congelado manda sobre el cerrado y el activo', () => {
+    expect(groupStateOf({ status: 'activo', frozen: false })).toBe('activo');
+    expect(groupStateOf({ status: 'cerrado', frozen: false })).toBe('cerrado');
+    expect(groupStateOf({ status: 'cerrado', frozen: true })).toBe('congelado');
+    expect(groupStateOf({ status: 'activo', frozen: true })).toBe('congelado');
   });
 });
