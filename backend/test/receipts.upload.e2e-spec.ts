@@ -83,7 +83,7 @@ describe('Subida de comprobantes', () => {
       status: 'en_revision',
       amountCents: 3333,
       firstSubmittedAt: harness.clock.now().toISOString(),
-      allowedActions: [],
+      allowedActions: ['uploadReceipt'], // RF-002-08: puede reemplazarlo
     });
     expect(response.body.currentReceipt).toMatchObject({
       method: 'qr',

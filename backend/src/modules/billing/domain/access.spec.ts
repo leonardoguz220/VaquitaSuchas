@@ -67,7 +67,7 @@ describe('allowedActions', () => {
   it('CA-002-12: el dueño del cobro solo sube comprobante y nunca confirma el suyo', () => {
     expect(allowedActions('dueno', 'pendiente', 'activo')).toEqual(['uploadReceipt']);
     expect(allowedActions('dueno', 'atrasado', 'activo')).toEqual(['uploadReceipt']);
-    expect(allowedActions('dueno', 'en_revision', 'activo')).toEqual([]);
+    expect(allowedActions('dueno', 'en_revision', 'activo')).toEqual(['uploadReceipt']); // RF-002-08
     expect(allowedActions('dueno_retirado', 'atrasado', 'activo')).toEqual(['uploadReceipt']);
   });
 

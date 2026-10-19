@@ -45,6 +45,9 @@ export function allowedActions(
     if (status === 'en_revision') return ['confirm', 'reject'];
     return open ? ['manualPayment', 'cancel'] : [];
   }
-  if (access === 'dueno' || access === 'dueno_retirado') return open ? ['uploadReceipt'] : [];
+  if (access === 'dueno' || access === 'dueno_retirado') {
+    // RF-002-08: mientras está en revisión también puede reemplazar el comprobante.
+    return open || status === 'en_revision' ? ['uploadReceipt'] : [];
+  }
   return [];
 }
