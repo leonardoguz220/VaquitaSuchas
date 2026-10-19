@@ -5,6 +5,7 @@ import { CatalogModule } from '../catalog/catalog.module.js';
 import { GroupMemberGuard } from './controllers/group-member.guard.js';
 import { GroupOwnerGuard } from './controllers/group-owner.guard.js';
 import {
+  GroupAdminController,
   GroupsController,
   LeaveController,
   MembersController,
@@ -19,7 +20,7 @@ import { MembershipService } from './services/membership.service.js';
 // en AppModule) y otras specs.
 @Module({
   imports: [AuthModule, CatalogModule, AdaptersModule],
-  controllers: [GroupsController, MembersController, LeaveController],
+  controllers: [GroupsController, GroupAdminController, MembersController, LeaveController],
   providers: [
     GroupsRepository,
     MembersRepository,

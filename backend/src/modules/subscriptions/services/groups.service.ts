@@ -11,9 +11,12 @@ import { buildBreakdown, buildGroupDetail, type GroupDetail } from '../domain/gr
 import {
   MAX_ACTIVE_OWNED_GROUPS,
   MAX_SLOTS,
+  MIN_SLOTS,
   validateGroupInput,
+  type GroupInput,
   type GroupRule,
 } from '../domain/group-rules.js';
+import { applyGroupPatch, type GroupPatch } from '../domain/group-edit.js';
 import { generateInviteCode } from '../domain/invite-code.js';
 import type { Currency } from '../domain/money.js';
 import {
@@ -159,7 +162,7 @@ export class GroupsService {
         throw new DomainError(ErrorCode.NOT_FOUND, 404, DEFAULT_MESSAGES.NOT_FOUND);
       }
 
-      const broken = validateGroupInput(
+      this.assertValid(
         {
           priceCents: input.priceCents,
           currency: input.currency,
@@ -167,21 +170,8 @@ export class GroupsService {
           totalSlots: input.totalSlots,
           billingDay: input.billingDay,
         },
-        planCopy ? { maxSlots: planCopy.plan.maxSlots } : undefined,
+        planCopy ? planCopy.plan.maxSlots : null,
       );
-      const fields = fieldErrors(broken);
-      if (Object.keys(fields).length > 0) throw fieldsError(fields);
-      if (broken.includes('slots_exceed_plan') && planCopy) {
-        throw businessRule('RN-001-13', 'Los cupos superan los que permite el plan.', {
-          maxSlots: planCopy.plan.maxSlots,
-        });
-      }
-      if (broken.length > 0) {
-        throw businessRule(
-          'RN-001-09',
-          'El precio o los cupos están fuera de los límites permitidos.',
-        );
-      }
 
       const inviteCode = await this.freshInviteCode(tx);
       const individual = planCopy?.plan.individualPriceCents ?? null;
@@ -214,6 +204,111 @@ export class GroupsService {
       await this.bus.publish(tx, event);
       return this.detailFor(tx, group, 'titular');
     });
+  }
+
+  /**
+   * `PATCH /groups/:id` (RF-001-14, RF-001-09): edita nombre, precio, moneda, tipo de cambio, día de
+   * cobro, cupos y recepción de miembros. Bloquea la fila; rechaza un grupo cerrado o congelado y una
+   * `version` vieja (409 `STALE_STATE`). Los cobros y las solicitudes llevan su propia copia, así que
+   * no se tocan (RN-001-03); el nuevo `billing_day` rige desde el siguiente corte porque el corte
+   * vigente se deriva del último ciclo generado (data-model.md §2).
+   */
+  async update(groupId: string, input: GroupPatch & { version?: number }): Promise<GroupDetail> {
+    return this.db.withTransaction(async (tx) => {
+      const group = await this.groups.findByIdForUpdate(tx, groupId);
+      if (!group) throw new DomainError(ErrorCode.NOT_FOUND, 404, DEFAULT_MESSAGES.NOT_FOUND);
+      if (group.status === 'cerrado') {
+        throw new DomainError(
+          'GROUP_CLOSED',
+          422,
+          'El grupo está cerrado y solo se puede consultar.',
+          {
+            rule: 'RN-001-07',
+          },
+        );
+      }
+      if (group.frozen_at !== null) {
+        throw new DomainError(
+          'GROUP_FROZEN',
+          422,
+          'El grupo está congelado y solo se puede consultar.',
+          {
+            rule: 'RF-009-22',
+          },
+        );
+      }
+      if (input.version !== undefined && input.version !== group.version) {
+        throw new DomainError(
+          'STALE_STATE',
+          409,
+          'Otra persona modificó el grupo. Recárgalo e intenta de nuevo.',
+          { currentVersion: group.version },
+        );
+      }
+
+      const merged = applyGroupPatch(
+        {
+          name: group.name,
+          priceCents: Number(group.price_cents),
+          currency: group.currency,
+          exchangeRate: group.exchange_rate,
+          billingDay: group.billing_day,
+          totalSlots: group.total_slots,
+          acceptingMembers: group.accepting_members,
+        },
+        input,
+      );
+      const activeMembers = await this.members.countActive(tx, groupId);
+      this.assertValid(merged, group.plan_max_slots_snapshot, activeMembers);
+      const updated = await this.groups.update(tx, groupId, merged);
+      return this.detailFor(tx, updated, 'titular');
+    });
+  }
+
+  /** `GroupDetail` de un miembro activo; quien no lo es recibe 404 (RNF-001-01). */
+  async detail(q: DbTransaction, groupId: string, viewerId: string): Promise<GroupDetail> {
+    const group = await this.groups.findById(q, groupId);
+    const member = group ? await this.members.findActive(q, groupId, viewerId) : null;
+    if (!group || !member) {
+      throw new DomainError(ErrorCode.NOT_FOUND, 404, DEFAULT_MESSAGES.NOT_FOUND);
+    }
+    return this.detailFor(q, group, member.role);
+  }
+
+  /**
+   * Valida precio, moneda, cupos y día de cobro: campos mal formados → 400; cupos bajo los miembros
+   * activos → `SLOTS_BELOW_MEMBERS`; cupos sobre el plan → RN-001-13; el resto → RN-001-09.
+   */
+  private assertValid(
+    input: GroupInput,
+    planMaxSlots: number | null,
+    activeMembers?: number,
+  ): void {
+    const broken = validateGroupInput(
+      input,
+      planMaxSlots === null ? undefined : { maxSlots: planMaxSlots },
+    );
+    const fields = fieldErrors(broken);
+    if (Object.keys(fields).length > 0) throw fieldsError(fields);
+    if (activeMembers !== undefined && input.totalSlots < activeMembers) {
+      throw new DomainError(
+        'SLOTS_BELOW_MEMBERS',
+        422,
+        `Los cupos no pueden ser menos que los miembros actuales (${activeMembers}).`,
+        { rule: 'RF-001-14', minSlots: Math.max(activeMembers, MIN_SLOTS) },
+      );
+    }
+    if (broken.includes('slots_exceed_plan') && planMaxSlots !== null) {
+      throw businessRule('RN-001-13', 'Los cupos superan los que permite el plan.', {
+        maxSlots: planMaxSlots,
+      });
+    }
+    if (broken.length > 0) {
+      throw businessRule(
+        'RN-001-09',
+        'El precio o los cupos están fuera de los límites permitidos.',
+      );
+    }
   }
 
   /** Código único: hasta 5 intentos ante una colisión (RF-001-06). */

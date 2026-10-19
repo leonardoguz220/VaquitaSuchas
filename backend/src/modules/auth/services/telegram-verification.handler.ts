@@ -106,7 +106,11 @@ export class TelegramVerificationHandler implements TelegramUpdateHandler {
 
       await this.tokens.markUsed(tx, row.id, decision.outcome, now);
       if (decision.outcome !== 'verificado') return REJECTIONS[decision.outcome];
-      await this.users.markVerified(tx, row.user_id, decision.phone!, telegramUserId, now);
+      if (row.purpose === 'cambio_celular') {
+        await this.users.changePhone(tx, row.user_id, decision.phone!, telegramUserId);
+      } else {
+        await this.users.markVerified(tx, row.user_id, decision.phone!, telegramUserId, now);
+      }
       return DONE;
     });
   }

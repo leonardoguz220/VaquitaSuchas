@@ -1,17 +1,27 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { Clock } from '../../../shared/clock/clock.js';
 import { DbService, type DbTransaction } from '../../../shared/db/db.service.js';
 import { DomainError } from '../../../shared/errors/domain-error.js';
 import { DEFAULT_MESSAGES, ErrorCode } from '../../../shared/errors/error-codes.js';
 import type {
+  GroupClosed,
   MemberAdded,
   MemberRemoved,
   MemberRemovedReason,
+  OwnerChanged,
 } from '../../../shared/events/group-events.js';
 import { TxEventBus } from '../../../shared/events/tx-event-bus.js';
-import { canLeave } from '../domain/group-rules.js';
+import type { GroupDetail } from '../domain/group-detail.js';
+import { canLeave, canReceiveOwnership } from '../domain/group-rules.js';
+import { HOST_ELIGIBILITY_PORT, type HostEligibilityPort } from '../ports/host-eligibility.port.js';
+import {
+  OWNERSHIP_BLOCKERS_PORT,
+  type OwnershipBlockersPort,
+} from '../ports/ownership-blockers.port.js';
 import { OPEN_CHARGES_PORT, type OpenChargesPort } from '../ports/open-charges.port.js';
 import { GroupsRepository, type GroupRow } from '../repositories/groups.repository.js';
 import { MembersRepository, type MemberRow } from '../repositories/members.repository.js';
+import { GroupsService } from './groups.service.js';
 
 /** Motivos con los que se retira a alguien; `abandono` es de `leave`. */
 export type RemovalReason = Exclude<MemberRemovedReason, 'abandono'>;
@@ -38,6 +48,10 @@ export class MembershipService {
     private readonly groups: GroupsRepository,
     private readonly members: MembersRepository,
     @Inject(OPEN_CHARGES_PORT) private readonly openCharges: OpenChargesPort,
+    @Inject(HOST_ELIGIBILITY_PORT) private readonly eligibility: HostEligibilityPort,
+    @Inject(OWNERSHIP_BLOCKERS_PORT) private readonly blockers: OwnershipBlockersPort,
+    private readonly clock: Clock,
+    private readonly groupsService: GroupsService,
   ) {}
 
   /**
@@ -163,6 +177,122 @@ export class MembershipService {
       };
       await this.bus.publish(tx, event);
     });
+  }
+
+  /**
+   * El titular transfiere la titularidad a otro miembro activo (RF-001-17) en una transacción:
+   * cambia los dos `role` y `groups.owner_id` y publica `OwnerChanged`. El destinatario debe ser
+   * miembro activo, titular habilitado (CA-001-30) y tener menos de 5 grupos activos (RN-001-14);
+   * `OwnershipBlockersPort` informa de solicitudes en pago (RN-010-09). Devuelve el grupo con el
+   * rol de quien llamó, ya como miembro.
+   */
+  async transferOwnership(
+    groupId: string,
+    currentOwnerId: string,
+    toUserId: string,
+  ): Promise<GroupDetail> {
+    return this.db.withTransaction(async (tx) => {
+      const group = await this.requireWritableGroup(tx, groupId);
+      if (group.owner_id !== currentOwnerId) {
+        throw new DomainError(ErrorCode.FORBIDDEN, 403, DEFAULT_MESSAGES.FORBIDDEN);
+      }
+      if (toUserId === currentOwnerId) {
+        throw new DomainError(
+          ErrorCode.BUSINESS_RULE,
+          422,
+          'Elige a otro miembro del grupo como nuevo titular.',
+          { rule: 'RF-001-17' },
+        );
+      }
+      await this.assertNoBlockers(tx, groupId);
+
+      // Serializa las altas y transferencias del destinatario antes de contar sus grupos.
+      await this.groups.lockOwner(tx, toUserId);
+      const target = await this.members.findActive(tx, groupId, toUserId);
+      const eligibility = target ? await this.eligibility.check(tx, toUserId) : null;
+      const broken = canReceiveOwnership({
+        isActiveMember: target !== null,
+        isHostEligible: eligibility?.eligible ?? false,
+        activeOwnedGroups: await this.groups.countActiveOwned(tx, toUserId),
+      });
+      if (broken.includes('not_active_member')) {
+        throw new DomainError(
+          ErrorCode.BUSINESS_RULE,
+          422,
+          'La persona elegida no es miembro activo del grupo.',
+          { rule: 'RF-001-17' },
+        );
+      }
+      if (broken.includes('not_host_eligible')) {
+        throw new DomainError(
+          'NOT_HOST_ELIGIBLE',
+          422,
+          'La persona elegida aún no está habilitada para ser titular.',
+          { rule: 'RF-001-21', ...eligibility },
+        );
+      }
+      if (broken.includes('too_many_active_groups')) {
+        throw new DomainError(
+          'TOO_MANY_ACTIVE_GROUPS',
+          422,
+          'La persona elegida ya tiene el máximo de grupos activos como titular.',
+          { rule: 'RN-001-14' },
+        );
+      }
+
+      // Primero baja al titular actual: el índice único permite un solo titular activo.
+      await this.members.updateRole(tx, groupId, currentOwnerId, 'miembro');
+      await this.members.updateRole(tx, groupId, toUserId, 'titular');
+      await this.groups.setOwner(tx, groupId, toUserId);
+      const event: OwnerChanged = {
+        type: 'groups.owner-changed',
+        groupId,
+        previousOwnerId: currentOwnerId,
+        newOwnerId: toUserId,
+      };
+      await this.bus.publish(tx, event);
+      return this.groupsService.detail(tx, groupId, currentOwnerId);
+    });
+  }
+
+  /**
+   * El titular cierra el grupo (RF-001-18, RN-001-07): queda de solo lectura, los miembros siguen
+   * activos y no se generan más cobros. `OwnershipBlockersPort` puede impedirlo (RN-010-09).
+   * Publica `GroupClosed` (la spec 010 rechaza las solicitudes activas).
+   */
+  async close(groupId: string, ownerId: string): Promise<GroupDetail> {
+    return this.db.withTransaction(async (tx) => {
+      const group = await this.requireWritableGroup(tx, groupId);
+      if (group.owner_id !== ownerId) {
+        throw new DomainError(ErrorCode.FORBIDDEN, 403, DEFAULT_MESSAGES.FORBIDDEN);
+      }
+      await this.assertNoBlockers(tx, groupId);
+      await this.groups.close(tx, groupId, this.clock.now());
+      const event: GroupClosed = { type: 'groups.closed', groupId };
+      await this.bus.publish(tx, event);
+      return this.groupsService.detail(tx, groupId, ownerId);
+    });
+  }
+
+  /** Grupo bloqueado, existente y que admite cambios (ni cerrado ni congelado). */
+  private async requireWritableGroup(tx: DbTransaction, groupId: string): Promise<GroupRow> {
+    const group = await this.groups.findByIdForUpdate(tx, groupId);
+    if (!group) throw notFound();
+    if (group.status === 'cerrado') throw groupClosed();
+    if (group.frozen_at !== null) throw groupFrozen();
+    return group;
+  }
+
+  private async assertNoBlockers(tx: DbTransaction, groupId: string): Promise<void> {
+    const blockers = await this.blockers.blockers(tx, groupId);
+    if (blockers.length > 0) {
+      throw new DomainError(
+        ErrorCode.BUSINESS_RULE,
+        422,
+        'Hay solicitudes de ingreso en pago: espera a que se resuelvan.',
+        { rule: 'RN-010-09', blockers },
+      );
+    }
   }
 
   /** Un grupo cerrado o congelado es de solo lectura para el titular (RN-001-07); mora y baneo son del sistema. */

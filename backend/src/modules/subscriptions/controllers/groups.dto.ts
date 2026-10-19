@@ -1,6 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 const trim = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim() : value;
@@ -94,4 +105,65 @@ export class CreateGroupDto {
   @IsString()
   @MaxLength(500)
   paymentInfoText?: string | null;
+}
+
+/** Cuerpo de `PATCH /groups/:id` (RF-001-14): todos los campos son opcionales. */
+export class UpdateGroupDto {
+  @ApiPropertyOptional({ minLength: 2, maxLength: 60 })
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MinLength(2)
+  @MaxLength(60)
+  name?: string;
+
+  @ApiPropertyOptional({ description: 'Precio en centavos de la moneda indicada.' })
+  @IsOptional()
+  @IsInt()
+  @Max(Number.MAX_SAFE_INTEGER)
+  priceCents?: number;
+
+  @ApiPropertyOptional({ enum: CURRENCIES })
+  @IsOptional()
+  @IsIn(CURRENCIES)
+  currency?: 'USD' | 'BS';
+
+  @ApiPropertyOptional({ nullable: true, example: '6.9600' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  exchangeRate?: string | null;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 31 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(31)
+  billingDay?: number;
+
+  @ApiPropertyOptional({ description: 'Cupos totales, titular incluido (2 a 20).' })
+  @IsOptional()
+  @IsInt()
+  @Max(1000)
+  totalSlots?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  acceptingMembers?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Versión que el cliente leyó; si no coincide, 409 STALE_STATE.',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  version?: number;
+}
+
+/** Cuerpo de `POST /groups/:id/transfer-ownership` (RF-001-17). */
+export class TransferOwnershipDto {
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID()
+  toUserId!: string;
 }

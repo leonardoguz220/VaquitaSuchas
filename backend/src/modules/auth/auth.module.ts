@@ -5,6 +5,9 @@ import { TelegramModule } from '../telegram/telegram.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { JobRegistry } from '../../shared/jobs/job-registry.js';
 import { AUTH_SESSION_PORT } from '../../shared/ports/auth-session.port.js';
+import { UsersController } from '../users/controllers/users.controller.js';
+import { PhoneChangeController } from './controllers/phone-change.controller.js';
+import { PhoneChangeService } from './services/phone-change.service.js';
 import { PasswordController } from './controllers/password.controller.js';
 import { AuthController } from './controllers/auth.controller.js';
 import { SessionRenewalInterceptor } from './controllers/session-renewal.interceptor.js';
@@ -30,7 +33,7 @@ import { SessionService } from './services/session.service.js';
 // DbService, Clock, ConfigService y JobRegistry llegan de módulos globales.
 @Module({
   imports: [UsersModule, TelegramModule],
-  controllers: [AuthController, PasswordController],
+  controllers: [AuthController, PasswordController, PhoneChangeController, UsersController],
   providers: [
     PhoneTokensRepository,
     RateLimitRepository,
@@ -43,6 +46,7 @@ import { SessionService } from './services/session.service.js';
     ResetTokensRepository,
     MailOutbox,
     PasswordService,
+    PhoneChangeService,
     TelegramVerificationHandler,
     AuthSessionRepository,
     UnverifiedUsersRepository,
