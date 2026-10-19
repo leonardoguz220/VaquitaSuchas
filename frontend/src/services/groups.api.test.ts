@@ -4,9 +4,12 @@ import {
   createGroup,
   getGroup,
   getHostEligibility,
+  leaveGroup,
   listGroups,
   quoteGroup,
   regenerateInviteCode,
+  removeMember,
+  updateGroup,
   updatePaymentInfo,
 } from './groups';
 
@@ -180,5 +183,53 @@ describe('services/groups conectado al backend (contrato 001, T017 y T021)', () 
     const form = lastCall().options.body as FormData;
     expect(form.get('removeQr')).toBe('true');
     expect(form.has('text')).toBe(false);
+  });
+
+  it('RF-001-09: PATCH /groups/:id manda solo los campos y la version del titular', async () => {
+    await updateGroup(GROUP_ID, { acceptingMembers: false, version: 4 });
+    expect(lastCall()).toEqual({
+      path: `/api/groups/${GROUP_ID}`,
+      options: { method: 'PATCH', body: { acceptingMembers: false, version: 4 } },
+    });
+  });
+
+  it('RF-001-14: un 409 STALE_STATE de PATCH llega a la interfaz para recargar', async () => {
+    const stale = Object.assign(new Error('El grupo cambió.'), {
+      statusCode: 409,
+      code: 'STALE_STATE',
+    });
+    mockedRequest.mockRejectedValueOnce(stale);
+    await expect(updateGroup(GROUP_ID, { acceptingMembers: true, version: 3 })).rejects.toBe(stale);
+  });
+
+  it('RF-001-15: DELETE …/members/:userId quita al miembro y devuelve sus cobros abiertos', async () => {
+    const USER_ID = '5b0d7c3e-0000-4000-8000-0000000000b2';
+    mockedRequest.mockResolvedValueOnce({ removedUserId: USER_ID, openCharges: 2 } as never);
+    await expect(removeMember(GROUP_ID, USER_ID)).resolves.toEqual({
+      removedUserId: USER_ID,
+      openCharges: 2,
+    });
+    expect(lastCall()).toEqual({
+      path: `/api/groups/${GROUP_ID}/members/${USER_ID}`,
+      options: { method: 'DELETE' },
+    });
+  });
+
+  it('CA-001-11: quitar a un miembro siendo miembro da 403 a la interfaz', async () => {
+    const forbidden = Object.assign(new Error('No eres el titular.'), {
+      statusCode: 403,
+      code: 'FORBIDDEN',
+    });
+    mockedRequest.mockRejectedValueOnce(forbidden);
+    await expect(removeMember(GROUP_ID, 'otro')).rejects.toBe(forbidden);
+  });
+
+  it('RF-001-16: POST …/leave pide abandonar el grupo sin cuerpo', async () => {
+    mockedRequest.mockResolvedValueOnce(undefined as never);
+    await expect(leaveGroup(GROUP_ID)).resolves.toBeUndefined();
+    expect(lastCall()).toEqual({
+      path: `/api/groups/${GROUP_ID}/leave`,
+      options: { method: 'POST' },
+    });
   });
 });

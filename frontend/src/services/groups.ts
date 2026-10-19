@@ -1,11 +1,10 @@
 /**
  * Cliente de suscripciones compartidas (`specs/001-suscripciones-compartidas/contracts/api.md`).
  * Conectadas al backend: `GET /groups` y `GET /groups/:id` (T021), el asistente de creación
- * (T017) y `POST …/invite-code/regenerate`. `updateGroup` sigue con datos simulados de
- * `groups.mock.ts` hasta su tarea (T029).
+ * (T017), `PATCH /groups/:id` (T029), `DELETE …/members/:userId` y `POST …/leave` (T029, T031) y
+ * `POST …/invite-code/regenerate`.
  */
 import { apiRequest } from './http';
-import * as mock from './groups.mock';
 
 export type GroupCurrency = 'USD' | 'BS';
 export type GroupRole = 'titular' | 'miembro';
@@ -231,7 +230,29 @@ export function getGroup(
 
 /** `PATCH /groups/:groupId` (RF-001-14, RF-001-09): solo el titular. */
 export function updateGroup(groupId: string, input: UpdateGroupRequest): Promise<GroupDetail> {
-  return mock.updateGroup(groupId, input);
+  return apiRequest<GroupDetail>(`/api/groups/${encodeURIComponent(groupId)}`, {
+    method: 'PATCH',
+    body: input,
+  });
+}
+
+/**
+ * `DELETE /groups/:groupId/members/:userId` (RF-001-15): el titular quita a un miembro. Sus cobros
+ * se conservan; `openCharges` dice cuántos siguen sin pagar.
+ */
+export function removeMember(
+  groupId: string,
+  userId: string,
+): Promise<{ removedUserId: string; openCharges: number }> {
+  return apiRequest<{ removedUserId: string; openCharges: number }>(
+    `/api/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}`,
+    { method: 'DELETE' },
+  );
+}
+
+/** `POST /groups/:groupId/leave` (RF-001-16): `204`; los cobros sin pagar lo impiden (422). */
+export function leaveGroup(groupId: string): Promise<void> {
+  return apiRequest<void>(`/api/groups/${encodeURIComponent(groupId)}/leave`, { method: 'POST' });
 }
 
 /** `PUT /groups/:groupId/payment-info` (RF-001-20), `multipart/form-data`. */
