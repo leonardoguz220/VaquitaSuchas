@@ -1,7 +1,9 @@
 // PostToolUse (Edit, Write, MultiEdit). Después de editar código de backend/, frontend/ o database/:
 // 1. formatea el archivo con Prettier, si ya está instalado;
-// 2. corre los tests unitarios relacionados (Jest o Vitest) y, si fallan, se lo devuelve a Claude para que lo corrija.
-// No hace nada mientras no exista el código (antes de T001, T004 y T005). Se desactiva con VAQUITA_HOOK_TESTS=0.
+// 2. solo con VAQUITA_HOOK_TESTS=1, corre los tests unitarios relacionados (Jest o Vitest) y, si fallan, se lo devuelve a Claude.
+// Los tests están apagados por defecto: correrlos en cada edición choca con escribir el test antes que el código
+// (el test recién escrito falla y bloquea cada paso) y gasta muchos tokens. Ya los corren el hook de pre-push y la CI.
+// No hace nada mientras no exista el código (antes de T001, T004 y T005).
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -47,7 +49,7 @@ if (/\.(ts|tsx|js|mjs|cjs|json|css|md)$/.test(rel)) {
 
 const isCode = /\.(ts|tsx)$/.test(rel);
 // Las pruebas de database/ y las e2e necesitan PostgreSQL: las corre CI, no este hook.
-if (!isCode || workspace === 'database' || /\.e2e-spec\.ts$/.test(rel) || process.env.VAQUITA_HOOK_TESTS === '0') {
+if (!isCode || workspace === 'database' || /\.e2e-spec\.ts$/.test(rel) || process.env.VAQUITA_HOOK_TESTS !== '1') {
   process.exit(0);
 }
 
