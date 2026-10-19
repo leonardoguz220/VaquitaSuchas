@@ -70,7 +70,7 @@ Detalle completo en [`data-model.md`](data-model.md). Resumen:
 - **Convenciones** para todas las migraciones (RF-000-07): `uuid`, `timestamptz` UTC, dinero `bigint` en centavos, `snake_case` en inglés, `created_at`/`updated_at` con disparador, tablas de solo anexado con `forbid_update_delete()`, claves foráneas con `RESTRICT`.
 - **Migraciones 0001–0004:** extensión `unaccent` y funciones auxiliares; `job_runs`; `rate_limit_events`; `telegram_updates`. `schema_migrations` la crea el ejecutor.
 - **Rangos de numeración** por spec (en `research.md` R6): 0010 usuarios, 0020 catálogo, 0030 grupos, 0040 cobros, 0050 solicitudes, 0060 reputación, 0070 notificaciones, 0080 cupos, 0090 administración, 0100 reportes.
-- **Seed:** `database/seeds/` tiene el catálogo (spec 004) y datos de prueba. El administrador de desarrollo se crea con `npm run seed:admin -w backend` (reutiliza el hash y la normalización del backend) solo si `NODE_ENV` no es `production` y existen `SEED_ADMIN_EMAIL` y `SEED_ADMIN_PASSWORD`. No hay contraseña en el repositorio (RF-009-02).
+- **Seed:** `database/seeds/` tiene el catálogo (spec 004) y datos de prueba. El administrador se crea con `npm run seed:admin -w backend` (reutiliza el hash y la normalización del backend) solo si existen `SEED_ADMIN_EMAIL` y `SEED_ADMIN_PASSWORD`; en producción solo con `--allow-production` (spec 003 T022). No hay contraseña en el repositorio (RF-009-02).
 - **Respaldo:** `npm run db:dump` y `db:restore` (envoltorios de `pg_dump`/`psql`).
 
 ## 4. Contratos de API — _Leonardo (Backend)_

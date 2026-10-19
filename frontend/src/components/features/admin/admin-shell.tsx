@@ -4,7 +4,14 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { cx } from '@/components/ui/cx';
-import { ADMIN_HOSTS_PATH, ADMIN_PATH, ADMIN_USERS_PATH } from '@/lib/routes';
+import {
+  ADMIN_CATALOG_PATH,
+  ADMIN_DISPUTES_PATH,
+  ADMIN_HOSTS_PATH,
+  ADMIN_MODERATION_PATH,
+  ADMIN_PATH,
+  ADMIN_USERS_PATH,
+} from '@/lib/routes';
 import { AdminGate } from './admin-gate';
 
 /** Secciones del panel que ya existen; el resto de la spec 009 se suma en sus propias tareas. */
@@ -12,6 +19,9 @@ const SECTIONS = [
   { href: ADMIN_PATH, label: 'Tablero' },
   { href: ADMIN_USERS_PATH, label: 'Usuarios' },
   { href: ADMIN_HOSTS_PATH, label: 'Titulares' },
+  { href: ADMIN_DISPUTES_PATH, label: 'Reclamos' },
+  { href: ADMIN_CATALOG_PATH, label: 'Catálogo' },
+  { href: ADMIN_MODERATION_PATH, label: 'Moderación' },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
