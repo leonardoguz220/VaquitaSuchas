@@ -87,6 +87,48 @@ export function getMe(): Promise<UserSelf> {
   return apiRequest<UserSelf>('/api/auth/me');
 }
 
+/** Cuerpo de `POST /auth/password/forgot`. */
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+/**
+ * Respuesta 202 de `POST /auth/password/forgot`: idéntica exista o no la cuenta (CA-003-09).
+ * La pantalla no muestra `message` tal cual, sino su propio texto fijo (RF-003-10).
+ */
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
+/** Códigos de error propios de `POST /auth/password/forgot`. */
+export type ForgotPasswordErrorCode = 'VALIDATION_ERROR' | 'RATE_LIMITED';
+
+/** `POST /auth/password/forgot` (RF-003-10, RF-003-18). Lanza `ApiError` con los códigos del contrato. */
+export function forgotPassword(input: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
+  return apiRequest<ForgotPasswordResponse>('/api/auth/password/forgot', {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/** Cuerpo de `POST /auth/password/reset`; `token` sale del enlace del correo. */
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+  newPasswordConfirmation: string;
+}
+
+/** Códigos de error propios de `POST /auth/password/reset`. */
+export type ResetPasswordErrorCode = 'VALIDATION_ERROR' | 'RESET_TOKEN_INVALID';
+
+/**
+ * `POST /auth/password/reset` (RF-003-12). Responde 204 sin cuerpo. Lanza `ApiError`:
+ * `410 RESET_TOKEN_INVALID` (vencido, usado o reemplazado) o `400 VALIDATION_ERROR`.
+ */
+export async function resetPassword(input: ResetPasswordRequest): Promise<void> {
+  await apiRequest<void>('/api/auth/password/reset', { method: 'POST', body: input });
+}
+
 /** Códigos de `rejected` en `GET /auth/register/status`. */
 export type RegisterRejectedCode =
   | 'REGISTRATION_NOT_ALLOWED'
