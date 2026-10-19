@@ -1,8 +1,8 @@
 /**
  * Cliente de suscripciones compartidas (`specs/001-suscripciones-compartidas/contracts/api.md`).
- * Conectadas al backend (T021): `GET /groups`, `GET /groups/:id` y `POST …/invite-code/regenerate`.
- * El resto sigue con datos simulados de `groups.mock.ts` hasta que se conecte su tarea (T017 para
- * el asistente de creación, y los PATCH y datos de pago de la pestaña Ajustes).
+ * Conectadas al backend: `GET /groups` y `GET /groups/:id` (T021), el asistente de creación
+ * (T017) y `POST …/invite-code/regenerate`. `updateGroup` sigue con datos simulados de
+ * `groups.mock.ts` hasta su tarea (T029).
  */
 import { apiRequest } from './http';
 import * as mock from './groups.mock';
@@ -101,7 +101,8 @@ export interface HostEligibility {
   maxActiveGroups: number;
   canCreateMore: boolean;
   requirement: { minStars: number; minConsideredCharges: number; windowMonths: number };
-  current: { stars: number; consideredCharges: number; level: string };
+  /** `null` mientras la persona no tiene calificación (spec 007). */
+  current: { stars: number | null; consideredCharges: number; level: string | null };
 }
 
 export interface QuoteRequest {
@@ -177,7 +178,9 @@ export type GroupsErrorCode =
 
 /** `GET /users/me/host-eligibility` (RF-001-21). */
 export function getHostEligibility(options: GroupsRequestOptions = {}): Promise<HostEligibility> {
-  return mock.getHostEligibility(options.signal);
+  return apiRequest<HostEligibility>('/api/users/me/host-eligibility', {
+    signal: options.signal,
+  });
 }
 
 /** `POST /groups/quote`: desglose sin efectos para la pantalla de creación. */
@@ -185,12 +188,16 @@ export function quoteGroup(
   input: QuoteRequest,
   options: GroupsRequestOptions = {},
 ): Promise<QuoteResponse> {
-  return mock.quoteGroup(input, options.signal);
+  return apiRequest<QuoteResponse>('/api/groups/quote', {
+    method: 'POST',
+    body: input,
+    signal: options.signal,
+  });
 }
 
 /** `POST /groups` (RF-001-01 a 05): `201` con el `GroupDetail` y su `inviteCode`. */
 export function createGroup(input: CreateGroupRequest): Promise<GroupDetail> {
-  return mock.createGroup(input);
+  return apiRequest<GroupDetail>('/api/groups', { method: 'POST', body: input });
 }
 
 /** `GET /groups` (RF-001-19): solo los grupos del usuario. */
@@ -232,7 +239,14 @@ export function updatePaymentInfo(
   groupId: string,
   input: UpdatePaymentInfoInput,
 ): Promise<{ paymentInfo: PaymentInfo }> {
-  return mock.updatePaymentInfo(groupId, input);
+  const form = new FormData();
+  if (input.text !== undefined) form.append('text', input.text);
+  if (input.qr) form.append('qr', input.qr);
+  if (input.removeQr) form.append('removeQr', 'true');
+  return apiRequest<{ paymentInfo: PaymentInfo }>(
+    `/api/groups/${encodeURIComponent(groupId)}/payment-info`,
+    { method: 'PUT', body: form },
+  );
 }
 
 /** `POST /groups/:groupId/invite-code/regenerate` (RF-001-08). */

@@ -29,6 +29,12 @@ function Requirement({
   );
 }
 
+/** «4,0 (Bueno)»; sin calificación (`stars: null`) no se formatea ningún número. */
+function starsText(stars: number | null, level: string | null): string {
+  if (stars === null) return 'Sin calificación todavía';
+  return level ? `${formatDecimal(stars)} (${level})` : formatDecimal(stars);
+}
+
 export interface HostEligibilityPanelProps {
   open: boolean;
   onClose: () => void;
@@ -64,7 +70,7 @@ export function HostEligibilityPanel({ open, onClose, eligibility }: HostEligibi
         <ul aria-label="Lo que se pide para ser titular" className="flex flex-col gap-3">
           <Requirement
             label="Estrellas de puntualidad"
-            current={`${formatDecimal(current.stars)} (${current.level})`}
+            current={starsText(current.stars, current.level)}
             required={`${formatDecimal(requirement.minStars)} o más`}
           />
           <Requirement
