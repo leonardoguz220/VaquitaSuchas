@@ -36,7 +36,7 @@
 
 - [x] T014 [P] [US1] [BE] `backend/test/auth.register.e2e-spec.ts`: CA-003-01 (registro + simulación + sondeo → sesión, `password_hash` en argon2id), CA-003-02 (correo repetido con otra capitalización), CA-003-03 (contraseña de 8 caracteres), CA-003-25 (sin CI), CA-003-34 (sin aceptar la política) — Depende: T013 · Cubre: CA-003-01, CA-003-02, CA-003-03, CA-003-25, CA-003-34
 - [x] T015 [P] [US1] [BE] `backend/test/telegram.verify.e2e-spec.ts`: CA-003-25 (celular no boliviano), CA-003-26 (celular, Telegram o CI repetidos), CA-003-27 (token válido + contacto propio → verificado), CA-003-28 (token vencido, usado o contacto ajeno), CA-003-29 (sexto token en una hora) y el secuestro del enlace (otra cuenta de Telegram que pulsa Iniciar después) — Depende: T013 · Cubre: CA-003-25, CA-003-26, CA-003-27, CA-003-28, CA-003-29
-- [ ] T016 [P] [US1] [BE] `backend/test/auth.register.concurrency.e2e-spec.ts`: `Promise.all` de dos registros con el mismo correo → un solo éxito (la base resuelve la carrera) — Depende: T013 · Cubre: CA-003-19
+- [x] T016 [P] [US1] [BE] `backend/test/auth.register.concurrency.e2e-spec.ts`: `Promise.all` de dos registros con el mismo correo → un solo éxito (la base resuelve la carrera) — Depende: T013 · Cubre: CA-003-19
 - [ ] T017 [P] [US1] [BE] `backend/test/auth.ban.e2e-spec.ts` (parte de registro): CA-003-21 (correo de cuenta baneada con otras mayúsculas), CA-003-22 (mismo celular con correo distinto → rechazo en la verificación), CA-003-30 (CI o Telegram baneados con otros datos), CA-003-35 (alias de Gmail), con huellas sembradas por `IdentityService.blockIdentities` — Depende: T011, T013 · Cubre: CA-003-21, CA-003-22, CA-003-30, CA-003-35
 
 ### Implementación de la historia
