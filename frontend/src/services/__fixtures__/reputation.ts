@@ -2,7 +2,12 @@
  * Datos simulados que respetan el contrato 007 (`contracts/api.md`), solo para las pruebas.
  * Nombres, períodos y fechas son inventados.
  */
-import type { MyBadges, ReputationDetail, ReputationRecentCharge } from '../reputation';
+import type {
+  GroupRanking,
+  MyBadges,
+  ReputationDetail,
+  ReputationRecentCharge,
+} from '../reputation';
 
 export function recentCharge(
   overrides: Partial<ReputationRecentCharge> = {},
@@ -106,6 +111,42 @@ export function myBadges(overrides: Partial<MyBadges> = {}): MyBadges {
         description: '12 pagos puntuales seguidos.',
         condition: 'Paga a tiempo 12 cobros seguidos.',
         progress: { current: 2, target: 12 },
+      },
+    ],
+    ...overrides,
+  };
+}
+
+/**
+ * CA-007-10: 5, 4,5, 4,5 y «Nuevo», en el orden que entrega la API (el desempate entre los de
+ * 4,5 ya viene resuelto por el valor exacto y la racha).
+ */
+export function groupRanking(overrides: Partial<GroupRanking> = {}): GroupRanking {
+  return {
+    items: [
+      {
+        position: 1,
+        user: { userId: 'u3', fullName: 'Sofía Mamani' },
+        rating: { level: 'Excelente', stars: 5, starsLabel: '5 de 5' },
+        streak: 11,
+      },
+      {
+        position: 2,
+        user: { userId: 'u2', fullName: 'Ana Quispe Mamani' },
+        rating: { level: 'Bueno', stars: 4.5, starsLabel: '4,5 de 5' },
+        streak: 2,
+      },
+      {
+        position: 3,
+        user: { userId: 'u4', fullName: 'Bruno Paz' },
+        rating: { level: 'Bueno', stars: 4.5, starsLabel: '4,5 de 5' },
+        streak: 5,
+      },
+    ],
+    unranked: [
+      {
+        user: { userId: 'u5', fullName: 'Iván Céspedes' },
+        rating: { level: 'Nuevo', stars: null },
       },
     ],
     ...overrides,

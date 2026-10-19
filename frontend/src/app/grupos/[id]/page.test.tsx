@@ -17,6 +17,8 @@ import {
 } from '@/services/reports';
 import { saveBlob } from '@/lib/download';
 import { collection } from '@/services/__fixtures__/reports';
+import { groupRanking } from '@/services/__fixtures__/reputation';
+import { getGroupRanking } from '@/services/reputation';
 import GroupPage, { metadata } from './page';
 
 jest.mock('next/navigation', () => ({
@@ -34,6 +36,7 @@ jest.mock('@/services/reports', () => ({
   exportGroupHistoryCsv: jest.fn(),
 }));
 jest.mock('@/lib/download', () => ({ saveBlob: jest.fn() }));
+jest.mock('@/services/reputation', () => ({ getGroupRanking: jest.fn() }));
 
 jest.mock('@/services/charges', () => ({
   ...jest.requireActual('@/services/charges'),
@@ -779,5 +782,24 @@ describe('/grupos/[id] (spec 006 T014): pestaña Cobranza del titular', () => {
       await actor.click(screen.getByRole('button', { name: 'Exportar CSV del grupo' }));
       expect(await screen.findByText(/Vuelve a intentarlo en 2 minutos\./)).toBeVisible();
     });
+  });
+});
+
+describe('/grupos/[id] (spec 007 T026): pestaña Ranking', () => {
+  const mockedRanking = jest.mocked(getGroupRanking);
+
+  beforeEach(() => {
+    mockedRanking.mockReset();
+    mockedRanking.mockResolvedValue(groupRanking());
+  });
+
+  it('RF-007-10: un miembro abre la pestaña Ranking y se pide el ranking del grupo', async () => {
+    mockedGet.mockResolvedValue(memberView);
+    const actor = await renderPage();
+    const tab = await screen.findByRole('tab', { name: 'Ranking' });
+    expect(mockedRanking).not.toHaveBeenCalled();
+    await actor.click(tab);
+    expect(await screen.findByRole('list', { name: 'Ranking del grupo' })).toBeVisible();
+    expect(mockedRanking).toHaveBeenCalledWith('g2');
   });
 });

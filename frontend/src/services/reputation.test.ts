@@ -1,5 +1,5 @@
 import { apiRequest } from './http';
-import { getMyBadges, getMyReputation } from './reputation';
+import { getGroupRanking, getMyBadges, getMyReputation } from './reputation';
 
 jest.mock('./http', () => ({
   ...jest.requireActual('./http'),
@@ -21,5 +21,11 @@ describe('services/reputation (contrato 007)', () => {
     mockedRequest.mockResolvedValue({ earned: [], pending: [] });
     await getMyBadges();
     expect(mockedRequest).toHaveBeenCalledWith('/api/users/me/badges');
+  });
+
+  it('RF-007-09: getGroupRanking hace GET /api/groups/:id/ranking con el id codificado', async () => {
+    mockedRequest.mockResolvedValue({ items: [], unranked: [] });
+    await getGroupRanking('g/2');
+    expect(mockedRequest).toHaveBeenCalledWith('/api/groups/g%2F2/ranking');
   });
 });

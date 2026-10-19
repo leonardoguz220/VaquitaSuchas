@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { GroupChargesTab } from '@/components/features/billing/group-charges-tab';
 import { GroupCollectionTab } from '@/components/features/dashboard/group-collection-tab';
 import { ServiceLogo } from '@/components/features/catalog/service-logo';
+import { GroupRankingTab } from '@/components/features/reputation/group-ranking-tab';
 import { Alert, Button, Tabs } from '@/components/ui';
 import { useGroup } from '@/hooks/use-groups';
 import { GROUPS_PATH } from '@/lib/routes';
@@ -14,7 +15,7 @@ import { GroupMembersTab } from './group-members-tab';
 import { GroupSummaryTab } from './group-summary-tab';
 import { OwnerInviteSection } from './owner-invite-section';
 
-type TabId = 'resumen' | 'miembros' | 'cobros' | 'cobranza';
+type TabId = 'resumen' | 'miembros' | 'cobros' | 'cobranza' | 'ranking';
 
 function DetailSkeleton() {
   return (
@@ -61,8 +62,8 @@ export interface GroupDetailViewProps {
  * `GrupoMiembros.dc.html`) con las pestañas **Resumen** y **Miembros**; la pestaña
  * **Cobros** (spec 002 T037) muestra el resumen del mes y el historial, y el titular ve además
  * el código de invitación (T025), la cola «Por revisar» (spec 002 T026) y la pestaña
- * **Cobranza** (spec 006 T014). Quien no pertenece al
- * grupo recibe `404` (RNF-001-01) y ve el mismo mensaje que si no existiera.
+ * **Cobranza** (spec 006 T014). Todos ven la pestaña **Ranking** (spec 007 T026). Quien no
+ * pertenece al grupo recibe `404` (RNF-001-01) y ve el mismo mensaje que si no existiera.
  */
 export function GroupDetailView({ groupId }: GroupDetailViewProps) {
   const { status, data: group, error, reload, refresh, replace } = useGroup(groupId);
@@ -146,6 +147,7 @@ export function GroupDetailView({ groupId }: GroupDetailViewProps) {
           },
           { id: 'miembros', label: 'Miembros', content: <GroupMembersTab group={group} /> },
           { id: 'cobros', label: 'Cobros', content: <GroupChargesTab group={group} /> },
+          { id: 'ranking', label: 'Ranking', content: <GroupRankingTab groupId={group.id} /> },
           ...(isOwner
             ? [
                 {

@@ -88,3 +88,37 @@ export interface MyBadges {
 export function getMyBadges(): Promise<MyBadges> {
   return apiRequest<MyBadges>('/api/users/me/badges');
 }
+
+/** Persona del ranking: solo id y nombre, sin montos ni comprobantes (CA-007-11). */
+export interface RankingUser {
+  userId: string;
+  fullName: string;
+}
+
+export interface RankingItem {
+  position: number;
+  user: RankingUser;
+  rating: Rating;
+  streak: number;
+}
+
+/** Persona en nivel «Nuevo»: va al final y sin posición (RF-007-09). */
+export interface UnrankedItem {
+  user: RankingUser;
+  rating: Rating;
+  /** El contrato no la incluye en el ejemplo; se muestra solo si llega. */
+  streak?: number;
+}
+
+export interface GroupRanking {
+  items: RankingItem[];
+  unranked: UnrankedItem[];
+}
+
+/**
+ * `GET /groups/:groupId/ranking` (RF-007-09 a RF-007-11): el orden lo decide la API. Quien no
+ * pertenece al grupo recibe `404` (CA-007-12).
+ */
+export function getGroupRanking(groupId: string): Promise<GroupRanking> {
+  return apiRequest<GroupRanking>(`/api/groups/${encodeURIComponent(groupId)}/ranking`);
+}

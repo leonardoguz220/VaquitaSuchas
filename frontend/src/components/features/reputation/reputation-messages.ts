@@ -11,6 +11,8 @@ export const REPUTATION_MESSAGES = {
   unexpected: REGISTER_ERROR_MESSAGES.unexpected,
   loadFailed: 'No pudimos cargar tu reputación.',
   badgesLoadFailed: 'No pudimos cargar tus insignias.',
+  rankingLoadFailed: 'No pudimos cargar el ranking.',
+  rankingNotFound: 'No encontramos el ranking de este grupo.',
 } as const;
 
 /** Detalle del aviso cuando falla una carga de la reputación que no es un `401`. */
