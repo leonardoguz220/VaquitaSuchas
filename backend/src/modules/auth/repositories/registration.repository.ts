@@ -114,6 +114,20 @@ export class RegistrationRepository {
     );
   }
 
+  /** Cambio de celular ya verificado con el bot (RF-003-15): la cuenta sigue verificada. */
+  async changePhone(
+    q: Queryable,
+    userId: string,
+    phone: string,
+    telegramUserId: number,
+  ): Promise<void> {
+    await q.query('UPDATE users SET phone_e164 = $2, telegram_user_id = $3 WHERE id = $1', [
+      userId,
+      phone,
+      telegramUserId,
+    ]);
+  }
+
   async phoneTaken(q: Queryable, phone: string, exceptUserId: string): Promise<boolean> {
     const result = await q.query('SELECT 1 FROM users WHERE phone_e164 = $1 AND id <> $2', [
       phone,
