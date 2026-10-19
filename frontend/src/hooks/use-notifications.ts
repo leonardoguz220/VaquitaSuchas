@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  getNotificationPreferences,
+  reactivateTelegram,
+  unsubscribeEmail,
+  updateNotificationPreferences,
   getUnreadCount,
   listNotifications,
   markAllNotificationsRead,
@@ -9,6 +13,7 @@ import {
   type AppNotification,
   type NotificationsPage,
 } from '@/services/notifications';
+import { useApiResource } from './use-api-resource';
 import { useApiSubmit } from './use-api-submit';
 import { usePaginatedResource } from './use-paginated-resource';
 
@@ -181,4 +186,25 @@ export function useMarkNotificationRead() {
 export function useMarkAllNotificationsRead() {
   const request = useCallback(() => markAllNotificationsRead(), []);
   return useApiSubmit<void, void>(request);
+}
+
+/** Preferencias de avisos por correo y Telegram (`GET /notification-preferences`, RF-005-17). */
+export function useNotificationPreferences() {
+  return useApiResource(getNotificationPreferences);
+}
+
+/** Guardar las preferencias (`PUT /notification-preferences`, RF-005-17). */
+export function useUpdateNotificationPreferences() {
+  return useApiSubmit(updateNotificationPreferences);
+}
+
+/** Reactivar los avisos por Telegram tras volver a iniciar el bot (RF-005-28). */
+export function useReactivateTelegram() {
+  const request = useCallback(() => reactivateTelegram(), []);
+  return useApiSubmit<void, Awaited<ReturnType<typeof reactivateTelegram>>>(request);
+}
+
+/** Dejar de recibir un tipo de correo desde el enlace del correo (pública, RF-005-18). */
+export function useUnsubscribeEmail() {
+  return useApiSubmit(unsubscribeEmail);
 }

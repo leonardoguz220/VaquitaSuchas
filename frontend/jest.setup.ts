@@ -11,4 +11,8 @@ jest.mock('@/services/notifications', () => ({
   getUnreadCount: jest.fn(() => new Promise(() => {})),
   markNotificationRead: jest.fn(() => new Promise(() => {})),
   markAllNotificationsRead: jest.fn(() => new Promise(() => {})),
+  getNotificationPreferences: jest.fn(() => new Promise(() => {})),
+  updateNotificationPreferences: jest.fn(() => new Promise(() => {})),
+  reactivateTelegram: jest.fn(() => new Promise(() => {})),
+  unsubscribeEmail: jest.fn(() => new Promise(() => {})),
 }));

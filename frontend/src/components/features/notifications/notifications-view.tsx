@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Alert, Button } from '@/components/ui';
 import { cx } from '@/components/ui/cx';
@@ -10,6 +11,7 @@ import {
   useMarkNotificationRead,
   useNotificationsList,
 } from '@/hooks/use-notifications';
+import { NOTIFICATION_SETTINGS_PATH } from '@/lib/routes';
 import type { ApiError } from '@/services/http';
 import type { AppNotification } from '@/services/notifications';
 import { NOTIFICATION_MESSAGES, notificationErrorMessage } from './notification-messages';
@@ -98,14 +100,22 @@ export function NotificationsView() {
                 : `Tienes ${unreadCount} ${unreadCount === 1 ? 'aviso sin leer' : 'avisos sin leer'}.`}
           </p>
         </div>
-        <Button
-          variant="secondary"
-          onClick={() => void onMarkAll()}
-          loading={markAll.isSubmitting}
-          disabled={unreadCount === 0}
-        >
-          Marcar todas como leídas
-        </Button>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Link
+            href={NOTIFICATION_SETTINGS_PATH}
+            className="inline-flex min-h-11 items-center font-bold text-primary underline underline-offset-2 hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            Ajustes de avisos
+          </Link>
+          <Button
+            variant="secondary"
+            onClick={() => void onMarkAll()}
+            loading={markAll.isSubmitting}
+            disabled={unreadCount === 0}
+          >
+            Marcar todas como leídas
+          </Button>
+        </div>
       </div>
 
       <div role="group" aria-label="Filtrar notificaciones" className="flex flex-wrap gap-2">

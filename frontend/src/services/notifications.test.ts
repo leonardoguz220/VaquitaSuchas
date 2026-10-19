@@ -1,5 +1,9 @@
 import { apiRequest } from './http';
 import {
+  getNotificationPreferences,
+  reactivateTelegram,
+  unsubscribeEmail,
+  updateNotificationPreferences,
   getUnreadCount,
   listNotifications,
   markAllNotificationsRead,
@@ -52,6 +56,43 @@ describe('services/notifications (contrato 005): centro de notificaciones', () =
     await markAllNotificationsRead();
     expect(mockedRequest).toHaveBeenCalledWith('/api/notifications/read-all', {
       method: 'POST',
+    });
+  });
+});
+
+describe('services/notifications (contrato 005): preferencias y desactivación', () => {
+  const channel = { recordatorios: true, resoluciones: true, titular: false, grupo: true };
+
+  it('RF-005-17: getNotificationPreferences hace GET /api/notification-preferences', async () => {
+    mockedRequest.mockResolvedValue({});
+    await getNotificationPreferences();
+    expect(mockedRequest).toHaveBeenCalledWith('/api/notification-preferences');
+  });
+
+  it('RF-005-17: updateNotificationPreferences hace PUT con correo y Telegram por tipo', async () => {
+    mockedRequest.mockResolvedValue(undefined);
+    await updateNotificationPreferences({ email: channel, telegram: channel });
+    expect(mockedRequest).toHaveBeenCalledWith('/api/notification-preferences', {
+      method: 'PUT',
+      body: { email: channel, telegram: channel },
+    });
+  });
+
+  it('RF-005-28: reactivateTelegram hace POST …/telegram/reactivate', async () => {
+    mockedRequest.mockResolvedValue({});
+    await reactivateTelegram();
+    expect(mockedRequest).toHaveBeenCalledWith(
+      '/api/notification-preferences/telegram/reactivate',
+      { method: 'POST' },
+    );
+  });
+
+  it('CA-005-13: unsubscribeEmail hace POST /api/notifications/unsubscribe con el token en el cuerpo', async () => {
+    mockedRequest.mockResolvedValue({ category: 'recordatorios' });
+    await expect(unsubscribeEmail('tok.123')).resolves.toEqual({ category: 'recordatorios' });
+    expect(mockedRequest).toHaveBeenCalledWith('/api/notifications/unsubscribe', {
+      method: 'POST',
+      body: { token: 'tok.123' },
     });
   });
 });

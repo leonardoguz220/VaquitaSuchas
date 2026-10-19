@@ -1,4 +1,6 @@
 import {
+  NOTIFICATION_SETTINGS_PATH,
+  UNSUBSCRIBE_PATH,
   NOTIFICATIONS_PATH,
   safeInternalLink,
   CHARGES_PATH,
@@ -24,7 +26,13 @@ import {
 
 describe('routes (RF-000-15, RF-000-16)', () => {
   it('RF-000-15: la lista de rutas públicas es la del plan §6', () => {
-    expect(PUBLIC_ROUTES).toEqual(['/ingresar', '/registro', '/recuperar', '/estado']);
+    expect(PUBLIC_ROUTES).toEqual([
+      '/ingresar',
+      '/registro',
+      '/recuperar',
+      '/estado',
+      '/avisos/desactivar',
+    ]);
     expect(LOGIN_PATH).toBe('/ingresar');
   });
 
@@ -250,5 +258,19 @@ describe('rutas de notificaciones (plan 005 §6)', () => {
     ]) {
       expect(safeInternalLink(bad)).toBeNull();
     }
+  });
+});
+
+describe('rutas de ajustes de avisos (spec 005 T023)', () => {
+  it('RF-005-17: /ajustes/avisos es protegida', () => {
+    expect(NOTIFICATION_SETTINGS_PATH).toBe('/ajustes/avisos');
+    expect(isPublicPath(NOTIFICATION_SETTINGS_PATH)).toBe(false);
+  });
+
+  it('RF-005-18: /avisos/desactivar es pública (el enlace del correo se abre sin sesión)', () => {
+    expect(UNSUBSCRIBE_PATH).toBe('/avisos/desactivar');
+    expect(isPublicPath(UNSUBSCRIBE_PATH)).toBe(true);
+    expect(isPublicPath('/avisos')).toBe(false);
+    expect(safeNextPath('/avisos/desactivar?token=x')).toBeNull();
   });
 });

@@ -226,4 +226,14 @@ describe('/notificaciones (spec 005 T012)', () => {
       screen.getByText(/Las notificaciones de la app no se desactivan y se guardan 90 días/),
     ).toBeInTheDocument();
   });
+
+  it('RF-005-17: enlaza a «Ajustes de avisos»', async () => {
+    mockedList.mockResolvedValue(notificationsPage());
+    renderPage();
+    await pageList();
+    expect(screen.getByRole('link', { name: 'Ajustes de avisos' })).toHaveAttribute(
+      'href',
+      '/ajustes/avisos',
+    );
+  });
 });

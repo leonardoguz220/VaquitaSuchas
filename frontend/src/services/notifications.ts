@@ -69,3 +69,59 @@ export function markNotificationRead(notificationId: string): Promise<void> {
 export function markAllNotificationsRead(): Promise<void> {
   return apiRequest<void>('/api/notifications/read-all', { method: 'POST' });
 }
+
+/** Interruptores por tipo de aviso de un canal (RF-005-17). */
+export type ChannelPreferences = Record<NotificationCategory, boolean>;
+
+/** `NotificationPreferences` del contrato. Las notificaciones en la app no tienen campo (RF-005-03). */
+export interface NotificationPreferences {
+  email: ChannelPreferences;
+  telegram: ChannelPreferences & {
+    /** `true` si la persona bloqueó el bot (RF-005-28). */
+    blocked: boolean;
+  };
+  /** Rebote permanente del correo. */
+  emailProblem: boolean;
+  /** Informativo: los correos de seguridad siempre se envían (RF-005-17). */
+  securityEmailsAlwaysOn: true;
+}
+
+/** Cuerpo de `PUT /notification-preferences`. */
+export interface UpdateNotificationPreferencesRequest {
+  email: ChannelPreferences;
+  telegram: ChannelPreferences;
+}
+
+/** `GET /notification-preferences` (RF-005-17). */
+export function getNotificationPreferences(): Promise<NotificationPreferences> {
+  return apiRequest<NotificationPreferences>('/api/notification-preferences');
+}
+
+/**
+ * `PUT /notification-preferences` (RF-005-17; CA-005-11, CA-005-32). El contrato no fija el
+ * cuerpo de la respuesta: la pantalla vuelve a pedir las preferencias tras guardar.
+ */
+export function updateNotificationPreferences(
+  input: UpdateNotificationPreferencesRequest,
+): Promise<unknown> {
+  return apiRequest<unknown>('/api/notification-preferences', { method: 'PUT', body: input });
+}
+
+/** `POST /notification-preferences/telegram/reactivate` (RF-005-28; CA-005-33). */
+export function reactivateTelegram(): Promise<NotificationPreferences> {
+  return apiRequest<NotificationPreferences>('/api/notification-preferences/telegram/reactivate', {
+    method: 'POST',
+  });
+}
+
+/**
+ * `POST /notifications/unsubscribe` (RF-005-18; CA-005-13): pública, con el token firmado del
+ * enlace del correo. Desactiva ese tipo de correo y devuelve su categoría. `400` si el token no
+ * es válido.
+ */
+export function unsubscribeEmail(token: string): Promise<{ category: NotificationCategory }> {
+  return apiRequest<{ category: NotificationCategory }>('/api/notifications/unsubscribe', {
+    method: 'POST',
+    body: { token },
+  });
+}
