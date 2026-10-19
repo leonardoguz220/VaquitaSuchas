@@ -52,6 +52,8 @@ H1 (CHECK de estados en `charge_events`), H2 (estado inicial según el origen), 
 
 Para el backend: `ensureCurrentCycle` calcula el siguiente corte a partir del último `cut_date` del grupo (spec 001, PR #43 M5); la generación copia en cada cobro la copia del ciclo con `amount_cents = base_share_cents`; el cobro de ingreso se inserta ya `pagado` con `settlement = 'ingreso'`; un cobro `pagado` o `cancelado` ya no se actualiza.
 
+Notas de la revisión de cierre (PR #79), para el backend: (1) en `createEntryCharge` (spec 010) hay que llamar a `ensureCurrentCycle` **antes** de dar de alta al miembro; si no, se le genera un cobro `ciclo` `pendiente` y el de ingreso ya no nace `pagado` (CA-002-24). (2) Si `total_bs_cents < member_count`, la cuota base sería 0 y el cobro (`amount_cents > 0`) falla: el backend debe impedir ese caso, que no se da con el mínimo de Bs 1,00 y 20 cupos. (3) Que el miembro no confirme su propio pago (RN-002-03, `settled_by <> user_id`) lo valida el servicio; la base no lo impone. Propuesta pendiente: `exchange_rate > 0` también en `billing_cycles`.
+
 ## 4. Contratos de API — _Leonardo (Backend)_
 
 Detalle en [`contracts/api.md`](contracts/api.md): `GET /me/charges`, `GET /charges/:id`, `POST /charges/:id/receipts`, `GET /charges/:id/receipts/:rid/file`, `POST /charges/:id/{confirm,reject,manual-payment,cancel}`, `GET /groups/:id/charges`, `GET /groups/:id/billing/summary`.

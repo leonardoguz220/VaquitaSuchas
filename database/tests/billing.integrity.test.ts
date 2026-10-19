@@ -422,7 +422,7 @@ async function pendingCharge(cycleOverrides: Row = {}): Promise<{
 // ================================================================ billing_cycles
 
 describe('billing_cycles (0040)', () => {
-  test('RF-002-04: dos ciclos del mismo grupo y período fallan', async () => {
+  test('RF-002-01, RF-002-04: dos ciclos del mismo grupo y período fallan', async () => {
     const group = await createGroup();
     await createCycle(group);
     await rejectsWith(cycleInsert(group, {}), { code: UNIQUE_VIOLATION });
@@ -842,7 +842,7 @@ describe('charges (0041) y sus disparadores (0043)', () => {
     }
   });
 
-  test('RN-002-02 / CA-002-16: cambiar monto, tipo de cambio, período u otra columna de copia falla', async () => {
+  test('RN-002-02 / RF-002-02 / CA-002-16: cambiar monto, tipo de cambio, período u otra columna de copia o identidad falla', async () => {
     const { chargeId } = await pendingCharge({ currency: 'USD' });
     const before = await chargeState(chargeId);
     const updates = [
@@ -856,6 +856,9 @@ describe('charges (0041) y sus disparadores (0043)', () => {
       `due_at = due_at + interval '1 day'`,
       `origin = 'ingreso', join_request_id = gen_random_uuid()`,
       'user_id = (SELECT owner_id FROM groups WHERE groups.id = charges.group_id)',
+      'group_id = gen_random_uuid()',
+      'cycle_id = gen_random_uuid()',
+      'join_request_id = gen_random_uuid()',
     ];
     for (const set of updates) {
       await rejectsByTrigger(run(`UPDATE charges SET ${set} WHERE id = $1`, [chargeId]));

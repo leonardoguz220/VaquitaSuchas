@@ -65,7 +65,7 @@ CREATE TABLE charges (
   CONSTRAINT charges_status_check
     CHECK (status IN ('pendiente', 'en_revision', 'pagado', 'atrasado', 'cancelado')),
   CONSTRAINT charges_amount_cents_check CHECK (amount_cents > 0),
-  -- H3: los mismos CHECK de la copia que el ciclo.
+  -- H3: CHECK de la copia (los del ciclo más exchange_rate > 0, que el ciclo no tiene; ver data-model §1).
   CONSTRAINT charges_price_cents_check CHECK (price_cents > 0),
   CONSTRAINT charges_currency_check CHECK (currency IN ('USD', 'BS')),
   CONSTRAINT charges_exchange_rate_currency_check
