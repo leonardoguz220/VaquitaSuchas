@@ -4,6 +4,8 @@ import {
   getHostEligibility,
   listGroups,
   quoteGroup,
+  regenerateInviteCode,
+  updateGroup,
   updatePaymentInfo,
   type CreateGroupRequest,
 } from './groups';
@@ -112,5 +114,28 @@ describe('services/groups (contrato 001): ver', () => {
     const error = new ApiError(404, 'NOT_FOUND', 'x');
     mockedRequest.mockRejectedValue(error);
     await expect(getGroup('ajeno')).rejects.toBe(error);
+  });
+});
+
+describe('services/groups (contrato 001): invitar', () => {
+  it('RF-001-09: updateGroup hace PATCH /api/groups/:id con los campos y la versión', async () => {
+    mockedRequest.mockResolvedValue({ id: 'g1' });
+    await updateGroup('g1', { acceptingMembers: false, version: 3 });
+    expect(mockedRequest).toHaveBeenCalledWith('/api/groups/g1', {
+      method: 'PATCH',
+      body: { acceptingMembers: false, version: 3 },
+    });
+
+    const error = new ApiError(409, 'STALE_STATE', 'x');
+    mockedRequest.mockRejectedValue(error);
+    await expect(updateGroup('g1', { version: 2 })).rejects.toBe(error);
+  });
+
+  it('RF-001-08: regenerateInviteCode hace POST /api/groups/:id/invite-code/regenerate sin cuerpo', async () => {
+    mockedRequest.mockResolvedValue({ inviteCode: 'Q4W8ZR2N' });
+    await expect(regenerateInviteCode('g1')).resolves.toEqual({ inviteCode: 'Q4W8ZR2N' });
+    expect(mockedRequest).toHaveBeenCalledWith('/api/groups/g1/invite-code/regenerate', {
+      method: 'POST',
+    });
   });
 });

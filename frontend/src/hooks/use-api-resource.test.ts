@@ -71,4 +71,30 @@ describe('useApiResource', () => {
     act(() => result.current.replace('nuevo'));
     expect(result.current).toMatchObject({ status: 'success', data: 'nuevo' });
   });
+
+  it('refresh vuelve a pedir sin pasar por loading', async () => {
+    const load = jest.fn().mockResolvedValueOnce('v1').mockResolvedValueOnce('v2');
+    const { result } = renderHook(() => useApiResource(load));
+    await waitFor(() => expect(result.current.data).toBe('v1'));
+
+    let pending: Promise<void> = Promise.resolve();
+    act(() => {
+      pending = result.current.refresh();
+    });
+    expect(result.current).toMatchObject({ status: 'success', data: 'v1' });
+    await act(async () => pending);
+    expect(result.current).toMatchObject({ status: 'success', data: 'v2' });
+  });
+
+  it('refresh con error deja el error', async () => {
+    const load = jest
+      .fn()
+      .mockResolvedValueOnce('v1')
+      .mockRejectedValueOnce(new ApiError(500, 'INTERNAL_ERROR', 'x'));
+    const { result } = renderHook(() => useApiResource(load));
+    await waitFor(() => expect(result.current.data).toBe('v1'));
+    await act(async () => result.current.refresh());
+    expect(result.current.status).toBe('error');
+    expect(result.current.error?.code).toBe('INTERNAL_ERROR');
+  });
 });

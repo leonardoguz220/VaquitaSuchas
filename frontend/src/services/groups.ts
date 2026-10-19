@@ -228,3 +228,41 @@ export function updatePaymentInfo(
     { method: 'PUT', formData: form },
   );
 }
+
+/**
+ * Campos editables de `PATCH /groups/:groupId` (RF-001-14, RF-001-09); todos opcionales.
+ * `version` evita pisar cambios de otra persona (`409 STALE_STATE`).
+ */
+export interface UpdateGroupRequest {
+  name?: string;
+  priceCents?: number;
+  currency?: GroupCurrency;
+  exchangeRate?: string | null;
+  billingDay?: number;
+  totalSlots?: number;
+  acceptingMembers?: boolean;
+  version: number;
+}
+
+/**
+ * `PATCH /groups/:groupId` (solo titular). Devuelve el `GroupDetail` actualizado. Lanza
+ * `ApiError` `409 STALE_STATE`, `422` (`GROUP_CLOSED`, `GROUP_FROZEN`, `SLOTS_BELOW_MEMBERS`...)
+ * y `403` para un miembro.
+ */
+export function updateGroup(groupId: string, input: UpdateGroupRequest): Promise<GroupDetail> {
+  return apiRequest<GroupDetail>(`/api/groups/${encodeURIComponent(groupId)}`, {
+    method: 'PATCH',
+    body: input,
+  });
+}
+
+/**
+ * `POST /groups/:groupId/invite-code/regenerate` (RF-001-08, solo titular): el código anterior
+ * deja de servir al instante (CA-001-09).
+ */
+export function regenerateInviteCode(groupId: string): Promise<{ inviteCode: string }> {
+  return apiRequest<{ inviteCode: string }>(
+    `/api/groups/${encodeURIComponent(groupId)}/invite-code/regenerate`,
+    { method: 'POST' },
+  );
+}

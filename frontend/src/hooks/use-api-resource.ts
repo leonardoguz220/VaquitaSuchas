@@ -59,11 +59,33 @@ export function useApiResource<T>(load: (() => Promise<T>) | null) {
     };
   }, [load, attempt]);
 
+  const loadRef = useRef(load);
+  useEffect(() => {
+    loadRef.current = load;
+  }, [load]);
+
+  /**
+   * Vuelve a pedir el recurso sin pasar por "cargando" (por ejemplo, tras un `409 STALE_STATE`),
+   * para que la pantalla no pierda el aviso que está mostrando. Si falla, queda en `error`.
+   */
+  const refresh = useCallback(async () => {
+    const current = loadRef.current;
+    if (!current) return;
+    try {
+      const data = await current();
+      setState({ status: 'success', data, error: null });
+    } catch (caught) {
+      const error = toApiError(caught);
+      const redirecting = redirectRef.current(error);
+      setState({ status: redirecting ? 'redirecting' : 'error', data: null, error });
+    }
+  }, []);
+
   /** Vuelve a pedir el recurso (botón "Reintentar"). */
   const reload = useCallback(() => setAttempt((current) => current + 1), []);
 
   /** Reemplaza los datos por los que devolvió otra llamada, sin volver a pedirlos. */
   const replace = useCallback((data: T) => setState({ status: 'success', data, error: null }), []);
 
-  return { ...state, reload, replace };
+  return { ...state, reload, refresh, replace };
 }

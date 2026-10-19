@@ -10,6 +10,7 @@ import type { GroupDetail } from '@/services/groups';
 import { groupErrorMessage } from './group-messages';
 import { GroupMembersTab } from './group-members-tab';
 import { GroupSummaryTab } from './group-summary-tab';
+import { OwnerInviteSection } from './owner-invite-section';
 
 type TabId = 'resumen' | 'miembros';
 
@@ -55,11 +56,12 @@ export interface GroupDetailViewProps {
 
 /**
  * Detalle del grupo `/grupos/[id]` (spec 001 T020, plan §6; mockups `GrupoMiembro.dc.html` y
- * `GrupoMiembros.dc.html`) con las pestañas **Resumen** y **Miembros**. Quien no pertenece al
+ * `GrupoMiembros.dc.html`) con las pestañas **Resumen** y **Miembros**; el titular ve además
+ * el código de invitación (T025). Quien no pertenece al
  * grupo recibe `404` (RNF-001-01) y ve el mismo mensaje que si no existiera.
  */
 export function GroupDetailView({ groupId }: GroupDetailViewProps) {
-  const { status, data: group, error, reload } = useGroup(groupId);
+  const { status, data: group, error, reload, refresh, replace } = useGroup(groupId);
   const [tab, setTab] = useState<TabId>('resumen');
 
   if (status === 'loading' || status === 'redirecting') {
@@ -130,7 +132,13 @@ export function GroupDetailView({ groupId }: GroupDetailViewProps) {
           {
             id: 'resumen',
             label: 'Resumen',
-            content: <GroupSummaryTab group={group} />,
+            content: (
+              <GroupSummaryTab group={group}>
+                {isOwner && (
+                  <OwnerInviteSection group={group} onGroupChange={replace} onRefresh={refresh} />
+                )}
+              </GroupSummaryTab>
+            ),
           },
           { id: 'miembros', label: 'Miembros', content: <GroupMembersTab group={group} /> },
         ]}

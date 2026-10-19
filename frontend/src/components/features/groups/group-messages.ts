@@ -18,6 +18,15 @@ export const GROUP_MESSAGES = {
   copied: 'Copiamos el código.',
   inviteCopied: 'Copiamos la invitación con el enlace para que la pegues donde quieras.',
   copyFailed: 'No pudimos copiar. Selecciona el código y cópialo a mano.',
+  regenerateFailed: 'No pudimos regenerar el código.',
+  regenerated: 'Generamos un código nuevo. El anterior ya no sirve.',
+  acceptingFailed: 'No pudimos cambiar la recepción de nuevos miembros.',
+  acceptingOn: 'El grupo vuelve a recibir solicitudes con el código.',
+  acceptingOff: 'Pausaste la recepción de nuevos miembros.',
+  /** `409 STALE_STATE` (plan 001 §6): se recarga el grupo. */
+  stale: 'Otra persona modificó el grupo. Cargamos los datos actualizados.',
+  groupClosed: 'El grupo está cerrado: ya no se puede modificar.',
+  groupFrozen: 'El grupo está en solo lectura porque su titular fue baneado.',
   connection: REGISTER_ERROR_MESSAGES.connection,
   unexpected: REGISTER_ERROR_MESSAGES.unexpected,
 } as const;
@@ -30,4 +39,12 @@ export function groupErrorMessage(error: ApiError): string {
 /** `4.5` → `4,5`: número con coma decimal para la interfaz. */
 export function formatDecimal(value: number): string {
   return String(value).replace('.', ',');
+}
+
+/** Mensaje de error de una acción del titular sobre el grupo (PATCH, regenerar el código). */
+export function ownerActionErrorMessage(error: ApiError): string {
+  if (error.code === 'STALE_STATE') return GROUP_MESSAGES.stale;
+  if (error.code === 'GROUP_CLOSED') return GROUP_MESSAGES.groupClosed;
+  if (error.code === 'GROUP_FROZEN') return GROUP_MESSAGES.groupFrozen;
+  return groupErrorMessage(error);
 }

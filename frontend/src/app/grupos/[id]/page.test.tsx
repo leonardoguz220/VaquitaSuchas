@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { isPublicPath } from '@/lib/routes';
-import { getGroup, type GroupDetail } from '@/services/groups';
+import { getGroup, updateGroup, type GroupDetail } from '@/services/groups';
 import { ApiError } from '@/services/http';
 import GroupPage, { metadata } from './page';
 
@@ -9,9 +9,14 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
   usePathname: () => '/grupos/g2',
 }));
-jest.mock('@/services/groups', () => ({ getGroup: jest.fn() }));
+jest.mock('@/services/groups', () => ({
+  getGroup: jest.fn(),
+  updateGroup: jest.fn(),
+  regenerateInviteCode: jest.fn(),
+}));
 
 const mockedGet = jest.mocked(getGroup);
+const mockedUpdate = jest.mocked(updateGroup);
 
 // Datos simulados del contrato 001 (GroupDetail visto por un miembro).
 const memberView: GroupDetail = {
@@ -83,7 +88,10 @@ async function renderPage(id = 'g2') {
 
 const section = (name: string) => screen.getByRole('region', { name });
 
-beforeEach(() => mockedGet.mockReset());
+beforeEach(() => {
+  mockedGet.mockReset();
+  mockedUpdate.mockReset();
+});
 
 describe('/grupos/[id] (spec 001 T020): carga', () => {
   it('RF-001-13: la ruta es protegida y pide el grupo del segmento', async () => {
@@ -255,5 +263,60 @@ describe('/grupos/[id] (spec 001 T020): pestaña Miembros', () => {
     await actor.click(await screen.findByRole('tab', { name: 'Miembros' }));
     const row = within(section('Miembros (1)')).getByRole('listitem');
     expect(row).not.toHaveTextContent('+591');
+  });
+});
+
+describe('/grupos/[id] (spec 001 T025): código de invitación del titular', () => {
+  const ownerView: GroupDetail = {
+    ...memberView,
+    myRole: 'titular',
+    myShareCents: 1981,
+    inviteCode: 'K7M2Q9PX',
+  };
+
+  it('RF-001-06: el titular ve el código en Resumen; un miembro no', async () => {
+    mockedGet.mockResolvedValueOnce(ownerView);
+    const { unmount } = render(await GroupPage({ params: Promise.resolve({ id: 'g2' }) }));
+    const code = await screen.findByRole('region', { name: 'Código de invitación' });
+    expect(within(code).getByTestId('invite-code')).toHaveTextContent('K7M2Q9PX');
+    expect(within(code).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+    unmount();
+
+    mockedGet.mockResolvedValueOnce(memberView);
+    await renderPage();
+    await screen.findByRole('heading', { level: 1, name: 'Spotify depa' });
+    expect(screen.queryByRole('region', { name: 'Código de invitación' })).not.toBeInTheDocument();
+  });
+
+  it('RF-001-09: pausar actualiza la pantalla con el grupo que devuelve la API', async () => {
+    mockedGet.mockResolvedValue(ownerView);
+    mockedUpdate.mockResolvedValue({
+      ...ownerView,
+      entryWindow: { ...ownerView.entryWindow, acceptingMembers: false },
+      version: 4,
+    });
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('switch'));
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByRole('region', { name: 'Ventana de ingreso' })).toHaveTextContent(
+      'El titular pausó la recepción de nuevos miembros.',
+    );
+  });
+
+  it('RF-001-09: con 409 STALE_STATE vuelve a pedir el grupo y conserva el aviso', async () => {
+    mockedGet
+      .mockResolvedValueOnce(ownerView)
+      .mockResolvedValueOnce({ ...ownerView, name: 'Spotify del depa', version: 9 });
+    mockedUpdate.mockRejectedValue(new ApiError(409, 'STALE_STATE', 'x'));
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('switch'));
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Spotify del depa' }),
+    ).toBeInTheDocument();
+    expect(mockedGet).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Otra persona modificó el grupo. Cargamos los datos actualizados.',
+    );
   });
 });
