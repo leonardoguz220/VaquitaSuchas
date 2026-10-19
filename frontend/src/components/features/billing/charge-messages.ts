@@ -34,6 +34,15 @@ export const CHARGE_MESSAGES = {
   groupFrozen: 'El grupo está en solo lectura porque su titular fue baneado.',
   reviewForm: 'Revisa el método y la referencia.',
   uploaded: 'Enviamos tu comprobante. El titular lo revisará.',
+  reasonLength: 'El motivo debe tener entre 5 y 200 caracteres.',
+  confirmed: 'Confirmaste el pago. El cobro quedó pagado.',
+  rejected: 'Rechazaste el comprobante. El miembro verá el motivo.',
+  /** `409 INVALID_TRANSITION` en una acción del titular. */
+  notInReview: 'El cobro ya no está en revisión. Cargamos los datos actualizados.',
+  ownerOnly: 'Solo el titular del grupo puede hacer esto.',
+  fileDeleted: 'El archivo ya no está disponible: se eliminó 2 meses después del cierre del grupo.',
+  fileFailed: 'No pudimos abrir el comprobante.',
+  checkBank: 'Revisa en tu banco que llegó el monto con esa referencia antes de confirmar.',
   connection: REGISTER_ERROR_MESSAGES.connection,
   unexpected: REGISTER_ERROR_MESSAGES.unexpected,
 } as const;
@@ -118,4 +127,31 @@ export function uploadErrorOutcome(error: ApiError): UploadErrorOutcome {
   }
   if (error.statusCode === 503) return outcome(null, CHARGE_MESSAGES.storageFailed);
   return outcome(null, chargeErrorMessage(error));
+}
+
+/** Qué hacer con un error al confirmar o rechazar (plan 002 §6). */
+export function reviewErrorOutcome(error: ApiError): Omit<UploadErrorOutcome, 'field'> & {
+  field: 'reason' | null;
+} {
+  switch (error.code) {
+    case 'STALE_STATE':
+      return { field: null, message: CHARGE_MESSAGES.stale, refresh: true };
+    case 'INVALID_TRANSITION':
+      return { field: null, message: CHARGE_MESSAGES.notInReview, refresh: true };
+    case 'VALIDATION_ERROR':
+      return { field: 'reason', message: CHARGE_MESSAGES.reasonLength, refresh: false };
+    case 'GROUP_FROZEN':
+      return { field: null, message: CHARGE_MESSAGES.groupFrozen, refresh: false };
+  }
+  if (error.statusCode === 403) {
+    return { field: null, message: CHARGE_MESSAGES.ownerOnly, refresh: false };
+  }
+  return { field: null, message: chargeErrorMessage(error), refresh: false };
+}
+
+/** Mensaje al fallar «Ver comprobante» (`410 FILE_DELETED` por la retención, RN-002-06). */
+export function receiptFileErrorMessage(error: ApiError): string {
+  if (error.code === 'FILE_DELETED' || error.statusCode === 410) return CHARGE_MESSAGES.fileDeleted;
+  if (isConnectionError(error)) return CHARGE_MESSAGES.connection;
+  return CHARGE_MESSAGES.fileFailed;
 }

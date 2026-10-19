@@ -2,7 +2,14 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { isPublicPath } from '@/lib/routes';
 import { pendingCharge, reviewCharge } from '@/services/__fixtures__/charges';
-import { getCharge, uploadReceipt, type Charge } from '@/services/charges';
+import {
+  confirmCharge,
+  getCharge,
+  getReceiptFile,
+  rejectCharge,
+  uploadReceipt,
+  type Charge,
+} from '@/services/charges';
 import { ApiError } from '@/services/http';
 import ChargePage, { metadata } from './page';
 
@@ -10,10 +17,20 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
   usePathname: () => '/cobros/c1',
 }));
-jest.mock('@/services/charges', () => ({ getCharge: jest.fn(), uploadReceipt: jest.fn() }));
+jest.mock('@/services/charges', () => ({
+  ...jest.requireActual('@/services/charges'),
+  getCharge: jest.fn(),
+  uploadReceipt: jest.fn(),
+  confirmCharge: jest.fn(),
+  rejectCharge: jest.fn(),
+  getReceiptFile: jest.fn(),
+}));
 
 const mockedGet = jest.mocked(getCharge);
 const mockedUpload = jest.mocked(uploadReceipt);
+const mockedConfirm = jest.mocked(confirmCharge);
+const mockedReject = jest.mocked(rejectCharge);
+const mockedFile = jest.mocked(getReceiptFile);
 
 async function renderPage(id = 'c1') {
   const ui = await ChargePage({ params: Promise.resolve({ id }) });
@@ -27,6 +44,9 @@ const section = (name: string) => screen.getByRole('region', { name });
 beforeEach(() => {
   mockedGet.mockReset();
   mockedUpload.mockReset();
+  mockedConfirm.mockReset();
+  mockedReject.mockReset();
+  mockedFile.mockReset();
 });
 
 afterEach(() => {
@@ -406,5 +426,192 @@ describe('/cobros/[id] (spec 002 T022): subir el comprobante', () => {
     await renderPage();
     await screen.findByRole('heading', { name: 'Cobro de Octubre 2026' });
     expect(screen.queryByLabelText('Subir comprobante')).not.toBeInTheDocument();
+  });
+});
+
+const paidCharge: Charge = {
+  ...reviewCharge,
+  status: 'pagado',
+  paidAt: '2026-10-19T16:00:00.000Z',
+  settlement: 'comprobante',
+  settledBy: { userId: 'u1', fullName: 'Marco Vargas Rojas' },
+  currentReceipt: { ...reviewCharge.currentReceipt!, status: 'confirmado' },
+  allowedActions: [],
+  version: 3,
+};
+
+const review = () => screen.getByRole('region', { name: 'Comprobante de Ana Quispe Mamani' });
+
+async function openReject(actor: ReturnType<typeof userEvent.setup>) {
+  await actor.click(await screen.findByRole('button', { name: 'Rechazar' }));
+  return screen.getByRole('dialog', { name: 'Rechazar comprobante' });
+}
+
+describe('/cobros/[id] (spec 002 T026): acciones del titular', () => {
+  it('RF-002-10: el titular ve el comprobante vigente y no los datos de pago', async () => {
+    mockedGet.mockResolvedValue(reviewCharge);
+    await renderPage();
+    await screen.findByRole('region', { name: 'Comprobante de Ana Quispe Mamani' });
+    expect(review()).toHaveTextContent('MétodoTransferencia');
+    expect(review()).toHaveTextContent('ReferenciaTRF-889102');
+    expect(review()).toHaveTextContent('Subido19 oct 2026, 10:42');
+    expect(review()).toHaveTextContent('ArchivoImagen · 860 KB');
+    expect(screen.queryByRole('region', { name: 'Datos de pago' })).not.toBeInTheDocument();
+  });
+
+  it('CA-002-06: Confirmar pago manda la versión y muestra el cobro pagado que devuelve la API', async () => {
+    mockedGet.mockResolvedValue(reviewCharge);
+    mockedConfirm.mockResolvedValue(paidCharge);
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Confirmar pago' }));
+    expect(mockedConfirm).toHaveBeenCalledWith('c1', { version: 2 });
+    expect(await screen.findByText('Confirmaste el pago. El cobro quedó pagado.')).toBeVisible();
+    expect(screen.getByText('Pagado')).toHaveClass('bg-status-pagado-bg');
+    expect(screen.queryByRole('button', { name: 'Confirmar pago' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Rechazar' })).not.toBeInTheDocument();
+  });
+
+  it('CA-002-07: Rechazar abre el modal y manda el motivo y «comprobante inválido»', async () => {
+    mockedGet.mockResolvedValue(reviewCharge);
+    mockedReject.mockResolvedValue({
+      ...pendingCharge,
+      lastRejection: {
+        reason: 'No llegó el monto.',
+        invalidReceipt: true,
+        at: '2026-10-19T16:00:00Z',
+      },
+      version: 3,
+    });
+    const actor = await renderPage();
+    const dialog = await openReject(actor);
+    const reason = within(dialog).getByLabelText('Motivo (lo verá Ana Quispe Mamani)');
+    expect(reason).toHaveFocus();
+    await actor.type(reason, '  No llegó el monto.  ');
+    await actor.click(within(dialog).getByLabelText(/Marcar como comprobante inválido/));
+    await actor.click(within(dialog).getByRole('button', { name: 'Rechazar comprobante' }));
+    expect(mockedReject).toHaveBeenCalledWith('c1', {
+      reason: 'No llegó el monto.',
+      invalidReceipt: true,
+      version: 2,
+    });
+    expect(
+      await screen.findByText('Rechazaste el comprobante. El miembro verá el motivo.'),
+    ).toBeVisible();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByText('Pendiente')).toBeInTheDocument();
+    expect(screen.getByText('Motivo: No llegó el monto.')).toBeVisible();
+  });
+
+  it('CA-002-08: un motivo vacío o de menos de 5 caracteres no se envía', async () => {
+    mockedGet.mockResolvedValue(reviewCharge);
+    const actor = await renderPage();
+    const dialog = await openReject(actor);
+    await actor.click(within(dialog).getByRole('button', { name: 'Rechazar comprobante' }));
+    expect(
+      within(dialog).getByText('El motivo debe tener entre 5 y 200 caracteres.'),
+    ).toBeVisible();
+    await actor.type(within(dialog).getByRole('textbox'), 'mal ');
+    await actor.click(within(dialog).getByRole('button', { name: 'Rechazar comprobante' }));
+    expect(mockedReject).not.toHaveBeenCalled();
+    expect(within(dialog).getByRole('textbox')).toHaveAttribute('maxLength', '200');
+  });
+
+  it('CA-002-08: si la API responde 400 VALIDATION_ERROR, el error va junto al motivo', async () => {
+    mockedGet.mockResolvedValue(reviewCharge);
+    mockedReject.mockRejectedValue(new ApiError(400, 'VALIDATION_ERROR', 'x'));
+    const actor = await renderPage();
+    const dialog = await openReject(actor);
+    await actor.type(within(dialog).getByRole('textbox'), 'Motivo válido');
+    await actor.click(within(dialog).getByRole('button', { name: 'Rechazar comprobante' }));
+    expect(
+      await within(dialog).findByText('El motivo debe tener entre 5 y 200 caracteres.'),
+    ).toBeVisible();
+  });
+
+  it('CA-002-19: con 409 STALE_STATE al confirmar recarga el cobro y avisa', async () => {
+    mockedGet.mockResolvedValueOnce(reviewCharge).mockResolvedValueOnce(paidCharge);
+    mockedConfirm.mockRejectedValue(new ApiError(409, 'STALE_STATE', 'x'));
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Confirmar pago' }));
+    expect(
+      await screen.findByText(
+        'El cobro cambió mientras lo veías. Cargamos los datos actualizados.',
+      ),
+    ).toBeVisible();
+    expect(mockedGet).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText('Pagado')).toBeInTheDocument();
+  });
+
+  it('CA-002-19: con 409 INVALID_TRANSITION al rechazar cierra el modal, recarga y avisa', async () => {
+    mockedGet.mockResolvedValueOnce(reviewCharge).mockResolvedValueOnce(paidCharge);
+    mockedReject.mockRejectedValue(
+      new ApiError(409, 'INVALID_TRANSITION', 'x', { from: 'pagado', action: 'reject' }),
+    );
+    const actor = await renderPage();
+    const dialog = await openReject(actor);
+    await actor.type(within(dialog).getByRole('textbox'), 'Motivo válido');
+    await actor.click(within(dialog).getByRole('button', { name: 'Rechazar comprobante' }));
+    expect(
+      await screen.findByText('El cobro ya no está en revisión. Cargamos los datos actualizados.'),
+    ).toBeVisible();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockedGet).toHaveBeenCalledTimes(2);
+  });
+
+  it('CA-002-12: si la API responde 403 al confirmar, avisa que solo puede el titular', async () => {
+    mockedGet.mockResolvedValue(reviewCharge);
+    mockedConfirm.mockRejectedValue(new ApiError(403, 'FORBIDDEN', 'x'));
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Confirmar pago' }));
+    expect(await screen.findByText('Solo el titular del grupo puede hacer esto.')).toBeVisible();
+    expect(screen.getByText('En revisión')).toBeInTheDocument();
+  });
+
+  it('CA-002-12: los botones siguen allowedActions; el dueño del cobro no ve Confirmar ni Rechazar', async () => {
+    mockedGet.mockResolvedValueOnce({ ...reviewCharge, allowedActions: ['reject'] });
+    const { unmount } = render(await ChargePage({ params: Promise.resolve({ id: 'c1' }) }));
+    expect(await screen.findByRole('button', { name: 'Rechazar' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirmar pago' })).not.toBeInTheDocument();
+    unmount();
+
+    mockedGet.mockResolvedValueOnce({ ...reviewCharge, allowedActions: ['uploadReceipt'] });
+    await renderPage();
+    expect(await screen.findByRole('button', { name: 'Ver comprobante' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirmar pago' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Rechazar' })).not.toBeInTheDocument();
+  });
+
+  it('RNF-002-01: Ver comprobante pide la URL firmada y la abre en una pestaña nueva', async () => {
+    mockedGet.mockResolvedValue(reviewCharge);
+    mockedFile.mockResolvedValue({
+      url: 'https://storage.vaquita.test/receipts/firmado?token=1',
+      expiresAt: '2026-10-19T15:00:00.000Z',
+      mime: 'image/jpeg',
+    });
+    const tab = { opener: {} as unknown, location: { href: '' }, close: jest.fn() };
+    const open = jest.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Ver comprobante' }));
+    expect(open).toHaveBeenCalledWith('', '_blank');
+    expect(mockedFile).toHaveBeenCalledWith('c1', 'r1');
+    expect(tab.location.href).toBe('https://storage.vaquita.test/receipts/firmado?token=1');
+    expect(tab.opener).toBeNull();
+    open.mockRestore();
+  });
+
+  it('RN-002-06: con 410 FILE_DELETED cierra la pestaña y explica que el archivo ya no está', async () => {
+    mockedGet.mockResolvedValue(reviewCharge);
+    mockedFile.mockRejectedValue(new ApiError(410, 'FILE_DELETED', 'x'));
+    const tab = { opener: null, location: { href: '' }, close: jest.fn() };
+    const open = jest.spyOn(window, 'open').mockReturnValue(tab as unknown as Window);
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Ver comprobante' }));
+    expect(
+      await screen.findByText(
+        'El archivo ya no está disponible: se eliminó 2 meses después del cierre del grupo.',
+      ),
+    ).toBeVisible();
+    expect(tab.close).toHaveBeenCalled();
+    open.mockRestore();
   });
 });

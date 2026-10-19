@@ -2,10 +2,16 @@
 
 import { useCallback } from 'react';
 import {
+  confirmCharge,
   getCharge,
+  getReceiptFile,
+  listGroupCharges,
   listMyCharges,
+  rejectCharge,
   uploadReceipt,
   type ChargeStatus,
+  type ListGroupChargesParams,
+  type RejectChargeRequest,
   type UploadReceiptRequest,
 } from '@/services/charges';
 import { useApiResource } from './use-api-resource';
@@ -55,4 +61,54 @@ export function useUploadReceipt(chargeId: string) {
     [chargeId],
   );
   return useApiSubmit(request);
+}
+
+/** Confirmar un pago como titular (`POST /charges/:id/confirm`, RF-002-10). */
+export function useConfirmCharge(chargeId: string) {
+  const request = useCallback(
+    (input: { version?: number }) => confirmCharge(chargeId, input),
+    [chargeId],
+  );
+  return useApiSubmit(request);
+}
+
+/** Rechazar un comprobante con motivo (`POST /charges/:id/reject`, RF-002-11). */
+export function useRejectCharge(chargeId: string) {
+  const request = useCallback(
+    (input: RejectChargeRequest) => rejectCharge(chargeId, input),
+    [chargeId],
+  );
+  return useApiSubmit(request);
+}
+
+/** Pedir la URL firmada de un comprobante (`GET /charges/:id/receipts/:rid/file`, RNF-002-01). */
+export function useReceiptFile(chargeId: string) {
+  const request = useCallback(
+    (receiptId: string) => getReceiptFile(chargeId, receiptId),
+    [chargeId],
+  );
+  return useApiSubmit(request);
+}
+
+/** Cobros por página del historial del grupo (contrato 000 A). */
+export const GROUP_CHARGES_PAGE_SIZE = 20;
+
+/**
+ * Cobros de un grupo (`GET /groups/:id/charges`, RF-002-17) con filtros aplicados por la API.
+ * Con `status: 'en_revision'` es la cola «Por revisar» del titular.
+ */
+export function useGroupCharges(groupId: string, filters: ListGroupChargesParams = {}) {
+  const { period, status, userId } = filters;
+  const loadPage = useCallback(
+    (cursor?: string) =>
+      listGroupCharges(groupId, {
+        ...(period ? { period } : {}),
+        ...(status ? { status } : {}),
+        ...(userId ? { userId } : {}),
+        limit: GROUP_CHARGES_PAGE_SIZE,
+        ...(cursor ? { cursor } : {}),
+      }),
+    [groupId, period, status, userId],
+  );
+  return usePaginatedResource(loadPage);
 }

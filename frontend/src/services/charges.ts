@@ -189,3 +189,92 @@ export function uploadReceipt(chargeId: string, input: UploadReceiptRequest): Pr
     formData: form,
   });
 }
+
+/** Respuesta de `GET /charges/:id/receipts/:rid/file`: URL firmada de 10 minutos como máximo. */
+export interface ReceiptFileLink {
+  url: string;
+  expiresAt: string;
+  mime: string;
+}
+
+/**
+ * `GET /charges/:chargeId/receipts/:receiptId/file` (RNF-002-01): solo el titular y el dueño del
+ * cobro. Lanza `ApiError` `403` (CA-002-13), `404` (CA-002-23) o `410 FILE_DELETED` (RN-002-06).
+ */
+export function getReceiptFile(chargeId: string, receiptId: string): Promise<ReceiptFileLink> {
+  return apiRequest<ReceiptFileLink>(
+    `/api/charges/${encodeURIComponent(chargeId)}/receipts/${encodeURIComponent(receiptId)}/file`,
+  );
+}
+
+/**
+ * `POST /charges/:chargeId/confirm` (RF-002-10, CA-002-06), solo titular: deja el cobro en
+ * `pagado`. Lanza `ApiError` `403` (CA-002-12), `409 INVALID_TRANSITION` o `STALE_STATE`.
+ */
+export function confirmCharge(chargeId: string, input: { version?: number } = {}): Promise<Charge> {
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/confirm`, {
+    method: 'POST',
+    body: input,
+  });
+}
+
+export interface RejectChargeRequest {
+  /** 5 a 200 caracteres (RF-002-11). */
+  reason: string;
+  /** «Comprobante inválido»: afecta la puntualidad (spec 007, RF-007-12). */
+  invalidReceipt: boolean;
+  version?: number;
+}
+
+/**
+ * `POST /charges/:chargeId/reject` (RF-002-11, CA-002-07), solo titular: el cobro vuelve a
+ * `pendiente` o pasa a `atrasado` según decida el backend. Lanza `ApiError` `400
+ * VALIDATION_ERROR` (CA-002-08), `409 INVALID_TRANSITION` o `STALE_STATE`.
+ */
+export function rejectCharge(chargeId: string, input: RejectChargeRequest): Promise<Charge> {
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/reject`, {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/** Ítem del historial del grupo: `ChargePublic` para un miembro, `Charge` completo para el titular. */
+export type GroupChargeItem = ChargePublic | Charge;
+
+export interface GroupChargesPage {
+  items: GroupChargeItem[];
+  nextCursor: string | null;
+}
+
+export interface ListGroupChargesParams {
+  period?: string;
+  status?: ChargeStatus;
+  userId?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+/** Indica si el ítem trae el cobro completo (lo recibe el titular). */
+export function isFullCharge(item: GroupChargeItem): item is Charge {
+  return 'allowedActions' in item;
+}
+
+/**
+ * `GET /groups/:groupId/charges` (RF-002-17, CA-002-18): historial del grupo, sin comprobantes
+ * ni referencias para los miembros (RNF-002-07). `404` si la persona no es miembro activo.
+ */
+export function listGroupCharges(
+  groupId: string,
+  params: ListGroupChargesParams = {},
+): Promise<GroupChargesPage> {
+  const query = new URLSearchParams();
+  if (params.period) query.set('period', params.period);
+  if (params.status) query.set('status', params.status);
+  if (params.userId) query.set('userId', params.userId);
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.cursor) query.set('cursor', params.cursor);
+  const search = query.toString();
+  return apiRequest<GroupChargesPage>(
+    `/api/groups/${encodeURIComponent(groupId)}/charges${search ? `?${search}` : ''}`,
+  );
+}

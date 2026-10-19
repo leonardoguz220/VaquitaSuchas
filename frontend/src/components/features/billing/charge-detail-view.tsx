@@ -12,6 +12,7 @@ import type { Charge, ChargeAction } from '@/services/charges';
 import { ChargeCountdown } from './charge-countdown';
 import { CHARGE_MESSAGES, chargeErrorMessage } from './charge-messages';
 import { ChargePaymentInfoCard } from './charge-payment-info';
+import { ChargeReview } from './charge-review';
 import { ChargeTimeline } from './charge-timeline';
 import { ReceiptUpload } from './receipt-upload';
 
@@ -193,7 +194,8 @@ export interface ChargeDetailViewProps {
  * estado con color y texto, vencimiento con cuenta regresiva, datos de pago del titular, motivo
  * del último rechazo (CA-002-07) y línea de tiempo. `403` (cobro de otro miembro) y `404`
  * (ajeno, CA-002-23) muestran su aviso; el frontend no decide quién puede verlo. Con
- * `uploadReceipt` en `allowedActions` muestra la subida del comprobante (T022).
+ * `uploadReceipt` en `allowedActions` muestra la subida del comprobante (T022); con `confirm` o
+ * `reject`, las acciones del titular (T026).
  */
 export function ChargeDetailView({ chargeId }: ChargeDetailViewProps) {
   const { status, data: charge, error, reload, refresh, replace } = useCharge(chargeId);
@@ -242,6 +244,12 @@ export function ChargeDetailView({ chargeId }: ChargeDetailViewProps) {
   }
 
   if (!charge) return null;
+
+  function handleStale(message: string) {
+    setNotice({ variant: 'warning', text: message });
+    void refresh();
+  }
+
   return (
     <>
       <BackLink />
@@ -250,19 +258,26 @@ export function ChargeDetailView({ chargeId }: ChargeDetailViewProps) {
         charge={charge}
         onRefresh={() => void refresh()}
         actions={
-          charge.allowedActions.includes('uploadReceipt') && (
-            <ReceiptUpload
+          <>
+            <ChargeReview
               charge={charge}
-              onUploaded={(updated) => {
+              onChanged={(updated, message) => {
                 replace(updated);
-                setNotice({ variant: 'success', text: CHARGE_MESSAGES.uploaded });
+                setNotice({ variant: 'success', text: message });
               }}
-              onStale={(message) => {
-                setNotice({ variant: 'warning', text: message });
-                void refresh();
-              }}
+              onStale={handleStale}
             />
-          )
+            {charge.allowedActions.includes('uploadReceipt') && (
+              <ReceiptUpload
+                charge={charge}
+                onUploaded={(updated) => {
+                  replace(updated);
+                  setNotice({ variant: 'success', text: CHARGE_MESSAGES.uploaded });
+                }}
+                onStale={handleStale}
+              />
+            )}
+          </>
         }
       />
     </>

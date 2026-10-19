@@ -1,6 +1,8 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { isPublicPath } from '@/lib/routes';
+import { reviewCharge } from '@/services/__fixtures__/charges';
+import { listGroupCharges } from '@/services/charges';
 import { getGroup, updateGroup, type GroupDetail } from '@/services/groups';
 import { ApiError } from '@/services/http';
 import GroupPage, { metadata } from './page';
@@ -15,7 +17,13 @@ jest.mock('@/services/groups', () => ({
   regenerateInviteCode: jest.fn(),
 }));
 
+jest.mock('@/services/charges', () => ({
+  ...jest.requireActual('@/services/charges'),
+  listGroupCharges: jest.fn(),
+}));
+
 const mockedGet = jest.mocked(getGroup);
+const mockedGroupCharges = jest.mocked(listGroupCharges);
 const mockedUpdate = jest.mocked(updateGroup);
 
 // Datos simulados del contrato 001 (GroupDetail visto por un miembro).
@@ -91,6 +99,7 @@ const section = (name: string) => screen.getByRole('region', { name });
 beforeEach(() => {
   mockedGet.mockReset();
   mockedUpdate.mockReset();
+  mockedGroupCharges.mockReset();
 });
 
 describe('/grupos/[id] (spec 001 T020): carga', () => {
@@ -317,6 +326,51 @@ describe('/grupos/[id] (spec 001 T025): código de invitación del titular', () 
     expect(mockedGet).toHaveBeenCalledTimes(2);
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Otra persona modificó el grupo. Cargamos los datos actualizados.',
+    );
+  });
+});
+
+describe('/grupos/[id] (spec 002 T026): cola «Por revisar» del titular', () => {
+  const ownerView: GroupDetail = { ...memberView, myRole: 'titular', inviteCode: 'K7M2Q9PX' };
+
+  it('RF-002-10: el titular ve en Cobros los comprobantes en revisión con enlace al detalle', async () => {
+    mockedGet.mockResolvedValue(ownerView);
+    mockedGroupCharges.mockResolvedValue({ items: [reviewCharge], nextCursor: null });
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('tab', { name: 'Cobros' }));
+    const queue = await screen.findByRole('region', { name: 'Por revisar · 1 comprobante' });
+    expect(mockedGroupCharges).toHaveBeenCalledWith('g2', { status: 'en_revision', limit: 20 });
+    expect(queue).toHaveTextContent('Ana Quispe Mamani · Octubre 2026');
+    expect(queue).toHaveTextContent('Subió su pago de Bs 19,80 el 19 oct 2026, 10:42.');
+    expect(within(queue).getByText('En revisión')).toBeInTheDocument();
+    expect(within(queue).getByRole('link', { name: 'Revisar comprobante' })).toHaveAttribute(
+      'href',
+      '/cobros/c1',
+    );
+  });
+
+  it('RF-002-10: sin comprobantes en revisión lo dice; con error ofrece Reintentar', async () => {
+    mockedGet.mockResolvedValue(ownerView);
+    mockedGroupCharges.mockRejectedValueOnce(new ApiError(0, 'NETWORK_ERROR', 'x'));
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('tab', { name: 'Cobros' }));
+    expect(
+      await screen.findByText('No pudimos cargar los comprobantes por revisar.'),
+    ).toBeInTheDocument();
+    mockedGroupCharges.mockResolvedValue({ items: [], nextCursor: null });
+    await actor.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByText('No hay comprobantes por revisar.')).toBeInTheDocument();
+  });
+
+  it('RF-002-11: un miembro no ve la cola «Por revisar»', async () => {
+    mockedGet.mockResolvedValue(memberView);
+    mockedGroupCharges.mockResolvedValue({ items: [], nextCursor: null });
+    await renderPage();
+    await screen.findByRole('heading', { level: 1, name: 'Spotify depa' });
+    expect(screen.queryByText(/Por revisar/)).not.toBeInTheDocument();
+    expect(mockedGroupCharges).not.toHaveBeenCalledWith(
+      'g2',
+      expect.objectContaining({ status: 'en_revision' }),
     );
   });
 });

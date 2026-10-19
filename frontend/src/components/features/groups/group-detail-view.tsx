@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { GroupChargesTab } from '@/components/features/billing/group-charges-tab';
 import { ServiceLogo } from '@/components/features/catalog/service-logo';
 import { Alert, Button, Tabs } from '@/components/ui';
 import { useGroup } from '@/hooks/use-groups';
@@ -12,7 +13,7 @@ import { GroupMembersTab } from './group-members-tab';
 import { GroupSummaryTab } from './group-summary-tab';
 import { OwnerInviteSection } from './owner-invite-section';
 
-type TabId = 'resumen' | 'miembros';
+type TabId = 'resumen' | 'miembros' | 'cobros';
 
 function DetailSkeleton() {
   return (
@@ -57,7 +58,8 @@ export interface GroupDetailViewProps {
 /**
  * Detalle del grupo `/grupos/[id]` (spec 001 T020, plan §6; mockups `GrupoMiembro.dc.html` y
  * `GrupoMiembros.dc.html`) con las pestañas **Resumen** y **Miembros**; el titular ve además
- * el código de invitación (T025). Quien no pertenece al
+ * el código de invitación (T025) y la pestaña **Cobros** con la cola «Por revisar» (spec 002
+ * T026). Quien no pertenece al
  * grupo recibe `404` (RNF-001-01) y ve el mismo mensaje que si no existiera.
  */
 export function GroupDetailView({ groupId }: GroupDetailViewProps) {
@@ -141,6 +143,9 @@ export function GroupDetailView({ groupId }: GroupDetailViewProps) {
             ),
           },
           { id: 'miembros', label: 'Miembros', content: <GroupMembersTab group={group} /> },
+          ...(isOwner
+            ? [{ id: 'cobros', label: 'Cobros', content: <GroupChargesTab group={group} /> }]
+            : []),
         ]}
       />
     </>
