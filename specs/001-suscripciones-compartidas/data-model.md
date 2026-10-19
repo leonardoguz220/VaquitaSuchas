@@ -70,7 +70,7 @@ group_members
 - role: text (NOT NULL)                                              CHECK IN ('titular','miembro')
 - joined_at: timestamptz (NOT NULL, default now())
 - join_source: text (NOT NULL)                                       CHECK IN ('creacion','solicitud')
-- join_request_id: uuid (NULL)                                       la FK a join_requests y el CHECK ((join_source = 'solicitud') = (join_request_id IS NOT NULL)) los agrega la spec 010 (0054, T006)
+- join_request_id: uuid (NULL)                                       la FK a join_requests y el CHECK ((join_source = 'solicitud') = (join_request_id IS NOT NULL)) los agrega la spec 010 (0055, T006)
 - left_at: timestamptz (NULL)
 - left_reason: text (NULL)                                           CHECK IN ('abandono','quitado','mora','baneo')
 CHECK ((left_at IS NULL) = (left_reason IS NULL))

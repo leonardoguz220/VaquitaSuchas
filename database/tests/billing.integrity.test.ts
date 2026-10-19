@@ -204,6 +204,35 @@ async function createGroup(): Promise<CreatedGroup> {
   });
 }
 
+// Solicitud de ingreso mínima (spec 010) para los miembros que entran por 'solicitud': desde 0055,
+// group_members exige join_request_id cuando join_source = 'solicitud'. Se inserta con
+// session_replication_role = replica SOLO en esta transacción para no depender de los
+// disparadores de join_requests (p. ej. rechazaría una solicitud a un grupo cerrado), así las
+// pruebas siguen fallando por la regla de group_members que verifican. Los CHECK sí se aplican.
+// Nace ya cerrada (expirada) porque join_requests_active_uq admite una sola solicitud activa por
+// persona y grupo, y algunas pruebas hacen volver al mismo usuario.
+async function newJoinRequest(groupId: string, applicantId: string): Promise<string> {
+  const client = new pg.Client({ connectionString: db.connectionString });
+  await client.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query("SET LOCAL session_replication_role = 'replica'");
+    const { rows } = await client.query<{ id: string }>(
+      `INSERT INTO join_requests
+         (group_id, applicant_id, opened_at, open_deadline_at, status, final_at, final_reason)
+       VALUES ($1, $2, now(), now() + interval '24 hours', 'expirada', now(), 'plazo_solicitud')
+       RETURNING id`,
+      [groupId, applicantId],
+    );
+    await client.query('COMMIT');
+    const [row] = rows;
+    if (!row) throw new Error('no se creó la solicitud de prueba');
+    return row.id;
+  } finally {
+    await client.end();
+  }
+}
+
 async function addMember(groupId: string): Promise<string> {
   const userId = await newUserId();
   await insertRow('group_members', {
@@ -211,6 +240,7 @@ async function addMember(groupId: string): Promise<string> {
     user_id: userId,
     role: 'miembro',
     join_source: 'solicitud',
+    join_request_id: await newJoinRequest(groupId, userId),
   });
   return userId;
 }
@@ -749,7 +779,11 @@ describe('charges (0041) y sus disparadores (0043)', () => {
       ),
     );
     assert.equal(await count('charges', 'group_id = $1', [group.id]), 0);
-    const id = await insertRow('charges', entryChargeValues(cycle, pendingMember));
+    const joinRequestId = await newJoinRequest(group.id, pendingMember);
+    const id = await insertRow(
+      'charges',
+      entryChargeValues(cycle, pendingMember, { join_request_id: joinRequestId }),
+    );
     assert.equal((await chargeState(id)).status, 'pagado');
   });
 

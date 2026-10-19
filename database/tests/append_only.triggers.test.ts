@@ -99,7 +99,7 @@ test('RF-000-07: toda tabla con forbid_update_delete lo tiene BEFORE UPDATE OR D
   // 009), se suma aquí y en la prueba de comportamiento de abajo.
   assert.deepEqual(
     triggers.map((t) => t.table_name),
-    ['charge_events', 'rate_limit_events'],
+    ['charge_events', 'join_request_events', 'rate_limit_events'],
   );
 
   for (const { table_name, tgtype, tgenabled } of triggers) {
@@ -116,7 +116,7 @@ test('RF-000-07: toda tabla con forbid_update_delete lo tiene BEFORE UPDATE OR D
 // con session_replication_role = replica SOLO en esta transacción, lo que omite las FK al insertar.
 // El UPDATE y el DELETE de la prueba siguiente corren con el rol normal: el disparador de solo
 // anexado se verifica igual. Las FK y CHECK de charge_events los cubre billing.integrity.test.ts.
-test('RNF-002-04: se inserta una fila en charge_events para la prueba de solo anexado', async () => {
+test('RNF-002-04, CA-010-35: se inserta una fila en charge_events y join_request_events para la prueba de solo anexado', async () => {
   const client = new pg.Client({ connectionString: db.connectionString });
   await client.connect();
   try {
@@ -126,15 +126,20 @@ test('RNF-002-04: se inserta una fila en charge_events para la prueba de solo an
       `INSERT INTO charge_events (charge_id, group_id, type, actor_kind)
        VALUES (gen_random_uuid(), gen_random_uuid(), 'generado', 'sistema')`,
     );
+    // join_request_events (spec 010, CA-010-35): misma técnica, sin la solicitud real.
+    await client.query(
+      `INSERT INTO join_request_events (request_id, type, actor_kind)
+       VALUES (gen_random_uuid(), 'abierta', 'sistema')`,
+    );
     await client.query('COMMIT');
   } finally {
     await client.end();
   }
   const [{ count }] = (await queryRows<{ count: string }>(
     db.connectionString,
-    'SELECT count(*) AS count FROM charge_events',
+    'SELECT (SELECT count(*) FROM charge_events) + (SELECT count(*) FROM join_request_events) AS count',
   )) as [{ count: string }];
-  assert.equal(Number(count), 1);
+  assert.equal(Number(count), 2);
 });
 
 // Los disparadores FOR EACH ROW solo se disparan si hay filas: esta prueba usa las que dejan las
