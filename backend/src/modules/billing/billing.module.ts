@@ -20,6 +20,7 @@ import { PaymentReferencesRepository } from './repositories/payment-references.r
 import { ReceiptsRepository } from './repositories/receipts.repository.js';
 import { BillingCyclesService } from './services/billing-cycles.service.js';
 import { BillingReadService } from './services/billing-read.service.js';
+import { ChargesService } from './services/charges.service.js';
 import { ChargeAccessService } from './services/charge-access.service.js';
 import { PaymentReferenceService } from './services/payment-reference.service.js';
 import { ReceiptsService } from './services/receipts.service.js';
@@ -42,6 +43,7 @@ import { ReceiptsService } from './services/receipts.service.js';
     BillingReadService,
     PaymentReferenceService,
     ReceiptsService,
+    ChargesService,
   ],
   exports: [BillingCyclesService, BillingReadService, PaymentReferenceService, CHARGE_FACTS_PORT],
 })
