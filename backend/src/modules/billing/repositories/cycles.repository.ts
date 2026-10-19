@@ -137,6 +137,15 @@ export class CyclesRepository {
     return row ? toRecord(row) : null;
   }
 
+  /** Períodos con ciclo, el más reciente primero (selector del resumen, RF-002-16). */
+  async listPeriods(q: Queryable, groupId: string): Promise<string[]> {
+    const result = await q.query<{ period: string }>(
+      `SELECT period FROM billing_cycles WHERE group_id = $1 ORDER BY period DESC`,
+      [groupId],
+    );
+    return result.rows.map((row) => row.period);
+  }
+
   /** Ciclo inicial del grupo, abierto o ya finalizado. */
   async findInitial(q: Queryable, groupId: string): Promise<CycleRecord | null> {
     const result = await q.query<CycleRow>(

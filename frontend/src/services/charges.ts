@@ -1,10 +1,10 @@
 /**
  * Cliente de cobros y pagos (`specs/002-cobros-y-pagos/contracts/api.md`). Reúne los tipos de
  * toda la spec 002 para que los reutilicen T022 (subida), T026 (confirmar y rechazar) y T037
- * (historial y resumen del grupo). Por ahora cada función responde con datos simulados de
- * `charges.mock.ts` (T018); al conectar el backend (T019) solo cambia el cuerpo por `apiRequest`.
+ * (historial y resumen del grupo). Todas las funciones llaman al backend por el proxy `/api`; los
+ * datos simulados de `charges.mock.ts` solo los usan los tests.
  */
-import * as mock from './charges.mock';
+import { apiRequest } from './http';
 import type { GroupCurrency, PaymentInfo } from './groups';
 
 export type ChargeStatus = 'pendiente' | 'en_revision' | 'pagado' | 'atrasado' | 'cancelado';
@@ -46,8 +46,9 @@ export interface ChargePublicEvent {
 export interface ChargeEvent extends ChargePublicEvent {
   id: string;
   fromStatus: ChargeStatus | null;
-  toStatus: ChargeStatus;
+  toStatus: ChargeStatus | null;
   reason: string | null;
+  metadata?: Record<string, unknown>;
 }
 
 export interface Receipt {
@@ -159,6 +160,20 @@ export interface RejectChargeInput {
   version?: number;
 }
 
+export interface ManualPaymentInput {
+  /** Hasta 200 caracteres. */
+  note?: string;
+  /** ISO 8601, entre la emisión y ahora. Sin valor, el servidor usa la hora actual. */
+  paidAt?: string;
+  version?: number;
+}
+
+export interface CancelChargeInput {
+  /** 5 a 200 caracteres. */
+  reason: string;
+  version?: number;
+}
+
 export interface GroupChargesParams {
   period?: string;
   status?: ChargeStatus[];
@@ -202,24 +217,61 @@ export type ChargesErrorCode =
   | 'GROUP_FROZEN'
   | 'INVALID_TRANSITION'
   | 'FILE_TOO_LARGE'
-  | 'UNSUPPORTED_FILE_TYPE';
+  | 'UNSUPPORTED_FILE_TYPE'
+  | 'STALE_STATE'
+  | 'SERVICE_UNAVAILABLE';
+
+/**
+ * Query de `GET /me/charges`: `status` se repite por cada estado (`?status=a&status=b`) y los
+ * demás filtros solo van si vienen. Sin parámetros no hay `?`.
+ */
+export function buildListMyChargesQuery(params: ListMyChargesParams): string {
+  const query = new URLSearchParams();
+  params.status?.forEach((status) => query.append('status', status));
+  if (params.period) query.set('period', params.period);
+  if (params.groupId) query.set('groupId', params.groupId);
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.cursor) query.set('cursor', params.cursor);
+  const text = query.toString();
+  return text ? `?${text}` : '';
+}
 
 /** `GET /me/charges` (RF-002-15): incluye cobros de grupos dejados si están `atrasado` o `en_revision`. */
 export function listMyCharges(
   params: ListMyChargesParams = {},
   options: ChargesRequestOptions = {},
 ): Promise<Page<MyCharge>> {
-  return mock.listMyCharges(params, options.signal);
+  return apiRequest<Page<MyCharge>>(`/api/me/charges${buildListMyChargesQuery(params)}`, {
+    signal: options.signal,
+  });
 }
 
 /** `GET /charges/:chargeId`: `403` a otro miembro del grupo, `404` a quien no pertenece. */
 export function getCharge(chargeId: string, options: ChargesRequestOptions = {}): Promise<Charge> {
-  return mock.getCharge(chargeId, options.signal);
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}`, {
+    signal: options.signal,
+  });
+}
+
+/**
+ * Arma el `multipart/form-data` del comprobante: `file`, `method`, `reference` y `version` (solo
+ * si viene). Campos y nombres según `receipts.controller.ts`.
+ */
+export function buildReceiptFormData(input: UploadReceiptInput): FormData {
+  const form = new FormData();
+  form.append('file', input.file);
+  form.append('method', input.method);
+  form.append('reference', input.reference);
+  if (input.version !== undefined) form.append('version', String(input.version));
+  return form;
 }
 
 /** `POST /charges/:chargeId/receipts` (RF-002-06 a 08), `multipart/form-data`. */
 export function uploadReceipt(chargeId: string, input: UploadReceiptInput): Promise<Charge> {
-  return mock.uploadReceipt(chargeId, input);
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/receipts`, {
+    method: 'POST',
+    body: buildReceiptFormData(input),
+  });
 }
 
 /** `GET /charges/:chargeId/receipts/:receiptId/file`: URL firmada; `410 FILE_DELETED`. */
@@ -228,33 +280,89 @@ export function getReceiptFile(
   receiptId: string,
   options: ChargesRequestOptions = {},
 ): Promise<ReceiptFile> {
-  return mock.getReceiptFile(chargeId, receiptId, options.signal);
+  return apiRequest<ReceiptFile>(
+    `/api/charges/${encodeURIComponent(chargeId)}/receipts/${encodeURIComponent(receiptId)}/file`,
+    { signal: options.signal },
+  );
 }
 
-/** `POST /charges/:chargeId/confirm` (RF-002-10): solo el titular. */
+/** `POST /charges/:chargeId/confirm` (RF-002-10): solo el titular. `409 STALE_STATE` si cambió. */
 export function confirmCharge(chargeId: string, input: ConfirmChargeInput = {}): Promise<Charge> {
-  return mock.confirmCharge(chargeId, input);
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/confirm`, {
+    method: 'POST',
+    body: input,
+  });
 }
 
 /** `POST /charges/:chargeId/reject` (RF-002-11): solo el titular, con motivo. */
 export function rejectCharge(chargeId: string, input: RejectChargeInput): Promise<Charge> {
-  return mock.rejectCharge(chargeId, input);
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/reject`, {
+    method: 'POST',
+    body: input,
+  });
 }
 
-/** `GET /groups/:groupId/charges` (RF-002-17): el titular recibe `Charge` completo. */
+/** `POST /charges/:chargeId/manual-payment` (RF-002-12, CA-002-14): pago en efectivo del titular. */
+export function registerManualPayment(
+  chargeId: string,
+  input: ManualPaymentInput = {},
+): Promise<Charge> {
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/manual-payment`, {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/** `POST /charges/:chargeId/cancel` (RF-002-13, CA-002-15): cancela con motivo, solo el titular. */
+export function cancelCharge(chargeId: string, input: CancelChargeInput): Promise<Charge> {
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/cancel`, {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/**
+ * Query de `GET /groups/:groupId/charges`: `status` se repite por cada estado y los demás filtros
+ * solo van si vienen, igual que en `GET /me/charges`.
+ */
+export function buildGroupChargesQuery(params: GroupChargesParams): string {
+  const query = new URLSearchParams();
+  if (params.period) query.set('period', params.period);
+  params.status?.forEach((status) => query.append('status', status));
+  if (params.userId) query.set('userId', params.userId);
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.cursor) query.set('cursor', params.cursor);
+  const text = query.toString();
+  return text ? `?${text}` : '';
+}
+
+/**
+ * `GET /groups/:groupId/charges` (RF-002-17): historial del grupo. Sin comprobantes ni referencias;
+ * el titular recibe `Charge` completo en cada ítem.
+ */
 export function getGroupCharges(
   groupId: string,
   params: GroupChargesParams = {},
   options: ChargesRequestOptions = {},
 ): Promise<Page<ChargePublic | Charge>> {
-  return mock.getGroupCharges(groupId, params, options.signal);
+  return apiRequest<Page<ChargePublic | Charge>>(
+    `/api/groups/${encodeURIComponent(groupId)}/charges${buildGroupChargesQuery(params)}`,
+    { signal: options.signal },
+  );
 }
 
-/** `GET /groups/:groupId/billing/summary` (RF-002-16, RF-002-18): `404` si no hay ciclo. */
+/**
+ * `GET /groups/:groupId/billing/summary` (RF-002-16, RF-002-18): sin `period`, el backend usa el
+ * del último ciclo. `404` si el grupo no tiene ciclo en ese período.
+ */
 export function getBillingSummary(
   groupId: string,
   period?: string,
   options: ChargesRequestOptions = {},
 ): Promise<BillingSummary> {
-  return mock.getBillingSummary(groupId, period, options.signal);
+  const query = period ? `?${new URLSearchParams({ period }).toString()}` : '';
+  return apiRequest<BillingSummary>(
+    `/api/groups/${encodeURIComponent(groupId)}/billing/summary${query}`,
+    { signal: options.signal },
+  );
 }

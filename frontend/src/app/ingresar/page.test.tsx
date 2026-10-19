@@ -207,11 +207,10 @@ describe('/ingresar (T029)', () => {
     expect(wrongPassword).toContain('Correo o contraseña incorrectos.');
   });
 
-  it('RNF-003-04: RATE_LIMITED muestra la espera en minutos a partir de retryAfterSeconds', async () => {
+  it('CA-003-06 / RNF-003-04: RATE_LIMITED muestra la cuenta regresiva a partir de retryAfterSeconds', async () => {
     await submitWithError(new ApiError(429, 'RATE_LIMITED', 'x', { retryAfterSeconds: 840 }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Hiciste demasiados intentos. Espera 14 minutos e inténtalo de nuevo.',
-    );
+    expect(await screen.findByRole('timer')).toHaveTextContent('14:00');
+    expect(screen.getByRole('button', { name: 'Ingresar' })).toBeDisabled();
   });
 
   it('RNF-003-04: VALIDATION_ERROR marca el campo correo y lo enfoca', async () => {

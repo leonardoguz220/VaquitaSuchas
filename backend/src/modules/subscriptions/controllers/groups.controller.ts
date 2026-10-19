@@ -1,0 +1,197 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiConflictResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+  ApiUnprocessableEntityResponse,
+} from '@nestjs/swagger';
+import type { AuthenticatedRequest } from '../../../shared/guards/authenticated-request.js';
+import { AuthGuard } from '../../../shared/guards/auth.guard.js';
+import { requireUserId, uuidParam } from '../../../shared/http/request-user.js';
+import { GroupMemberGuard } from './group-member.guard.js';
+import { GroupOwnerGuard } from './group-owner.guard.js';
+import {
+  CreateGroupDto,
+  QuoteGroupDto,
+  TransferOwnershipDto,
+  UpdateGroupDto,
+} from './groups.dto.js';
+import { GroupsService, type HostEligibilityView } from '../services/groups.service.js';
+import { MembershipService } from '../services/membership.service.js';
+import type { GroupDetail } from '../domain/group-detail.js';
+
+/** Alta de grupos y elegibilidad (spec 001, US1). Solo traduce HTTP. */
+@ApiTags('groups')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'UNAUTHENTICATED: sin sesión válida.' })
+@UseGuards(AuthGuard)
+@Controller()
+export class GroupsController {
+  constructor(private readonly groups: GroupsService) {}
+
+  @Get('users/me/host-eligibility')
+  @ApiOperation({ summary: 'Elegibilidad para ser titular (RF-001-21)' })
+  hostEligibility(@Req() request: AuthenticatedRequest): Promise<HostEligibilityView> {
+    return this.groups.hostEligibility(requireUserId(request));
+  }
+
+  @Post('groups/quote')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Cotiza el total en Bs y la cuota por miembro, sin efectos (RF-001-04)',
+  })
+  quote(@Body() body: QuoteGroupDto) {
+    return this.groups.quote({
+      priceCents: body.priceCents,
+      currency: body.currency,
+      exchangeRate: body.exchangeRate ?? null,
+      memberCount: body.memberCount,
+    });
+  }
+
+  @Post('groups')
+  @ApiOperation({ summary: 'Crear una suscripción compartida como titular (RF-001-01 a 05)' })
+  @ApiCreatedResponse({ description: 'GroupDetail con inviteCode.' })
+  @ApiNotFoundResponse({ description: 'NOT_FOUND: el plan no existe o está inactivo.' })
+  @ApiUnprocessableEntityResponse({
+    description:
+      'NOT_HOST_ELIGIBLE, TOO_MANY_ACTIVE_GROUPS o BUSINESS_RULE (RN-001-09, RN-001-13).',
+  })
+  create(@Req() request: AuthenticatedRequest, @Body() body: CreateGroupDto): Promise<GroupDetail> {
+    return this.groups.create(requireUserId(request), {
+      catalogPlanSlug: body.catalogPlanSlug ?? null,
+      customServiceName: body.customServiceName ?? null,
+      name: body.name,
+      priceCents: body.priceCents,
+      currency: body.currency,
+      exchangeRate: body.exchangeRate ?? null,
+      billingDay: body.billingDay,
+      totalSlots: body.totalSlots,
+      paymentInfoText: body.paymentInfoText ?? null,
+    });
+  }
+}
+
+/** Miembros del grupo (spec 001, US4). */
+@ApiTags('groups')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'UNAUTHENTICATED: sin sesión válida.' })
+@ApiNotFoundResponse({
+  description: 'NOT_FOUND: el grupo no existe, no eres miembro o no es miembro activo.',
+})
+@ApiForbiddenResponse({ description: 'FORBIDDEN: no eres el titular.' })
+@UseGuards(AuthGuard, GroupOwnerGuard)
+@Controller('groups/:id/members')
+export class MembersController {
+  constructor(private readonly membership: MembershipService) {}
+
+  @Delete(':userId')
+  @ApiOperation({ summary: 'Quitar a un miembro (RF-001-15); sus cobros se conservan' })
+  @ApiUnprocessableEntityResponse({
+    description: 'BUSINESS_RULE RN-001-08: no se quita al titular.',
+  })
+  remove(
+    @Param('id') groupId: string,
+    @Param('userId', uuidParam()) userId: string,
+  ): Promise<{ removedUserId: string; openCharges: number }> {
+    return this.membership.removeMember(groupId, userId, 'quitado');
+  }
+}
+
+/** Abandonar el grupo (spec 001, US5, RF-001-16). Cualquier miembro activo; el servicio decide si puede. */
+@ApiTags('groups')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'UNAUTHENTICATED: sin sesión válida.' })
+@ApiNotFoundResponse({ description: 'NOT_FOUND: el grupo no existe o no eres miembro activo.' })
+@UseGuards(AuthGuard, GroupMemberGuard)
+@Controller('groups/:id/leave')
+export class LeaveController {
+  constructor(private readonly membership: MembershipService) {}
+
+  @Post()
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Abandonar el grupo (RF-001-16)' })
+  @ApiUnprocessableEntityResponse({
+    description:
+      'BUSINESS_RULE: RN-001-08 (el titular no abandona; hint TRANSFER_OR_CLOSE) o RF-001-16 (cobros sin pagar; details.openCharges).',
+  })
+  async leave(@Param('id') groupId: string, @Req() request: AuthenticatedRequest): Promise<void> {
+    await this.membership.leave(groupId, requireUserId(request));
+  }
+}
+
+/** Edición, transferencia y cierre del grupo (spec 001, US6 y US7). Solo el titular. */
+@ApiTags('groups')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'UNAUTHENTICATED: sin sesión válida.' })
+@ApiNotFoundResponse({ description: 'NOT_FOUND: el grupo no existe o no eres miembro activo.' })
+@ApiForbiddenResponse({ description: 'FORBIDDEN: no eres el titular.' })
+@UseGuards(AuthGuard, GroupOwnerGuard)
+@Controller('groups/:id')
+export class GroupAdminController {
+  constructor(
+    private readonly groups: GroupsService,
+    private readonly membership: MembershipService,
+  ) {}
+
+  @Patch()
+  @ApiOperation({ summary: 'Editar el grupo (RF-001-14, RF-001-09)' })
+  @ApiConflictResponse({ description: 'STALE_STATE: la version no coincide.' })
+  @ApiUnprocessableEntityResponse({
+    description:
+      'SLOTS_BELOW_MEMBERS (details.minSlots), BUSINESS_RULE (RN-001-13, RN-001-09), GROUP_CLOSED o GROUP_FROZEN.',
+  })
+  update(@Param('id') groupId: string, @Body() body: UpdateGroupDto): Promise<GroupDetail> {
+    return this.groups.update(groupId, {
+      ...(body.name !== undefined && { name: body.name }),
+      ...(body.priceCents !== undefined && { priceCents: body.priceCents }),
+      ...(body.currency !== undefined && { currency: body.currency }),
+      ...(body.exchangeRate !== undefined && { exchangeRate: body.exchangeRate }),
+      ...(body.billingDay !== undefined && { billingDay: body.billingDay }),
+      ...(body.totalSlots !== undefined && { totalSlots: body.totalSlots }),
+      ...(body.acceptingMembers !== undefined && { acceptingMembers: body.acceptingMembers }),
+      ...(body.version !== undefined && { version: body.version }),
+    });
+  }
+
+  @Post('transfer-ownership')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Transferir la titularidad a otro miembro (RF-001-17)' })
+  @ApiUnprocessableEntityResponse({
+    description:
+      'BUSINESS_RULE (RF-001-17, RN-010-09), NOT_HOST_ELIGIBLE (RF-001-21), TOO_MANY_ACTIVE_GROUPS (RN-001-14), GROUP_CLOSED o GROUP_FROZEN.',
+  })
+  transfer(
+    @Param('id') groupId: string,
+    @Req() request: AuthenticatedRequest,
+    @Body() body: TransferOwnershipDto,
+  ): Promise<GroupDetail> {
+    return this.membership.transferOwnership(groupId, requireUserId(request), body.toUserId);
+  }
+
+  @Post('close')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Cerrar el grupo: queda de solo lectura (RF-001-18)' })
+  @ApiUnprocessableEntityResponse({
+    description: 'BUSINESS_RULE RN-010-09 (solicitudes en pago), GROUP_CLOSED o GROUP_FROZEN.',
+  })
+  close(@Param('id') groupId: string, @Req() request: AuthenticatedRequest): Promise<GroupDetail> {
+    return this.membership.close(groupId, requireUserId(request));
+  }
+}

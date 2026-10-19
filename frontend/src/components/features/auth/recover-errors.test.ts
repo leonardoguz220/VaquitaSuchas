@@ -42,6 +42,14 @@ describe('recover-errors: POST /auth/password/forgot', () => {
     ).toEqual({ fieldErrors: { email: LOGIN_MESSAGES.emailInvalid }, formError: null });
   });
 
+  it('RNF-003-04: VALIDATION_ERROR del correo con otro código muestra el mismo mensaje de correo inválido', () => {
+    expect(
+      mapForgotPasswordError(
+        new ApiError(400, 'VALIDATION_ERROR', 'x', { fields: { email: ['isEmail'] } }),
+      ),
+    ).toEqual({ fieldErrors: { email: LOGIN_MESSAGES.emailInvalid }, formError: null });
+  });
+
   it('RNF-003-04: VALIDATION_ERROR sin campos da un aviso general', () => {
     expect(mapForgotPasswordError(new ApiError(400, 'VALIDATION_ERROR', 'x')).formError).toEqual({
       kind: 'general',

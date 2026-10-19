@@ -8,9 +8,10 @@ import { GroupsRepository } from '../subscriptions/repositories/groups.repositor
 import { AuthModule } from '../auth/auth.module.js';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
 import { ChargesController } from './controllers/charges.controller.js';
+import { GroupBillingController } from './controllers/group-billing.controller.js';
 import { ReceiptsController } from './controllers/receipts.controller.js';
 import { CHARGE_FACTS_PORT } from './ports/charge-facts.port.js';
-import { BillingGenerateJob } from './jobs/billing-jobs.js';
+import { BillingGenerateJob, BillingOverdueJob, BillingRetentionJob } from './jobs/billing-jobs.js';
 import { ChargeFactsRepository } from './repositories/charge-facts.repository.js';
 import { ChargeReadRepository } from './repositories/charge-read.repository.js';
 import { ChargesRepository } from './repositories/charges.repository.js';
@@ -20,14 +21,18 @@ import { PaymentReferencesRepository } from './repositories/payment-references.r
 import { ReceiptsRepository } from './repositories/receipts.repository.js';
 import { BillingCyclesService } from './services/billing-cycles.service.js';
 import { BillingReadService } from './services/billing-read.service.js';
+import { ChargesService } from './services/charges.service.js';
 import { ChargeAccessService } from './services/charge-access.service.js';
+import { GroupBillingService } from './services/group-billing.service.js';
+import { OverdueService } from './services/overdue.service.js';
 import { PaymentReferenceService } from './services/payment-reference.service.js';
 import { ReceiptsService } from './services/receipts.service.js';
+import { RetentionService } from './services/retention.service.js';
 
 // DbService, Clock, TxEventBus, JobRegistry, JobRunsRepository y FileStorage llegan de módulos globales.
 @Module({
   imports: [SubscriptionsModule, AuthModule],
-  controllers: [ChargesController, ReceiptsController],
+  controllers: [ChargesController, ReceiptsController, GroupBillingController],
   providers: [
     CyclesRepository,
     ChargesRepository,
@@ -42,8 +47,19 @@ import { ReceiptsService } from './services/receipts.service.js';
     BillingReadService,
     PaymentReferenceService,
     ReceiptsService,
+    ChargesService,
+    GroupBillingService,
+    OverdueService,
+    RetentionService,
   ],
-  exports: [BillingCyclesService, BillingReadService, PaymentReferenceService, CHARGE_FACTS_PORT],
+  exports: [
+    BillingCyclesService,
+    BillingReadService,
+    ChargesService,
+    OverdueService,
+    PaymentReferenceService,
+    CHARGE_FACTS_PORT,
+  ],
 })
 export class BillingModule implements OnModuleInit {
   constructor(
@@ -53,6 +69,8 @@ export class BillingModule implements OnModuleInit {
     private readonly groups: GroupsRepository,
     private readonly runs: JobRunsRepository,
     private readonly db: DbService,
+    private readonly retention: RetentionService,
+    private readonly overdue: OverdueService,
   ) {}
 
   onModuleInit(): void {
@@ -66,5 +84,7 @@ export class BillingModule implements OnModuleInit {
       this.cycles.onMemberRemoved(tx, event),
     );
     this.registry.register(new BillingGenerateJob(this.groups, this.cycles, this.runs, this.db));
+    this.registry.register(new BillingOverdueJob(this.overdue));
+    this.registry.register(new BillingRetentionJob(this.retention));
   }
 }

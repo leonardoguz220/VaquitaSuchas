@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AdaptersModule } from './app-adapters/adapters.module.js';
 import { BillingModule } from './modules/billing/billing.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module.js';
@@ -39,6 +40,8 @@ import { StorageModule } from './shared/storage/storage.module.js';
     HealthModule,
     // Webhook del bot, deduplicación por update_id y simulador en modo dev (RF-000-22).
     TelegramModule,
+    // Adaptadores de puertos entre módulos (elegibilidad de titular, cobros abiertos).
+    AdaptersModule,
     SubscriptionsModule,
     BillingModule,
     AuthModule,

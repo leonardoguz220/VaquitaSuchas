@@ -110,10 +110,23 @@ describe('Permisos de cobros y comprobantes', () => {
     expect(asTitular.body.allowedActions).toEqual(['confirm', 'reject']);
   });
 
-  // El endpoint POST /charges/:id/confirm llega con T025; hasta entonces el 403 del dueño que
-  // confirma su propio cobro no se puede probar por HTTP. Lo cubre allowedActions (arriba) y la
-  // función de dominio `allowedActions` (access.spec.ts).
-  it.todo('CA-002-12: POST /charges/:id/confirm del dueño responde 403 (se activa con T025)');
+  it('CA-002-12: POST /charges/:id/confirm del dueño del cobro responde 403 y no cambia nada', async () => {
+    const reviewing = await harness.insertCharge(group, memberB, {
+      status: 'en_revision',
+      period: '2026-11',
+    });
+    const response = await request(harness.app.getHttpServer())
+      .post(`/charges/${reviewing}/confirm`)
+      .set('Authorization', `Bearer ${harness.token(memberB)}`)
+      .send({})
+      .expect(403);
+    expect(response.body).toMatchObject({ statusCode: 403, code: 'FORBIDDEN' });
+    const after = await harness.pool.query<{ status: string }>(
+      'SELECT status FROM charges WHERE id = $1',
+      [reviewing],
+    );
+    expect(after.rows[0]?.status).toBe('en_revision');
+  });
 
   it('RF-002-09: el titular no recibe el bloque de datos de pago en el cobro de un miembro', async () => {
     const asTitular = await get(ownerId, `/charges/${chargeId}`).expect(200);

@@ -274,6 +274,18 @@ describe('OwnerReviewActions en /cobros/[id] (T026)', () => {
       expect(open).not.toHaveBeenCalled();
     });
 
+    it('CA-002-13: 403 o 404 al pedir el archivo muestran su mensaje y no abren pestaña', async () => {
+      mockedFile.mockRejectedValueOnce(new ApiError(404, 'NOT_FOUND', 'x'));
+      const user = await renderPage();
+      await user.click(screen.getByRole('button', { name: /Ver comprobante/ }));
+      expect(await screen.findByText('No encontramos este comprobante')).toBeInTheDocument();
+
+      mockedFile.mockRejectedValueOnce(new ApiError(403, 'FORBIDDEN', 'x'));
+      await user.click(screen.getByRole('button', { name: /Ver comprobante/ }));
+      expect(await screen.findByText('No tienes acceso a este comprobante')).toBeInTheDocument();
+      expect(open).not.toHaveBeenCalled();
+    });
+
     it('CA-002-13: sin archivo disponible no se ofrece el botón', async () => {
       await renderPage({
         ...inReview,

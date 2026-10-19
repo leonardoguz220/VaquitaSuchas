@@ -1,7 +1,7 @@
 import type { GroupBrief } from '../repositories/charge-read.repository.js';
 import type { ChargeRecord } from '../repositories/charges.repository.js';
 import type { ChargeEventRecord } from '../repositories/events.repository.js';
-import { presentCharge } from './charge-presenter.js';
+import { presentCharge, presentPublicCharge } from './charge-presenter.js';
 
 const OWNER = 'u-owner';
 const PAYER = 'u-payer';
@@ -164,5 +164,47 @@ describe('presentCharge', () => {
     expect(view.totalBsCents).toBe(10001);
     expect(view.dueAt).toBe('2026-10-19T04:00:00.000Z');
     expect(view.paidAt).toBeNull();
+  });
+});
+
+describe('presentPublicCharge', () => {
+  it('CA-002-17: la vista pública no lleva comprobantes, referencias, motivos ni notas', () => {
+    const view = presentPublicCharge({
+      charge: charge({
+        status: 'pagado',
+        manualNote: 'nota privada',
+        cancelReason: 'motivo privado',
+      }),
+      memberActive: true,
+      events: [rejection('2026-10-16T10:00:00Z', true)],
+      names,
+    });
+    const json = JSON.stringify(view);
+    for (const secret of ['Borroso', 'nota privada', 'motivo privado', 'receipts', 'reference']) {
+      expect(json).not.toContain(secret);
+    }
+    expect(view).not.toHaveProperty('currentReceipt');
+    expect(view).not.toHaveProperty('allowedActions');
+  });
+
+  it('CA-002-18: la línea de tiempo trae evento, autor y fecha; el sistema no tiene autor', () => {
+    const view = presentPublicCharge({
+      charge: charge(),
+      memberActive: false,
+      events: [
+        rejection('2026-10-16T10:00:00Z', false),
+        { ...rejection('2026-10-17T10:00:00Z', false), type: 'atrasado', actorId: null },
+      ],
+      names,
+    });
+    expect(view.member).toEqual({ userId: PAYER, fullName: 'Ana Pagadora', isFormerMember: true });
+    expect(view.timeline).toEqual([
+      {
+        type: 'rechazado',
+        actor: { userId: OWNER, fullName: 'Titular Suchas' },
+        occurredAt: '2026-10-16T10:00:00.000Z',
+      },
+      { type: 'atrasado', actor: null, occurredAt: '2026-10-17T10:00:00.000Z' },
+    ]);
   });
 });

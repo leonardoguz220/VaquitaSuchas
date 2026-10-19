@@ -103,7 +103,7 @@ export function mapForgotPasswordError(error: ApiError): ForgotPasswordErrorView
       }
       return {
         fieldErrors: {
-          email: (code && FORGOT_FIELD_CODE_MESSAGES[code]) ?? RECOVER_MESSAGES.invalidField,
+          email: (code && FORGOT_FIELD_CODE_MESSAGES[code]) ?? LOGIN_MESSAGES.emailInvalid,
         },
         formError: null,
       };

@@ -33,4 +33,8 @@ export class UsersRepository {
     );
     return result.rows[0] ?? null;
   }
+
+  async updateFullName(q: Queryable, userId: string, fullName: string): Promise<void> {
+    await q.query('UPDATE users SET full_name = $2 WHERE id = $1', [userId, fullName]);
+  }
 }

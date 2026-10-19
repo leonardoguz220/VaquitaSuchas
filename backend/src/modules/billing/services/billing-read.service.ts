@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Clock } from '../../../shared/clock/clock.js';
 import { DbService } from '../../../shared/db/db.service.js';
 import { DomainError } from '../../../shared/errors/domain-error.js';
 import { DEFAULT_MESSAGES, ErrorCode } from '../../../shared/errors/error-codes.js';
@@ -16,6 +17,7 @@ import { ChargesRepository, type ChargeRecord } from '../repositories/charges.re
 import { ChargeEventsRepository } from '../repositories/events.repository.js';
 import { ReceiptsRepository } from '../repositories/receipts.repository.js';
 import { ChargeAccessService, notFound } from './charge-access.service.js';
+import { OverdueService } from './overdue.service.js';
 import { personIdsOf, presentCharge } from './charge-presenter.js';
 import type { ChargeView, MyChargesPage, MyChargeView } from './charge-views.js';
 
@@ -47,10 +49,13 @@ export class BillingReadService {
     private readonly receipts: ReceiptsRepository,
     private readonly reads: ChargeReadRepository,
     private readonly storage: FileStorage,
+    private readonly clock: Clock,
+    private readonly overdue: OverdueService,
   ) {}
 
   /** `GET /charges/:chargeId` (RF-002-09, RNF-002-01). */
   async getCharge(userId: string, chargeId: string): Promise<ChargeView> {
+    await this.overdue.sweepForCharge(chargeId, this.clock.now());
     const { charge, access } = await this.access.resolve(this.db, userId, chargeId);
     const groups = await this.reads.findGroupBriefs(this.db, [charge.groupId]);
     const [item] = await this.compose([{ charge, access }], groups);
@@ -62,6 +67,7 @@ export class BillingReadService {
 
   /** `GET /me/charges` (RF-002-15, CA-002-32). */
   async listMine(userId: string, query: MyChargesQuery): Promise<MyChargesPage> {
+    await this.overdue.sweepForUser(userId, this.clock.now());
     const after = query.cursor === null ? null : decodeChargeCursor(query.cursor);
     if (query.cursor !== null && after === null) {
       throw new DomainError(ErrorCode.VALIDATION_ERROR, 400, DEFAULT_MESSAGES.VALIDATION_ERROR, {
@@ -102,6 +108,21 @@ export class BillingReadService {
     }
     const items = await this.compose(entries, groups);
     return { items: items.map(({ receipts: _receipts, ...item }) => item), nextCursor };
+  }
+
+  /**
+   * `Charge` completo de cada cobro para el titular del grupo (historial del grupo, RF-002-17).
+   * El llamador ya comprobó que quien consulta es el titular.
+   */
+  async ownerViews(charges: readonly ChargeRecord[]): Promise<ChargeView[]> {
+    const groups = await this.reads.findGroupBriefs(this.db, [
+      ...new Set(charges.map((charge) => charge.groupId)),
+    ]);
+    const items = await this.compose(
+      charges.map((charge) => ({ charge, access: 'titular' as const })),
+      groups,
+    );
+    return items.map(({ group: _group, ...view }) => view);
   }
 
   /** Arma las vistas completas de los cobros, con una consulta por tipo de dato (sin N+1). */

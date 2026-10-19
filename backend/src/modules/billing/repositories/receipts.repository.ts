@@ -62,6 +62,12 @@ const toRecord = (row: ReceiptRow): ReceiptRecord => ({
   fileDeletedAt: row.file_deleted_at,
 });
 
+/** Archivo de comprobante cuyo plazo de retención venció (RN-002-06). */
+export interface ExpiredReceiptFile {
+  id: string;
+  fileKey: string;
+}
+
 /** Único lugar con SQL sobre `receipts` (0042_receipts.sql); el archivo vive en `FileStorage`. */
 @Injectable()
 export class ReceiptsRepository {
@@ -129,6 +135,29 @@ export class ReceiptsRepository {
   async setStatus(q: Queryable, id: string, status: ReceiptStatus): Promise<boolean> {
     const result = await q.query(`UPDATE receipts SET status = $2 WHERE id = $1`, [id, status]);
     return (result.rowCount ?? 0) > 0;
+  }
+
+  /**
+   * Archivos aún no borrados de los grupos cerrados antes de `closedBefore` (CA-002-33). El orden
+   * es estable para que reintentos y lotes avancen siempre igual.
+   */
+  async listExpiredFiles(
+    q: Queryable,
+    closedBefore: Date,
+    limit: number,
+  ): Promise<ExpiredReceiptFile[]> {
+    const result = await q.query<{ id: string; file_key: string }>(
+      `SELECT r.id, r.file_key
+         FROM receipts r
+         JOIN charges c ON c.id = r.charge_id
+         JOIN groups g ON g.id = c.group_id
+        WHERE r.file_deleted_at IS NULL
+          AND g.status = 'cerrado' AND g.closed_at < $1
+        ORDER BY r.uploaded_at, r.id
+        LIMIT $2`,
+      [closedBefore, limit],
+    );
+    return result.rows.map((row) => ({ id: row.id, fileKey: row.file_key }));
   }
 
   /** Marca el archivo como borrado del almacén (retención, RN-002-06); la fila se conserva. */

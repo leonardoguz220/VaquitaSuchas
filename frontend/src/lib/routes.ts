@@ -195,3 +195,28 @@ export const REPUTATION_PATH = '/perfil/reputacion';
 
 /** Mis insignias: obtenidas y pendientes con su avance (spec 007, plan §6). Ruta protegida. */
 export const BADGES_PATH = '/perfil/insignias';
+
+/** Cupos libres: publicaciones de grupos que buscan miembros (spec 008, plan §6). Ruta protegida. */
+export const LISTINGS_PATH = '/cupos';
+
+/** Detalle de una publicación de cupo (spec 008, plan §6). Ruta protegida. */
+export function listingPath(listingId: string): string {
+  return `${LISTINGS_PATH}/${encodeURIComponent(listingId)}`;
+}
+
+/**
+ * Panel de administración (spec 009, plan §6). Solo para `role = admin`: la pantalla lo comprueba
+ * con `GET /auth/me` y el servidor responde `403` a cualquier llamada de `/admin` (RNF-009-01).
+ */
+export const ADMIN_PATH = '/admin';
+
+/** Lista de usuarios con búsqueda y filtros (spec 009, RF-009-08). */
+export const ADMIN_USERS_PATH = '/admin/usuarios';
+
+/** Ficha de un usuario y sus acciones (spec 009, RF-009-09). */
+export function adminUserPath(userId: string): string {
+  return `${ADMIN_USERS_PATH}/${encodeURIComponent(userId)}`;
+}
+
+/** Habilitaciones manuales de titulares (spec 009, RF-009-21). */
+export const ADMIN_HOSTS_PATH = '/admin/titulares';

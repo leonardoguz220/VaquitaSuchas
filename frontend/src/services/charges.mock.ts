@@ -1,8 +1,9 @@
 /**
- * Datos simulados de la spec 002 mientras el backend no está conectado (T018; se quita en T019).
+ * Datos simulados de la spec 002 para los endpoints que aún no tienen backend (subida, confirmar,
+ * rechazar, historial del grupo y resumen). `listMyCharges` y `getCharge` ya se conectan en
+ * `charges.ts` (T019); aquí quedan solo como servidor simulado de `charges.test.ts`.
  * Los montos, estados y `allowedActions` ya vienen resueltos, como los entregaría la API: aquí no
- * se calcula nada. Filtrar por la query de `GET /me/charges` simula al servidor. Nombres,
- * montos y cuentas inventados.
+ * se calcula nada. Nombres, montos y cuentas inventados.
  */
 import { billingSummary, groupChargesPage, ownerGroupCharge } from './group-billing.mock';
 import { ApiError } from './http';
@@ -12,7 +13,9 @@ import type {
   ChargeEvent,
   ChargeGroupRef,
   ChargePublic,
+  CancelChargeInput,
   ConfirmChargeInput,
+  ManualPaymentInput,
   GroupChargesParams,
   ListMyChargesParams,
   MyCharge,
@@ -112,6 +115,8 @@ export const MOCK_CHARGE_IDS = {
   ownerInReview: uuid('000000001002'),
   /** Prime Video, titular: `en_revision` ya vencido; rechazar da `atrasado`; archivo `410`. */
   ownerInReviewOverdue: uuid('000000000507'),
+  /** Prime Video, titular: `atrasado` sin comprobante; admite pago en efectivo y cancelar (T030). */
+  ownerOverdue: uuid('000000000508'),
   /** De otro miembro del grupo: `403`. */
   forbidden: uuid('000000000599'),
 } as const;
@@ -509,7 +514,25 @@ export function getCharge(chargeId: string, signal?: AbortSignal): Promise<Charg
 }
 
 /** `owned`: el cobro es de la persona (miembro); si no, la persona lo ve como titular. */
+/** Cobro del titular `atrasado` sin comprobante: admite pago en efectivo y cancelar (T030). */
+const OWNER_OVERDUE_PAYABLE: Charge = {
+  ...OWNER_OVERDUE_IN_REVIEW,
+  id: MOCK_CHARGE_IDS.ownerOverdue,
+  status: 'atrasado',
+  currentReceipt: null,
+  lastRejection: {
+    reason: 'El monto no llegó',
+    invalidReceipt: false,
+    at: '2026-09-21T15:00:00.000Z',
+  },
+  allowedActions: ['manualPayment', 'cancel'],
+  version: 3,
+};
+
 function findAny(chargeId: string): { charge: Charge; owned: boolean } {
+  if (chargeId === MOCK_CHARGE_IDS.ownerOverdue) {
+    return { charge: OWNER_OVERDUE_PAYABLE, owned: false };
+  }
   const asOwner =
     chargeId === MOCK_CHARGE_IDS.ownerInReviewOverdue
       ? OWNER_OVERDUE_IN_REVIEW
@@ -706,6 +729,64 @@ export function rejectCharge(chargeId: string, input: RejectChargeInput): Promis
       timeline: [
         ...charge.timeline,
         event('0097', 'rechazado', ME, 'en_revision', next, at, reason),
+      ],
+    };
+  });
+}
+
+/**
+ * `200` con el cobro `pagado` por efectivo (`settlement: "manual"`, nota y fecha). Responde `409`
+ * si ya no está `pendiente` o `atrasado` (CA-002-14). No guarda el cambio.
+ */
+export function manualPayment(chargeId: string, input: ManualPaymentInput): Promise<Charge> {
+  return delay(() => {
+    const { charge, owned } = findAny(chargeId);
+    if (owned) throw forbiddenForMember();
+    requireAction(charge, 'manualPayment');
+    checkVersion(charge, input.version);
+    const at = input.paidAt ?? '2026-10-19T15:30:00.000Z';
+    return {
+      ...charge,
+      status: 'pagado',
+      paidAt: at,
+      settlement: 'manual',
+      settledBy: ME,
+      manualNote: input.note?.trim() || null,
+      paymentInfo: null,
+      allowedActions: [],
+      version: charge.version + 1,
+      timeline: [...charge.timeline, event('0099', 'pago_manual', ME, charge.status, 'pagado', at)],
+    };
+  });
+}
+
+/**
+ * `200` con el cobro `cancelado` y el motivo (CA-002-15). Motivo de 5 a 200 caracteres o
+ * `400 VALIDATION_ERROR`; `409` si no está `pendiente` o `atrasado`. No guarda el cambio.
+ */
+export function cancelCharge(chargeId: string, input: CancelChargeInput): Promise<Charge> {
+  return delay(() => {
+    const { charge, owned } = findAny(chargeId);
+    if (owned) throw forbiddenForMember();
+    const reason = input.reason.trim();
+    if (reason.length < 5 || reason.length > 200) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Datos inválidos.', {
+        fields: [{ field: 'reason', message: 'Entre 5 y 200 caracteres.' }],
+      });
+    }
+    requireAction(charge, 'cancel');
+    checkVersion(charge, input.version);
+    const at = '2026-10-19T15:30:00.000Z';
+    return {
+      ...charge,
+      status: 'cancelado',
+      cancelReason: reason,
+      paymentInfo: null,
+      allowedActions: [],
+      version: charge.version + 1,
+      timeline: [
+        ...charge.timeline,
+        event('0100', 'cancelado', ME, charge.status, 'cancelado', at, reason),
       ],
     };
   });

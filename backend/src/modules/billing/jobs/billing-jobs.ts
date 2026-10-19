@@ -4,6 +4,8 @@ import type { JobRunsRepository } from '../../../shared/jobs/job-runs.repository
 import type { JobContext, ScheduledJob } from '../../../shared/jobs/scheduled-job.js';
 import type { GroupsRepository } from '../../subscriptions/repositories/groups.repository.js';
 import type { BillingCyclesService } from '../services/billing-cycles.service.js';
+import type { OverdueService } from '../services/overdue.service.js';
+import type { RetentionService } from '../services/retention.service.js';
 
 /**
  * `billing.generate` (spec 002, research R1, RF-002-01, CA-002-22). En cada tick evalúa el estado
@@ -60,5 +62,43 @@ export class BillingGenerateJob implements ScheduledJob {
       throw new Error(`billing.generate no pudo procesar ${failed} grupo(s).`);
     }
     return created;
+  }
+}
+
+const ONE_DAY_SECONDS = 24 * 60 * 60;
+
+/**
+ * `billing.retention` (RN-002-06, CA-002-33): una vez al día borra los archivos de comprobantes de
+ * los grupos cerrados hace más de 2 meses. Devuelve cuántos archivos borró. Si alguno falla, el
+ * resto igual se procesa y la ejecución queda en `error` para que el siguiente tick reintente.
+ */
+export class BillingRetentionJob implements ScheduledJob {
+  readonly name = 'billing.retention';
+  readonly intervalSeconds = ONE_DAY_SECONDS;
+
+  constructor(private readonly retention: RetentionService) {}
+
+  async run(ctx: JobContext): Promise<number> {
+    const { deleted, failed } = await this.retention.purgeExpiredReceipts(ctx.now);
+    if (failed > 0) {
+      throw new Error(`billing.retention no pudo borrar ${failed} archivo(s).`);
+    }
+    return deleted;
+  }
+}
+
+/**
+ * `billing.overdue` (spec 002, RF-002-14, research R2): en cada tick marca `atrasado` los cobros
+ * `pendiente` vencidos de grupos activos y no congelados y retira a su dueño por mora. Es
+ * idempotente: decide por el estado de la base, no por el reloj. Devuelve cuántos cobros marcó.
+ */
+export class BillingOverdueJob implements ScheduledJob {
+  readonly name = 'billing.overdue';
+  readonly intervalSeconds = 0;
+
+  constructor(private readonly overdue: OverdueService) {}
+
+  run(ctx: JobContext): Promise<number> {
+    return this.overdue.sweep(ctx.now);
   }
 }
