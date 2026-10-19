@@ -1,8 +1,15 @@
 'use client';
 
 import { useCallback } from 'react';
-import { getCharge, listMyCharges, type ChargeStatus } from '@/services/charges';
+import {
+  getCharge,
+  listMyCharges,
+  uploadReceipt,
+  type ChargeStatus,
+  type UploadReceiptRequest,
+} from '@/services/charges';
 import { useApiResource } from './use-api-resource';
+import { useApiSubmit } from './use-api-submit';
 import { usePaginatedResource } from './use-paginated-resource';
 
 /** Cobros por página de "Mis cobros" (contrato 000 A: `limit` de 1 a 100). */
@@ -39,4 +46,13 @@ export function useMyCharges({ status, period }: MyChargesFilters) {
 export function useCharge(chargeId: string) {
   const load = useCallback(() => getCharge(chargeId), [chargeId]);
   return useApiResource(load);
+}
+
+/** Subir o reemplazar el comprobante (`POST /charges/:id/receipts`, RF-002-06 y RF-002-08). */
+export function useUploadReceipt(chargeId: string) {
+  const request = useCallback(
+    (input: UploadReceiptRequest) => uploadReceipt(chargeId, input),
+    [chargeId],
+  );
+  return useApiSubmit(request);
 }

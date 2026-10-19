@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useId, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { Alert, Badge, Button, Card } from '@/components/ui';
 import { useCharge } from '@/hooks/use-charges';
 import { formatDateTimeLaPaz, formatDeadlineLaPaz, formatPeriod } from '@/lib/dates';
@@ -13,6 +13,7 @@ import { ChargeCountdown } from './charge-countdown';
 import { CHARGE_MESSAGES, chargeErrorMessage } from './charge-messages';
 import { ChargePaymentInfoCard } from './charge-payment-info';
 import { ChargeTimeline } from './charge-timeline';
+import { ReceiptUpload } from './receipt-upload';
 
 /** Acciones que solo ofrece el backend al titular del grupo (contrato 002, `allowedActions`). */
 const OWNER_ACTIONS: ChargeAction[] = ['confirm', 'reject', 'manualPayment', 'cancel'];
@@ -191,10 +192,14 @@ export interface ChargeDetailViewProps {
  * Detalle del cobro `/cobros/[id]` (spec 002 T018, plan §6; mockup `Cobro.dc.html`): monto,
  * estado con color y texto, vencimiento con cuenta regresiva, datos de pago del titular, motivo
  * del último rechazo (CA-002-07) y línea de tiempo. `403` (cobro de otro miembro) y `404`
- * (ajeno, CA-002-23) muestran su aviso; el frontend no decide quién puede verlo.
+ * (ajeno, CA-002-23) muestran su aviso; el frontend no decide quién puede verlo. Con
+ * `uploadReceipt` en `allowedActions` muestra la subida del comprobante (T022).
  */
 export function ChargeDetailView({ chargeId }: ChargeDetailViewProps) {
-  const { status, data: charge, error, reload, refresh } = useCharge(chargeId);
+  const { status, data: charge, error, reload, refresh, replace } = useCharge(chargeId);
+  const [notice, setNotice] = useState<{ variant: 'success' | 'warning'; text: string } | null>(
+    null,
+  );
 
   if (status === 'loading' || status === 'redirecting') {
     return (
@@ -240,7 +245,26 @@ export function ChargeDetailView({ chargeId }: ChargeDetailViewProps) {
   return (
     <>
       <BackLink />
-      <ChargeDetailContent charge={charge} onRefresh={() => void refresh()} />
+      {notice && <Alert variant={notice.variant}>{notice.text}</Alert>}
+      <ChargeDetailContent
+        charge={charge}
+        onRefresh={() => void refresh()}
+        actions={
+          charge.allowedActions.includes('uploadReceipt') && (
+            <ReceiptUpload
+              charge={charge}
+              onUploaded={(updated) => {
+                replace(updated);
+                setNotice({ variant: 'success', text: CHARGE_MESSAGES.uploaded });
+              }}
+              onStale={(message) => {
+                setNotice({ variant: 'warning', text: message });
+                void refresh();
+              }}
+            />
+          )
+        }
+      />
     </>
   );
 }

@@ -20,6 +20,20 @@ export const CHARGE_MESSAGES = {
   copyFailed: 'No pudimos copiar. Selecciona el texto y cópialo a mano.',
   overdueWarning: 'Si no pagas antes del vencimiento, se te retira del grupo.',
   checkingDue: 'Llegó la hora del vencimiento. Actualizando el cobro…',
+  receiptType: 'El comprobante debe ser una imagen JPG o PNG, o un PDF.',
+  receiptSize: 'El archivo pesa más de 5 MB. Elige uno más liviano.',
+  referenceRequired: 'Escribe la referencia que aparece en tu comprobante.',
+  /** `409 REFERENCE_ALREADY_USED` (plan 002 §6). */
+  referenceUsed: 'Esa referencia ya fue usada en este grupo',
+  /** `503` al subir (plan 002 §6): el cobro no cambió. */
+  storageFailed: 'No pudimos guardar el archivo, intenta de nuevo',
+  /** `409 STALE_STATE` (plan 002 §6): se recarga el cobro. */
+  stale: 'El cobro cambió mientras lo veías. Cargamos los datos actualizados.',
+  /** `409 INVALID_TRANSITION` (spec 002 §9). */
+  noLongerEditable: 'Este cobro ya no admite cambios.',
+  groupFrozen: 'El grupo está en solo lectura porque su titular fue baneado.',
+  reviewForm: 'Revisa el método y la referencia.',
+  uploaded: 'Enviamos tu comprobante. El titular lo revisará.',
   connection: REGISTER_ERROR_MESSAGES.connection,
   unexpected: REGISTER_ERROR_MESSAGES.unexpected,
 } as const;
@@ -68,4 +82,40 @@ export function chargeDueText(
     case 'cancelado':
       return 'Cancelado';
   }
+}
+
+/** Qué hacer con un error al subir el comprobante (plan 002 §6). */
+export interface UploadErrorOutcome {
+  /** Campo junto al que se muestra, o `null` para el aviso general. */
+  field: 'file' | 'reference' | null;
+  message: string;
+  /** `true` si hay que volver a pedir el cobro (cambió en el servidor). */
+  refresh: boolean;
+}
+
+/** Elige el mensaje por `code` y estado HTTP, nunca por `message` (contrato 000 A.2). */
+export function uploadErrorOutcome(error: ApiError): UploadErrorOutcome {
+  const outcome = (field: UploadErrorOutcome['field'], message: string, refresh = false) => ({
+    field,
+    message,
+    refresh,
+  });
+  switch (error.code) {
+    case 'REFERENCE_ALREADY_USED':
+      return outcome('reference', CHARGE_MESSAGES.referenceUsed);
+    case 'FILE_TOO_LARGE':
+      return outcome('file', CHARGE_MESSAGES.receiptSize);
+    case 'UNSUPPORTED_FILE_TYPE':
+      return outcome('file', CHARGE_MESSAGES.receiptType);
+    case 'STALE_STATE':
+      return outcome(null, CHARGE_MESSAGES.stale, true);
+    case 'INVALID_TRANSITION':
+      return outcome(null, CHARGE_MESSAGES.noLongerEditable, true);
+    case 'GROUP_FROZEN':
+      return outcome(null, CHARGE_MESSAGES.groupFrozen);
+    case 'VALIDATION_ERROR':
+      return outcome(null, CHARGE_MESSAGES.reviewForm);
+  }
+  if (error.statusCode === 503) return outcome(null, CHARGE_MESSAGES.storageFailed);
+  return outcome(null, chargeErrorMessage(error));
 }

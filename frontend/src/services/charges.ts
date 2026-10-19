@@ -162,3 +162,30 @@ export function listMyCharges(params: ListMyChargesParams = {}): Promise<MyCharg
 export function getCharge(chargeId: string): Promise<Charge> {
   return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}`);
 }
+
+export interface UploadReceiptRequest {
+  /** JPG, PNG o PDF, máximo 5 MB (el servidor valida el tipo real). */
+  file: File;
+  method: PaymentMethod;
+  /** 1 a 100 caracteres; obligatoria y única por grupo (RF-002-07). */
+  reference: string;
+  version?: number;
+}
+
+/**
+ * `POST /charges/:chargeId/receipts` (RF-002-06, 07, 08) con `multipart/form-data`. Devuelve
+ * el `Charge` en `en_revision`. Lanza `ApiError` `400 VALIDATION_ERROR`, `413 FILE_TOO_LARGE`,
+ * `415 UNSUPPORTED_FILE_TYPE`, `409 INVALID_TRANSITION` / `REFERENCE_ALREADY_USED` /
+ * `STALE_STATE`, `422 GROUP_FROZEN` y `503 SERVICE_UNAVAILABLE` (el cobro no cambió).
+ */
+export function uploadReceipt(chargeId: string, input: UploadReceiptRequest): Promise<Charge> {
+  const form = new FormData();
+  form.append('file', input.file);
+  form.append('method', input.method);
+  form.append('reference', input.reference);
+  if (input.version !== undefined) form.append('version', String(input.version));
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/receipts`, {
+    method: 'POST',
+    formData: form,
+  });
+}

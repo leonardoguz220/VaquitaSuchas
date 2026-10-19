@@ -1,5 +1,5 @@
 import { pendingCharge } from './__fixtures__/charges';
-import { getCharge, listMyCharges } from './charges';
+import { getCharge, listMyCharges, uploadReceipt } from './charges';
 import { apiRequest } from './http';
 
 jest.mock('./http', () => ({
@@ -37,5 +37,29 @@ describe('services/charges (contrato 002): lectura', () => {
     mockedRequest.mockResolvedValue(pendingCharge);
     await expect(getCharge('c/1')).resolves.toBe(pendingCharge);
     expect(mockedRequest).toHaveBeenCalledWith('/api/charges/c%2F1');
+  });
+});
+
+describe('services/charges (contrato 002): comprobante', () => {
+  it('CA-002-04: uploadReceipt hace POST multipart con archivo, método, referencia y versión', async () => {
+    mockedRequest.mockResolvedValue(pendingCharge);
+    const file = new File(['x'], 'pago.jpg', { type: 'image/jpeg' });
+    await uploadReceipt('c1', { file, method: 'qr', reference: 'TRF-1', version: 3 });
+    const [path, options] = mockedRequest.mock.calls[0];
+    expect(path).toBe('/api/charges/c1/receipts');
+    expect(options?.method).toBe('POST');
+    const form = options?.formData as FormData;
+    expect(form.get('file')).toBe(file);
+    expect(form.get('method')).toBe('qr');
+    expect(form.get('reference')).toBe('TRF-1');
+    expect(form.get('version')).toBe('3');
+  });
+
+  it('CA-002-26: uploadReceipt no inventa campos que no vienen', async () => {
+    mockedRequest.mockResolvedValue(pendingCharge);
+    const file = new File(['x'], 'pago.pdf', { type: 'application/pdf' });
+    await uploadReceipt('c1', { file, method: 'transferencia', reference: 'A' });
+    const form = mockedRequest.mock.calls[0][1]?.formData as FormData;
+    expect(form.has('version')).toBe(false);
   });
 });
