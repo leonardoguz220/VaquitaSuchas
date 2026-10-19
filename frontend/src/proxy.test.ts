@@ -69,3 +69,19 @@ describe('proxy.ts (RF-000-15)', () => {
     expect(matches(path)).toBe(false);
   });
 });
+
+describe('proxy.ts con las rutas de la spec 010 (T017)', () => {
+  it.each(['/unirse', '/solicitudes', '/solicitudes/jr1'])(
+    'RF-010-01: %s sin sesión redirige a /ingresar',
+    (path) => {
+      expect(matches(path)).toBe(true);
+      expect(run(path).status).toBe(307);
+    },
+  );
+
+  it('RF-010-01: /unirse?codigo= conserva el código en next=', () => {
+    expect(run('/unirse?codigo=K7M2Q9XA').headers.get('location')).toBe(
+      `${APP}/ingresar?next=%2Funirse%3Fcodigo%3DK7M2Q9XA`,
+    );
+  });
+});

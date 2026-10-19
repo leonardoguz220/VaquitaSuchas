@@ -56,6 +56,8 @@ export function usePaginatedResource<T>(loadPage: (cursor?: string) => Promise<P
     status: first.status,
     error: first.error,
     reload: first.reload,
+    /** Vuelve a pedir la primera página sin pasar por "cargando". */
+    refresh: first.refresh,
     items,
     hasMore: Boolean(nextCursor),
     loadMore,

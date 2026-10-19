@@ -84,7 +84,7 @@ export const RECOVER_PATH = '/recuperar';
 
 /**
  * "Unirme con un código" (plan 010 §6): acepta `?codigo=XXXXXXXX` del enlace de invitación.
- * La pantalla llega con la spec 010.
+ * Ruta protegida: sin sesión, `proxy.ts` lleva a `/ingresar?next=/unirse?codigo=…`.
  */
 export const JOIN_PATH = '/unirse';
 
@@ -105,6 +105,14 @@ export const CHARGES_PATH = '/cobros';
 /** Detalle de un cobro (plan 002 §6). Ruta protegida. */
 export function chargePath(chargeId: string): string {
   return `${CHARGES_PATH}/${encodeURIComponent(chargeId)}`;
+}
+
+/** "Mis solicitudes" de ingreso (plan 010 §6). Ruta protegida. */
+export const REQUESTS_PATH = '/solicitudes';
+
+/** Detalle de una solicitud de ingreso, con su chat (plan 010 §6). Ruta protegida. */
+export function requestPath(requestId: string): string {
+  return `${REQUESTS_PATH}/${encodeURIComponent(requestId)}`;
 }
 
 /** Enlace a "Unirme con un código" con el código ya puesto (`/unirse?codigo=…`, plan 010 §6). */

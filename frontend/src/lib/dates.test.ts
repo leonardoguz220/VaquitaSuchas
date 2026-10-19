@@ -4,6 +4,7 @@ import {
   formatDateTimeLaPaz,
   formatDeadlineLaPaz,
   formatPeriod,
+  formatClock,
   formatTimeLeft,
   lapazDayOf,
 } from './dates';
@@ -127,5 +128,15 @@ describe('formatTimeLeft (spec 002)', () => {
     expect(formatTimeLeft(12 * 60)).toBe('Faltan 12 min');
     expect(formatTimeLeft(59)).toBe('Falta menos de 1 minuto');
     expect(formatTimeLeft(-5)).toBe('Falta menos de 1 minuto');
+  });
+});
+
+describe('formatClock (spec 010)', () => {
+  it('RNF-010-06: muestra mm:ss para los plazos de minutos y h:mm:ss si pasa de una hora', () => {
+    expect(formatClock(754)).toBe('12:34');
+    expect(formatClock(15 * 60)).toBe('15:00');
+    expect(formatClock(5)).toBe('00:05');
+    expect(formatClock(3725)).toBe('1:02:05');
+    expect(formatClock(-3)).toBe('00:00');
   });
 });

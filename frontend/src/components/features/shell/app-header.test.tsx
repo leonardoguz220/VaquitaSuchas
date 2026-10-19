@@ -34,6 +34,14 @@ describe('AppHeader (plan 001 §6)', () => {
     );
   });
 
+  it('RF-010-26: "Mis solicitudes" lleva a /solicitudes y se marca en el detalle', () => {
+    mockedPathname.mockReturnValue('/solicitudes/jr1');
+    render(<AppHeader />);
+    const link = screen.getByRole('link', { name: 'Mis solicitudes' });
+    expect(link).toHaveAttribute('href', '/solicitudes');
+    expect(link).toHaveAttribute('aria-current', 'page');
+  });
+
   it('RF-001-19: AppPage pone la cabecera y el contenido', () => {
     mockedPathname.mockReturnValue('/perfil');
     render(

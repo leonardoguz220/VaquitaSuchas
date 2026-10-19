@@ -167,3 +167,15 @@ export function formatTimeLeft(seconds: number): string {
   if (hours > 0) return `Faltan ${hours} h ${minutes} min`;
   return `Faltan ${minutes} min`;
 }
+
+/**
+ * Reloj de una cuenta regresiva corta, a partir de los segundos que da `useCountdown`:
+ * `formatClock(754)` → `12:34`, `formatClock(3725)` → `1:02:05`. Solo da formato.
+ */
+export function formatClock(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(total / HOUR);
+  const minutes = Math.floor((total % HOUR) / MINUTE);
+  const rest = total % MINUTE;
+  return hours > 0 ? `${hours}:${pad2(minutes)}:${pad2(rest)}` : `${pad2(minutes)}:${pad2(rest)}`;
+}
