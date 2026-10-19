@@ -1,9 +1,12 @@
 import {
+  DEV_TELEGRAM_PATH,
   LOGIN_PATH,
   PUBLIC_ROUTES,
+  REGISTER_VERIFY_PATH,
   buildAuthLink,
   buildLoginRedirect,
   isPublicPath,
+  isTelegramDevMode,
   resolvePostLoginPath,
   safeNextPath,
 } from './routes';
@@ -34,6 +37,42 @@ describe('routes (RF-000-15, RF-000-16)', () => {
       expect(isPublicPath(path)).toBe(false);
     },
   );
+
+  it('RF-003-21: /registro/verificar es pública (subruta de /registro)', () => {
+    expect(REGISTER_VERIFY_PATH).toBe('/registro/verificar');
+    expect(isPublicPath(REGISTER_VERIFY_PATH)).toBe(true);
+  });
+
+  describe('/dev/telegram según NEXT_PUBLIC_TELEGRAM_MODE (plan 003 §6)', () => {
+    const original = process.env.NEXT_PUBLIC_TELEGRAM_MODE;
+    afterEach(() => {
+      if (original === undefined) delete process.env.NEXT_PUBLIC_TELEGRAM_MODE;
+      else process.env.NEXT_PUBLIC_TELEGRAM_MODE = original;
+    });
+
+    it('RF-003-21: con NEXT_PUBLIC_TELEGRAM_MODE=dev, /dev/telegram es pública', () => {
+      process.env.NEXT_PUBLIC_TELEGRAM_MODE = 'dev';
+      expect(isTelegramDevMode()).toBe(true);
+      expect(isPublicPath(DEV_TELEGRAM_PATH)).toBe(true);
+      expect(isPublicPath('/dev/telegram/')).toBe(true);
+      expect(isPublicPath('/dev/telegramx')).toBe(false);
+      expect(isPublicPath('/dev')).toBe(false);
+    });
+
+    it.each([undefined, '', 'webhook', 'DEV'])(
+      'RF-003-21: con NEXT_PUBLIC_TELEGRAM_MODE=%s, /dev/telegram no es pública',
+      (mode) => {
+        if (mode === undefined) delete process.env.NEXT_PUBLIC_TELEGRAM_MODE;
+        else process.env.NEXT_PUBLIC_TELEGRAM_MODE = mode;
+        expect(isTelegramDevMode()).toBe(false);
+        expect(isPublicPath(DEV_TELEGRAM_PATH)).toBe(false);
+      },
+    );
+
+    it('RF-003-21: /dev/telegram no está en la lista fija de rutas públicas', () => {
+      expect(PUBLIC_ROUTES).not.toContain(DEV_TELEGRAM_PATH);
+    });
+  });
 
   it('RF-000-15: buildLoginRedirect conserva la ruta y la query en next=', () => {
     expect(buildLoginRedirect('/grupos', '')).toBe('/ingresar?next=%2Fgrupos');

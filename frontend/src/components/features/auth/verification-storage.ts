@@ -20,6 +20,15 @@ export function saveRegisterVerification(verification: RegisterVerification): vo
   }
 }
 
+/** Borra la verificación (al quedar verificado el celular). */
+export function clearRegisterVerification(): void {
+  try {
+    window.sessionStorage.removeItem(REGISTER_VERIFICATION_KEY);
+  } catch {
+    // Sin almacenamiento no hay nada que borrar.
+  }
+}
+
 /** Lee la verificación guardada, o `null` si no hay o no tiene la forma esperada. */
 export function readRegisterVerification(): RegisterVerification | null {
   try {

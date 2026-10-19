@@ -1,5 +1,6 @@
 import {
   REGISTER_VERIFICATION_KEY,
+  clearRegisterVerification,
   readRegisterVerification,
   saveRegisterVerification,
 } from './verification-storage';
@@ -25,6 +26,13 @@ describe('verification-storage (paso de /registro a /registro/verificar)', () =>
     window.sessionStorage.setItem(REGISTER_VERIFICATION_KEY, '{"telegramUrl":1}');
     expect(readRegisterVerification()).toBeNull();
     window.sessionStorage.setItem(REGISTER_VERIFICATION_KEY, 'no-json');
+    expect(readRegisterVerification()).toBeNull();
+  });
+
+  it('RF-003-21: clearRegisterVerification borra la verificación guardada', () => {
+    saveRegisterVerification(verification);
+    clearRegisterVerification();
+    expect(window.sessionStorage.getItem(REGISTER_VERIFICATION_KEY)).toBeNull();
     expect(readRegisterVerification()).toBeNull();
   });
 
