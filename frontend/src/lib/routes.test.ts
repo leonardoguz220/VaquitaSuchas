@@ -1,4 +1,8 @@
 import {
+  ADMIN_AUDIT_PATH,
+  ADMIN_DISPUTES_PATH,
+  adminDisputePath,
+  safeHttpUrl,
   ADMIN_PATH,
   ADMIN_USERS_PATH,
   adminUserPath,
@@ -310,5 +314,23 @@ describe('rutas de administración (plan 009 §6)', () => {
     expect(isAdminPath('/admin/usuarios/u1')).toBe(true);
     expect(isAdminPath('/administrar')).toBe(false);
     expect(isAdminPath('/panel')).toBe(false);
+  });
+});
+
+describe('rutas de reclamos y auditoría (plan 009 §6)', () => {
+  it('RF-009-20: /admin/reclamos y su detalle; RF-009-18: /admin/auditoria', () => {
+    expect(ADMIN_DISPUTES_PATH).toBe('/admin/reclamos');
+    expect(adminDisputePath('d/1')).toBe('/admin/reclamos/d%2F1');
+    expect(ADMIN_AUDIT_PATH).toBe('/admin/auditoria');
+    expect(isAdminPath(ADMIN_AUDIT_PATH)).toBe(true);
+  });
+
+  it('CA-009-27: safeHttpUrl solo deja pasar URLs http(s) absolutas', () => {
+    expect(safeHttpUrl('https://files.example.com/a.png?sig=1')).toBe(
+      'https://files.example.com/a.png?sig=1',
+    );
+    expect(safeHttpUrl('javascript:alert(1)')).toBeNull();
+    expect(safeHttpUrl('/relativa')).toBeNull();
+    expect(safeHttpUrl(null)).toBeNull();
   });
 });

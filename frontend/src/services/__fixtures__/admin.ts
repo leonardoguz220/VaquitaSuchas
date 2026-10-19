@@ -2,6 +2,8 @@
  * Datos simulados que respetan el contrato 009 (`contracts/api.md`), solo para las pruebas.
  * Nombres, correos, celulares y fechas son inventados.
  */
+import type { AuditEntry } from '../admin-audit';
+import type { AdminDisputeEvidence, AdminDisputeRow } from '../admin-disputes';
 import type { HostEnablementRow } from '../admin-hosts';
 import type { AdminUserDetail, AdminUserRow } from '../admin-users';
 
@@ -52,6 +54,120 @@ export function hostEnablementRow(overrides: Partial<HostEnablementRow> = {}): H
     reason: 'Primer titular del grupo de prueba',
     enabledBy: { id: 'a1', fullName: 'Leonardo Guzman' },
     enabledAt: '2026-01-10T14:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** Reclamo abierto por pago sin ingreso: Ana (solicitante) contra Kevin (titular). */
+export function adminDisputeRow(overrides: Partial<AdminDisputeRow> = {}): AdminDisputeRow {
+  return {
+    id: 'd1',
+    kind: 'pago_sin_ingreso',
+    status: 'abierto',
+    requestId: 'r1',
+    group: { id: 'g1', name: 'Crunchyroll anime', serviceName: 'Crunchyroll' },
+    openedBy: { userId: 'u2', fullName: 'Ana Quispe', role: 'solicitante' },
+    accused: { userId: 'u7', fullName: 'Kevin Rojas', role: 'titular' },
+    // 17 oct 2026, 09:12 en La Paz.
+    openedAt: '2026-10-17T13:12:00.000Z',
+    resolvedAt: null,
+    result: null,
+    hasResponse: true,
+    ...overrides,
+  };
+}
+
+/** Evidencia del reclamo `d1` (contrato 009, RF-010-23). */
+export function adminDisputeEvidence(
+  overrides: Partial<AdminDisputeEvidence> = {},
+): AdminDisputeEvidence {
+  return {
+    dispute: adminDisputeRow(),
+    timeline: [
+      {
+        type: 'abierta',
+        actor: { userId: 'u2', fullName: 'Ana Quispe' },
+        fromStatus: null,
+        toStatus: 'abierta',
+        reason: null,
+        occurredAt: '2026-10-15T23:41:00.000Z',
+      },
+      {
+        type: 'expirada',
+        actor: null,
+        fromStatus: 'pago_informado',
+        toStatus: 'expirada',
+        reason: 'titular_sin_respuesta',
+        occurredAt: '2026-10-17T01:10:00.000Z',
+      },
+    ],
+    messages: [
+      {
+        id: 'm1',
+        seq: 1,
+        sender: { userId: 'u2', fullName: 'Ana Quispe' },
+        body: 'Hola, ¿tienes cupo en Crunchyroll?',
+        imageUrl: null,
+        // 15 oct 2026, 19:41 en La Paz.
+        createdAt: '2026-10-15T23:41:00.000Z',
+      },
+      {
+        id: 'm2',
+        seq: 2,
+        sender: { userId: 'u7', fullName: 'Kevin Rojas' },
+        body: 'Sí, te paso el QR.',
+        imageUrl: 'https://files.example.com/qr.png?sig=abc',
+        createdAt: '2026-10-16T00:01:00.000Z',
+      },
+    ],
+    proof: {
+      method: 'transferencia',
+      reference: 'TRF-554210',
+      mime: 'image/png',
+      sizeBytes: 245_000,
+      uploadedAt: '2026-10-17T00:10:00.000Z',
+      fileAvailable: true,
+      fileUrl: 'https://files.example.com/proof.png?sig=xyz',
+    },
+    quote: {
+      amountCents: 1200,
+      priceCents: 4800,
+      currency: 'BS',
+      exchangeRate: null,
+      totalBsCents: 4800,
+      memberCount: 4,
+    },
+    claims: [
+      {
+        id: 'd1',
+        kind: 'pago_sin_ingreso',
+        openedBy: { userId: 'u2', fullName: 'Ana Quispe' },
+        description: 'Le pagué Bs 12,00 por QR y subí el comprobante a tiempo. No respondió.',
+        evidenceUrl: 'https://files.example.com/banco.png?sig=1',
+        openedAt: '2026-10-17T13:12:00.000Z',
+        response: {
+          text: 'No vi el aviso a tiempo. Reviso mi banco y no encuentro ese pago.',
+          evidenceUrl: null,
+          respondedAt: '2026-10-17T20:00:00.000Z',
+        },
+      },
+    ],
+    ...overrides,
+  };
+}
+
+/** Entrada del log: Leonardo suspendió a Patricia (CA-009-18). */
+export function auditEntry(overrides: Partial<AuditEntry> = {}): AuditEntry {
+  return {
+    id: 'al1',
+    admin: { id: 'a1', fullName: 'Leonardo Guzman' },
+    action: 'usuario_suspender',
+    targetType: 'user',
+    targetId: 'u2',
+    targetLabel: 'Patricia Mendoza',
+    reason: 'Comprobantes repetidos en dos grupos',
+    // 17 oct 2026, 18:30 en La Paz.
+    occurredAt: '2026-10-17T22:30:00.000Z',
     ...overrides,
   };
 }

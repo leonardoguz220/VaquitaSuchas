@@ -4,6 +4,8 @@
  * `403` a quien no es administrador (RNF-009-01) y la pantalla lo explica.
  */
 import type { BadgeIcon, BadgeTone } from '@/components/ui';
+import type { AuditAction, AuditTargetType } from '@/services/admin-audit';
+import type { DisputePartyRole } from '@/services/admin-disputes';
 import { isConnectionError, type ApiError } from '@/services/http';
 import {
   ADMIN_REASON_MAX,
@@ -142,4 +144,43 @@ export const USER_STATUS_STYLE: Record<
 export const USER_ROLE_LABEL: Record<AdminUserRole, string> = {
   usuario: 'Usuario',
   admin: 'Administrador',
+};
+
+/** Texto de cada acción del log de auditoría (`data-model.md`). */
+export const AUDIT_ACTION_LABEL: Record<AuditAction, string> = {
+  catalogo_crear: 'Catálogo: creado',
+  catalogo_editar: 'Catálogo: editado',
+  catalogo_activar: 'Catálogo: activado',
+  catalogo_desactivar: 'Catálogo: desactivado',
+  catalogo_importar: 'Catálogo: importado',
+  usuario_suspender: 'Usuario suspendido',
+  usuario_reactivar: 'Usuario reactivado',
+  usuario_banear: 'Usuario baneado',
+  baneo_revertir: 'Baneo revertido',
+  rol_promover: 'Promovido a administrador',
+  rol_quitar: 'Rol de administrador quitado',
+  titular_habilitar: 'Titular habilitado',
+  titular_quitar_habilitacion: 'Habilitación de titular quitada',
+  reclamo_abrir_evidencia: 'Evidencia abierta',
+  reclamo_resolver: 'Reclamo resuelto',
+  publicacion_restaurar: 'Publicación restaurada',
+  publicacion_eliminar: 'Publicación eliminada',
+  publicacion_eliminar_y_suspender: 'Publicación eliminada y titular suspendido',
+  titularidad_transferir: 'Titularidad transferida',
+};
+
+/** Texto de cada tipo de objetivo del log de auditoría. */
+export const AUDIT_TARGET_LABEL: Record<AuditTargetType, string> = {
+  user: 'Usuario',
+  group: 'Grupo',
+  catalog_service: 'Servicio del catálogo',
+  catalog_plan: 'Plan del catálogo',
+  join_dispute: 'Reclamo',
+  listing: 'Publicación',
+  ban: 'Baneo',
+};
+
+export const DISPUTE_PARTY_LABEL: Record<DisputePartyRole, string> = {
+  solicitante: 'solicitante',
+  titular: 'titular',
 };

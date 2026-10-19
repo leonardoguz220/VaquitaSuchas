@@ -96,3 +96,9 @@ export function useAdminUserSearch(q: string) {
   const load = useCallback(() => listAdminUsers({ q, limit: ADMIN_USER_PICKER_SIZE }), [q]);
   return useApiResource(q ? load : null);
 }
+
+/** Administradores para el filtro de la auditoría (`GET /admin/users?role=admin`). */
+export function useAdminAccounts() {
+  const load = useCallback(() => listAdminUsers({ role: 'admin', limit: 50 }), []);
+  return useApiResource(load);
+}

@@ -237,7 +237,33 @@ export function adminUserPath(userId: string): string {
 /** Habilitación manual de titulares (plan 009 §6). */
 export const ADMIN_HOSTS_PATH = '/admin/titulares';
 
+/** Cola de reclamos de ingreso (plan 009 §6). */
+export const ADMIN_DISPUTES_PATH = '/admin/reclamos';
+
+/** Detalle de un reclamo con su evidencia (plan 009 §6). */
+export function adminDisputePath(disputeId: string): string {
+  return `${ADMIN_DISPUTES_PATH}/${encodeURIComponent(disputeId)}`;
+}
+
+/** Log de auditoría (plan 009 §6). */
+export const ADMIN_AUDIT_PATH = '/admin/auditoria';
+
 /** Indica si `pathname` es una ruta del panel de administración (`/admin` o una subruta). */
 export function isAdminPath(pathname: string): boolean {
   return matchesRoute(pathname, ADMIN_PATH);
+}
+
+/**
+ * Devuelve `url` si es una dirección `https:` (o `http:` en desarrollo) absoluta, por ejemplo la
+ * URL firmada de un comprobante, o `null`. Evita abrir `javascript:` u otros esquemas si llegara
+ * uno por error.
+ */
+export function safeHttpUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
 }
