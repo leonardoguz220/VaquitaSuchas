@@ -31,7 +31,7 @@
 - [ ] T012 [P] [US1] [BE] `backend/test/reputation.me.e2e-spec.ts` (CA-007-02 con 2 cobros → «Nuevo») y `reputation.host.e2e-spec.ts`: CA-007-20 (6 cobros y 4,5 → habilitado; con 5, no), CA-007-21 (baja del umbral → no crea más; los grupos existentes siguen), CA-007-23 (habilitación manual con calificación baja, RF-007-17) — Depende: T010 · Cubre: CA-007-02, CA-007-20, CA-007-21, CA-007-23, RF-007-16, RF-007-17
 - [ ] T013 [US1] [BE] `services/reconcile.job.ts` tarea `reputation.reconcile` diaria: por lotes recalcula a quienes tuvieron cobros en los últimos 13 meses, corrige diferencias (también las del paso del tiempo), suma `drift` en `job_runs`; si cambió `RULES_VERSION` recalcula a todos — Depende: T009, spec 000 T028 · Cubre: RF-007-05, RN-007-07, CA-007-14
 - [ ] T014 [US1] [BE] Conectar el adaptador `HostEligibilityPort` de la spec 001 (T013) con `checkHostRating` y la habilitación manual de la spec 009; prueba cruzada `groups.create.e2e-spec.ts` (CA-007-21) — Depende: T010, spec 001 T013 · Cubre: RF-007-15, RF-007-16, RF-007-17, CA-007-21
-- [ ] T015 [P] [US1] [FE] Componente `ui`/`features` `RatingBadge` (estrellas + valor numérico + nivel en texto e icono) y `/perfil/reputacion` con mock: «4,5 de 5», cuántos cobros faltan si es «Nuevo», detalle (considerados, puntuales, tardíos, racha), últimos cobros con resultado y vencimiento, explicación de la fórmula con el ejemplo, estado de habilitación como titular — Depende: spec 000 T036 · Cubre: RF-007-01, RF-007-02, RF-007-03, RF-007-04, RNF-007-01, RNF-007-06
+- [x] T015 [P] [US1] [FE] Componente `ui`/`features` `RatingBadge` (estrellas + valor numérico + nivel en texto e icono) y `/perfil/reputacion` con mock: «4,5 de 5», cuántos cobros faltan si es «Nuevo», detalle (considerados, puntuales, tardíos, racha), últimos cobros con resultado y vencimiento, explicación de la fórmula con el ejemplo, estado de habilitación como titular — Depende: spec 000 T036 · Cubre: RF-007-01, RF-007-02, RF-007-03, RF-007-04, RNF-007-01, RNF-007-06
 - [ ] T016 [US1] [FE] Conectar `/perfil/reputacion` con `GET /users/me/reputation` y usar `RatingBadge` en las solicitudes (spec 010), publicaciones (spec 008) y creación de grupos (spec 001) — Depende: T011, T015 · Cubre: RF-007-04, RF-007-15
 
 **Punto de control (I2):** la calificación se actualiza con cada cobro y la spec 001 decide quién puede ser titular con datos reales.
@@ -45,7 +45,7 @@
 - [ ] T018 [P] [US2] [BE] `domain/badges-rules.ts` (`badgesEarned(facts, existing)`: Primer pago, Racha 3 y demás reglas versionadas; avance `current/target` calculado) y `badges-rules.spec.ts` (CA-007-08, 09) — Depende: T006 · Cubre: RF-007-06, RF-007-07, RF-007-08, RN-007-07, CA-007-08, CA-007-09
 - [ ] T019 [P] [US2] [BE] `backend/test/badges.e2e-spec.ts`: CA-007-08 (Racha 3), CA-007-09 (se conserva la insignia, racha a 0) y `GET /users/me/badges` — Depende: T017 · Cubre: CA-007-08, CA-007-09
 - [ ] T020 [US2] [BE] `services/badges.service.ts` (otorga y conserva en cada recálculo; avance calculado), tarea `reputation.badges` y `controllers/badges.controller.ts` `GET /users/me/badges` — Depende: T018, T019, T009 · Cubre: RF-007-06, RF-007-07, RF-007-08
-- [ ] T021 [P] [US2] [FE] `/perfil/insignias` con mock: obtenidas con fecha y pendientes con barra de avance, distinguidas por texto e icono — Depende: T015 · Cubre: RF-007-07, RNF-007-06
+- [x] T021 [P] [US2] [FE] `/perfil/insignias` con mock: obtenidas con fecha y pendientes con barra de avance, distinguidas por texto e icono — Depende: T015 · Cubre: RF-007-07, RNF-007-06
 - [ ] T022 [US2] [FE] Conectar `/perfil/insignias` con `GET /users/me/badges` — Depende: T020, T021 · Cubre: RF-007-07
 
 ## Fase 4: US3 — Ranking del grupo (Prioridad: P2)
@@ -56,7 +56,7 @@
 - [ ] T023 [P] [US3] [BE] `domain/ranking-order.ts` (`rankingOrder(members)`: exacta desc, racha, antigüedad; «Nuevo» aparte) y `ranking-order.spec.ts` (CA-007-10) — Depende: T006 · Cubre: RF-007-09, CA-007-10
 - [ ] T024 [P] [US3] [BE] `backend/test/ranking.e2e-spec.ts`: CA-007-10, CA-007-11 (sin montos ni comprobantes), CA-007-12 (ajeno → `404`), el titular aparece solo si tiene cobros como miembro en otros grupos, y rendimiento de menos de 300 ms con 20 miembros — Depende: T010 · Cubre: CA-007-10, CA-007-11, CA-007-12, RF-007-10, RF-007-11, RNF-007-03
 - [ ] T025 [US3] [BE] `services/ranking.service.ts` y `controllers/ranking.controller.ts` `GET /groups/:groupId/ranking` (`items` y `unranked`) — Depende: T023, T024 · Cubre: RF-007-09, RF-007-10, RF-007-11, RNF-007-03, RNF-007-04
-- [ ] T026 [P] [US3] [FE] Pestaña **Ranking** de `/grupos/[id]` con mock: posición, nombre, nivel, estrellas y racha; los «Nuevo» al final sin posición; sin montos — Depende: T015, spec 001 T020 · Cubre: RF-007-10, RNF-007-06
+- [x] T026 [P] [US3] [FE] Pestaña **Ranking** de `/grupos/[id]` con mock: posición, nombre, nivel, estrellas y racha; los «Nuevo» al final sin posición; sin montos — Depende: T015, spec 001 T020 · Cubre: RF-007-10, RNF-007-06
 - [ ] T027 [US3] [FE] Conectar la pestaña **Ranking** con `GET /groups/:id/ranking` — Depende: T025, T026 · Cubre: RF-007-09
 
 ## Fase 5: US4 — Corregir un cobro mal calificado (Prioridad: P2)
@@ -68,7 +68,7 @@
 - [ ] T029 [P] [US4] [BE] `backend/test/reports.e2e-spec.ts`: CA-007-13 (exclusión con motivo, registrada y recalculada), `CHARGE_ALREADY_EXCLUDED`, `REPORT_ALREADY_SENT`, solo el titular del grupo excluye y solo el dueño reporta — Depende: T028 · Cubre: CA-007-13, RF-007-14
 - [ ] T030 [US4] [BE] `services/reports.service.ts`, `repositories/exclusions.repository.ts` y `controllers/reports.controller.ts` (`POST /charges/:id/reputation-report`, `POST /charges/:id/reputation-exclusion`, que recalcula con `recomputeUser` en la misma transacción) — Depende: T029, T009 · Cubre: RF-007-14, CA-007-13
 - [x] T031 [BD] Completar `reputation.integrity.test.ts` con las pruebas de exclusiones, reportes e insignias (únicos) — Depende: T017, T028 · Cubre: RF-007-08, RF-007-14
-- [ ] T032 [P] [US4] [FE] En `/cobros/[id]` (spec 002): botón «Reportar calificación» para el dueño y «Excluir de reputación» con motivo para el titular, con mock — Depende: spec 002 T018 · Cubre: RF-007-14
+- [x] T032 [P] [US4] [FE] En `/cobros/[id]` (spec 002): botón «Reportar calificación» para el dueño y «Excluir de reputación» con motivo para el titular, con mock — Depende: spec 002 T018 · Cubre: RF-007-14
 - [ ] T033 [US4] [FE] Conectar el reporte y la exclusión con el backend — Depende: T030, T032 · Cubre: RF-007-14
 
 ## Fase 6: Cierre

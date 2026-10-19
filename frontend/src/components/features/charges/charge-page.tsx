@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ChargeReputationActions } from '@/components/features/reputation/charge-reputation-actions';
 import { Alert } from '@/components/ui';
 import type { Charge } from '@/services/charges';
 import { ChargeDetailView, type ChargeActionsContext } from './charge-detail';
@@ -27,6 +28,7 @@ export function chargeActions(
         <ReceiptUpload key={charge.id} charge={charge} {...context} />
       )}
       {reviewing && <OwnerReviewActions charge={charge} {...context} {...extras} />}
+      <ChargeReputationActions charge={charge} onNotice={extras.onNotice} />
       {/* Solo el titular puede registrar un pago manual, y solo en cobros por cobrar (RF-005-16). */}
       {charge.allowedActions.includes('manualPayment') && <ReminderWhatsApp chargeId={charge.id} />}
     </>
