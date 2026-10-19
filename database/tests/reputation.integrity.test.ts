@@ -167,6 +167,8 @@ test('RF-007-01: las estrellas mostradas 0 y 10 (medias estrellas) se aceptan', 
   });
 });
 
+// La base no ata el nivel a las estrellas (el modelo no lo pide): esa coherencia la garantiza
+// levelFor() en el backend. Por eso aquí un mismo valor de estrellas sirve para varios niveles.
 test('RF-007-03: los cinco niveles de la spec se aceptan', async () => {
   await insertReputation({
     considered_count: 1,
@@ -297,6 +299,9 @@ test('RF-007-03: un nivel fuera de los cinco de la spec falla', async () => {
 
 // ---------------------------------------------------------------- obligatorios
 
+// La base solo puede exigir que exista rules_version; que el recálculo con la versión vigente dé
+// el mismo resultado (RN-007-07) lo verifica la prueba de conciliación del backend
+// (reputation.reconcile.e2e-spec.ts, plan.md §8).
 test('RN-007-07, RF-007-05: rules_version y computed_at son obligatorios', async () => {
   await rejectsWith(insertReputation({ rules_version: null }), {
     code: NOT_NULL_VIOLATION,
@@ -365,6 +370,39 @@ test('RF-007-05: un UPDATE (recálculo) actualiza updated_at', async () => {
     [userId],
   );
   assert.ok(row);
+  assert.equal(row.created_at.getTime(), old.getTime());
+  assert.ok(row.updated_at.getTime() > old.getTime());
+});
+
+test('RF-007-05: el upsert del recálculo (ON CONFLICT (user_id) DO UPDATE) deja una sola fila', async () => {
+  const userId = await newUserId();
+  const old = new Date('2026-01-01T00:00:00Z');
+  await insertReputation({ user_id: userId, created_at: old, updated_at: old });
+  await run(
+    `INSERT INTO user_reputation (user_id, considered_count, punctual_count, late_count,
+       displayed_half_stars, level, current_streak, rules_version, computed_at)
+     VALUES ($1, 6, 5, 1, 8, 'Bueno', 2, 1, now())
+     ON CONFLICT (user_id) DO UPDATE SET
+       considered_count = EXCLUDED.considered_count, punctual_count = EXCLUDED.punctual_count,
+       late_count = EXCLUDED.late_count, displayed_half_stars = EXCLUDED.displayed_half_stars,
+       level = EXCLUDED.level, current_streak = EXCLUDED.current_streak,
+       rules_version = EXCLUDED.rules_version, computed_at = EXCLUDED.computed_at`,
+    [userId],
+  );
+  const rows = await run<{
+    considered_count: number;
+    level: string;
+    created_at: Date;
+    updated_at: Date;
+  }>(
+    'SELECT considered_count, level, created_at, updated_at FROM user_reputation WHERE user_id = $1',
+    [userId],
+  );
+  assert.equal(rows.length, 1);
+  const [row] = rows;
+  assert.ok(row);
+  assert.equal(row.considered_count, 6);
+  assert.equal(row.level, 'Bueno');
   assert.equal(row.created_at.getTime(), old.getTime());
   assert.ok(row.updated_at.getTime() > old.getTime());
 });
