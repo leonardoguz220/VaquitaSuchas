@@ -15,6 +15,7 @@ import { AuthSessionRepository } from './repositories/auth-session.repository.js
 import { UnverifiedUsersRepository } from './repositories/unverified-users.repository.js';
 import { AuthSessionService } from './services/auth-session.service.js';
 import { PasswordHasher } from './services/password-hasher.js';
+import { RegistrationStatusService } from './services/registration-status.service.js';
 import { RegistrationService } from './services/registration.service.js';
 import { TelegramVerificationHandler } from './services/telegram-verification.handler.js';
 import { SessionService } from './services/session.service.js';
@@ -29,6 +30,7 @@ import { SessionService } from './services/session.service.js';
     RegistrationRepository,
     PasswordHasher,
     RegistrationService,
+    RegistrationStatusService,
     TelegramVerificationHandler,
     AuthSessionRepository,
     UnverifiedUsersRepository,

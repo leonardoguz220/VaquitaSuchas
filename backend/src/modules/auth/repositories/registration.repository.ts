@@ -133,4 +133,32 @@ export class RegistrationRepository {
     ]);
     return (result.rowCount ?? 0) > 0;
   }
+
+  /** Cuenta del secreto de sondeo vigente y no canjeado (estado del registro). */
+  async findPollingAccount(
+    q: Queryable,
+    secretHash: string,
+    now: Date,
+  ): Promise<{ id: string; verified_at: Date | null; session_version: number } | null> {
+    const result = await q.query<{
+      id: string;
+      verified_at: Date | null;
+      session_version: number;
+    }>(
+      `SELECT id, verified_at, session_version FROM users
+        WHERE registration_secret_hash = $1 AND registration_secret_expires_at > $2
+          AND registration_secret_redeemed_at IS NULL
+        FOR UPDATE`,
+      [secretHash, now],
+    );
+    return result.rows[0] ?? null;
+  }
+
+  /** Canjea el secreto (el hash se conserva) y registra el primer inicio de sesión. */
+  async redeemSecret(q: Queryable, userId: string, now: Date): Promise<void> {
+    await q.query(
+      `UPDATE users SET registration_secret_redeemed_at = $2, last_login_at = $2 WHERE id = $1`,
+      [userId, now],
+    );
+  }
 }
