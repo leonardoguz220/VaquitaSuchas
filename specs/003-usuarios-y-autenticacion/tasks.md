@@ -70,7 +70,7 @@
 **Meta:** 5 fallos en 15 minutos bloquean por correo (y por IP con umbral mayor) con tiempo de espera claro.
 **Prueba independiente:** seis intentos con la contraseña mal → `429 RATE_LIMITED` con `retryAfterSeconds`; pasados 15 minutos, entra.
 
-- [ ] T031 [US5] [BE] Agregar al inicio de sesión (T028) `loginLockStatus` por correo y por IP (cubos `login_fail:email` y `login_fail:ip`; 5 en 15 min por correo, umbral de 20 por IP), registro del evento en cada fallo y `RATE_LIMITED` con `details.retryAfterSeconds`; prueba en `auth.login.e2e-spec.ts` con `FakeClock` — Depende: T028, T010 · Cubre: RF-003-17, CA-003-06
+- [x] T031 [US5] [BE] Agregar al inicio de sesión (T028) `loginLockStatus` por correo y por IP (cubos `login_fail:email` y `login_fail:ip`; 5 en 15 min por correo, umbral de 20 por IP), registro del evento en cada fallo y `RATE_LIMITED` con `details.retryAfterSeconds`; prueba en `auth.login.e2e-spec.ts` con `FakeClock` — Depende: T028, T010 · Cubre: RF-003-17, CA-003-06
 - [ ] T032 [US5] [FE] En `/ingresar` mostrar el mensaje de espera con cuenta regresiva a partir de `retryAfterSeconds` y deshabilitar el botón mientras dure — Depende: T030, T031 · Cubre: RF-003-17, RNF-003-04
 
 ## Fase 5: US3 — Recuperar la contraseña (Prioridad: P0)

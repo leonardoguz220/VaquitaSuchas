@@ -27,14 +27,8 @@ import {
 import { DATA_POLICY_TEXT, DATA_POLICY_VERSION } from '../policy.js';
 import { LoginService } from '../services/login.service.js';
 import { LoginDto } from './login.dto.js';
+import { clientIp } from './client-ip.js';
 import { RegisterDto } from './register.dto.js';
-
-/** IP de quien llama: primer valor de X-Forwarded-For (proxy del frontend) o la del socket. */
-function clientIp(req: Request): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  const first = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(',')[0]?.trim();
-  return first || req.ip || 'unknown';
-}
 
 @ApiTags('auth')
 @Controller('auth')
@@ -115,8 +109,15 @@ export class AuthController {
   @ApiUnauthorizedResponse({
     description: 'INVALID_CREDENTIALS: mensaje idéntico para cualquier causa (CA-003-05, 18, 23).',
   })
-  async login(@Body() body: LoginDto): Promise<{ sessionToken: string; user: UserSelf }> {
-    return this.logins.login(body.email, body.password);
+  @ApiResponse({
+    status: 429,
+    description: 'RATE_LIMITED con details.retryAfterSeconds (CA-003-06).',
+  })
+  async login(
+    @Body() body: LoginDto,
+    @Req() req: Request,
+  ): Promise<{ sessionToken: string; user: UserSelf }> {
+    return this.logins.login(body.email, body.password, clientIp(req));
   }
 
   @UseGuards(AuthGuard)
