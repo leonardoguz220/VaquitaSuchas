@@ -59,8 +59,11 @@ export interface CatalogCategoriesResponse {
   items: CatalogCategoryOption[];
 }
 
-/** Máximo de `limit` del contrato 000 A.1: el selector pide la lista completa en una página. */
-export const CATALOG_PAGE_SIZE = 100;
+/**
+ * Tamaño de página del selector. El contrato 000 A.1 permite de 1 a 100, pero el backend recorta
+ * `limit` a 50 (`MAX_CATALOG_PAGE_SIZE`): por eso se piden 20 y nunca más de 50. A decidir por backend.
+ */
+export const CATALOG_PAGE_SIZE = 20;
 
 export interface ListServicesParams {
   category?: CatalogCategory;

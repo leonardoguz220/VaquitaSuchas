@@ -44,7 +44,7 @@
 - [x] T013 [P] [US2] [BE] Pruebas primero: `catalog-search.spec.ts` (`normalizeSearchTerm`: `trim`, minúsculas, sin tildes por `NFD`, colapsa espacios, máximo 60 caracteres; compara con `immutable_unaccent(lower(…))` de la base para palabras con tildes y `ñ`) y casos de `catalog.e2e-spec.ts` para CA-004-02 (filtro de categoría) y CA-004-03 (búsqueda `netflix`/`Música` sin tilde) — Depende: T006 · Cubre: CA-004-02, CA-004-03
 - [x] T014 [US2] [BE] `domain/catalog-search.ts` (`normalizeSearchTerm`) y `CatalogService.listServices({ category, q, cursor, limit })`: filtros, búsqueda en nombre y categoría con la clave normalizada, `LIKE` que escapa `%` y `_`, `fromPriceCents`/`fromCurrency` (plan activo más barato; con monedas distintas, el del primer plan por `sort_order`) y `plansCount`; `GET /catalog/services` con `q` limitado a 60 caracteres — Depende: T003, T013 · Cubre: RF-004-04, RNF-004-01, CA-004-01, CA-004-02, CA-004-03
 - [x] T015 [US2] [BE] Prueba de rendimiento: listar y buscar con 200 servicios responde en menos de 300 ms (`catalog.perf-spec.ts` con datos sembrados) — Depende: T014 · Cubre: RNF-004-01
-- [ ] T016 [P] [US2] [FE] Búsqueda en el selector con retraso de 250 ms, chips de categoría y mensaje de vacío con sugerencia de servicio personalizado; conectar con `GET /catalog/services` y `GET /catalog/categories` — Depende: T014, T011 · Cubre: RF-004-04, RNF-004-02
+- [x] T016 [P] [US2] [FE] Búsqueda en el selector con retraso de 250 ms, chips de categoría y mensaje de vacío con sugerencia de servicio personalizado; conectar con `GET /catalog/services` y `GET /catalog/categories` — Depende: T014, T011 · Cubre: RF-004-04, RNF-004-02
 
 ## Fase 4: US3 — Mantener el catálogo sin romper los grupos (Prioridad: P0)
 
