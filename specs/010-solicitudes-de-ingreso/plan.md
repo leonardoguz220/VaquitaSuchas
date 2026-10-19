@@ -46,6 +46,17 @@ Módulo `join-requests` (nuevo; se agrega a la lista de `context/arquitectura.md
 
 Detalle en [`data-model.md`](data-model.md): `join_requests` (0050), `join_request_events` (0051), `join_messages` y `join_request_reads` (0052), `join_disputes` (0053), disparadores y la clave foránea `charges.join_request_id` (0054). Pruebas de integridad en `database/tests/join-requests.integrity.test.ts`. Seed de desarrollo: una solicitud en cada estado activo para probar la interfaz.
 
+### Ajustes al modelo aprobados el 2026-10-19 (`/speckit-analyze`)
+
+H1 (disparadores en `0054_join_request_triggers.sql`, claves foráneas en `0055_join_request_links.sql`; sin capacidad en `join_requests`), H2 (`join_request_reads` con `id`), M1 (`join_disputes` con marcas de tiempo), M2 (un cobro de ingreso y una estadía por solicitud), M3 (FK y CHECK de `group_members.join_request_id` en el modelo), M6 (nombres alineados con el modelo) y L1 (una solicitud nace `abierta`). Detalle en `data-model.md` §1–§3.
+
+Avisos para el backend (no cambian la base):
+
+- **H3:** `charges_member_period_uq` solo excluye cobros `cancelado`. Quien ya pagó el período, sale por abandono y vuelve dentro de la ventana chocaría al confirmar con su cobro `pagado`: `canOpenRequest` debe rechazar si existe un cobro no cancelado del período vigente para esa persona en ese grupo.
+- **H4:** los cobros del ciclo regular ya se emitieron con `total / n` y son inmutables; la cuota de ingreso es `floor(total / (n + 1))`, así que en el mes del ingreso la suma de cobros supera el total. Es la regla de `context/dominio.md` ("cuota del mes dividida entre los miembros que tendrá el grupo"); CA-010-11 se refiere solo al ciclo inicial. Queda pendiente documentarlo como excepción en la constitución (principio II).
+- **M4:** con el CHECK de `group_members.join_request_id`, todo miembro que no es titular necesita una solicitud `aceptada`, que exige `charge_id` (cobro de ingreso y ciclo). Los seeds (001 T005, 002 T047, 010 T007) y las pruebas del backend deben crear esa cadena completa.
+- **M5:** el titular puede bajar `total_slots` por debajo de miembros + reservas; la confirmación de un pago ya informado fallaría luego por capacidad. El servicio de la spec 001 debe contar las reservas al editar cupos.
+
 ## 4. Contratos de API — _Leonardo (Backend)_
 
 Detalle en [`contracts/api.md`](contracts/api.md): `POST/GET /join-requests`, `GET /groups/:id/join-requests`, `GET /join-requests/:id`, `…/payment-data`, `…/extend`, `…/proof`, `…/confirm`, `…/cash-payment`, `…/reject`, `…/cancel`, URLs firmadas, chat (`messages`, `read`) y reclamos (`disputes`).
