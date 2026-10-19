@@ -44,8 +44,6 @@ CREATE TABLE join_disputes (
     CHECK (char_length(btrim(description)) BETWEEN 10 AND 500),
   CONSTRAINT join_disputes_evidence_mime_check
     CHECK (evidence_mime IN ('image/jpeg', 'image/png')),
-  CONSTRAINT join_disputes_response_evidence_mime_check
-    CHECK (response_evidence_mime IN ('image/jpeg', 'image/png')),
   CONSTRAINT join_disputes_response_text_check
     CHECK (char_length(btrim(response_text)) BETWEEN 10 AND 500),
   CONSTRAINT join_disputes_status_check CHECK (status IN ('abierto', 'resuelto')),

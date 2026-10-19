@@ -1380,7 +1380,7 @@ describe('join_request_reads: una lectura por participante (H2)', () => {
     ctx = await newContext({ total_slots: 20 });
   });
 
-  test('RF-010-06 (H2): dos lecturas del mismo participante y solicitud fallan', async () => {
+  test('RF-010-06, RF-010-09 (H2): dos lecturas del mismo participante y solicitud fallan', async () => {
     const { id, applicantId } = await requestIn(ctx);
     const readId = await insertRow('join_request_reads', { request_id: id, user_id: applicantId });
     await insertRow('join_request_reads', { request_id: id, user_id: ctx.group.ownerId });
@@ -1533,7 +1533,7 @@ describe('join_disputes: reclamos (CA-010-28, RF-010-22, RN-010-08)', () => {
     assert.deepEqual(await snapshot('join_disputes', disputeId), beforeRow);
   });
 
-  test('RN-010-08: resuelto exige resolución, motivo, autor y fecha', async () => {
+  test('RN-010-08, RF-010-24: resuelto exige resolución, motivo de 10 a 300 caracteres, autor y fecha', async () => {
     const { id, applicantId } = await disputedRequest();
     const disputeId = await openDispute(id, applicantId, ctx.group.ownerId);
     const adminId = await newUserId();
@@ -1555,6 +1555,10 @@ describe('join_disputes: reclamos (CA-010-28, RF-010-22, RN-010-08)', () => {
     );
     await rejectsWith(
       updateRow('join_disputes', disputeId, { ...resolution, resolution_reason: 'corto' }),
+      { code: CHECK_VIOLATION },
+    );
+    await rejectsWith(
+      updateRow('join_disputes', disputeId, { ...resolution, resolution_reason: 'x'.repeat(301) }),
       { code: CHECK_VIOLATION },
     );
     await rejectsWith(updateRow('join_disputes', disputeId, { status: 'cerrado' }), {

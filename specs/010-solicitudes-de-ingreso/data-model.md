@@ -75,6 +75,7 @@ INDEX join_requests_retention_idx (final_at) WHERE content_purged_at IS NULL AND
 | Disparador | Qué impone | Criterio |
 |---|---|---|
 | `join_requests_initial_status` (antes de `INSERT`) | Una solicitud nace `abierta` (L1). | RN-010-05 |
+| `join_requests_final_readonly` (antes de `UPDATE`) | En un estado final (`aceptada`, `rechazada`, `cancelada`, `expirada`) no cambia ninguna columna salvo `content_purged_at` (retención), `version` y `updated_at`. Por eso aceptar o rechazar (con `rejected_as_false`) se hace en **un solo** `UPDATE`. | RN-010-05, RNF-010-09 |
 | `join_requests_transition_guard` (antes de `UPDATE OF status`) | Solo las transiciones de RN-010-05; los cuatro estados finales no cambian; `version` aumenta en 1 con cada cambio de estado. | RNF-010-05, CA-010-25 |
 | `join_requests_quote_immutable` (antes de `UPDATE`) | Una vez fijadas, las columnas `quote_*` no cambian; `payment_sent_at` solo se fija una vez; `extended_at` solo una vez. | RN-010-01, RN-010-10, CA-010-26, CA-010-42 |
 | `join_requests_max_active_per_applicant` (antes de `INSERT`) | Con `pg_advisory_xact_lock(hashtext(applicant_id::text))`: máximo 5 solicitudes en estados activos por persona. | RF-010-02, CA-010-03 |
@@ -94,7 +95,7 @@ join_request_events
 - type: text (NOT NULL)        CHECK IN ('abierta','datos_pago_enviados','plazo_prorrogado','comprobante_subido','confirmada','efectivo_registrado','rechazada','cancelada','expirada','recordatorio_enviado','reclamo_abierto','reclamo_respondido','reclamo_resuelto')
 - actor_kind: text (NOT NULL)  CHECK IN ('usuario','sistema')
 - actor_id: uuid (NULL, FK users)     CHECK ((actor_kind = 'usuario') = (actor_id IS NOT NULL))
-- from_status: text (NULL), to_status: text (NULL)
+- from_status: text (NULL), to_status: text (NULL)   CHECK IN (los siete estados de join_requests) en las dos (convención de estados de la spec 000)
 - reason: text (NULL)
 - metadata: jsonb (NOT NULL, default '{}')
 - occurred_at: timestamptz (NOT NULL, default now())
