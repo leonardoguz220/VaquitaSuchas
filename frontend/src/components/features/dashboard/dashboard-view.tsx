@@ -10,6 +10,7 @@ import { formatBs, formatSignedBs } from '@/lib/money';
 import { JOIN_PATH, NEW_GROUP_PATH } from '@/lib/routes';
 import type { DashboardSummary, SpendLine } from '@/services/reports';
 import { ChargeLinesSection } from './charge-lines-section';
+import { CollectionCard } from './collection-card';
 import {
   chargesCount,
   DASHBOARD_MESSAGES,
@@ -226,6 +227,24 @@ function DashboardContent({ data }: { data: DashboardSummary }) {
             <span>Total del mes</span>
             <span>{formatBs(data.spend.totalCents)}</span>
           </p>
+        </section>
+      )}
+
+      {data.collection.length > 0 && (
+        <section aria-labelledby="collection-title" className="flex flex-col gap-3">
+          <div className="flex flex-col gap-0.5">
+            <h2 id="collection-title" className="font-display text-xl font-bold">
+              Cobranza de tus grupos
+            </h2>
+            <p className="text-[15px] text-muted">
+              {formatPeriod(data.month)} · los grupos donde eres titular.
+            </p>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {data.collection.map((summary) => (
+              <CollectionCard key={summary.groupId} summary={summary} />
+            ))}
+          </div>
         </section>
       )}
 

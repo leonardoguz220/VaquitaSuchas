@@ -1,7 +1,12 @@
 'use client';
 
 import { useCallback } from 'react';
-import { getDashboard, listDashboard, type DashboardListName } from '@/services/reports';
+import {
+  getDashboard,
+  getGroupCollection,
+  listDashboard,
+  type DashboardListName,
+} from '@/services/reports';
 import { useApiResource } from './use-api-resource';
 import { usePaginatedResource } from './use-paginated-resource';
 
@@ -42,4 +47,16 @@ export function useDashboardList(list: DashboardListName) {
     [list],
   );
   return usePaginatedResource(loadPage);
+}
+
+/**
+ * Cobranza de un grupo del titular (`GET /groups/:id/collection`, RF-006-06). Con
+ * `period = null` el backend elige el mes. `403` y `404` llegan en `error`.
+ */
+export function useGroupCollection(groupId: string, period: string | null) {
+  const load = useCallback(
+    () => getGroupCollection(groupId, period ?? undefined),
+    [groupId, period],
+  );
+  return useApiResource(load);
 }

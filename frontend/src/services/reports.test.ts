@@ -1,5 +1,5 @@
 import { apiRequest } from './http';
-import { getDashboard, listDashboard } from './reports';
+import { getDashboard, getGroupCollection, listDashboard } from './reports';
 
 jest.mock('./http', () => ({
   ...jest.requireActual('./http'),
@@ -31,5 +31,15 @@ describe('services/reports (contrato 006): panel', () => {
     expect(mockedRequest).toHaveBeenLastCalledWith(
       '/api/me/dashboard/lists?list=owed&groupId=g1&limit=10&cursor=k',
     );
+  });
+});
+
+describe('services/reports (contrato 006): cobranza del grupo', () => {
+  it('RF-006-06: getGroupCollection hace GET /api/groups/:id/collection con el período', async () => {
+    mockedRequest.mockResolvedValue({});
+    await getGroupCollection('g/1');
+    expect(mockedRequest).toHaveBeenLastCalledWith('/api/groups/g%2F1/collection');
+    await getGroupCollection('g1', '2026-09');
+    expect(mockedRequest).toHaveBeenLastCalledWith('/api/groups/g1/collection?period=2026-09');
   });
 });

@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { isPublicPath } from '@/lib/routes';
-import { chargeLine, dashboard } from '@/services/__fixtures__/reports';
+import { chargeLine, collection, dashboard } from '@/services/__fixtures__/reports';
 import { listGroups } from '@/services/groups';
 import { ApiError } from '@/services/http';
 import { getDashboard, listDashboard, type DashboardListParams } from '@/services/reports';
@@ -333,5 +333,47 @@ describe('/panel (spec 006 T012)', () => {
     mockedDashboard.mockRejectedValue(new ApiError(401, 'UNAUTHORIZED', 'x'));
     renderPage();
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/ingresar?next=%2Fpanel'));
+  });
+
+  it('CA-006-09: «Cobranza de tus grupos» muestra 67 % cobrado en texto y Bs 30,00 pendiente', async () => {
+    mockedDashboard.mockResolvedValue(dashboard());
+    renderPage();
+    const section = await screen.findByRole('region', { name: 'Cobranza de tus grupos' });
+    const card = within(section).getByRole('region', { name: 'Netflix de la familia' });
+    expect(card).toHaveTextContent('Cobrado Bs 60,00 de Bs 90,00 · 67 %');
+    expect(card).toHaveTextContent('Netflix · Octubre 2026');
+    expect(within(card).getByText('Pendiente').nextSibling).toHaveTextContent('Bs 30,00');
+    expect(within(card).getByText('En revisión').nextSibling).toHaveTextContent('Bs 15,00');
+    expect(
+      within(card).getByRole('link', { name: 'Revisar el cobro de Luis Mamani' }),
+    ).toHaveAttribute('href', '/cobros/c9');
+  });
+
+  it('RNF-006-05: sin monto esperado no hay barra y lo dice en texto', async () => {
+    mockedDashboard.mockResolvedValue(
+      dashboard({
+        collection: [
+          collection({
+            expectedCents: 0,
+            collectedCents: 0,
+            pendingCents: 0,
+            inReviewCents: 0,
+            percentCollected: null,
+            lateMembers: [],
+          }),
+        ],
+      }),
+    );
+    renderPage();
+    const section = await screen.findByRole('region', { name: 'Cobranza de tus grupos' });
+    expect(section).toHaveTextContent('Cobrado Bs 0,00 de Bs 0,00 · sin monto esperado');
+    expect(within(section).getByText('Nadie está atrasado.')).toBeInTheDocument();
+  });
+
+  it('RF-006-06: quien no es titular no ve la cobranza', async () => {
+    mockedDashboard.mockResolvedValue(dashboard({ owed: null, collection: [] }));
+    renderPage();
+    await tile('Gasto del mes');
+    expect(screen.queryByRole('region', { name: 'Cobranza de tus grupos' })).toBeNull();
   });
 });

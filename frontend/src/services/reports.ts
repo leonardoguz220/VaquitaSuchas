@@ -153,3 +153,30 @@ export function listDashboard(params: DashboardListParams): Promise<ChargeLinesP
     })}`,
   );
 }
+
+export type CollectionMemberStatus =
+  'pendiente' | 'en_revision' | 'pagado' | 'atrasado' | 'cancelado';
+
+/** Fila por miembro de la cobranza del grupo. Sin comprobantes ni referencias (RNF-006-03). */
+export interface CollectionMember {
+  userId: string;
+  fullName: string;
+  chargeId: string;
+  amountCents: number;
+  status: CollectionMemberStatus;
+}
+
+export interface GroupCollection extends CollectionSummary {
+  availablePeriods: string[];
+  members: CollectionMember[];
+}
+
+/**
+ * `GET /groups/:groupId/collection?period=` (RF-006-06; HU-006-04). Solo el titular: `403` a un
+ * miembro y `404` si el grupo es ajeno.
+ */
+export function getGroupCollection(groupId: string, period?: string): Promise<GroupCollection> {
+  return apiRequest<GroupCollection>(
+    `/api/groups/${encodeURIComponent(groupId)}/collection${query({ period })}`,
+  );
+}
