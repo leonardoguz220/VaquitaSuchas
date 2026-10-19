@@ -9,11 +9,16 @@ import {
   FINAL_JOIN_STATUSES,
   getJoinRequest,
   getPaymentQr,
+  listDisputes,
   listJoinRequests,
+  openDispute,
   openJoinRequest,
   registerCashPayment,
   rejectJoinRequest,
+  respondDispute,
   sendPaymentData,
+  type OpenDisputeRequest,
+  type RespondDisputeRequest,
   type RejectJoinRequestRequest,
   type SendPaymentDataRequest,
   type UploadJoinProofRequest,
@@ -126,6 +131,39 @@ export function useCancelJoinRequest(requestId: string) {
 export function useRejectJoinRequest(requestId: string) {
   const request = useCallback(
     (input: RejectJoinRequestRequest) => rejectJoinRequest(requestId, input),
+    [requestId],
+  );
+  return useApiSubmit(request);
+}
+
+/**
+ * Reclamos de la solicitud (`GET /join-requests/:id/disputes`, RF-010-24). Con `enabled = false`
+ * no los pide. `revision` cambia cuando la solicitud trae otros reclamos y fuerza la recarga.
+ */
+export function useDisputes(requestId: string, enabled: boolean, revision: string) {
+  const load = useCallback(
+    () => listDisputes(requestId),
+    // `revision` vuelve a pedir la lista cuando cambian los reclamos de la solicitud.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [requestId, revision],
+  );
+  return useApiResource(enabled ? load : null);
+}
+
+/** Abrir un reclamo (`POST /join-requests/:id/disputes`, RF-010-21). */
+export function useOpenDispute(requestId: string) {
+  const request = useCallback(
+    (input: OpenDisputeRequest) => openDispute(requestId, input),
+    [requestId],
+  );
+  return useApiSubmit(request);
+}
+
+/** Responder un reclamo de la otra parte (`POST …/disputes/:disputeId/response`, RF-010-22). */
+export function useRespondDispute(requestId: string) {
+  const request = useCallback(
+    (input: { disputeId: string } & RespondDisputeRequest) =>
+      respondDispute(requestId, input.disputeId, { text: input.text, evidence: input.evidence }),
     [requestId],
   );
   return useApiSubmit(request);

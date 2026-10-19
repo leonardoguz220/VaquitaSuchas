@@ -3,7 +3,7 @@
  * Nombres, montos y fechas son inventados.
  */
 import type { UserSelf } from '../auth';
-import type { JoinRequest } from '../join-requests';
+import type { Dispute, JoinRequest } from '../join-requests';
 
 /** Hora del servidor en las respuestas simuladas: 18 oct 2026, 14:41 en La Paz. */
 export const SERVER_NOW = '2026-10-18T18:41:00.000Z';
@@ -199,4 +199,26 @@ export const reportedRequest: JoinRequest = {
 export const hostReportedRequest: JoinRequest = {
   ...reportedRequest,
   allowedActions: ['confirm', 'reject', 'sendMessage'],
+};
+
+/** El titular no respondió en 60 minutos: Ana puede abrir un reclamo por pago sin ingreso. */
+export const unansweredRequest: JoinRequest = {
+  ...reportedRequest,
+  phase: { status: 'expirada', deadlineAt: null, deadlineKind: null, serverNow: SERVER_NOW },
+  finalReason: 'titular_sin_respuesta',
+  canOpenDispute: { kind: 'pago_sin_ingreso', closesAt: '2026-10-26T00:00:00.000Z' },
+  allowedActions: ['openDispute'],
+};
+
+/** Reclamo abierto por Ana, todavía sin respuesta ni decisión. */
+export const openDisputeFixture: Dispute = {
+  id: 'd1',
+  kind: 'pago_sin_ingreso',
+  status: 'abierto',
+  openedBy: { userId: 'u2', fullName: 'Ana Quispe Mamani' },
+  description: 'Le pagué Bs 21,00 por QR y subí el comprobante a tiempo. No me respondió.',
+  evidenceAvailable: true,
+  openedAt: '2026-10-18T20:00:00.000Z',
+  response: null,
+  resolution: null,
 };

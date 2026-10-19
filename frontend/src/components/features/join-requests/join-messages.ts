@@ -344,3 +344,66 @@ export function chatErrorOutcome(error: ApiError): ActionErrorOutcome {
   }
   return actionErrorOutcome(error);
 }
+
+export const DISPUTE_KIND_LABEL: Record<string, string> = {
+  pago_sin_ingreso: 'Pago sin ingreso',
+  comprobante_falso: 'Comprobante falso',
+};
+
+export const DISPUTE_RESULT_LABEL: Record<string, string> = {
+  estafa_confirmada: 'Estafa confirmada',
+  sin_falta: 'Sin falta',
+};
+
+export const DISPUTE_MESSAGES = {
+  descriptionLength: 'Cuenta qué pasó en 10 a 500 caracteres.',
+  responseLength: 'La respuesta debe tener entre 10 y 500 caracteres.',
+  evidenceType: 'La evidencia debe ser una imagen JPG o PNG.',
+  evidenceSize: 'La imagen pesa más de 5 MB. Elige una más liviana.',
+  opened: 'Abriste el reclamo. Un administrador revisará la evidencia.',
+  responded: 'Enviaste tu respuesta al reclamo.',
+  notAllowed: 'Esta solicitud ya no admite un reclamo tuyo.',
+  windowClosed: 'Pasaron los 7 días para abrir un reclamo.',
+  alreadyOpen: 'Ya abriste un reclamo sobre esta solicitud.',
+  alreadyResponded: 'Ya respondiste este reclamo.',
+  resolved: 'El reclamo ya fue resuelto.',
+  loadFailed: 'No pudimos cargar los reclamos.',
+  noRefund:
+    'Vaquita no puede devolverte el dinero. El reclamo deja constancia y, si un administrador confirma la estafa, la cuenta de la persona acusada se banea y se bloquean su correo, su celular, su CI y su cuenta de Telegram.',
+} as const;
+
+/** Pasos de «Qué pasa después» (mockup `Reclamo.dc.html`). */
+export const DISPUTE_NEXT_STEPS = [
+  'La otra parte puede dejar una respuesta, con texto e imagen.',
+  'Un administrador revisa el chat, el comprobante y la línea de tiempo.',
+  'Lo resuelve como «estafa confirmada» o «sin falta», con un motivo que verán los dos.',
+] as const;
+
+/** Qué hacer con un error al abrir o responder un reclamo (contrato 010, reclamos). */
+export function disputeErrorOutcome(error: ApiError): ActionErrorOutcome {
+  switch (joinErrorCode(error)) {
+    case 'DISPUTE_NOT_ALLOWED':
+      return { message: DISPUTE_MESSAGES.notAllowed, refresh: true };
+    case 'DISPUTE_WINDOW_CLOSED':
+      return { message: DISPUTE_MESSAGES.windowClosed, refresh: true };
+    case 'DISPUTE_ALREADY_OPEN':
+      return { message: DISPUTE_MESSAGES.alreadyOpen, refresh: true };
+    case 'DISPUTE_ALREADY_RESPONDED':
+      return { message: DISPUTE_MESSAGES.alreadyResponded, refresh: true };
+    case 'DISPUTE_RESOLVED':
+      return { message: DISPUTE_MESSAGES.resolved, refresh: true };
+    case 'FILE_TOO_LARGE':
+      return { field: 'file', message: DISPUTE_MESSAGES.evidenceSize, refresh: false };
+    case 'UNSUPPORTED_FILE_TYPE':
+      return { field: 'file', message: DISPUTE_MESSAGES.evidenceType, refresh: false };
+    case 'VALIDATION_ERROR':
+      return { field: 'text', message: DISPUTE_MESSAGES.descriptionLength, refresh: false };
+  }
+  if (error.statusCode === 413) {
+    return { field: 'file', message: DISPUTE_MESSAGES.evidenceSize, refresh: false };
+  }
+  if (error.statusCode === 415) {
+    return { field: 'file', message: DISPUTE_MESSAGES.evidenceType, refresh: false };
+  }
+  return actionErrorOutcome(error);
+}

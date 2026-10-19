@@ -8,9 +8,11 @@ import {
   hostOpenRequest,
   hostReportedRequest,
   hostSelf,
+  openDisputeFixture,
   openRequest,
   reportedRequest,
   SERVER_NOW,
+  unansweredRequest,
 } from '@/services/__fixtures__/join-requests';
 import { getMe } from '@/services/auth';
 import { ApiError } from '@/services/http';
@@ -20,10 +22,13 @@ import {
   extendJoinRequest,
   getJoinRequest,
   getPaymentQr,
+  listDisputes,
   listMessages,
   markMessagesRead,
+  openDispute,
   registerCashPayment,
   rejectJoinRequest,
+  respondDispute,
   sendPaymentData,
   uploadJoinProof,
   type JoinRequest,
@@ -50,6 +55,9 @@ jest.mock('@/services/join-requests', () => ({
   markMessagesRead: jest.fn(),
   sendMessage: jest.fn(),
   getMessageImage: jest.fn(),
+  openDispute: jest.fn(),
+  respondDispute: jest.fn(),
+  listDisputes: jest.fn(),
 }));
 
 const mockedMe = jest.mocked(getMe);
@@ -64,6 +72,9 @@ const mockedReject = jest.mocked(rejectJoinRequest);
 const mockedCancel = jest.mocked(cancelJoinRequest);
 const mockedMessages = jest.mocked(listMessages);
 const mockedRead = jest.mocked(markMessagesRead);
+const mockedOpenDispute = jest.mocked(openDispute);
+const mockedRespond = jest.mocked(respondDispute);
+const mockedDisputes = jest.mocked(listDisputes);
 
 const QR_LINK = {
   url: 'https://storage.vaquita.test/jr1/qr?token=abc',
@@ -103,6 +114,9 @@ beforeEach(() => {
   mockedMessages.mockResolvedValue({ items: [], serverNow: SERVER_NOW });
   mockedRead.mockReset();
   mockedRead.mockResolvedValue(undefined);
+  mockedOpenDispute.mockReset();
+  mockedRespond.mockReset();
+  mockedDisputes.mockReset();
 });
 
 afterEach(() => jest.useRealTimers());
@@ -763,5 +777,243 @@ describe('/solicitudes/[id] (spec 010 T034): chat en el detalle', () => {
       within(chat).getByText('La solicitud terminó: el chat quedó en solo lectura.'),
     ).toBeVisible();
     expect(within(chat).queryByRole('textbox')).toBeNull();
+  });
+});
+
+describe('/solicitudes/[id] (spec 010 T039): reclamos', () => {
+  const disputesRegion = () => screen.getByRole('region', { name: /Abrir un reclamo/ });
+  const withDispute = (
+    request: JoinRequest,
+    ref: Partial<JoinRequest['disputes'][number]> = {},
+  ): JoinRequest => ({
+    ...request,
+    canOpenDispute: null,
+    disputes: [
+      {
+        id: 'd1',
+        kind: 'pago_sin_ingreso',
+        status: 'abierto',
+        openedByMe: true,
+        canRespond: false,
+        ...ref,
+      },
+    ],
+  });
+
+  it('RF-010-21: sin canOpenDispute ni reclamos no muestra nada de reclamos', async () => {
+    as('solicitante', awaitingPaymentRequest);
+    await renderPage();
+    await screen.findByRole('heading', { name: 'Solicitud a Max de amigos' });
+    expect(screen.queryByRole('button', { name: 'Abrir reclamo' })).toBeNull();
+    expect(mockedDisputes).not.toHaveBeenCalled();
+  });
+
+  it('RF-010-25: con canOpenDispute muestra el plazo y el aviso de que Vaquita no devuelve dinero', async () => {
+    as('solicitante', unansweredRequest);
+    const actor = await renderPage();
+    expect(await screen.findByText('El titular no respondió a tiempo.')).toBeVisible();
+    expect(disputesRegion()).toHaveTextContent('Abrir un reclamo: pago sin ingreso');
+    expect(disputesRegion()).toHaveTextContent('Puedes abrirlo hasta el 25 oct 2026, 20:00.');
+    await actor.click(within(disputesRegion()).getByRole('button', { name: 'Abrir reclamo' }));
+    expect(
+      within(disputesRegion()).getByText(/Vaquita no puede devolverte el dinero/),
+    ).toBeVisible();
+    expect(within(disputesRegion()).getAllByRole('listitem')).toHaveLength(3);
+  });
+
+  it('CA-010-27: el solicitante abre el reclamo con descripción y evidencia, y se recarga la solicitud', async () => {
+    as('solicitante', unansweredRequest);
+    mockedOpenDispute.mockResolvedValue(openDisputeFixture);
+    const actor = await renderPage();
+    await screen.findByRole('region', { name: /Abrir un reclamo/ });
+    await actor.click(within(disputesRegion()).getByRole('button', { name: 'Abrir reclamo' }));
+    const description = within(disputesRegion()).getByLabelText(/Cuenta qué pasó/);
+    await actor.type(description, '  Pagué Bs 21,00 y no me agregó al grupo.  ');
+    const evidence = new File(['png'], 'banco.png', { type: 'image/png' });
+    fireEvent.change(within(disputesRegion()).getByLabelText('Adjuntar imagen'), {
+      target: { files: [evidence] },
+    });
+    expect(within(disputesRegion()).getByText('banco.png')).toBeVisible();
+    mockedGet.mockResolvedValue(withDispute(unansweredRequest));
+    mockedDisputes.mockResolvedValue({ items: [openDisputeFixture] });
+    await actor.click(within(disputesRegion()).getByRole('button', { name: 'Abrir reclamo' }));
+    expect(mockedOpenDispute).toHaveBeenCalledWith('jr1', {
+      description: 'Pagué Bs 21,00 y no me agregó al grupo.',
+      evidence,
+    });
+    expect(
+      await screen.findByText('Abriste el reclamo. Un administrador revisará la evidencia.'),
+    ).toBeVisible();
+    const card = await screen.findByRole('article', { name: 'Reclamo: Pago sin ingreso' });
+    expect(within(card).getByText('Abierto')).toBeVisible();
+    expect(card).toHaveTextContent(
+      'Abierto por Ana Quispe Mamani el 18 oct 2026 · con imagen de evidencia',
+    );
+    expect(card).toHaveTextContent('Un administrador revisará la evidencia.');
+    expect(screen.queryByRole('region', { name: /Abrir un reclamo/ })).toBeNull();
+  });
+
+  it('CA-010-28: una descripción de menos de 10 caracteres no se envía', async () => {
+    as('solicitante', unansweredRequest);
+    const actor = await renderPage();
+    await screen.findByRole('region', { name: /Abrir un reclamo/ });
+    await actor.click(within(disputesRegion()).getByRole('button', { name: 'Abrir reclamo' }));
+    await actor.type(within(disputesRegion()).getByLabelText(/Cuenta qué pasó/), 'corto');
+    await actor.click(within(disputesRegion()).getByRole('button', { name: 'Abrir reclamo' }));
+    expect(within(disputesRegion()).getByLabelText(/Cuenta qué pasó/)).toHaveAccessibleDescription(
+      /Cuenta qué pasó en 10 a 500 caracteres\./,
+    );
+    expect(mockedOpenDispute).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['DISPUTE_WINDOW_CLOSED', 'Pasaron los 7 días para abrir un reclamo.'],
+    ['DISPUTE_ALREADY_OPEN', 'Ya abriste un reclamo sobre esta solicitud.'],
+    ['DISPUTE_NOT_ALLOWED', 'Esta solicitud ya no admite un reclamo tuyo.'],
+  ])('CA-010-28: %s se avisa y se recarga la solicitud', async (code, message) => {
+    as('solicitante', unansweredRequest);
+    mockedOpenDispute.mockRejectedValue(new ApiError(422, code, 'x'));
+    const actor = await renderPage();
+    await screen.findByRole('region', { name: /Abrir un reclamo/ });
+    await actor.click(within(disputesRegion()).getByRole('button', { name: 'Abrir reclamo' }));
+    await actor.type(
+      within(disputesRegion()).getByLabelText(/Cuenta qué pasó/),
+      'Pagué y no me agregó.',
+    );
+    await actor.click(within(disputesRegion()).getByRole('button', { name: 'Abrir reclamo' }));
+    expect(await screen.findByText(message)).toBeVisible();
+    expect(mockedGet).toHaveBeenCalledTimes(2);
+  });
+
+  it('CA-010-46: una evidencia de más de 5 MB o un PDF se avisan y no se adjuntan', async () => {
+    as('solicitante', unansweredRequest);
+    const actor = await renderPage();
+    await screen.findByRole('region', { name: /Abrir un reclamo/ });
+    await actor.click(within(disputesRegion()).getByRole('button', { name: 'Abrir reclamo' }));
+    const input = within(disputesRegion()).getByLabelText('Adjuntar imagen');
+    fireEvent.change(input, {
+      target: {
+        files: [new File([new Uint8Array(6 * 1024 * 1024)], 'a.jpg', { type: 'image/jpeg' })],
+      },
+    });
+    expect(input).toHaveAccessibleDescription('La imagen pesa más de 5 MB. Elige una más liviana.');
+    fireEvent.change(input, {
+      target: { files: [new File(['%PDF'], 'a.pdf', { type: 'application/pdf' })] },
+    });
+    expect(input).toHaveAccessibleDescription('La evidencia debe ser una imagen JPG o PNG.');
+    expect(within(disputesRegion()).getByText(/Evidencia \(opcional\)/)).toBeVisible();
+  });
+
+  it('CA-010-46: si el servidor rechaza la evidencia (413) lo avisa junto a la imagen', async () => {
+    as('solicitante', unansweredRequest);
+    mockedOpenDispute.mockRejectedValue(new ApiError(413, 'FILE_TOO_LARGE', 'x'));
+    const actor = await renderPage();
+    await screen.findByRole('region', { name: /Abrir un reclamo/ });
+    await actor.click(within(disputesRegion()).getByRole('button', { name: 'Abrir reclamo' }));
+    await actor.type(
+      within(disputesRegion()).getByLabelText(/Cuenta qué pasó/),
+      'Pagué y no me agregó.',
+    );
+    await actor.click(within(disputesRegion()).getByRole('button', { name: 'Abrir reclamo' }));
+    expect(
+      await within(disputesRegion()).findByText(
+        'La imagen pesa más de 5 MB. Elige una más liviana.',
+      ),
+    ).toBeVisible();
+    expect(mockedGet).toHaveBeenCalledTimes(1);
+  });
+
+  it('RF-010-22: la otra parte deja una respuesta y se recarga el reclamo', async () => {
+    as('titular', withDispute(hostReportedRequest, { openedByMe: false, canRespond: true }));
+    mockedDisputes.mockResolvedValue({ items: [openDisputeFixture] });
+    mockedRespond.mockResolvedValue({
+      ...openDisputeFixture,
+      response: {
+        text: 'Nunca me llegó el dinero.',
+        evidenceAvailable: false,
+        respondedAt: '2026-10-18T21:00:00.000Z',
+      },
+    });
+    const actor = await renderPage();
+    const card = await screen.findByRole('article', { name: 'Reclamo: Pago sin ingreso' });
+    await actor.type(within(card).getByLabelText(/Tu respuesta/), 'Nunca me llegó el dinero.');
+    mockedGet.mockResolvedValue(
+      withDispute(hostReportedRequest, { openedByMe: false, canRespond: false }),
+    );
+    mockedDisputes.mockResolvedValue({
+      items: [
+        {
+          ...openDisputeFixture,
+          response: {
+            text: 'Nunca me llegó el dinero.',
+            evidenceAvailable: false,
+            respondedAt: '2026-10-18T21:00:00.000Z',
+          },
+        },
+      ],
+    });
+    await actor.click(within(card).getByRole('button', { name: 'Enviar respuesta' }));
+    expect(mockedRespond).toHaveBeenCalledWith('jr1', 'd1', { text: 'Nunca me llegó el dinero.' });
+    expect(await screen.findByText('Enviaste tu respuesta al reclamo.')).toBeVisible();
+    const updated = await screen.findByText('Respuesta · 18 oct 2026');
+    expect(updated).toBeVisible();
+    expect(screen.queryByLabelText(/Tu respuesta/)).toBeNull();
+  });
+
+  it('RF-010-22: quien abrió el reclamo no ve el formulario de respuesta', async () => {
+    as('solicitante', withDispute(unansweredRequest));
+    mockedDisputes.mockResolvedValue({ items: [openDisputeFixture] });
+    await renderPage();
+    await screen.findByRole('article', { name: 'Reclamo: Pago sin ingreso' });
+    expect(screen.queryByLabelText(/Tu respuesta/)).toBeNull();
+  });
+
+  it('RF-010-24: ambas partes ven la decisión del administrador con su motivo', async () => {
+    as('solicitante', withDispute(unansweredRequest, { status: 'resuelto' }));
+    mockedDisputes.mockResolvedValue({
+      items: [
+        {
+          ...openDisputeFixture,
+          status: 'resuelto',
+          resolution: {
+            result: 'estafa_confirmada',
+            reason: 'El banco confirma el pago y el titular no respondió.',
+            resolvedAt: '2026-10-20T15:00:00.000Z',
+          },
+        },
+      ],
+    });
+    await renderPage();
+    const card = await screen.findByRole('article', { name: 'Reclamo: Pago sin ingreso' });
+    expect(within(card).getByText('Resuelto')).toBeVisible();
+    expect(within(card).getByText('Decisión: Estafa confirmada')).toBeVisible();
+    expect(card).toHaveTextContent('Motivo: El banco confirma el pago y el titular no respondió.');
+    expect(card).toHaveTextContent('20 oct 2026, 11:00');
+  });
+
+  it('RF-010-24: si fallan los reclamos muestra Reintentar', async () => {
+    as('solicitante', withDispute(unansweredRequest));
+    mockedDisputes.mockRejectedValueOnce(new ApiError(503, 'SERVICE_UNAVAILABLE', 'x'));
+    const actor = await renderPage();
+    expect(await screen.findByText('No pudimos cargar los reclamos.')).toBeVisible();
+    mockedDisputes.mockResolvedValue({ items: [openDisputeFixture] });
+    await actor.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByRole('article', { name: 'Reclamo: Pago sin ingreso' })).toBeVisible();
+  });
+
+  it('CA-010-43: el titular que marcó el comprobante como falso puede abrir su reclamo', async () => {
+    as('titular', {
+      ...hostReportedRequest,
+      phase: { status: 'rechazada', deadlineAt: null, deadlineKind: null, serverNow: SERVER_NOW },
+      finalReason: 'rechazo_titular',
+      rejectReason: 'El comprobante está editado',
+      rejectedAsFalse: true,
+      canOpenDispute: { kind: 'comprobante_falso', closesAt: '2026-10-26T00:00:00.000Z' },
+      allowedActions: ['openDispute'],
+    });
+    await renderPage();
+    expect(
+      await screen.findByRole('region', { name: 'Abrir un reclamo: comprobante falso' }),
+    ).toBeVisible();
   });
 });

@@ -7,12 +7,15 @@ import {
   getJoinRequest,
   getMessageImage,
   getPaymentQr,
+  listDisputes,
   listJoinRequests,
   listMessages,
   markMessagesRead,
+  openDispute,
   openJoinRequest,
   registerCashPayment,
   rejectJoinRequest,
+  respondDispute,
   sendMessage,
   sendPaymentData,
   uploadJoinProof,
@@ -195,5 +198,40 @@ describe('services/join-requests (contrato 010): chat', () => {
       method: 'POST',
       body: { upToSeq: 9 },
     });
+  });
+});
+
+describe('services/join-requests (contrato 010): reclamos', () => {
+  it('CA-010-27: openDispute hace POST multipart con descripción y evidencia', async () => {
+    mockedRequest.mockResolvedValue({});
+    const evidence = new File(['x'], 'banco.png', { type: 'image/png' });
+    await openDispute('jr1', { description: 'Pagué y no me agregó', evidence });
+    const [path, options] = mockedRequest.mock.calls[0];
+    expect(path).toBe('/api/join-requests/jr1/disputes');
+    expect(options?.method).toBe('POST');
+    const form = options?.formData as FormData;
+    expect(form.get('description')).toBe('Pagué y no me agregó');
+    expect(form.get('evidence')).toBe(evidence);
+  });
+
+  it('CA-010-27: openDispute sin evidencia no la manda', async () => {
+    mockedRequest.mockResolvedValue({});
+    await openDispute('jr1', { description: 'Pagué y no me agregó' });
+    const form = mockedRequest.mock.calls[0][1]?.formData as FormData;
+    expect(form.has('evidence')).toBe(false);
+  });
+
+  it('RF-010-22: respondDispute hace POST a la respuesta del reclamo', async () => {
+    mockedRequest.mockResolvedValue({});
+    await respondDispute('jr1', 'd/1', { text: 'Nunca me llegó el dinero' });
+    const [path, options] = mockedRequest.mock.calls[0];
+    expect(path).toBe('/api/join-requests/jr1/disputes/d%2F1/response');
+    expect((options?.formData as FormData).get('text')).toBe('Nunca me llegó el dinero');
+  });
+
+  it('RF-010-24: listDisputes hace GET de los reclamos de la solicitud', async () => {
+    mockedRequest.mockResolvedValue({ items: [] });
+    await listDisputes('jr1');
+    expect(mockedRequest).toHaveBeenCalledWith('/api/join-requests/jr1/disputes');
   });
 });

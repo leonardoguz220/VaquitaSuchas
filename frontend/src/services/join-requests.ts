@@ -456,3 +456,71 @@ export function markMessagesRead(requestId: string, upToSeq: number): Promise<vo
     body: { upToSeq },
   });
 }
+
+export type DisputeResult = 'estafa_confirmada' | 'sin_falta';
+
+/** `Dispute` del contrato. La resolución la ven ambas partes (RF-010-24). */
+export interface Dispute {
+  id: string;
+  kind: DisputeKind;
+  status: DisputeStatus;
+  openedBy: { userId: string; fullName: string };
+  description: string;
+  evidenceAvailable: boolean;
+  openedAt: string;
+  response: { text: string; evidenceAvailable: boolean; respondedAt: string } | null;
+  resolution: { result: DisputeResult; reason: string; resolvedAt: string } | null;
+}
+
+export interface OpenDisputeRequest {
+  /** 10 a 500 caracteres. */
+  description: string;
+  /** JPG o PNG hasta 5 MB; opcional. */
+  evidence?: File;
+}
+
+/**
+ * `POST /join-requests/:id/disputes` (RF-010-21) con `multipart/form-data`. El tipo lo deduce el
+ * backend por quién abre y el estado. Lanza `ApiError` `422` (`DISPUTE_NOT_ALLOWED`,
+ * `DISPUTE_WINDOW_CLOSED`, `DISPUTE_ALREADY_OPEN`), `413` y `415`.
+ */
+export function openDispute(requestId: string, input: OpenDisputeRequest): Promise<Dispute> {
+  const form = new FormData();
+  form.append('description', input.description);
+  if (input.evidence) form.append('evidence', input.evidence);
+  return apiRequest<Dispute>(`/api/join-requests/${encodeURIComponent(requestId)}/disputes`, {
+    method: 'POST',
+    formData: form,
+  });
+}
+
+export interface RespondDisputeRequest {
+  /** 10 a 500 caracteres. */
+  text: string;
+  evidence?: File;
+}
+
+/**
+ * `POST /join-requests/:id/disputes/:disputeId/response` (RF-010-22): una sola respuesta de la
+ * otra parte. Lanza `ApiError` `422 DISPUTE_ALREADY_RESPONDED` o `DISPUTE_RESOLVED`.
+ */
+export function respondDispute(
+  requestId: string,
+  disputeId: string,
+  input: RespondDisputeRequest,
+): Promise<Dispute> {
+  const form = new FormData();
+  form.append('text', input.text);
+  if (input.evidence) form.append('evidence', input.evidence);
+  return apiRequest<Dispute>(
+    `/api/join-requests/${encodeURIComponent(requestId)}/disputes/${encodeURIComponent(disputeId)}/response`,
+    { method: 'POST', formData: form },
+  );
+}
+
+/** `GET /join-requests/:id/disputes`: los reclamos de la solicitud, con su resolución. */
+export function listDisputes(requestId: string): Promise<{ items: Dispute[] }> {
+  return apiRequest<{ items: Dispute[] }>(
+    `/api/join-requests/${encodeURIComponent(requestId)}/disputes`,
+  );
+}
