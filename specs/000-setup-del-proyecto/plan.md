@@ -180,7 +180,7 @@ frontend/
 - **Disparador de tareas:** `JOBS_TOKEN` aleatorio de 32 bytes, comparación en tiempo constante, y límite de 1 llamada por segundo.
 - **Webhook de Telegram:** secreto del encabezado; rutas `dev` inexistentes fuera de `TELEGRAM_MODE=dev` (se prueba que respondan `404` en `test` con modo `prod` simulado).
 - **Swagger** solo en `development` y `test`.
-- **Cabeceras:** `helmet` en el backend; CORS cerrado (solo el origen del frontend, aunque el navegador no llama al backend directamente).
+- **Cabeceras:** `helmet` en el backend; CORS cerrado (solo el origen del frontend, aunque el navegador no llama al backend directamente). Implementación (T024): `configureApp` aplica, en este orden, `X-Request-Id`, `helmet`, CORS y Swagger. CORS queda **totalmente cerrado** si no se define la variable **opcional** `FRONTEND_ORIGIN` (`http(s)://host[:puerto]`, sin ruta ni barra final; no entra en la lista de obligatorias de §5); con ella, solo ese origen exacto, nunca `*` ni `credentials`. Swagger solo se monta en `development` y `test`; en cualquier otro `NODE_ENV` `/api/docs` responde `404` en el formato de error uniforme. La CSP de helmet es estricta en todo el backend salvo que, con Swagger montado, `/api/docs` omite `upgrade-insecure-requests` para que la interfaz cargue por http en desarrollo.
 - **Datos personales en logs:** prohibidos (RF-000-13); una prueba de integración comprueba que un registro con contraseña y CI no deja esos valores en la salida del log.
 - **Privilegios de la base:** el backend se conecta con un rol de aplicación sin permiso de `DROP` ni `CREATE EXTENSION`; las migraciones corren con el rol dueño del esquema (en Render, el usuario único; se documenta como limitación).
 

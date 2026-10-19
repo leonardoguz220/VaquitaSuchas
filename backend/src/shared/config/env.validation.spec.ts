@@ -238,6 +238,49 @@ describe('validateEnv', () => {
     });
   });
 
+  describe('FRONTEND_ORIGIN opcional (RF-000-10)', () => {
+    it('RF-000-10: no es obligatoria, ni ausente ni en blanco', () => {
+      expect(() => validateEnv(devEnv())).not.toThrow();
+      expect(() => validateEnv({ ...devEnv(), FRONTEND_ORIGIN: '' })).not.toThrow();
+      expect(() => validateEnv({ ...devEnv(), FRONTEND_ORIGIN: '   ' })).not.toThrow();
+    });
+
+    it('RF-000-10: no aparece como faltante con el entorno vacío', () => {
+      expect(errorMessageOf({})).not.toContain('FRONTEND_ORIGIN');
+    });
+
+    it.each([['https://vaquita.example'], ['http://localhost:3000']])(
+      'RF-000-10: acepta FRONTEND_ORIGIN=%s',
+      (origin) => {
+        expect(() => validateEnv({ ...devEnv(), FRONTEND_ORIGIN: origin })).not.toThrow();
+      },
+    );
+
+    it.each([
+      ['*'],
+      ['https://*.vaquita.example'],
+      ['https://vaquita.example/'],
+      ['https://vaquita.example/app'],
+      ['ftp://vaquita.example'],
+      ['vaquita.example'],
+      ['https://vaquita .example'],
+      ['https://a.example,https://b.example'],
+    ])('RF-000-10: rechaza FRONTEND_ORIGIN=%s nombrando la variable', (origin) => {
+      const message = errorMessageOf({ ...devEnv(), FRONTEND_ORIGIN: origin });
+
+      expect(message).toContain('FRONTEND_ORIGIN');
+    });
+
+    it('RF-000-10: el mensaje de un FRONTEND_ORIGIN inválido no imprime su valor', () => {
+      const leaked = 'https://vaquita.example/VALOR-NO-FILTRAR';
+
+      const message = errorMessageOf({ ...devEnv(), FRONTEND_ORIGIN: leaked });
+
+      expect(message).toContain('FRONTEND_ORIGIN');
+      expect(message).not.toContain('VALOR-NO-FILTRAR');
+    });
+  });
+
   describe('seguridad: el mensaje no filtra valores', () => {
     it('nunca imprime los valores de las variables inválidas, solo sus nombres', () => {
       const leaked = 'VALOR-SECRETO-NO-FILTRAR';
