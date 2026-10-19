@@ -33,7 +33,7 @@
 - [x] T014 [US1] [BE] `services/groups.service.ts` (`create` en una transacción: 1) `HostEligibilityPort.check`; 2) contar grupos activos (< 5); 3) `CatalogService.getActivePlanForSubscription` para copiar servicio, plan, logo, color, cupos máximos y precio individual, o servicio personalizado; 4) `validateGroupInput`; 5) generar el código con hasta 5 reintentos ante colisión; 6) insertar grupo y fila de titular; 7) publicar `GroupCreated`) y `POST /groups/quote` (total en Bs y cuota por miembro calculados con las funciones puras; el frontend no calcula) y `POST /groups` en `groups.controller.ts` — Depende: T006, T007, T010, T012, spec 004 T009 · Cubre: RF-001-01, RF-001-02, RF-001-03, RF-001-04, RF-001-05, RF-001-10, RF-001-11, CA-001-01, CA-001-02, CA-001-03
 - [x] T015 [US1] [BE] `services/payment-info.service.ts` y `PUT /groups/:id/payment-info`: texto de hasta 500 caracteres y QR por `FileStorage` (clave `groups/<id>/qr/<uuid>.<ext>`), tipo real por firma binaria (JPG/PNG) y tamaño 2 MB, conserva el QR anterior si falla; la URL firmada (10 min) solo se genera al consultar un miembro — Depende: T014, spec 000 T026 · Cubre: RF-001-20, CA-001-23
 - [x] T016 [P] [US1] [FE] Asistente `/grupos/nuevo` de 3 pasos con datos simulados (mock): 1) servicio (spec 004) o personalizado; 2) plan; 3) datos (nombre, precio propuesto y editable, moneda, tipo de cambio solo si USD, día de cobro, cupos con el máximo del plan, datos de pago con texto y QR con vista previa); «Total en Bs» y «Cada miembro pagaría» pedidos a `POST /groups/quote` con retraso de 300 ms; al crear muestra el código con **Copiar** y **Compartir**; si no está habilitado abre el panel que explica qué falta — Depende: spec 004 T011, spec 000 T036 · Cubre: RF-001-01, RF-001-03, RF-001-04, RF-001-05, RF-001-20, RNF-001-04
-- [ ] T017 [US1] [FE] Conectar el asistente con `GET /users/me/host-eligibility`, `POST /groups/quote`, `POST /groups` y `PUT /groups/:id/payment-info`; mensajes por `code` (`NOT_HOST_ELIGIBLE`, `TOO_MANY_ACTIVE_GROUPS`, `VALIDATION_ERROR`) — Depende: T014, T015, T016 · Cubre: RF-001-01, RF-001-21
+- [x] T017 [US1] [FE] Conectar el asistente con `GET /users/me/host-eligibility`, `POST /groups/quote`, `POST /groups` y `PUT /groups/:id/payment-info`; mensajes por `code` (`NOT_HOST_ELIGIBLE`, `TOO_MANY_ACTIVE_GROUPS`, `VALIDATION_ERROR`) — Depende: T014, T015, T016 · Cubre: RF-001-01, RF-001-21
 
 **Punto de control:** US1 funcional y probable por sí sola con un titular habilitado del seed.
 
@@ -65,7 +65,7 @@
 - [x] T026 [P] [US4] [BE] `backend/test/membership.e2e-spec.ts`: CA-001-07 (grupo lleno), CA-001-14 (abandonar con cobros sin pagar, con un adaptador de prueba de `OpenChargesPort`), CA-001-15 (el titular no abandona), quitar un miembro con cobros abiertos (se conservan) y recálculo de cuotas — Depende: T011 · Cubre: CA-001-07, CA-001-14, CA-001-15
 - [x] T027 [US4] [BE] `services/membership.service.ts`: `addMemberTx(tx, groupId, userId, source, joinRequestId)` (lo usa la spec 010; el disparador impone la capacidad), `removeMember(groupId, userId, reason)` (`quitado`, `mora`, `baneo`; publica `MemberRemoved`) y `DELETE /groups/:id/members/:userId` (titular) — Depende: T014, T026 · Cubre: RF-001-15, RF-001-23, RN-001-05, RN-001-09, CA-001-07
 - [x] T028 [US4] [BE] Manejadores de eventos de este módulo: `UserBanned` (spec 009) → congela los grupos que posee (`frozen_at`, `frozen_reason = 'titular_baneado'`) y retira al usuario de los grupos donde es miembro (`reason = 'baneo'`); `UserSuspended` no toca el grupo — Depende: T027, spec 003 T012; y `UserUnbanned` (spec 009) → descongela los grupos que ese baneo congeló (`frozen_at` y `frozen_reason` a `NULL`), con prueba en `groups.events.e2e-spec.ts` (CA-009-37) · Cubre: RF-001-23, RN-001-07, CA-009-37
-- [ ] T029 [P] [US4] [FE] Pestañas **Miembros** y **Ajustes** del titular: quitar con modal («Se conservarán sus cobros» y aviso de cobros abiertos), pausar recepción; conectar con `DELETE …/members/:userId` — Depende: T021, T027 · Cubre: RF-001-15, RF-001-09
+- [x] T029 [P] [US4] [FE] Pestañas **Miembros** y **Ajustes** del titular: quitar con modal («Se conservarán sus cobros» y aviso de cobros abiertos), pausar recepción; conectar con `DELETE …/members/:userId` — Depende: T021, T027 · Cubre: RF-001-15, RF-001-09
 
 ## Fase 6: US5 — Abandonar un grupo (Prioridad: P0)
 
@@ -73,7 +73,7 @@
 **Prueba independiente:** `POST /groups/:id/leave` con cobros abiertos devuelve `HAS_OPEN_CHARGES`.
 
 - [x] T030 [US5] [BE] `MembershipService.leave` y `POST /groups/:id/leave`: `canLeave` (titular no, RN-001-08; con cobros `pendiente`, `en_revision` o `atrasado` no, vía `OpenChargesPort`), fila con `left_at` y `left_reason = 'abandono'`, publica `MemberRemoved` — Depende: T027, T026 · Cubre: RF-001-16, RN-001-08, CA-001-14, CA-001-15
-- [ ] T031 [US5] [FE] Botón **Abandonar** (miembro) con modal y el mensaje de `HAS_OPEN_CHARGES` con los cobros pendientes — Depende: T029, T030 · Cubre: RF-001-16
+- [x] T031 [US5] [FE] Botón **Abandonar** (miembro) con modal y el mensaje de `HAS_OPEN_CHARGES` con los cobros pendientes — Depende: T029, T030 · Cubre: RF-001-16
 
 ## Fase 7: US6 — Actualizar precio o tipo de cambio (Prioridad: P0)
 

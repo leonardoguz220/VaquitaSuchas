@@ -12,6 +12,8 @@ import type { GroupDetail } from '@/services/groups';
 import { GroupLoadError } from './group-load-error';
 import { groupStatusTags } from './group-labels';
 import { GroupMembersTab } from './group-members-tab';
+import { GroupSettingsTab } from './group-settings-tab';
+import { LeaveGroupPanel } from './leave-group-panel';
 import { GroupSummaryTab } from './group-summary-tab';
 import { GroupTabs, panelId, tabId, type GroupTab } from './group-tabs';
 
@@ -21,10 +23,17 @@ const TABS_PREFIX = 'grupo';
 
 /**
  * Pestañas de T020, Cobros (002 T037), Ranking (007 T026), Cobranza del titular (006 T014) y
- * Solicitudes del titular (010 T018). Ajustes se agrega en su tarea.
+ * Solicitudes del titular (010 T018). Ajustes (T029: recepción de miembros).
  */
 type GroupTabId =
-  'resumen' | 'miembros' | 'cobros' | 'ranking' | 'cobranza' | 'solicitudes' | 'publicar';
+  | 'resumen'
+  | 'miembros'
+  | 'cobros'
+  | 'ranking'
+  | 'cobranza'
+  | 'solicitudes'
+  | 'publicar'
+  | 'ajustes';
 
 const TABS: readonly GroupTab<GroupTabId>[] = [
   { id: 'resumen', label: 'Resumen' },
@@ -38,6 +47,7 @@ const OWNER_TABS: readonly GroupTab<GroupTabId>[] = [
   { id: 'solicitudes', label: 'Solicitudes' },
   { id: 'cobranza', label: 'Cobranza' },
   { id: 'publicar', label: 'Publicar cupos' },
+  { id: 'ajustes', label: 'Ajustes' },
 ];
 
 function DetailSkeleton() {
@@ -231,7 +241,7 @@ export function GroupDetailView({
             className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
           >
             {tab === 'resumen' && <GroupSummaryTab group={state.group} />}
-            {tab === 'miembros' && <GroupMembersTab members={state.group.members} />}
+            {tab === 'miembros' && <GroupMembersTab group={state.group} onGroupChange={update} />}
             {tab === 'cobros' && (
               <GroupChargesTab
                 groupId={state.group.id}
@@ -247,7 +257,13 @@ export function GroupDetailView({
               state.group.myRole === 'titular' &&
               requestsTab?.(state.group)}
             {tab === 'publicar' && state.group.myRole === 'titular' && listingTab?.(state.group)}
+            {tab === 'ajustes' && state.group.myRole === 'titular' && (
+              <GroupSettingsTab group={state.group} onGroupChange={update} />
+            )}
           </div>
+          {state.group.myRole === 'miembro' &&
+            state.group.status === 'activo' &&
+            state.group.frozenReason === null && <LeaveGroupPanel group={state.group} />}
         </>
       )}
     </div>
