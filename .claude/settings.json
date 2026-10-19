@@ -86,8 +86,8 @@
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-edit.mjs\"",
-            "timeout": 120,
-            "statusMessage": "Formateando y corriendo tests relacionados…"
+            "timeout": 30,
+            "statusMessage": "Formateando…"
           }
         ]
       }
