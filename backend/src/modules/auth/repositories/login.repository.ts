@@ -29,4 +29,12 @@ export class LoginRepository {
   async bumpSessionVersion(q: Queryable, userId: string): Promise<void> {
     await q.query('UPDATE users SET session_version = session_version + 1 WHERE id = $1', [userId]);
   }
+
+  /** Cambia el hash e invalida las sesiones abiertas (RF-003-12). */
+  async replacePassword(q: Queryable, userId: string, passwordHash: string): Promise<void> {
+    await q.query(
+      `UPDATE users SET password_hash = $2, session_version = session_version + 1 WHERE id = $1`,
+      [userId, passwordHash],
+    );
+  }
 }

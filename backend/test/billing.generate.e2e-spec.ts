@@ -24,7 +24,11 @@ import type {
 import { TxEventBus } from '../src/shared/events/tx-event-bus.js';
 import { JobRunner } from '../src/shared/jobs/job-runner.js';
 import { JobsModule } from '../src/shared/jobs/jobs.module.js';
-import { MemoryFileStorage, memoryStorageModule } from './support/billing-harness.js';
+import {
+  MemoryFileStorage,
+  fakeMailModule,
+  memoryStorageModule,
+} from './support/billing-harness.js';
 
 // Generación automática de cobros (spec 002, US6, T012) contra PostgreSQL REAL con FakeClock. Usa
 // una base temporal propia, creada y borrada aquí. Credenciales por defecto: las de desarrollo
@@ -156,6 +160,7 @@ describe('Generación automática de cobros contra PostgreSQL real', () => {
         EventsModule,
         JobsModule,
         memoryStorageModule(new MemoryFileStorage()),
+        fakeMailModule(),
         BillingModule,
       ],
     })
