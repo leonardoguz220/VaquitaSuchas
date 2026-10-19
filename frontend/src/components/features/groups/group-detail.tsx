@@ -5,6 +5,7 @@ import { useState, type ReactNode } from 'react';
 import { GroupChargesTab } from '@/components/features/charges/group-charges-tab';
 import { GroupCollectionTab } from '@/components/features/dashboard/group-collection-tab';
 import { ServiceLogo } from '@/components/features/catalog/ServiceLogo';
+import { GroupRankingTab } from '@/components/features/reputation/group-ranking-tab';
 import { Badge, Button, Card } from '@/components/ui';
 import { useGroup } from '@/hooks/use-group';
 import type { GroupDetail } from '@/services/groups';
@@ -18,15 +19,16 @@ const GROUPS_PATH = '/grupos';
 const TABS_PREFIX = 'grupo';
 
 /**
- * Pestañas de T020, Cobros (002 T037) y Cobranza del titular (006 T014). Solicitudes y Ajustes
- * se agregan en sus tareas.
+ * Pestañas de T020, Cobros (002 T037), Ranking (007 T026) y Cobranza del titular (006 T014).
+ * Solicitudes y Ajustes se agregan en sus tareas.
  */
-type GroupTabId = 'resumen' | 'miembros' | 'cobros' | 'cobranza';
+type GroupTabId = 'resumen' | 'miembros' | 'cobros' | 'ranking' | 'cobranza';
 
 const TABS: readonly GroupTab<GroupTabId>[] = [
   { id: 'resumen', label: 'Resumen' },
   { id: 'miembros', label: 'Miembros' },
   { id: 'cobros', label: 'Cobros' },
+  { id: 'ranking', label: 'Ranking' },
 ];
 
 const OWNER_TABS: readonly GroupTab<GroupTabId>[] = [
@@ -184,6 +186,7 @@ export function GroupDetailView({ groupId, ownerPanel, reviewQueue }: GroupDetai
                 reviewQueue={reviewQueue?.(state.group)}
               />
             )}
+            {tab === 'ranking' && <GroupRankingTab groupId={state.group.id} />}
             {tab === 'cobranza' && state.group.myRole === 'titular' && (
               <GroupCollectionTab groupId={state.group.id} />
             )}

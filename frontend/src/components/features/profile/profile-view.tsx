@@ -6,6 +6,7 @@ import { Logo } from '@/components/features/brand/logo';
 import { Alert, Button, Card } from '@/components/ui';
 import { useMe } from '@/hooks/use-me';
 import { useLogout } from '@/hooks/use-profile-actions';
+import { REPUTATION_PATH } from '@/lib/routes';
 import { ChangePasswordForm } from './change-password-form';
 import { PhoneChangeSection } from './phone-change-section';
 import { ProfileDetails } from './profile-details';
@@ -93,6 +94,27 @@ export function ProfileView() {
       {status === 'success' && user && (
         <>
           <ProfileDetails user={user} onUserChange={replaceUser} />
+          <Card
+            as="section"
+            aria-labelledby="reputation-link-title"
+            className="flex flex-col gap-4"
+          >
+            <header className="flex flex-col gap-1">
+              <h2 id="reputation-link-title" className="font-display text-xl font-bold">
+                Mi reputación
+              </h2>
+              <p className="text-[15px] text-muted">
+                Tus estrellas, tus cobros puntuales y si puedes ser titular.
+              </p>
+            </header>
+            <Button
+              variant="secondary"
+              href={REPUTATION_PATH}
+              className="w-full sm:w-auto sm:self-start"
+            >
+              Ver mi reputación
+            </Button>
+          </Card>
           <PhoneChangeSection phone={user.phone} onVerified={replaceUser} onReload={reload} />
           <ChangePasswordForm email={user.email} />
           <LogoutSection />
