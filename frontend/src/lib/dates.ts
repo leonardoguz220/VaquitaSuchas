@@ -190,3 +190,16 @@ export function formatClock(seconds: number): string {
   const rest = total % 60;
   return hours > 0 ? `${hours}:${pad2(minutes)}:${pad2(rest)}` : `${pad2(minutes)}:${pad2(rest)}`;
 }
+
+/**
+ * Período `YYYY-MM` corto para ejes de gráficos: `formatPeriodShort('2026-10')` → `oct 2026`.
+ * Lanza `RangeError` si el texto no es un período válido.
+ */
+export function formatPeriodShort(period: string): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(period);
+  const month = match ? Number(match[2]) : 0;
+  if (!match || month < 1 || month > 12) {
+    throw new RangeError('Período inválido: se esperaba YYYY-MM.');
+  }
+  return `${MONTHS[month - 1]} ${match[1]}`;
+}

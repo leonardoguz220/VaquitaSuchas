@@ -14,6 +14,10 @@ jest.mock('@/components/features/charges/group-charges-tab', () => ({
   ),
 }));
 
+jest.mock('@/components/features/dashboard/group-collection-tab', () => ({
+  GroupCollectionTab: (props: { groupId: string }) => <p>{`Cobranza de ${props.groupId}`}</p>,
+}));
+
 const replace = jest.fn();
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
@@ -202,5 +206,21 @@ describe('/grupos/[id] (T020, plan 001 §6)', () => {
     mocked.mockRejectedValue(new ApiError(401, 'UNAUTHENTICATED', 'x'));
     render(<GroupDetailView groupId="abc" />);
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/ingresar?next=%2Fgrupos%2Fabc'));
+  });
+});
+
+describe('/grupos/[id] (spec 006 T014): pestaña Cobranza', () => {
+  it('RF-006-06: el titular tiene la pestaña Cobranza con la cobranza de su grupo', async () => {
+    mocked.mockResolvedValue(ownerGroup);
+    const user = userEvent.setup();
+    render(<GroupDetailView groupId={ownerGroup.id} />);
+    await user.click(await screen.findByRole('tab', { name: 'Cobranza' }));
+    expect(screen.getByText(`Cobranza de ${ownerGroup.id}`)).toBeVisible();
+  });
+
+  it('RF-006-06: un miembro no tiene la pestaña Cobranza', async () => {
+    render(<GroupDetailView groupId={memberGroup.id} />);
+    await screen.findByRole('tab', { name: 'Cobros' });
+    expect(screen.queryByRole('tab', { name: 'Cobranza' })).toBeNull();
   });
 });

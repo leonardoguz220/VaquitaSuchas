@@ -172,3 +172,17 @@ export const NOTIFICATION_SETTINGS_PATH = '/ajustes/avisos';
 
 /** Página pública para dejar de recibir un tipo de correo (`?token=`, plan 005 §6). */
 export const UNSUBSCRIBE_PATH = '/avisos/desactivar';
+
+/** Detalle de un grupo (plan 001 §6). Ruta protegida. */
+export function groupPath(groupId: string): string {
+  return `/grupos/${encodeURIComponent(groupId)}`;
+}
+
+/** Panel del usuario (plan 006 §6). Ruta protegida. */
+export const PANEL_PATH = '/panel';
+
+/** Calendario de cortes y vencimientos (plan 006 §6). Ruta protegida. */
+export const PANEL_CALENDAR_PATH = '/panel/calendario';
+
+/** Historial de cobros con exportación a CSV (plan 006 §6). Ruta protegida. */
+export const PANEL_HISTORY_PATH = '/panel/historial';
