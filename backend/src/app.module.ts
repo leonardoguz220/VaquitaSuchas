@@ -10,6 +10,7 @@ import { JobsHttpModule } from './shared/jobs/jobs-http.module.js';
 import { JobsModule } from './shared/jobs/jobs.module.js';
 import { LoggingModule } from './shared/logging/logging.module.js';
 import { MailModule } from './shared/mail/mail.module.js';
+import { StorageModule } from './shared/storage/storage.module.js';
 
 @Module({
   imports: [
@@ -22,6 +23,8 @@ import { MailModule } from './shared/mail/mail.module.js';
     EventsModule,
     // Puerto MailService: SMTP a Mailpit en `dev`, API HTTPS del proveedor en `prod` (RF-000-12).
     MailModule.forRoot(),
+    // Puerto FileStorage: carpeta no pública en `local`, Supabase Storage en `supabase` (RF-000-12).
+    StorageModule.forRoot(),
     // Tareas programadas: registro, runner y cron interno opcional (RF-000-14).
     JobsModule,
     // POST /internal/jobs/tick con X-Jobs-Token y límite de 1 llamada por segundo (RF-000-14).
