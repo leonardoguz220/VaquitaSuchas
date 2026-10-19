@@ -24,7 +24,7 @@
 ### Pruebas de la historia
 
 - [x] T006 [P] [US1] [BE] `backend/test/catalog.e2e-spec.ts`: CA-004-01 (solo servicios activos con al menos un plan activo), CA-004-04 (detalle con planes activos ordenados por precio), CA-004-09 (sin sesión → `401`), CA-004-11 (precio individual presente o `null`), CA-004-08 (`getActivePlanForSubscription` devuelve `null` si el plan o el servicio están inactivos) y los campos de copia (nombre del servicio, plan, logo, color, cupos máximos, precio individual y su moneda) — Depende: spec 003 T013 · Cubre: CA-004-01, CA-004-04, CA-004-08, CA-004-09, CA-004-11, RN-004-05
-- [ ] T007 [P] [US1] [BE] `backend/test/admin-catalog.e2e-spec.ts`: CA-004-10 (rutas `/admin/catalog/*` responden `403` a un usuario normal y `501` a un administrador hasta la spec 009) — Depende: spec 003 T013, spec 000 T032 · Cubre: CA-004-10
+- [x] T007 [P] [US1] [BE] `backend/test/admin-catalog.e2e-spec.ts`: CA-004-10 (rutas `/admin/catalog/*` responden `403` a un usuario normal y `501` a un administrador hasta la spec 009) — Depende: spec 003 T013, spec 000 T032 · Cubre: CA-004-10
 - [x] T008 [P] [US1] [FE] `frontend/src/components/features/catalog/ServiceLogo.test.tsx`: la imagen rota cae a la inicial sobre `brandColor` — Depende: spec 000 T036 · Cubre: CA-004-12
 
 ### Implementación de la historia
