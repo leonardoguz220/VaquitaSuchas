@@ -11,7 +11,7 @@ Stack acordado el 2026-10-17, a partir de lo que el equipo ya usó en los reposi
 | Despliegue | Frontend en Vercel, backend y PostgreSQL gestionado en Render | `frontendUpbtest` usó Firebase Hosting y `backendUpbtest` usó Render. El frontend con proxy `/api` necesita servidor, así que no sirve una exportación estática. La base gratuita de Render caduca a los 30 días y el servicio web gratuito se duerme tras 15 minutos sin tráfico; los detalles y la forma de cubrirlo están en la spec 000 |
 | Pruebas | Jest y supertest en el backend; Playwright para E2E | Jest y supertest ya están en `BackendProyecto1` |
 | Integración continua | GitHub Actions con lint y tests en cada PR | |
-| Agentes | Hooks de Claude Code en Node (`.claude/hooks/`) que protegen secretos, migraciones aplicadas y `main`, avisan al tocar specs, contratos y tests, y formatean y corren los tests relacionados al editar; subagentes por capa en `.claude/agents/` | Repositorio `hooks` de la materia; detalle en `ia/herramientas-y-skills.md` §7 |
+| Agentes | Hooks de Claude Code en Node (`.claude/hooks/`) que protegen secretos, migraciones aplicadas y `main`, avisan al tocar specs, contratos y tests, y formatean al editar; subagentes por capa en `.claude/agents/` | Repositorio `hooks` de la materia; detalle en `ia/herramientas-y-skills.md` §7 |
 
 El lenguaje principal es TypeScript en backend y frontend, para que las tres personas puedan trabajar en cualquier parte del código.
 

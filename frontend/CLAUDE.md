@@ -15,4 +15,4 @@ Reglas de esta parte del código:
 - Los montos se muestran como `Bs 25,50` y las fechas en America/La_Paz, con funciones de `lib/`.
 - Antes de construir una pantalla, lee su mockup en [`design/mockups/`](design/mockups/README.md) (tabla pantalla → ruta → spec) y usa sus colores, tipografías y estados. Es una guía visual: si contradice la spec, el plan §6 o el contrato, mandan estos.
 
-Skills relacionadas: `vaquita-nextjs-conventions`, `frontend-ui-engineering`.
+Skills relacionadas (de consulta, no hace falta leerlas en cada tarea): `vaquita-nextjs-conventions`, `frontend-ui-engineering`.

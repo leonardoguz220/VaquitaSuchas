@@ -13,4 +13,4 @@ Reglas de esta parte del código:
 - El seed contiene solo datos de prueba y el catálogo; los precios del catálogo se verifican con fuentes oficiales.
 - El modelo se congela al aprobar el plan, y los cambios se avisan a backend y frontend.
 
-Skills relacionadas: `vaquita-postgres-migrations`, `performance-optimization`.
+Skills relacionadas: `vaquita-postgres-migrations` (y, archivada, `ia/skills-archivadas/performance-optimization/`).

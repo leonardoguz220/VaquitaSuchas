@@ -1,5 +1,14 @@
 import { Controller, HttpCode, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiHeader, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiHeader,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { JobsTokenGuard } from '../guards/jobs-token.guard.js';
 import { JobRunner } from './job-runner.js';
 import type { JobRunResult } from './scheduled-job.js';
@@ -31,6 +40,23 @@ export class JobsTickController {
   @ApiOkResponse({
     description:
       'Un resultado por tarea: ok (processed), skipped (reason: locked | interval) o error (error).',
+  })
+  @ApiQuery({
+    name: 'job',
+    required: false,
+    description: 'Ejecuta solo la tarea con este nombre (por ejemplo, example.noop).',
+    example: 'example.noop',
+  })
+  @ApiBadRequestResponse({
+    description: 'VALIDATION_ERROR: `job` no tiene un nombre de tarea válido (details.fields.job).',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'UNAUTHENTICATED: falta X-Jobs-Token o no coincide con JOBS_TOKEN.',
+  })
+  @ApiResponse({
+    status: 429,
+    description:
+      'RATE_LIMITED: más de 1 llamada por segundo; details.retryAfterSeconds indica la espera.',
   })
   async tick(@Query() query: TickQueryDto): Promise<TickResponse> {
     // Un nombre con formato válido pero sin tarea registrada devuelve `ran: []`.

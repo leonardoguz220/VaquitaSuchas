@@ -52,6 +52,8 @@ export interface ApiRequestOptions {
   method?: HttpMethod;
   /** Se envía como JSON. */
   body?: unknown;
+  /** Permite cancelar la petición (por ejemplo, por un tiempo máximo en el cliente). */
+  signal?: AbortSignal;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -96,6 +98,7 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     cache: 'no-store',
   };
   if (hasBody) init.body = JSON.stringify(options.body);
+  if (options.signal) init.signal = options.signal;
 
   let response: Response;
   try {
