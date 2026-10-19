@@ -41,7 +41,7 @@
 **Meta:** el usuario gana insignias por pagar a tiempo y las conserva.
 **Prueba independiente:** con 3 cobros puntuales seguidos aparece «Racha 3»; si luego paga tarde, la insignia se conserva y la racha vuelve a 0.
 
-- [ ] T017 [BD] Migración `0063_user_badges.sql` (P2): `user_badges` (usuario, código, `earned_at`, `rules_version`; única por usuario y código) — Depende: T002 · Cubre: RF-007-06, RF-007-07, RF-007-08
+- [x] T017 [BD] Migración `0063_user_badges.sql` (P2): `user_badges` (usuario, código, `earned_at`, `rules_version`; única por usuario y código) — Depende: T002 · Cubre: RF-007-06, RF-007-07, RF-007-08
 - [ ] T018 [P] [US2] [BE] `domain/badges-rules.ts` (`badgesEarned(facts, existing)`: Primer pago, Racha 3 y demás reglas versionadas; avance `current/target` calculado) y `badges-rules.spec.ts` (CA-007-08, 09) — Depende: T006 · Cubre: RF-007-06, RF-007-07, RF-007-08, RN-007-07, CA-007-08, CA-007-09
 - [ ] T019 [P] [US2] [BE] `backend/test/badges.e2e-spec.ts`: CA-007-08 (Racha 3), CA-007-09 (se conserva la insignia, racha a 0) y `GET /users/me/badges` — Depende: T017 · Cubre: CA-007-08, CA-007-09
 - [ ] T020 [US2] [BE] `services/badges.service.ts` (otorga y conserva en cada recálculo; avance calculado), tarea `reputation.badges` y `controllers/badges.controller.ts` `GET /users/me/badges` — Depende: T018, T019, T009 · Cubre: RF-007-06, RF-007-07, RF-007-08
