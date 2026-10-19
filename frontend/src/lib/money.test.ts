@@ -1,4 +1,5 @@
 import {
+  formatSignedBs,
   formatAmountInput,
   formatBs,
   formatPrice,
@@ -128,5 +129,17 @@ describe('parseBsToCents', () => {
 
   it('RF-000-17 exporta parse como alias de parseBsToCents (plan §6)', () => {
     expect(parse).toBe(parseBsToCents);
+  });
+});
+
+describe('formatSignedBs (spec 006)', () => {
+  it('CA-006-21: un ahorro negativo lleva el signo menos delante de Bs', () => {
+    expect(formatSignedBs(-1250)).toBe('−Bs 12,50');
+    expect(formatSignedBs(4960)).toBe('Bs 49,60');
+    expect(formatSignedBs(0)).toBe('Bs 0,00');
+  });
+
+  it('CA-006-21: rechaza montos que no son centavos enteros', () => {
+    expect(() => formatSignedBs(1.5)).toThrow(RangeError);
   });
 });

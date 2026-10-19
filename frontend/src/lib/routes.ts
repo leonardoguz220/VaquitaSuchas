@@ -196,3 +196,6 @@ export const NOTIFICATION_SETTINGS_PATH = '/ajustes/avisos';
 
 /** Página pública para dejar de recibir un tipo de correo (`?token=`, plan 005 §6). */
 export const UNSUBSCRIBE_PATH = '/avisos/desactivar';
+
+/** Panel del usuario (plan 006 §6). Ruta protegida. */
+export const PANEL_PATH = '/panel';

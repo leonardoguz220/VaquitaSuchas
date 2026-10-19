@@ -51,6 +51,14 @@ describe('AppHeader (plan 001 §6)', () => {
     );
   });
 
+  it('RF-006-01: "Panel" lleva a /panel y se marca en sus subrutas', () => {
+    mockedPathname.mockReturnValue('/panel/calendario');
+    render(<AppHeader />);
+    const link = screen.getByRole('link', { name: 'Panel' });
+    expect(link).toHaveAttribute('href', '/panel');
+    expect(link).toHaveAttribute('aria-current', 'page');
+  });
+
   it('RF-001-19: AppPage pone la cabecera y el contenido', () => {
     mockedPathname.mockReturnValue('/perfil');
     render(

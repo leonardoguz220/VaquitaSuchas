@@ -28,6 +28,21 @@ export function formatBs(cents: number): string {
   return formatCents('Bs', cents);
 }
 
+/** Signo menos tipográfico (U+2212), que los lectores de pantalla leen como «menos». */
+const MINUS_SIGN = '\u2212';
+
+/**
+ * Monto en centavos de boliviano que puede ser negativo, como el ahorro estimado (RN-006-03,
+ * CA-006-21): `formatSignedBs(-1250)` → `−Bs 12,50` y `formatSignedBs(4960)` → `Bs 49,60`. Solo
+ * da formato al valor que entrega la API; no lo calcula.
+ */
+export function formatSignedBs(cents: number): string {
+  if (!Number.isSafeInteger(cents)) {
+    throw new RangeError('El monto debe ser un entero de centavos.');
+  }
+  return cents < 0 ? `${MINUS_SIGN}${formatBs(-cents)}` : formatBs(cents);
+}
+
 /**
  * Da formato a un precio en centavos de dólar con la misma convención: `formatUsd(1799)` → `USD 17,99`.
  * Pensado para mostrar el precio de referencia de un servicio que entrega la API (spec 004).
