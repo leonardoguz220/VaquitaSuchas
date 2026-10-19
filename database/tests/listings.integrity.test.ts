@@ -316,9 +316,17 @@ test('CA-008-11: slots_offered 0 fuera de cerrada falla; 20 falla', async () => 
     code: CHECK_VIOLATION,
     constraint: 'listings_slots_offered_open_check',
   });
-  await rejectsWith(insertListing(group.id, { slots_offered: 20 }), {
+  // Al insertar, listings_only_when_group_active corre antes del CHECK y ya rechaza 20 cupos
+  // (más que los libres); el CHECK 0–19 se alcanza con un UPDATE de slots_offered.
+  await rejectsWith(insertListing(group.id, { slots_offered: 20 }), { code: CHECK_VIOLATION });
+  const id = await insertListing(group.id, { slots_offered: 19 });
+  await rejectsWith(updateRow('listings', id, { slots_offered: 20 }), {
     code: CHECK_VIOLATION,
     constraint: 'listings_slots_offered_check',
+  });
+  await rejectsWith(updateRow('listings', id, { slots_offered: 0 }), {
+    code: CHECK_VIOLATION,
+    constraint: 'listings_slots_offered_open_check',
   });
 });
 
