@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import {
   getDashboard,
+  getDashboardCharts,
   getGroupCollection,
   listDashboard,
   type DashboardListName,
@@ -57,6 +58,19 @@ export function useGroupCollection(groupId: string, period: string | null) {
   const load = useCallback(
     () => getGroupCollection(groupId, period ?? undefined),
     [groupId, period],
+  );
+  return useApiResource(load);
+}
+
+/** Series de los gráficos del panel (`GET /me/dashboard/charts`, RF-006-07 a RF-006-09). */
+export function useDashboardCharts({ month, groupId }: DashboardFilters) {
+  const load = useCallback(
+    () =>
+      getDashboardCharts({
+        ...(month ? { month } : {}),
+        ...(groupId ? { groupId } : {}),
+      }),
+    [month, groupId],
   );
   return useApiResource(load);
 }

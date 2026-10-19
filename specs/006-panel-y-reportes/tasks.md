@@ -42,7 +42,7 @@
 
 - [ ] T016 [P] [US3] [BE] `backend/test/dashboard.charts.e2e-spec.ts`: CA-006-11 (14 meses → últimos 12, sin huecos), series de gasto mensual, por servicio y ahorro acumulado — Depende: T007 · Cubre: CA-006-11, RF-006-07, RF-006-08, RF-006-09
 - [ ] T017 [US3] [BE] `services/charts.service.ts` (tres series en un solo viaje a la base, meses sin datos en 0, «sin dato» en el acumulado) y `GET /me/dashboard/charts?month=&groupId=` — Depende: T016, T005, T009 · Cubre: RF-006-07, RF-006-08, RF-006-09, RF-006-10, CA-006-11
-- [ ] T018 [P] [US3] [FE] `/panel` → **Gráficos** con Recharts cargado con `next/dynamic` (barras de 12 meses, barras horizontales por servicio, ahorro acumulado), cada uno con **Ver tabla** (`aria-pressed`), etiquetas de valor y patrones además del color; `frontend/e2e/panel-charts.spec.ts` (CA-006-12 tabla = gráfico) y `panel-savings-negative.spec.ts` (CA-006-21), `panel-empty.spec.ts` (CA-006-14) — Depende: T012 · Cubre: RF-006-10, RNF-006-05, CA-006-12, CA-006-14, CA-006-21
+- [x] T018 [P] [US3] [FE] `/panel` → **Gráficos** con Recharts cargado con `next/dynamic` (barras de 12 meses, barras horizontales por servicio, ahorro acumulado), cada uno con **Ver tabla** (`aria-pressed`), etiquetas de valor y patrones además del color; `frontend/e2e/panel-charts.spec.ts` (CA-006-12 tabla = gráfico) y `panel-savings-negative.spec.ts` (CA-006-21), `panel-empty.spec.ts` (CA-006-14) — Depende: T012 · Cubre: RF-006-10, RNF-006-05, CA-006-12, CA-006-14, CA-006-21
 - [ ] T019 [US3] [FE] Conectar los gráficos con `GET /me/dashboard/charts` — Depende: T017, T018 · Cubre: RF-006-07, RF-006-08, RF-006-09
 
 ## Fase 4: US4 — Calendario (parte B, Prioridad: P1)

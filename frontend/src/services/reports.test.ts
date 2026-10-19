@@ -1,5 +1,5 @@
 import { apiRequest } from './http';
-import { getDashboard, getGroupCollection, listDashboard } from './reports';
+import { getDashboard, getDashboardCharts, getGroupCollection, listDashboard } from './reports';
 
 jest.mock('./http', () => ({
   ...jest.requireActual('./http'),
@@ -41,5 +41,17 @@ describe('services/reports (contrato 006): cobranza del grupo', () => {
     expect(mockedRequest).toHaveBeenLastCalledWith('/api/groups/g%2F1/collection');
     await getGroupCollection('g1', '2026-09');
     expect(mockedRequest).toHaveBeenLastCalledWith('/api/groups/g1/collection?period=2026-09');
+  });
+});
+
+describe('services/reports (contrato 006): gráficos', () => {
+  it('RF-006-07: getDashboardCharts hace GET /api/me/dashboard/charts con mes y suscripción', async () => {
+    mockedRequest.mockResolvedValue({});
+    await getDashboardCharts();
+    expect(mockedRequest).toHaveBeenLastCalledWith('/api/me/dashboard/charts');
+    await getDashboardCharts({ month: '2026-10', groupId: 'g1' });
+    expect(mockedRequest).toHaveBeenLastCalledWith(
+      '/api/me/dashboard/charts?month=2026-10&groupId=g1',
+    );
   });
 });

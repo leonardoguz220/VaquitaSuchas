@@ -4,7 +4,13 @@ import { isPublicPath } from '@/lib/routes';
 import { chargeLine, collection, dashboard } from '@/services/__fixtures__/reports';
 import { listGroups } from '@/services/groups';
 import { ApiError } from '@/services/http';
-import { getDashboard, listDashboard, type DashboardListParams } from '@/services/reports';
+import {
+  getDashboard,
+  getDashboardCharts,
+  listDashboard,
+  type DashboardCharts,
+  type DashboardListParams,
+} from '@/services/reports';
 import PanelPage, { metadata } from './page';
 
 const replace = jest.fn();
@@ -14,12 +20,41 @@ jest.mock('next/navigation', () => ({
 }));
 jest.mock('@/services/reports', () => ({
   getDashboard: jest.fn(),
+  getDashboardCharts: jest.fn(),
   listDashboard: jest.fn(),
 }));
+// Recharts se prueba en su propio archivo; aquí cada gráfico deja ver los datos que recibe.
+jest.mock('@/components/features/dashboard/charts/dashboard-recharts', () => {
+  const chart = (name: string) =>
+    function FakeChart({ data }: { data: unknown[] }) {
+      return <p data-testid={name}>{`${name}: ${data.length} barras`}</p>;
+    };
+  return {
+    MonthlySpendChart: chart('monthly'),
+    ServiceSpendChart: chart('byService'),
+    SavingsChart: chart('savings'),
+  };
+});
 jest.mock('@/services/groups', () => ({ listGroups: jest.fn() }));
 
 const mockedDashboard = jest.mocked(getDashboard);
 const mockedList = jest.mocked(listDashboard);
+const mockedCharts = jest.mocked(getDashboardCharts);
+
+const charts: DashboardCharts = {
+  monthly: [
+    { period: '2026-09', totalCents: 7250, paidCents: 7250 },
+    { period: '2026-10', totalCents: 5550, paidCents: 3000 },
+  ],
+  byService: [
+    { groupId: 'g2', serviceName: 'Spotify', costCents: 3000 },
+    { groupId: 'g1', serviceName: 'Netflix', costCents: 2550 },
+  ],
+  savings: [
+    { period: '2026-09', savingsCents: null, cumulativeCents: 0 },
+    { period: '2026-10', savingsCents: 4960, cumulativeCents: 4960 },
+  ],
+};
 const mockedGroups = jest.mocked(listGroups);
 
 const debtPending = chargeLine();
@@ -69,6 +104,8 @@ beforeEach(() => {
   mockedDashboard.mockReset();
   mockedList.mockReset();
   mockedGroups.mockReset();
+  mockedCharts.mockReset();
+  mockedCharts.mockResolvedValue(charts);
   mockedGroups.mockResolvedValue({
     items: [
       { id: 'g1', name: 'Netflix de la familia' },
@@ -375,5 +412,121 @@ describe('/panel (spec 006 T012)', () => {
     renderPage();
     await tile('Gasto del mes');
     expect(screen.queryByRole('region', { name: 'Cobranza de tus grupos' })).toBeNull();
+  });
+
+  describe('Gráficos (spec 006 T018)', () => {
+    async function chartCard(name: string) {
+      const section = await screen.findByRole('region', { name: 'Gráficos' });
+      return within(section).findByRole('region', { name });
+    }
+
+    it('RF-006-07: pide las series con el mismo mes y suscripción que el panel', async () => {
+      mockedDashboard.mockResolvedValue(dashboard());
+      const user = renderPage();
+      await chartCard('Tu gasto de los últimos 12 meses');
+      expect(mockedCharts).toHaveBeenCalledWith({});
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Mes' }), '2026-09');
+      await chartCard('Tu gasto de los últimos 12 meses');
+      expect(mockedCharts).toHaveBeenLastCalledWith({ month: '2026-09' });
+    });
+
+    it('RF-006-10: cada gráfico se carga aparte y tiene «Ver tabla» con aria-pressed', async () => {
+      mockedDashboard.mockResolvedValue(dashboard());
+      renderPage();
+      const monthly = await chartCard('Tu gasto de los últimos 12 meses');
+      expect(await within(monthly).findByTestId('monthly')).toHaveTextContent('monthly: 2 barras');
+      for (const name of [
+        'Tu gasto de los últimos 12 meses',
+        'Gasto por servicio',
+        'Ahorro acumulado',
+      ]) {
+        const card = await chartCard(name);
+        expect(within(card).getByRole('button', { name: 'Ver tabla' })).toHaveAttribute(
+          'aria-pressed',
+          'false',
+        );
+      }
+    });
+
+    it('CA-006-12: «Ver tabla» del gasto mensual muestra los mismos valores que el gráfico', async () => {
+      mockedDashboard.mockResolvedValue(dashboard());
+      const user = renderPage();
+      const card = await chartCard('Tu gasto de los últimos 12 meses');
+      const toggle = within(card).getByRole('button', { name: 'Ver tabla' });
+      await user.click(toggle);
+      expect(toggle).toHaveAttribute('aria-pressed', 'true');
+      expect(within(card).queryByTestId('monthly')).toBeNull();
+      const table = within(card).getByRole('table', { name: 'Gasto de los últimos 12 meses' });
+      const rows = within(table)
+        .getAllByRole('row')
+        .map((row) => row.textContent);
+      expect(rows).toEqual([
+        'MesGastoPagado',
+        'Septiembre 2026Bs 72,50Bs 72,50',
+        'Octubre 2026Bs 55,50Bs 30,00',
+      ]);
+      await user.click(toggle);
+      expect(await within(card).findByTestId('monthly')).toBeInTheDocument();
+    });
+
+    it('CA-006-12: las tablas por servicio y de ahorro muestran los valores de la API', async () => {
+      mockedDashboard.mockResolvedValue(dashboard());
+      const user = renderPage();
+      const service = await chartCard('Gasto por servicio');
+      await user.click(within(service).getByRole('button', { name: 'Ver tabla' }));
+      expect(
+        within(service)
+          .getAllByRole('row')
+          .map((row) => row.textContent),
+      ).toEqual(['ServicioGasto', 'SpotifyBs 30,00', 'NetflixBs 25,50']);
+      const savings = await chartCard('Ahorro acumulado');
+      await user.click(within(savings).getByRole('button', { name: 'Ver tabla' }));
+      expect(
+        within(savings)
+          .getAllByRole('row')
+          .map((row) => row.textContent),
+      ).toEqual([
+        'MesAhorro del mesAcumulado',
+        'Septiembre 2026Sin datoBs 0,00',
+        'Octubre 2026Bs 49,60Bs 49,60',
+      ]);
+    });
+
+    it('CA-006-21: en la tabla de ahorro un valor negativo lleva signo menos', async () => {
+      mockedDashboard.mockResolvedValue(dashboard());
+      mockedCharts.mockResolvedValue({
+        ...charts,
+        savings: [{ period: '2026-10', savingsCents: -1250, cumulativeCents: -1250 }],
+      });
+      const user = renderPage();
+      const savings = await chartCard('Ahorro acumulado');
+      await user.click(within(savings).getByRole('button', { name: 'Ver tabla' }));
+      expect(within(savings).getAllByText('\u2212Bs 12,50')).toHaveLength(2);
+    });
+
+    it('RF-006-16: series vacías dicen que no hay datos, sin gráfico ni «Ver tabla»', async () => {
+      mockedDashboard.mockResolvedValue(dashboard());
+      mockedCharts.mockResolvedValue({ monthly: [], byService: [], savings: [] });
+      renderPage();
+      const monthly = await chartCard('Tu gasto de los últimos 12 meses');
+      expect(within(monthly).getByText('Todavía no hay meses con datos.')).toBeInTheDocument();
+      expect(within(monthly).queryByRole('button', { name: 'Ver tabla' })).toBeNull();
+      expect(
+        within(await chartCard('Gasto por servicio')).getByText('No hay gasto en Octubre 2026.'),
+      ).toBeInTheDocument();
+    });
+
+    it('RF-006-07: si fallan los gráficos se ofrece Reintentar sin perder el resto del panel', async () => {
+      mockedDashboard.mockResolvedValue(dashboard());
+      mockedCharts
+        .mockRejectedValueOnce(new ApiError(503, 'SERVICE_UNAVAILABLE', 'x'))
+        .mockResolvedValue(charts);
+      const user = renderPage();
+      expect(await screen.findByText('No pudimos cargar los gráficos.')).toBeVisible();
+      expect(screen.getByRole('region', { name: 'Gasto del mes' })).toBeInTheDocument();
+      const section = screen.getByRole('region', { name: 'Gráficos' });
+      await user.click(within(section).getByRole('button', { name: 'Reintentar' }));
+      expect(await chartCard('Gasto por servicio')).toBeInTheDocument();
+    });
   });
 });

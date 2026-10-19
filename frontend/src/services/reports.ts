@@ -180,3 +180,23 @@ export function getGroupCollection(groupId: string, period?: string): Promise<Gr
     `/api/groups/${encodeURIComponent(groupId)}/collection${query({ period })}`,
   );
 }
+
+/** Series de los gráficos del panel (RF-006-07 a RF-006-10). Montos en centavos de Bs. */
+export interface DashboardCharts {
+  /** Hasta 12 meses, termina en el mes elegido, sin huecos. */
+  monthly: Array<{ period: string; totalCents: number; paidCents: number }>;
+  /** Gasto del mes elegido por servicio. */
+  byService: Array<{ groupId: string; serviceName: string; costCents: number }>;
+  /** `savingsCents: null` = sin dato. `cumulativeCents` puede ser negativo. */
+  savings: Array<{ period: string; savingsCents: number | null; cumulativeCents: number }>;
+}
+
+/**
+ * `GET /me/dashboard/charts?month=&groupId=` (RF-006-07 a RF-006-10; CA-006-11, CA-006-12).
+ * Cada serie trae todos los valores para la tabla alternativa.
+ */
+export function getDashboardCharts(params: DashboardParams = {}): Promise<DashboardCharts> {
+  return apiRequest<DashboardCharts>(
+    `/api/me/dashboard/charts${query({ month: params.month, groupId: params.groupId })}`,
+  );
+}

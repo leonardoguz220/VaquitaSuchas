@@ -3,13 +3,14 @@
 import { useState, type ReactNode } from 'react';
 import { ServiceLogo } from '@/components/features/catalog/service-logo';
 import { Alert, Badge, Button, Select } from '@/components/ui';
-import { useDashboard } from '@/hooks/use-dashboard';
+import { useDashboard, type DashboardFilters } from '@/hooks/use-dashboard';
 import { useGroups } from '@/hooks/use-groups';
 import { formatPeriod } from '@/lib/dates';
 import { formatBs, formatSignedBs } from '@/lib/money';
 import { JOIN_PATH, NEW_GROUP_PATH } from '@/lib/routes';
 import type { DashboardSummary, SpendLine } from '@/services/reports';
 import { ChargeLinesSection } from './charge-lines-section';
+import { DashboardCharts } from './dashboard-charts';
 import { CollectionCard } from './collection-card';
 import {
   chargesCount,
@@ -162,7 +163,13 @@ function EmptyNoGroups() {
 }
 
 /** Tarjetas y desglose del mes elegido (RF-006-02 a RF-006-05). */
-function DashboardContent({ data }: { data: DashboardSummary }) {
+function DashboardContent({
+  data,
+  filters,
+}: {
+  data: DashboardSummary;
+  filters: DashboardFilters;
+}) {
   return (
     <>
       {data.isEmpty && (
@@ -251,6 +258,8 @@ function DashboardContent({ data }: { data: DashboardSummary }) {
       <ChargeLinesSection list="debts" />
       <ChargeLinesSection list="in_review" />
       {data.owed && <ChargeLinesSection list="owed" />}
+
+      <DashboardCharts filters={filters} month={data.month} />
     </>
   );
 }
@@ -335,7 +344,9 @@ export function DashboardView() {
 
       {noGroups && <EmptyNoGroups />}
 
-      {status === 'success' && data && data.hasGroups && <DashboardContent data={data} />}
+      {status === 'success' && data && data.hasGroups && (
+        <DashboardContent data={data} filters={{ month, groupId }} />
+      )}
     </>
   );
 }

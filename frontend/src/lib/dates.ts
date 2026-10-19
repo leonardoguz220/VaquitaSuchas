@@ -136,6 +136,16 @@ export function formatPeriod(period: string): string {
 }
 
 /**
+ * Período `YYYY-MM` corto para ejes de gráficos: `formatPeriodShort('2026-10')` → `oct 2026`.
+ * Lanza `RangeError` si el texto no es un período válido.
+ */
+export function formatPeriodShort(period: string): string {
+  const match = PERIOD.exec(period);
+  if (!match) throw new RangeError('Período inválido: se esperaba YYYY-MM.');
+  return `${MONTHS[Number(match[2]) - 1]} ${match[1]}`;
+}
+
+/**
  * Último minuto de un plazo que la API entrega como instante **exclusivo** (por ejemplo `dueAt`
  * de un cobro, spec 002: vence justo antes de ese momento). `formatDeadlineLaPaz` con las 00:00
  * del 22 oct en La Paz → `21 oct 2026, 23:59`. No calcula el vencimiento: solo lo muestra.
