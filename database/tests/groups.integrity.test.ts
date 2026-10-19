@@ -239,8 +239,40 @@ async function createGroup(overrides: Row = {}, client?: pg.Client): Promise<Cre
 
 // Inserta una fila en group_members en su propia transacción (por defecto, un miembro nuevo
 // que entra por solicitud). Los overrides reemplazan o agregan columnas.
+// Solicitud de ingreso mínima (spec 010) para los miembros que entran por 'solicitud': desde 0055,
+// group_members exige join_request_id cuando join_source = 'solicitud'. Se inserta con
+// session_replication_role = replica SOLO en esta transacción para no depender de los
+// disparadores de join_requests (p. ej. rechazaría una solicitud a un grupo cerrado), así las
+// pruebas siguen fallando por la regla de group_members que verifican. Los CHECK sí se aplican.
+// Nace ya cerrada (expirada) porque join_requests_active_uq admite una sola solicitud activa por
+// persona y grupo, y algunas pruebas hacen volver al mismo usuario.
+async function newJoinRequest(groupId: string, applicantId: string): Promise<string> {
+  const client = new pg.Client({ connectionString: db.connectionString });
+  await client.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query("SET LOCAL session_replication_role = 'replica'");
+    const { rows } = await client.query<{ id: string }>(
+      `INSERT INTO join_requests
+         (group_id, applicant_id, opened_at, open_deadline_at, status, final_at, final_reason)
+       VALUES ($1, $2, now(), now() + interval '24 hours', 'expirada', now(), 'plazo_solicitud')
+       RETURNING id`,
+      [groupId, applicantId],
+    );
+    await client.query('COMMIT');
+    const [row] = rows;
+    if (!row) throw new Error('no se creó la solicitud de prueba');
+    return row.id;
+  } finally {
+    await client.end();
+  }
+}
+
 async function addMember(groupId: string, overrides: Row = {}): Promise<string> {
   const userId = typeof overrides.user_id === 'string' ? overrides.user_id : await newUserId();
+  const source = overrides.join_source ?? 'solicitud';
+  const needsRequest = source === 'solicitud' && !('join_request_id' in overrides);
+  const joinRequestId = needsRequest ? await newJoinRequest(groupId, userId) : undefined;
   const client = await connect();
   try {
     const row = await insertInto(client, 'group_members', {
@@ -248,6 +280,7 @@ async function addMember(groupId: string, overrides: Row = {}): Promise<string> 
       user_id: userId,
       role: 'miembro',
       join_source: 'solicitud',
+      ...(joinRequestId ? { join_request_id: joinRequestId } : {}),
       ...overrides,
     });
     return row.id;
@@ -665,13 +698,14 @@ test('CA-001-19: dos inserciones concurrentes por el último cupo dejan solo una
   const userA = await newUserId();
   const userB = await newUserId();
   const users = [userA, userB];
+  const requests = [await newJoinRequest(group.id, userA), await newJoinRequest(group.id, userB)];
   let turn = 0;
   const committed = await raceTwo(async (client) => {
-    const userId = users[turn++];
+    const index = turn++;
     await client.query(
-      `INSERT INTO group_members (group_id, user_id, role, join_source)
-       VALUES ($1, $2, 'miembro', 'solicitud')`,
-      [group.id, userId],
+      `INSERT INTO group_members (group_id, user_id, role, join_source, join_request_id)
+       VALUES ($1, $2, 'miembro', 'solicitud', $3)`,
+      [group.id, users[index], requests[index]],
     );
   });
   assert.equal(committed, 1, 'exactamente una transacción ocupa el último cupo');
