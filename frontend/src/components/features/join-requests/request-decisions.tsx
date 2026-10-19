@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useRef, useState, type FormEvent } from 'react';
+import { useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Alert, Button, Card, Modal, Textarea } from '@/components/ui';
 import {
   useCancelJoinRequest,
@@ -13,6 +13,7 @@ import type { JoinRequest } from '@/services/join-requests';
 import {
   actionErrorOutcome,
   decisionMessage,
+  newShareNotice,
   REQUEST_MESSAGES,
   type ActionErrorOutcome,
 } from './join-messages';
@@ -160,9 +161,11 @@ interface ConfirmModalProps extends ModalProps {
   variant: 'primary' | 'danger';
   isSubmitting: boolean;
   onConfirm: () => Promise<string | null>;
+  /** Aviso dentro del modal (por ejemplo, el cambio de cuota al aceptar, RN-008-03). */
+  notice?: ReactNode;
 }
 
-/** Modal de confirmación de una acción sin datos (efectivo, cancelar). */
+/** Modal de confirmación de una acción sin datos (confirmar, efectivo, cancelar). */
 function ConfirmActionModal({
   open,
   onClose,
@@ -172,6 +175,7 @@ function ConfirmActionModal({
   variant,
   isSubmitting,
   onConfirm,
+  notice,
 }: ConfirmModalProps) {
   const [problem, setProblem] = useState<string | null>(null);
   return (
@@ -198,7 +202,12 @@ function ConfirmActionModal({
         </>
       }
     >
-      {problem && <Alert variant="error">{problem}</Alert>}
+      {(notice || problem) && (
+        <div className="flex flex-col gap-3">
+          {notice && <Alert variant="info">{notice}</Alert>}
+          {problem && <Alert variant="error">{problem}</Alert>}
+        </div>
+      )}
     </Modal>
   );
 }
@@ -214,8 +223,7 @@ export interface DecisionActionsProps extends DecisionCallbacks {
  * frontend no decide quién puede hacerlo: el backend responde `403` o `409` si no corresponde.
  */
 export function DecisionActions({ request, onChanged, onStale }: DecisionActionsProps) {
-  const [openModal, setOpenModal] = useState<'reject' | 'cash' | 'cancel' | null>(null);
-  const [problem, setProblem] = useState<string | null>(null);
+  const [openModal, setOpenModal] = useState<'confirm' | 'reject' | 'cash' | 'cancel' | null>(null);
   const confirm = useConfirmJoinRequest(request.id);
   const cash = useCashPayment(request.id);
   const cancel = useCancelJoinRequest(request.id);
@@ -223,14 +231,6 @@ export function DecisionActions({ request, onChanged, onStale }: DecisionActions
     request.allowedActions.includes(action);
   const name = request.applicant.fullName;
   const close = () => setOpenModal(null);
-
-  async function handleConfirm() {
-    setProblem(null);
-    const result = await confirm.submit({ version: request.version });
-    if (!result) return;
-    if (result.ok) onChanged(result.data, decisionMessage('confirm', name));
-    else handleOutcome(actionErrorOutcome(result.error), onStale, setProblem);
-  }
 
   async function runInModal(
     submit: typeof cash.submit,
@@ -255,16 +255,7 @@ export function DecisionActions({ request, onChanged, onStale }: DecisionActions
 
   return (
     <>
-      {problem && (
-        <Alert variant="error" className="basis-full">
-          {problem}
-        </Alert>
-      )}
-      {can('confirm') && (
-        <Button onClick={() => void handleConfirm()} loading={confirm.isSubmitting}>
-          Confirmar ingreso
-        </Button>
-      )}
+      {can('confirm') && <Button onClick={() => setOpenModal('confirm')}>Confirmar ingreso</Button>}
       {can('cashPayment') && (
         <Button variant="secondary" onClick={() => setOpenModal('cash')}>
           Pago en efectivo
@@ -289,6 +280,24 @@ export function DecisionActions({ request, onChanged, onStale }: DecisionActions
           onStale={onStale}
         />
       )}
+      {can('confirm') && (
+        <ConfirmActionModal
+          request={request}
+          open={openModal === 'confirm'}
+          onClose={close}
+          onChanged={onChanged}
+          onStale={onStale}
+          title="Confirmar ingreso"
+          description={`${name} se une al grupo y su pago queda como su cobro del mes, ya pagado. Confirma solo si el dinero ya llegó.`}
+          confirmLabel="Confirmar ingreso"
+          variant="primary"
+          isSubmitting={confirm.isSubmitting}
+          notice={newShareNotice(request)}
+          onConfirm={() =>
+            runInModal(confirm.submit, decisionMessage('confirm', name), REQUEST_MESSAGES.hostOnly)
+          }
+        />
+      )}
       {can('cashPayment') && (
         <ConfirmActionModal
           request={request}
@@ -301,6 +310,7 @@ export function DecisionActions({ request, onChanged, onStale }: DecisionActions
           confirmLabel="Registrar pago en efectivo"
           variant="primary"
           isSubmitting={cash.isSubmitting}
+          notice={newShareNotice(request)}
           onConfirm={() =>
             runInModal(cash.submit, decisionMessage('cash', name), REQUEST_MESSAGES.hostOnly)
           }

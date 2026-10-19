@@ -8,6 +8,7 @@ import {
   isOwnerListing,
   listListings,
   renewGroupListing,
+  requestListingSeat,
   updateGroupListing,
   withdrawGroupListing,
   type CreateListingRequest,
@@ -101,4 +102,13 @@ export function useListings({ serviceId, category, maxShareCents, sort }: Listin
 export function useListing(listingId: string) {
   const load = useCallback(() => getListing(listingId), [listingId]);
   return useApiResource(load);
+}
+
+/** Solicitar un cupo de una publicación (`POST /listings/:id/requests`, RF-008-10). */
+export function useRequestListingSeat(listingId: string) {
+  const request = useCallback(
+    (message: string) => requestListingSeat(listingId, message ? { message } : {}),
+    [listingId],
+  );
+  return useApiSubmit(request);
 }

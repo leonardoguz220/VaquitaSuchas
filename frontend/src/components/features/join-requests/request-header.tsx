@@ -1,6 +1,7 @@
 'use client';
 
 import { ServiceLogo } from '@/components/features/catalog/service-logo';
+import { Badge } from '@/components/ui';
 import { formatBs } from '@/lib/money';
 import type { DeadlineKind, JoinRequest } from '@/services/join-requests';
 import { ratingText } from './join-messages';
@@ -48,7 +49,8 @@ export interface RequestHeaderProps {
  * Cabecera de `/solicitudes/[id]` (plan 010 §6; mockups `Solicitud.dc.html` y
  * `SolicitudAbierta.dc.html`): servicio, titular (o solicitante) con su calificación, cuota
  * estimada o fijada, estado con color y texto, y el plazo vigente con cuenta regresiva corregida
- * con `serverNow` (RNF-010-03). Todo sale de la API.
+ * con `serverNow` (RNF-010-03). Las que llegan de una publicación de cupos llevan la marca
+ * «Desde publicación» (spec 008 T019). Todo sale de la API.
  */
 export function RequestHeader({ request, viewer, onDeadline }: RequestHeaderProps) {
   const { group, phase } = request;
@@ -76,6 +78,11 @@ export function RequestHeader({ request, viewer, onDeadline }: RequestHeaderProp
           </h1>
           <div className="flex flex-wrap items-center gap-2">
             <JoinStatusBadge status={phase.status} />
+            {request.source === 'publicacion' && (
+              <Badge variant="info" icon="info">
+                Desde publicación
+              </Badge>
+            )}
             <span className="text-[15px] text-muted">
               {viewer === 'titular' ? group.name : service}
             </span>

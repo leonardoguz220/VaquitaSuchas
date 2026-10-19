@@ -11,6 +11,7 @@ import { formatBs } from '@/lib/money';
 import { LISTINGS_PATH } from '@/lib/routes';
 import type { ListingView } from '@/services/listings';
 import { listingTitle, PlainText } from './listing-card';
+import { ListingRequestCard } from './listing-request-card';
 import { entryWindowText, listingLoadErrorMessage, slotsText } from './listing-messages';
 
 function BackLink() {
@@ -151,7 +152,8 @@ export function ListingDetailContent({ listing, actions }: ListingDetailContentP
  * `/cupos/[id]` (spec 008 T015, plan §6; mockup `Cupo.dc.html`): detalle de la publicación con
  * la cuota estimada, el titular con su nivel, la ventana de ingreso y los textos como texto plano
  * (`pre-wrap`, sin enlaces activos, RN-008-07). No muestra miembros, pagos ni código: la API no
- * los envía (CA-008-05). `404` si ya no está activa o es de un grupo propio.
+ * los envía (CA-008-05). `404` si ya no está activa o es de un grupo propio. Al costado,
+ * **Solicitar un cupo** (T019).
  */
 export function ListingDetailView({ listingId }: { listingId: string }) {
   const { status, data, error, reload } = useListing(listingId);
@@ -194,7 +196,7 @@ export function ListingDetailView({ listingId }: { listingId: string }) {
   return (
     <>
       <BackLink />
-      <ListingDetailContent listing={data} />
+      <ListingDetailContent listing={data} actions={<ListingRequestCard listing={data} />} />
     </>
   );
 }

@@ -4,7 +4,7 @@
  */
 import { formatDateLaPaz, formatDateTimeLaPaz } from '@/lib/dates';
 import { isConnectionError, type ApiError } from '@/services/http';
-import type { ListingView } from '@/services/listings';
+import type { CannotRequestReason, ListingView } from '@/services/listings';
 import { REGISTER_ERROR_MESSAGES } from '../auth/register-errors';
 
 export const LISTING_MESSAGES = {
@@ -83,4 +83,37 @@ export function entryWindowText(window: ListingView['entryWindow']): string | nu
 /** `1 cupo` / `2 cupos`. */
 export function slotsText(count: number): string {
   return `${count} ${count === 1 ? 'cupo' : 'cupos'}`;
+}
+
+/**
+ * Por qué no se puede solicitar, según el `cannotRequestReason` de la API (plan 008 §6). La API
+ * decide; aquí solo se elige el texto.
+ */
+export function cannotRequestText(
+  reason: CannotRequestReason | null,
+  window: ListingView['entryWindow'],
+): string {
+  switch (reason) {
+    case 'VENTANA_CERRADA':
+      return window.opensAt
+        ? `La ventana de ingreso está cerrada. Se abre el ${formatDateLaPaz(window.opensAt)}.`
+        : 'La ventana de ingreso está cerrada.';
+    case 'SOLICITUD_ACTIVA':
+      return 'Ya tienes una solicitud en este grupo.';
+    case 'DEMASIADAS_SOLICITUDES':
+      return 'Ya tienes 5 solicitudes activas. Espera a que alguna termine para pedir otro cupo.';
+    case 'COBROS_ABIERTOS':
+      return 'Tienes cobros sin saldar en este grupo. Págalos antes de pedir un cupo.';
+    case 'SIN_CUPOS':
+      return 'En este momento no quedan cupos disponibles.';
+    case 'CUENTA_RESTRINGIDA':
+      return 'Tu cuenta está restringida: no puedes solicitar cupos.';
+    default:
+      return 'Por ahora no puedes solicitar un cupo en esta publicación.';
+  }
+}
+
+/** Primer nombre para el rótulo del mensaje: «Mensaje para Valeria». */
+export function firstName(fullName: string): string {
+  return fullName.trim().split(/\s+/)[0] ?? fullName;
 }

@@ -120,3 +120,12 @@ describe('/cupos/[id] (spec 008 T015)', () => {
     ).toBeVisible();
   });
 });
+
+describe('/cupos/[id] (spec 008 T019): solicitar', () => {
+  it('RF-008-10: el detalle ofrece «Solicitar un cupo» con el mensaje para el titular', async () => {
+    await renderPage();
+    const card = await screen.findByRole('region', { name: 'Solicitar un cupo' });
+    expect(within(card).getByLabelText('Mensaje para Valeria (opcional)')).toBeVisible();
+    expect(within(card).getByRole('button', { name: 'Solicitar cupo' })).toBeEnabled();
+  });
+});

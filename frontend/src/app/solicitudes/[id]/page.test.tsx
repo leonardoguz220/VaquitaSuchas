@@ -608,6 +608,8 @@ describe('/solicitudes/[id] (spec 010 T030): decisiones del titular y cancelaci�
     mockedConfirm.mockResolvedValue(accepted(hostReportedRequest, 'confirmada'));
     const actor = await renderPage();
     await actor.click(await screen.findByRole('button', { name: 'Confirmar ingreso' }));
+    const dialog = screen.getByRole('dialog', { name: 'Confirmar ingreso' });
+    await actor.click(within(dialog).getByRole('button', { name: 'Confirmar ingreso' }));
     expect(mockedConfirm).toHaveBeenCalledWith('jr1', { version: 3 });
     expect(
       await screen.findByText(
@@ -627,6 +629,11 @@ describe('/solicitudes/[id] (spec 010 T030): decisiones del titular y cancelaci�
     mockedConfirm.mockRejectedValue(new ApiError(409, 'INVALID_TRANSITION', 'x'));
     const actor = await renderPage();
     await actor.click(await screen.findByRole('button', { name: 'Confirmar ingreso' }));
+    await actor.click(
+      within(screen.getByRole('dialog', { name: 'Confirmar ingreso' })).getByRole('button', {
+        name: 'Confirmar ingreso',
+      }),
+    );
     expect(
       await screen.findByText(
         'La solicitud ya no admite esta acción. Cargamos los datos actualizados.',
@@ -1015,5 +1022,43 @@ describe('/solicitudes/[id] (spec 010 T039): reclamos', () => {
     expect(
       await screen.findByRole('region', { name: 'Abrir un reclamo: comprobante falso' }),
     ).toBeVisible();
+  });
+});
+
+describe('/solicitudes/[id] (spec 008 T019): solicitudes desde una publicación', () => {
+  it('RF-008-10: una solicitud de una publicación lleva la marca «Desde publicación»', async () => {
+    as('titular', { ...hostReportedRequest, source: 'publicacion' });
+    await renderPage();
+    expect(await screen.findByText('Desde publicación')).toBeVisible();
+  });
+
+  it('RF-008-10: una solicitud por código no lleva la marca', async () => {
+    as('titular', hostReportedRequest);
+    await renderPage();
+    await screen.findByRole('button', { name: 'Confirmar ingreso' });
+    expect(screen.queryByText('Desde publicación')).toBeNull();
+  });
+
+  it('RN-008-03: el modal de confirmar muestra la cuota nueva de todos antes de aceptar', async () => {
+    as('titular', { ...hostReportedRequest, source: 'publicacion' });
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Confirmar ingreso' }));
+    const dialog = screen.getByRole('dialog', { name: 'Confirmar ingreso' });
+    expect(dialog).toHaveTextContent(
+      'Aceptar a alguien cambia la cuota de todos desde el siguiente cobro. Con Ana Quispe Mamani, el grupo tendrá 4 miembros contando al titular y la cuota de cada uno será de unos Bs 21,00 (estimada).',
+    );
+    expect(mockedConfirm).not.toHaveBeenCalled();
+    await actor.click(within(dialog).getByRole('button', { name: 'Volver' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(mockedConfirm).not.toHaveBeenCalled();
+  });
+
+  it('RN-008-03: el pago en efectivo también avisa el cambio de cuota', async () => {
+    as('titular', hostAwaitingRequest);
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Pago en efectivo' }));
+    expect(screen.getByRole('dialog', { name: 'Registrar pago en efectivo' })).toHaveTextContent(
+      'Aceptar a alguien cambia la cuota de todos desde el siguiente cobro.',
+    );
   });
 });

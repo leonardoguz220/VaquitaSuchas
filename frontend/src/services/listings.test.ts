@@ -5,6 +5,7 @@ import {
   getListing,
   isOwnerListing,
   listListings,
+  requestListingSeat,
   renewGroupListing,
   updateGroupListing,
   withdrawGroupListing,
@@ -90,5 +91,16 @@ describe('services/listings (contrato 008): búsqueda', () => {
     mockedRequest.mockResolvedValue({});
     await getListing('l/1');
     expect(mockedRequest).toHaveBeenCalledWith('/api/listings/l%2F1');
+  });
+});
+
+describe('services/listings (contrato 008): solicitar', () => {
+  it('RF-008-10: requestListingSeat hace POST /api/listings/:id/requests con el mensaje', async () => {
+    mockedRequest.mockResolvedValue({});
+    await requestListingSeat('l1', { message: 'Hola' });
+    expect(mockedRequest).toHaveBeenCalledWith('/api/listings/l1/requests', {
+      method: 'POST',
+      body: { message: 'Hola' },
+    });
   });
 });

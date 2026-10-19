@@ -5,8 +5,9 @@
  */
 import type { BadgeTone } from '@/components/ui';
 import { formatDateLaPaz, formatDateTimeLaPaz } from '@/lib/dates';
+import { formatBs } from '@/lib/money';
 import { isConnectionError, type ApiError } from '@/services/http';
-import type { JoinRequestPerson, JoinRequestStatus } from '@/services/join-requests';
+import type { JoinRequest, JoinRequestPerson, JoinRequestStatus } from '@/services/join-requests';
 import { REGISTER_ERROR_MESSAGES } from '../auth/register-errors';
 import { CHARGE_MESSAGES } from '../billing/charge-messages';
 import { formatDecimal } from '../groups/group-messages';
@@ -406,4 +407,19 @@ export function disputeErrorOutcome(error: ApiError): ActionErrorOutcome {
     return { field: 'file', message: DISPUTE_MESSAGES.evidenceType, refresh: false };
   }
   return actionErrorOutcome(error);
+}
+
+/**
+ * Aviso antes de aceptar a alguien (RN-008-03): la cuota de todos cambia desde el siguiente
+ * cobro. Usa la cuota fijada (`quote`, la del mes con la persona incluida) o, si aún no hay, la
+ * estimada que entrega la API; no calcula nada.
+ */
+export function newShareNotice(
+  request: Pick<JoinRequest, 'quote' | 'estimatedShareCents' | 'applicant'>,
+): string {
+  const base = 'Aceptar a alguien cambia la cuota de todos desde el siguiente cobro.';
+  if (request.quote) {
+    return `${base} Con ${request.applicant.fullName}, el grupo tendrá ${request.quote.memberCount} miembros contando al titular y la cuota de cada uno será de unos ${formatBs(request.quote.amountCents)} (estimada).`;
+  }
+  return `${base} La cuota de cada miembro será de unos ${formatBs(request.estimatedShareCents)} (estimada).`;
 }

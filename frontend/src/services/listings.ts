@@ -3,6 +3,7 @@
  * endpoint; los tipos salen del contrato. La cuota estimada, los cupos disponibles y si se puede
  * solicitar los calcula el backend: el frontend solo los muestra (la cuota, rotulada «estimada»).
  */
+import type { JoinRequest } from './join-requests';
 import type { ReputationLevel } from './reputation';
 import { apiRequest } from './http';
 
@@ -179,4 +180,22 @@ export function listListings(params: ListListingsParams = {}): Promise<ListingsP
 /** `GET /listings/:id`: `404 LISTING_NOT_FOUND` si no está activa, es propia o ya es miembro. */
 export function getListing(listingId: string): Promise<ListingView> {
   return apiRequest<ListingView>(`/api/listings/${encodeURIComponent(listingId)}`);
+}
+
+/** Largo máximo del mensaje inicial de la solicitud (RF-008-10). */
+export const LISTING_MESSAGE_MAX = 200;
+
+/**
+ * `POST /listings/:id/requests` (RF-008-10): abre una solicitud de ingreso de la spec 010 con
+ * `source = "publicacion"`; el mensaje, si hay, es la primera línea del chat. `201` con la
+ * `JoinRequest`. Errores como `POST /join-requests` (`422 BUSINESS_RULE`) y `400` (mensaje largo).
+ */
+export function requestListingSeat(
+  listingId: string,
+  input: { message?: string },
+): Promise<JoinRequest> {
+  return apiRequest<JoinRequest>(`/api/listings/${encodeURIComponent(listingId)}/requests`, {
+    method: 'POST',
+    body: input,
+  });
 }
