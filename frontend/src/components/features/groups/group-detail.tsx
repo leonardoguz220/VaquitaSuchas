@@ -6,7 +6,7 @@ import { GroupChargesTab } from '@/components/features/charges/group-charges-tab
 import { GroupCollectionTab } from '@/components/features/dashboard/group-collection-tab';
 import { ServiceLogo } from '@/components/features/catalog/ServiceLogo';
 import { GroupRankingTab } from '@/components/features/reputation/group-ranking-tab';
-import { Badge, Button, Card } from '@/components/ui';
+import { Alert, Badge, Button, Card } from '@/components/ui';
 import { useGroup } from '@/hooks/use-group';
 import type { GroupDetail } from '@/services/groups';
 import { GroupLoadError } from './group-load-error';
@@ -16,6 +16,7 @@ import { GroupSummaryTab } from './group-summary-tab';
 import { GroupTabs, panelId, tabId, type GroupTab } from './group-tabs';
 
 const GROUPS_PATH = '/grupos';
+const SEARCH_PATH = '/cupos';
 const TABS_PREFIX = 'grupo';
 
 /**
@@ -118,6 +119,36 @@ function GroupHeader({ group }: { group: GroupDetail }) {
   );
 }
 
+/**
+ * Banners de solo lectura (RF-001-18, plan §6): un grupo cerrado no genera cobros y un grupo con
+ * titular baneado queda sin dueño activo; ambos solo se consultan. El de titular baneado ofrece
+ * buscar otro grupo (spec 008, `/cupos`). Los textos salen del estado que entrega la API.
+ */
+export function ReadOnlyNotices({ group }: { group: GroupDetail }) {
+  return (
+    <>
+      {group.status === 'cerrado' && (
+        <Alert variant="info" title="Grupo cerrado: solo lectura">
+          Ya no genera cobros ni recibe miembros. Puedes consultar su historial.
+        </Alert>
+      )}
+      {group.frozenReason === 'titular_baneado' && (
+        <Alert
+          variant="warning"
+          title="El titular fue baneado: solo lectura"
+          action={
+            <Button variant="secondary" href={SEARCH_PATH}>
+              Buscar otro grupo
+            </Button>
+          }
+        >
+          Este grupo no tiene un titular activo, así que no se puede cambiar nada desde aquí.
+        </Alert>
+      )}
+    </>
+  );
+}
+
 export interface OwnerPanelActions {
   /** Muestra el grupo que devolvió la API tras un cambio del titular. */
   onGroupChange: (group: GroupDetail) => void;
@@ -181,6 +212,7 @@ export function GroupDetailView({
       {state.status === 'success' && (
         <>
           <GroupHeader group={state.group} />
+          <ReadOnlyNotices group={state.group} />
           {state.group.myRole === 'titular' && ownerPanel?.(state.group, { onGroupChange: update })}
           {state.group.myRole !== 'titular' && memberBadge?.(state.group)}
           {adminPanel?.(state.group)}

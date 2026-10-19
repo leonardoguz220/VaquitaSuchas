@@ -1,8 +1,10 @@
 /**
  * Cliente de suscripciones compartidas (`specs/001-suscripciones-compartidas/contracts/api.md`).
- * Por ahora cada función responde con datos simulados de `groups.mock.ts` (T016); al conectar
- * el backend (T017) solo cambia el cuerpo de estas funciones por `apiRequest` al proxy `/api`.
+ * Conectadas al backend (T021): `GET /groups`, `GET /groups/:id` y `POST …/invite-code/regenerate`.
+ * El resto sigue con datos simulados de `groups.mock.ts` hasta que se conecte su tarea (T017 para
+ * el asistente de creación, y los PATCH y datos de pago de la pestaña Ajustes).
  */
+import { apiRequest } from './http';
 import * as mock from './groups.mock';
 
 export type GroupCurrency = 'USD' | 'BS';
@@ -196,7 +198,18 @@ export function listGroups(
   params: ListGroupsParams = {},
   options: GroupsRequestOptions = {},
 ): Promise<GroupsPage> {
-  return mock.listGroups(params, options.signal);
+  return apiRequest<GroupsPage>(`/api/groups${buildListGroupsQuery(params)}`, {
+    signal: options.signal,
+  });
+}
+
+/** Query de `GET /groups`: solo se envían los filtros que vienen. Sin ninguno no hay `?`. */
+export function buildListGroupsQuery(params: ListGroupsParams): string {
+  const query = new URLSearchParams();
+  if (params.role) query.set('role', params.role);
+  if (params.status) query.set('status', params.status);
+  const text = query.toString();
+  return text ? `?${text}` : '';
 }
 
 /** `GET /groups/:groupId`: `404` si el usuario no pertenece al grupo. */
@@ -204,7 +217,9 @@ export function getGroup(
   groupId: string,
   options: GroupsRequestOptions = {},
 ): Promise<GroupDetail> {
-  return mock.getGroup(groupId, options.signal);
+  return apiRequest<GroupDetail>(`/api/groups/${encodeURIComponent(groupId)}`, {
+    signal: options.signal,
+  });
 }
 
 /** `PATCH /groups/:groupId` (RF-001-14, RF-001-09): solo el titular. */
@@ -222,5 +237,8 @@ export function updatePaymentInfo(
 
 /** `POST /groups/:groupId/invite-code/regenerate` (RF-001-08). */
 export function regenerateInviteCode(groupId: string): Promise<{ inviteCode: string }> {
-  return mock.regenerateInviteCode(groupId);
+  return apiRequest<{ inviteCode: string }>(
+    `/api/groups/${encodeURIComponent(groupId)}/invite-code/regenerate`,
+    { method: 'POST' },
+  );
 }

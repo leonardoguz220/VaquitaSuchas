@@ -223,4 +223,20 @@ describe('/grupos/[id] (spec 006 T014): pestaña Cobranza', () => {
     await screen.findByRole('tab', { name: 'Cobros' });
     expect(screen.queryByRole('tab', { name: 'Cobranza' })).toBeNull();
   });
+  it('RF-001-18: un grupo cerrado se muestra en solo lectura con su banner', async () => {
+    mocked.mockResolvedValue({ ...memberGroup, status: 'cerrado' });
+    render(<GroupDetailView groupId="abc" />);
+    expect(await screen.findByText('Grupo cerrado: solo lectura')).toBeVisible();
+    expect(screen.queryByRole('link', { name: 'Buscar otro grupo' })).not.toBeInTheDocument();
+  });
+
+  it('RF-001-18: con titular baneado el banner ofrece Buscar otro grupo hacia /cupos', async () => {
+    mocked.mockResolvedValue({ ...memberGroup, frozenReason: 'titular_baneado' });
+    render(<GroupDetailView groupId="abc" />);
+    expect(await screen.findByText('El titular fue baneado: solo lectura')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Buscar otro grupo' })).toHaveAttribute(
+      'href',
+      '/cupos',
+    );
+  });
 });
