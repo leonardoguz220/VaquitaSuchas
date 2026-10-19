@@ -12,3 +12,4 @@ export { Card, type CardProps } from './card';
 export { Field, type FieldProps } from './field';
 export { Modal, type ModalProps } from './modal';
 export { Select, type SelectProps } from './select';
+export { Textarea, type TextareaProps } from './textarea';
