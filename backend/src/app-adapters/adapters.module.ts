@@ -6,7 +6,8 @@ import { AUDIT_PORT } from '../modules/join-requests/ports/audit.port.js';
 import { BAN_PORT } from '../modules/join-requests/ports/ban.port.js';
 import { REPUTATION_QUERY_PORT } from '../modules/join-requests/ports/reputation-query.port.js';
 import { HostEligibilityAdapter } from './host-eligibility.adapter.js';
-import { NoOwnershipBlockersAdapter } from './ownership-blockers.adapter.js';
+import { JoinRequestsOwnershipBlockersAdapter } from './join-requests-ownership-blockers.adapter.js';
+import { RequestsRepository } from '../modules/join-requests/repositories/requests.repository.js';
 import { OpenChargesAdapter } from './open-charges.adapter.js';
 import {
   NullAuditAdapter,
@@ -20,7 +21,8 @@ import {
   providers: [
     HostEligibilityAdapter,
     OpenChargesAdapter,
-    NoOwnershipBlockersAdapter,
+    RequestsRepository,
+    JoinRequestsOwnershipBlockersAdapter,
     NullBanAdapter,
     NullAuditAdapter,
     NullReputationAdapter,
@@ -29,7 +31,7 @@ import {
     { provide: REPUTATION_QUERY_PORT, useExisting: NullReputationAdapter },
     { provide: HOST_ELIGIBILITY_PORT, useExisting: HostEligibilityAdapter },
     { provide: OPEN_CHARGES_PORT, useExisting: OpenChargesAdapter },
-    { provide: OWNERSHIP_BLOCKERS_PORT, useExisting: NoOwnershipBlockersAdapter },
+    { provide: OWNERSHIP_BLOCKERS_PORT, useExisting: JoinRequestsOwnershipBlockersAdapter },
   ],
   exports: [
     HOST_ELIGIBILITY_PORT,
