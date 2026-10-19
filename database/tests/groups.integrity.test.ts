@@ -300,7 +300,7 @@ async function raceTwo(work: (client: pg.Client) => Promise<unknown>): Promise<n
 
 // ---------------------------------------------------------------- valores por defecto
 
-test('RF-001-01: un grupo válido toma los valores por defecto y su titular queda como miembro', async () => {
+test('RF-001-01, RF-001-09: un grupo válido toma los valores por defecto y su titular queda como miembro', async () => {
   const group = await createGroup();
   const row = await groupRow(group.id);
   assert.ok(row);
@@ -629,7 +629,7 @@ test('CA-001-07: insertar un miembro con el grupo lleno falla', async () => {
   assert.equal(await activeMembers(group.id), 3);
 });
 
-test('CA-001-07: las filas que ya salieron no ocupan cupo', async () => {
+test('CA-001-07, RF-001-10: las filas que ya salieron no ocupan cupo', async () => {
   const group = await createGroup({ total_slots: 2 });
   const memberId = await newUserId();
   await addMember(group.id, { user_id: memberId });
@@ -1122,4 +1122,14 @@ test('H2 (convención spec 000): salir del grupo (left_at, left_reason) actualiz
     OLD_TIMESTAMP.getTime(),
     'created_at no cambia',
   );
+});
+
+test('RF-001-19: existen los índices de "mis grupos" y de miembros activos', async () => {
+  const rows = await run<{ indexname: string; indexdef: string }>(
+    "SELECT indexname, indexdef FROM pg_indexes WHERE tablename IN ('groups', 'group_members')",
+  );
+  const def = (name: string): string => rows.find((row) => row.indexname === name)?.indexdef ?? '';
+  assert.ok(def('group_members_user_idx').endsWith('(user_id) WHERE (left_at IS NULL)'));
+  assert.ok(def('group_members_group_active_idx').endsWith('(group_id) WHERE (left_at IS NULL)'));
+  assert.ok(def('groups_owner_active_idx').endsWith("(owner_id) WHERE (status = 'activo'::text)"));
 });
