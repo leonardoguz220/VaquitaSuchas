@@ -72,6 +72,8 @@ El borrado en cascada es una **excepción justificada** a la regla de `RESTRICT`
 
 ### `password_reset_tokens` — `0012_password_reset_tokens.sql`
 
+El borrado en cascada desde `users` es la misma **excepción justificada** que en `phone_verification_tokens`: tokens técnicos descartables de la cuenta.
+
 ```
 password_reset_tokens
 - id: uuid (PK)
@@ -85,7 +87,7 @@ INDEX password_reset_open_idx (user_id) WHERE used_at IS NULL
 
 ### `banned_identities` — `0013_banned_identities.sql`
 
-Huellas irreversibles de los datos de cuentas baneadas (RF-003-19). Se crean al banear (spec 009) y se conservan de forma permanente.
+Huellas irreversibles de los datos de cuentas baneadas (RF-003-19). Se crean al banear (spec 009) y se conservan mientras el baneo siga vigente; revertirlo las borra (ver abajo).
 
 ```
 banned_identities
