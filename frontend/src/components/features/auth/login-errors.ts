@@ -55,7 +55,8 @@ function validationFieldErrors(details: ApiError['details']): LoginFieldErrors {
     if (!Array.isArray(codes) || codes.length === 0) continue;
     const first = codes.find((code): code is string => typeof code === 'string');
     errors[field as LoginField] =
-      (first && FIELD_CODE_MESSAGES[first]) ?? LOGIN_ERROR_MESSAGES.invalidField;
+      (first && FIELD_CODE_MESSAGES[first]) ??
+      (field === 'email' ? LOGIN_MESSAGES.emailInvalid : LOGIN_ERROR_MESSAGES.invalidField);
   }
   return errors;
 }

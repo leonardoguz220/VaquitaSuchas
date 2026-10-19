@@ -72,6 +72,16 @@ describe('mapLoginError (contrato 003, POST /auth/login)', () => {
     });
   });
 
+  it('RNF-003-04: VALIDATION_ERROR del correo con otro código muestra el mismo mensaje de correo inválido', () => {
+    const view = mapLoginError(
+      new ApiError(400, 'VALIDATION_ERROR', 'x', { fields: { email: ['isEmail'] } }),
+    );
+    expect(view.formError).toBeNull();
+    expect(view.fieldErrors).toEqual({
+      email: 'Escribe un correo válido, por ejemplo ana@gmail.com.',
+    });
+  });
+
   it('RNF-003-04: VALIDATION_ERROR sin campos conocidos da un aviso general', () => {
     expect(mapLoginError(new ApiError(400, 'VALIDATION_ERROR', 'x')).formError).toEqual({
       kind: 'general',
