@@ -2,10 +2,16 @@
  * Cliente de los endpoints de solicitudes de ingreso y chat (spec 010, `contracts/api.md`). Una
  * función por endpoint; los tipos salen del contrato congelado. El frontend no calcula cuotas,
  * plazos ni estados: usa `quote.amountCents`, `phase` y `allowedActions` del backend, y dibuja la
- * cuenta regresiva con `deadlineAt` y `serverNow`. Por ahora cada función responde con datos
- * simulados de `join-requests.mock.ts`; al conectar el backend solo cambia el cuerpo por `apiRequest`.
+ * cuenta regresiva con `deadlineAt` y `serverNow`. Los reclamos (T040) siguen con datos simulados
+ * de `join-requests.mock.ts`; el resto llama a la API.
  */
+import { apiRequest } from './http';
 import * as mock from './join-requests.mock';
+
+/** Ruta de una solicitud del contrato 010 (`/api/join-requests/:id/...`). */
+function requestPath(requestId: string, suffix = ''): string {
+  return `/api/join-requests/${encodeURIComponent(requestId)}${suffix}`;
+}
 
 export type JoinRequestStatus =
   | 'abierta'
@@ -167,6 +173,8 @@ export interface JoinRequest {
   finalReason: string | null;
   rejectReason: string | null;
   rejectedAsFalse: boolean;
+  /** Solo en `aceptada`: por comprobante o en efectivo (RF-010-18). */
+  acceptedMethod?: 'comprobante' | 'efectivo' | null;
   chargeId: string | null;
   unreadCount: number;
   disputes: JoinDisputeRef[];
@@ -299,7 +307,10 @@ export function confirmJoinRequest(
   requestId: string,
   input: { version?: number } = {},
 ): Promise<JoinRequest> {
-  return mock.confirmJoinRequest(requestId, input);
+  return apiRequest<JoinRequest>(requestPath(requestId, '/confirm'), {
+    method: 'POST',
+    body: input,
+  });
 }
 
 /**
@@ -310,7 +321,10 @@ export function registerCashPayment(
   requestId: string,
   input: { version?: number } = {},
 ): Promise<JoinRequest> {
-  return mock.registerCashPayment(requestId, input);
+  return apiRequest<JoinRequest>(requestPath(requestId, '/cash-payment'), {
+    method: 'POST',
+    body: input,
+  });
 }
 
 export interface RejectJoinRequestRequest {
@@ -329,7 +343,10 @@ export function rejectJoinRequest(
   requestId: string,
   input: RejectJoinRequestRequest,
 ): Promise<JoinRequest> {
-  return mock.rejectJoinRequest(requestId, input);
+  return apiRequest<JoinRequest>(requestPath(requestId, '/reject'), {
+    method: 'POST',
+    body: input,
+  });
 }
 
 /**
@@ -337,11 +354,8 @@ export function rejectJoinRequest(
  * `esperando_pago`. Lanza `ApiError` `409 INVALID_TRANSITION` (en `pago_informado` o final).
  * [NECESITA ACLARACIÓN] el contrato no lista cuerpo; se manda `{ version? }` como en las demás.
  */
-export function cancelJoinRequest(
-  requestId: string,
-  input: { version?: number } = {},
-): Promise<JoinRequest> {
-  return mock.cancelJoinRequest(requestId, input);
+export function cancelJoinRequest(requestId: string): Promise<JoinRequest> {
+  return apiRequest<JoinRequest>(requestPath(requestId, '/cancel'), { method: 'POST' });
 }
 
 /** Mensaje del chat (`JoinMessage`). El texto es plano y nunca se interpreta como HTML. */
@@ -367,7 +381,13 @@ export function listMessages(
   requestId: string,
   params: { afterSeq?: number; limit?: number } = {},
 ): Promise<JoinMessagesPage> {
-  return mock.listMessages(requestId, params);
+  const query = new URLSearchParams();
+  if (params.afterSeq !== undefined) query.set('afterSeq', String(params.afterSeq));
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  const text = query.toString();
+  return apiRequest<JoinMessagesPage>(
+    `${requestPath(requestId, '/messages')}${text ? `?${text}` : ''}`,
+  );
 }
 
 export interface SendMessageRequest {
@@ -383,17 +403,28 @@ export interface SendMessageRequest {
  * `429 RATE_LIMITED` con `details.retryAfterSeconds`. No hay operaciones para editar ni borrar.
  */
 export function sendMessage(requestId: string, input: SendMessageRequest): Promise<JoinMessage> {
-  return mock.sendMessage(requestId, input);
+  const form = new FormData();
+  if (input.text !== undefined) form.append('text', input.text);
+  if (input.image) form.append('image', input.image);
+  return apiRequest<JoinMessage>(requestPath(requestId, '/messages'), {
+    method: 'POST',
+    body: form,
+  });
 }
 
 /** `GET /join-requests/:id/messages/:messageId/image`: URL firmada de la imagen (≤ 10 min). */
 export function getMessageImage(requestId: string, messageId: string): Promise<SignedFileLink> {
-  return mock.getMessageImage(requestId, messageId);
+  return apiRequest<SignedFileLink>(
+    requestPath(requestId, `/messages/${encodeURIComponent(messageId)}/image`),
+  );
 }
 
 /** `POST /join-requests/:id/read` (RF-010-09): marca como leído hasta `upToSeq`. Responde 204. */
 export function markMessagesRead(requestId: string, upToSeq: number): Promise<void> {
-  return mock.markMessagesRead(requestId, upToSeq);
+  return apiRequest<void>(requestPath(requestId, '/read'), {
+    method: 'POST',
+    body: { upToSeq },
+  });
 }
 
 export type DisputeResult = 'estafa_confirmada' | 'sin_falta';
