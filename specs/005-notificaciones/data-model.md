@@ -93,12 +93,12 @@ INDEX group_invitations_group_idx (group_id, created_at DESC)
 
 El límite de 10 invitaciones por hora por titular usa `rate_limit_events` (spec 000, bucket `invite:user`).
 
-### Disparadores (`0074_notification_triggers.sql`)
+### Disparadores (`0070_notifications.sql` y `0074_notification_triggers.sql`)
 
 | Disparador | Qué impone | Criterio |
 |---|---|---|
-| `notifications_immutable_content` (antes de `UPDATE`) | Solo cambia `read_at` (y `updated_at`). | integridad |
-| `deliveries_no_resurrect` (antes de `UPDATE`) | `sent`, `failed` y `skipped` no vuelven a `pending`. | RNF-005-01 |
+| `notifications_immutable_content` (antes de `UPDATE`, en **0070**: la parte A del MVP lo necesita) | Solo cambia `read_at` (y `updated_at`). | integridad |
+| `deliveries_no_resurrect` (antes de `UPDATE`, en 0074) | `sent`, `failed` y `skipped` no vuelven a `pending`. | RNF-005-01 |
 
 ## 2. Consultas frecuentes e índices
 

@@ -45,7 +45,7 @@ Módulo `notifications` con un **catálogo de avisos** (tipo → destinatario, c
 
 ## 3. Modelo de datos — _Camila (BD)_
 
-Detalle en [`data-model.md`](data-model.md): `notifications` (0070, núcleo), `notification_preferences` (0071), `notification_deliveries` (0072), `group_invitations` (0073), disparadores (0074). Pruebas de integridad en `database/tests/notifications.integrity.test.ts`.
+Detalle en [`data-model.md`](data-model.md): `notifications` (0070, núcleo, con el disparador de contenido inmutable), `notification_preferences` (0071), `notification_deliveries` (0072), `group_invitations` (0073), disparador de envíos (0074). Pruebas de integridad en `database/tests/notifications.integrity.test.ts`.
 
 ## 4. Contratos de API — _Leonardo (Backend)_
 
