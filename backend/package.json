@@ -12,6 +12,7 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
+    "telegram:set-webhook": "node dist/cli/telegram-set-webhook.js",
     "lint": "eslint . && prettier --check . && tsc --noEmit",
     "lint:fix": "eslint . --fix && prettier --write .",
     "typecheck": "tsc --noEmit",
