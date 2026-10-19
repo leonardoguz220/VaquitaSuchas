@@ -1,4 +1,5 @@
 import {
+  buildListMyChargesQuery,
   confirmCharge,
   rejectCharge,
   getBillingSummary,
@@ -7,14 +8,75 @@ import {
   getReceiptFile,
   listMyCharges,
   uploadReceipt,
+  type ChargeStatus,
 } from './charges';
+import * as mock from './charges.mock';
 import { MOCK_CHARGE_IDS, MOCK_RECEIPT_REFERENCES } from './charges.mock';
+import { ApiError } from './http';
 import { MOCK_BILLING_GROUP_IDS } from './group-billing.mock';
 
 const SPOTIFY_GROUP_ID = '5b0d7c3e-0000-4000-8000-000000000103';
 
-beforeEach(() => jest.useFakeTimers());
-afterEach(() => jest.useRealTimers());
+function jsonResponse(status: number, body: unknown): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => JSON.stringify(body),
+  } as unknown as Response;
+}
+
+/**
+ * Servidor simulado para `fetch`: responde las dos rutas conectadas (T019) con los datos de
+ * `charges.mock.ts`, traduce la query igual que el backend y devuelve los errores en el formato
+ * A.2 (`{ statusCode, code, message }`). Así las aserciones sobre datos no cambian.
+ */
+async function fakeBackend(url: string, init?: RequestInit): Promise<Response> {
+  const target = new URL(url, 'http://localhost');
+  const signal = init?.signal ?? undefined;
+  try {
+    if (target.pathname === '/api/me/charges') {
+      const params = target.searchParams;
+      const page = await mock.listMyCharges(
+        {
+          status: params.getAll('status') as ChargeStatus[],
+          period: params.get('period') ?? undefined,
+          groupId: params.get('groupId') ?? undefined,
+        },
+        signal,
+      );
+      return jsonResponse(200, page);
+    }
+    const match = /^\/api\/charges\/([^/]+)$/.exec(target.pathname);
+    if (match) {
+      const charge = await mock.getCharge(decodeURIComponent(match[1]), signal);
+      return jsonResponse(200, charge);
+    }
+    return jsonResponse(404, { statusCode: 404, code: 'NOT_FOUND', message: 'Ruta no simulada.' });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return jsonResponse(error.statusCode, {
+        statusCode: error.statusCode,
+        code: error.code,
+        message: error.message,
+      });
+    }
+    throw error;
+  }
+}
+
+const originalFetch = global.fetch;
+const fetchMock = jest.fn(fakeBackend);
+
+beforeEach(() => {
+  jest.useFakeTimers();
+  fetchMock.mockReset();
+  fetchMock.mockImplementation(fakeBackend);
+  global.fetch = fetchMock as unknown as typeof fetch;
+});
+afterEach(() => {
+  jest.useRealTimers();
+  global.fetch = originalFetch;
+});
 
 async function settle<T>(promise: Promise<T>): Promise<T> {
   await jest.runAllTimersAsync();
@@ -27,7 +89,7 @@ async function expectRejection(promise: Promise<unknown>, shape: object) {
   await assertion;
 }
 
-describe('services/charges con datos simulados (T018, contrato 002)', () => {
+describe('services/charges conectado a GET /me/charges y GET /charges/:id (T019, contrato 002)', () => {
   it('RF-002-15: GET /me/charges trae los 5 estados por vencimiento descendente', async () => {
     const { items, nextCursor } = await settle(listMyCharges());
     expect(nextCursor).toBeNull();
@@ -239,6 +301,53 @@ describe('services/charges con datos simulados (T018, contrato 002)', () => {
 
     await expectRejection(getBillingSummary(MOCK_BILLING_GROUP_IDS.noCycle), {
       statusCode: 404,
+    });
+  });
+});
+
+describe('services/charges: mapeo de query y ruta hacia la API (T019)', () => {
+  it('RF-002-15: status se envía repetido por cada estado y period, groupId, limit y cursor van en la URL', async () => {
+    await settle(
+      listMyCharges({
+        status: ['pendiente', 'atrasado'],
+        period: '2026-10',
+        groupId: SPOTIFY_GROUP_ID,
+        limit: 5,
+        cursor: 'abc',
+      }),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/me/charges?status=pendiente&status=atrasado&period=2026-10&groupId=${SPOTIFY_GROUP_ID}&limit=5&cursor=abc`,
+      expect.objectContaining({ method: 'GET', credentials: 'same-origin' }),
+    );
+  });
+
+  it('RF-002-15: sin filtros la ruta no lleva query y una lista vacía de estados no se envía', async () => {
+    expect(buildListMyChargesQuery({})).toBe('');
+    expect(buildListMyChargesQuery({ status: [] })).toBe('');
+    await settle(listMyCharges({ status: [] }));
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/me/charges', expect.anything());
+  });
+
+  it('RF-002-15: limit 0 se envía y un cursor vacío no se envía', () => {
+    expect(buildListMyChargesQuery({ limit: 0 })).toBe('?limit=0');
+    expect(buildListMyChargesQuery({ cursor: '' })).toBe('');
+  });
+
+  it('CA-002-23: el id del cobro va codificado en la ruta de GET /charges/:id', async () => {
+    await expectRejection(getCharge('a/b'), { statusCode: 404, code: 'NOT_FOUND' });
+    expect(fetchMock).toHaveBeenLastCalledWith('/api/charges/a%2Fb', expect.anything());
+  });
+
+  it('RF-002-15: un error sin formato A.2 llega como error genérico, sin inventar código', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      text: async () => '<html>fallo</html>',
+    } as unknown as Response);
+    await expectRejection(getCharge(MOCK_CHARGE_IDS.paid), {
+      statusCode: 500,
+      code: 'UNEXPECTED_RESPONSE',
     });
   });
 });

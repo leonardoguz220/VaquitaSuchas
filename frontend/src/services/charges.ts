@@ -1,10 +1,11 @@
 /**
  * Cliente de cobros y pagos (`specs/002-cobros-y-pagos/contracts/api.md`). Reúne los tipos de
  * toda la spec 002 para que los reutilicen T022 (subida), T026 (confirmar y rechazar) y T037
- * (historial y resumen del grupo). Por ahora cada función responde con datos simulados de
- * `charges.mock.ts` (T018); al conectar el backend (T019) solo cambia el cuerpo por `apiRequest`.
+ * (historial y resumen del grupo). `listMyCharges` y `getCharge` ya llaman al backend (T019); el
+ * resto responde con datos simulados de `charges.mock.ts` hasta que su endpoint exista.
  */
 import * as mock from './charges.mock';
+import { apiRequest } from './http';
 import type { GroupCurrency, PaymentInfo } from './groups';
 
 export type ChargeStatus = 'pendiente' | 'en_revision' | 'pagado' | 'atrasado' | 'cancelado';
@@ -204,17 +205,36 @@ export type ChargesErrorCode =
   | 'FILE_TOO_LARGE'
   | 'UNSUPPORTED_FILE_TYPE';
 
+/**
+ * Query de `GET /me/charges`: `status` se repite por cada estado (`?status=a&status=b`) y los
+ * demás filtros solo van si vienen. Sin parámetros no hay `?`.
+ */
+export function buildListMyChargesQuery(params: ListMyChargesParams): string {
+  const query = new URLSearchParams();
+  params.status?.forEach((status) => query.append('status', status));
+  if (params.period) query.set('period', params.period);
+  if (params.groupId) query.set('groupId', params.groupId);
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.cursor) query.set('cursor', params.cursor);
+  const text = query.toString();
+  return text ? `?${text}` : '';
+}
+
 /** `GET /me/charges` (RF-002-15): incluye cobros de grupos dejados si están `atrasado` o `en_revision`. */
 export function listMyCharges(
   params: ListMyChargesParams = {},
   options: ChargesRequestOptions = {},
 ): Promise<Page<MyCharge>> {
-  return mock.listMyCharges(params, options.signal);
+  return apiRequest<Page<MyCharge>>(`/api/me/charges${buildListMyChargesQuery(params)}`, {
+    signal: options.signal,
+  });
 }
 
 /** `GET /charges/:chargeId`: `403` a otro miembro del grupo, `404` a quien no pertenece. */
 export function getCharge(chargeId: string, options: ChargesRequestOptions = {}): Promise<Charge> {
-  return mock.getCharge(chargeId, options.signal);
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}`, {
+    signal: options.signal,
+  });
 }
 
 /** `POST /charges/:chargeId/receipts` (RF-002-06 a 08), `multipart/form-data`. */
