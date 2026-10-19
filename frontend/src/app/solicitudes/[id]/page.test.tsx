@@ -20,6 +20,8 @@ import {
   extendJoinRequest,
   getJoinRequest,
   getPaymentQr,
+  listMessages,
+  markMessagesRead,
   registerCashPayment,
   rejectJoinRequest,
   sendPaymentData,
@@ -44,6 +46,10 @@ jest.mock('@/services/join-requests', () => ({
   registerCashPayment: jest.fn(),
   rejectJoinRequest: jest.fn(),
   cancelJoinRequest: jest.fn(),
+  listMessages: jest.fn(),
+  markMessagesRead: jest.fn(),
+  sendMessage: jest.fn(),
+  getMessageImage: jest.fn(),
 }));
 
 const mockedMe = jest.mocked(getMe);
@@ -56,6 +62,8 @@ const mockedConfirm = jest.mocked(confirmJoinRequest);
 const mockedCash = jest.mocked(registerCashPayment);
 const mockedReject = jest.mocked(rejectJoinRequest);
 const mockedCancel = jest.mocked(cancelJoinRequest);
+const mockedMessages = jest.mocked(listMessages);
+const mockedRead = jest.mocked(markMessagesRead);
 
 const QR_LINK = {
   url: 'https://storage.vaquita.test/jr1/qr?token=abc',
@@ -91,6 +99,10 @@ beforeEach(() => {
   mockedReject.mockReset();
   mockedCancel.mockReset();
   mockedQr.mockResolvedValue(QR_LINK);
+  mockedMessages.mockReset();
+  mockedMessages.mockResolvedValue({ items: [], serverNow: SERVER_NOW });
+  mockedRead.mockReset();
+  mockedRead.mockResolvedValue(undefined);
 });
 
 afterEach(() => jest.useRealTimers());
@@ -730,5 +742,26 @@ describe('/solicitudes/[id] (spec 010 T030): decisiones del titular y cancelaci�
     expect(await screen.findByText(/La solicitud ya no admite esta acción/)).toBeVisible();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(mockedGet).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('/solicitudes/[id] (spec 010 T034): chat en el detalle', () => {
+  it('RF-010-05: el solicitante ve el chat con el titular, solo para los dos', async () => {
+    as('solicitante', awaitingPaymentRequest);
+    await renderPage();
+    const chat = await screen.findByRole('region', { name: 'Chat con Rodrigo' });
+    expect(within(chat).getByText(/Solo lo ven ustedes dos/)).toBeVisible();
+    expect(within(chat).getByRole('textbox', { name: 'Mensaje para Rodrigo' })).toBeVisible();
+    expect(mockedMessages).toHaveBeenCalledWith('jr1', { limit: 100 });
+  });
+
+  it('CA-010-24: en un estado final el chat queda en solo lectura', async () => {
+    as('titular', { ...hostReportedRequest, allowedActions: [] });
+    await renderPage();
+    const chat = await screen.findByRole('region', { name: 'Chat con Ana' });
+    expect(
+      within(chat).getByText('La solicitud terminó: el chat quedó en solo lectura.'),
+    ).toBeVisible();
+    expect(within(chat).queryByRole('textbox')).toBeNull();
   });
 });

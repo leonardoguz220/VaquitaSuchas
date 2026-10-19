@@ -1,4 +1,5 @@
 import {
+  checkChatImage,
   checkReceiptFile,
   formatFileSize,
   RECEIPT_MAX_BYTES,
@@ -32,5 +33,19 @@ describe('lib/receipt-file (RF-002-06, solo ayuda del cliente)', () => {
     expect(formatFileSize(1258291)).toBe('1,2 MB');
     expect(formatFileSize(5 * 1024 * 1024)).toBe('5 MB');
     expect(formatFileSize(10)).toBe('1 KB');
+  });
+});
+
+describe('checkChatImage (spec 010)', () => {
+  it('CA-010-21: acepta JPG y PNG de hasta 5 MB y rechaza un PDF', () => {
+    expect(checkChatImage({ name: 'a.jpg', type: 'image/jpeg', size: 3 * 1024 * 1024 })).toBeNull();
+    expect(checkChatImage({ name: 'a.png', type: '', size: 10 })).toBeNull();
+    expect(checkChatImage({ name: 'a.pdf', type: 'application/pdf', size: 10 })).toBe('type');
+  });
+
+  it('RF-010-05: una imagen de más de 5 MB se avisa', () => {
+    expect(checkChatImage({ name: 'a.jpg', type: 'image/jpeg', size: 5 * 1024 * 1024 + 1 })).toBe(
+      'size',
+    );
   });
 });

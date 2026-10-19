@@ -387,3 +387,72 @@ export function cancelJoinRequest(
     body: input,
   });
 }
+
+/** Mensaje del chat (`JoinMessage`). El texto es plano y nunca se interpreta como HTML. */
+export interface JoinMessage {
+  id: string;
+  seq: number;
+  senderId: string;
+  body: string | null;
+  imageAvailable: boolean;
+  createdAt: string;
+}
+
+export interface JoinMessagesPage {
+  items: JoinMessage[];
+  serverNow: string;
+}
+
+/**
+ * `GET /join-requests/:id/messages?afterSeq=&limit=` (RF-010-09): mensajes por `seq` ascendente;
+ * con `afterSeq` solo los nuevos. El cliente consulta cada 5 s con la conversación abierta.
+ */
+export function listMessages(
+  requestId: string,
+  params: { afterSeq?: number; limit?: number } = {},
+): Promise<JoinMessagesPage> {
+  const query = new URLSearchParams();
+  if (params.afterSeq !== undefined) query.set('afterSeq', String(params.afterSeq));
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  const search = query.toString();
+  return apiRequest<JoinMessagesPage>(
+    `/api/join-requests/${encodeURIComponent(requestId)}/messages${search ? `?${search}` : ''}`,
+  );
+}
+
+export interface SendMessageRequest {
+  /** 1 a 1.000 caracteres; opcional si hay imagen. */
+  text?: string;
+  /** JPG o PNG hasta 5 MB; opcional si hay texto. */
+  image?: File;
+}
+
+/**
+ * `POST /join-requests/:id/messages` (RF-010-05, RF-010-10) con `multipart/form-data`. Lanza
+ * `ApiError` `400` (vacío o > 1.000), `413`, `415` (por ejemplo un PDF), `422 CHAT_READ_ONLY` y
+ * `429 RATE_LIMITED` con `details.retryAfterSeconds`. No hay operaciones para editar ni borrar.
+ */
+export function sendMessage(requestId: string, input: SendMessageRequest): Promise<JoinMessage> {
+  const form = new FormData();
+  if (input.text !== undefined) form.append('text', input.text);
+  if (input.image) form.append('image', input.image);
+  return apiRequest<JoinMessage>(`/api/join-requests/${encodeURIComponent(requestId)}/messages`, {
+    method: 'POST',
+    formData: form,
+  });
+}
+
+/** `GET /join-requests/:id/messages/:messageId/image`: URL firmada de la imagen (≤ 10 min). */
+export function getMessageImage(requestId: string, messageId: string): Promise<SignedFileLink> {
+  return apiRequest<SignedFileLink>(
+    `/api/join-requests/${encodeURIComponent(requestId)}/messages/${encodeURIComponent(messageId)}/image`,
+  );
+}
+
+/** `POST /join-requests/:id/read` (RF-010-09): marca como leído hasta `upToSeq`. Responde 204. */
+export function markMessagesRead(requestId: string, upToSeq: number): Promise<void> {
+  return apiRequest<void>(`/api/join-requests/${encodeURIComponent(requestId)}/read`, {
+    method: 'POST',
+    body: { upToSeq },
+  });
+}

@@ -5,11 +5,15 @@ import {
   confirmJoinRequest,
   extendJoinRequest,
   getJoinRequest,
+  getMessageImage,
   getPaymentQr,
   listJoinRequests,
+  listMessages,
+  markMessagesRead,
   openJoinRequest,
   registerCashPayment,
   rejectJoinRequest,
+  sendMessage,
   sendPaymentData,
   uploadJoinProof,
 } from './join-requests';
@@ -143,6 +147,53 @@ describe('services/join-requests (contrato 010): decisiones', () => {
     expect(mockedRequest).toHaveBeenCalledWith('/api/join-requests/jr1/reject', {
       method: 'POST',
       body: { reason: 'No llegó', markProofAsFalse: true, version: 3 },
+    });
+  });
+});
+
+describe('services/join-requests (contrato 010): chat', () => {
+  it('CA-010-19: listMessages pide los mensajes y con afterSeq solo los nuevos', async () => {
+    mockedRequest.mockResolvedValue({ items: [], serverNow: '2026-10-18T18:41:00.000Z' });
+    await listMessages('jr1');
+    expect(mockedRequest).toHaveBeenLastCalledWith('/api/join-requests/jr1/messages');
+    await listMessages('jr1', { afterSeq: 7, limit: 100 });
+    expect(mockedRequest).toHaveBeenLastCalledWith(
+      '/api/join-requests/jr1/messages?afterSeq=7&limit=100',
+    );
+  });
+
+  it('CA-010-19: sendMessage hace POST multipart con texto e imagen', async () => {
+    mockedRequest.mockResolvedValue({});
+    const image = new File(['x'], 'foto.jpg', { type: 'image/jpeg' });
+    await sendMessage('jr1', { text: 'Hola', image });
+    const [path, options] = mockedRequest.mock.calls[0];
+    expect(path).toBe('/api/join-requests/jr1/messages');
+    expect(options?.method).toBe('POST');
+    const form = options?.formData as FormData;
+    expect(form.get('text')).toBe('Hola');
+    expect(form.get('image')).toBe(image);
+  });
+
+  it('CA-010-23: no existen funciones para editar ni borrar mensajes', async () => {
+    const api = await import('./join-requests');
+    const names = Object.keys(api).filter((name) => /message/i.test(name));
+    expect(names.sort()).toEqual(
+      ['getMessageImage', 'listMessages', 'markMessagesRead', 'sendMessage'].sort(),
+    );
+  });
+
+  it('RF-010-08: getMessageImage pide la URL firmada de la imagen', async () => {
+    mockedRequest.mockResolvedValue({ url: 'https://x', expiresAt: 'y', mime: 'image/png' });
+    await getMessageImage('jr1', 'm/2');
+    expect(mockedRequest).toHaveBeenCalledWith('/api/join-requests/jr1/messages/m%2F2/image');
+  });
+
+  it('RF-010-09: markMessagesRead manda upToSeq', async () => {
+    mockedRequest.mockResolvedValue(undefined);
+    await markMessagesRead('jr1', 9);
+    expect(mockedRequest).toHaveBeenCalledWith('/api/join-requests/jr1/read', {
+      method: 'POST',
+      body: { upToSeq: 9 },
     });
   });
 });

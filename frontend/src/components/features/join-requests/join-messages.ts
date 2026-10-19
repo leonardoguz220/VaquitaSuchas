@@ -307,3 +307,40 @@ export function proofErrorOutcome(error: ApiError): ActionErrorOutcome {
     ? { message: REQUEST_MESSAGES.applicantOnly, refresh: false }
     : outcome;
 }
+
+export const CHAT_MESSAGES = {
+  onlyYouTwo: 'Solo lo ven ustedes dos. Los mensajes no se editan ni se borran.',
+  empty: 'Todavía no hay mensajes. Saluda y cuéntale al titular cómo vas a pagar.',
+  emptyHost: 'Todavía no hay mensajes.',
+  readOnly: 'La solicitud terminó: el chat quedó en solo lectura.',
+  textLength: 'El mensaje debe tener entre 1 y 1.000 caracteres.',
+  imageType: 'En el chat solo se envían imágenes JPG o PNG.',
+  imageSize: 'La imagen pesa más de 5 MB. Elige una más liviana.',
+  pollFailed: 'No pudimos traer mensajes nuevos. Seguimos intentando…',
+  imageFailed: 'No pudimos abrir la imagen.',
+  imageDeleted: 'La imagen ya no está disponible.',
+} as const;
+
+function retryAfterSeconds(error: ApiError): string {
+  const seconds = error.details?.retryAfterSeconds;
+  return typeof seconds === 'number' && seconds > 0
+    ? `Enviaste muchos mensajes seguidos. Espera ${seconds} ${seconds === 1 ? 'segundo' : 'segundos'}.`
+    : 'Enviaste muchos mensajes seguidos. Espera un momento.';
+}
+
+/** Qué hacer con un error al enviar un mensaje (plan 010 §6). */
+export function chatErrorOutcome(error: ApiError): ActionErrorOutcome {
+  const code = joinErrorCode(error);
+  if (code === 'CHAT_READ_ONLY') return { message: CHAT_MESSAGES.readOnly, refresh: true };
+  if (code === 'RATE_LIMITED') return { message: retryAfterSeconds(error), refresh: false };
+  if (code === 'FILE_TOO_LARGE' || error.statusCode === 413) {
+    return { field: 'file', message: CHAT_MESSAGES.imageSize, refresh: false };
+  }
+  if (code === 'UNSUPPORTED_FILE_TYPE' || error.statusCode === 415) {
+    return { field: 'file', message: CHAT_MESSAGES.imageType, refresh: false };
+  }
+  if (code === 'VALIDATION_ERROR') {
+    return { field: 'text', message: CHAT_MESSAGES.textLength, refresh: false };
+  }
+  return actionErrorOutcome(error);
+}

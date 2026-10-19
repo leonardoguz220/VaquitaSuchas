@@ -16,6 +16,7 @@ import {
 import { PaymentInfoCard } from './payment-info-card';
 import { PROOF_SECTION_ID, ProofUpload } from './proof-upload';
 import { ProofSummary } from './proof-summary';
+import { RequestChat } from './request-chat';
 import { DecisionActions, hasDecisionActions, HostCheckBank } from './request-decisions';
 import { RequestHeader, type RequestViewer } from './request-header';
 import { RequestTimeline } from './request-timeline';
@@ -103,7 +104,7 @@ export interface RequestDetailViewProps {
  * `SolicitudAbierta` y `SolicitudTitular`): cabecera con cuenta regresiva corregida con
  * `serverNow`, datos de pago y acciones según `allowedActions` (el titular envía los datos de pago
  * o prorroga; el solicitante sube su comprobante, T026; confirmar, efectivo, rechazar y cancelar,
- * T030). Al llegar a 0 el plazo se vuelve a
+ * T030) y el chat con la otra parte (T034). Al llegar a 0 el plazo se vuelve a
  * pedir la solicitud: el estado lo decide el servidor. `403` (miembro que no participa) y `404` (ajeno) muestran su aviso (CA-010-20).
  */
 export function RequestDetailView({ requestId }: RequestDetailViewProps) {
@@ -274,6 +275,7 @@ export function RequestDetailView({ requestId }: RequestDetailViewProps) {
               ? REQUEST_MESSAGES.noCustodyHost
               : REQUEST_MESSAGES.noCustodyApplicant}
           </p>
+          <RequestChat request={request} meId={me.user.id} onStale={handleStale} />
         </div>
         <div className="flex flex-col gap-5">
           <RequestTimeline events={request.timeline} />

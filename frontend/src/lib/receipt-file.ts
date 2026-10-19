@@ -39,3 +39,16 @@ export function formatFileSize(bytes: number): string {
   const tenths = Math.round((bytes / (1024 * 1024)) * 10) / 10;
   return `${String(tenths).replace('.', ',')} MB`;
 }
+
+/** Imágenes que admite el chat de una solicitud (RF-010-05): JPG o PNG, sin PDF. */
+export const CHAT_IMAGE_TYPES = ['image/jpeg', 'image/png'] as const;
+
+/** Largo máximo de un mensaje del chat (RF-010-05). */
+export const CHAT_TEXT_MAX = 1000;
+
+/** `'type'` si no es JPG o PNG; `'size'` si pesa más de 5 MB; `null` si se puede enviar. */
+export function checkChatImage(file: Pick<File, 'name' | 'type' | 'size'>): 'type' | 'size' | null {
+  if (!(CHAT_IMAGE_TYPES as readonly string[]).includes(receiptFileType(file))) return 'type';
+  if (file.size > RECEIPT_MAX_BYTES) return 'size';
+  return null;
+}
