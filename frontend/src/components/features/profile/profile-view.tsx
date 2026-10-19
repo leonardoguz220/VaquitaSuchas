@@ -8,6 +8,7 @@ import { useMe } from '@/hooks/use-me';
 import { useLogout } from '@/hooks/use-profile-actions';
 import { ChangePasswordForm } from './change-password-form';
 import { PhoneChangeSection } from './phone-change-section';
+import { ProfileSectionNav } from './profile-section-nav';
 import { ProfileDetails } from './profile-details';
 import { PROFILE_MESSAGES, profileLoadErrorMessage } from './profile-errors';
 
@@ -73,6 +74,7 @@ export function ProfileView() {
       <h1 className="font-display text-3xl leading-tight font-bold tracking-tight sm:text-4xl">
         Mi perfil
       </h1>
+      <ProfileSectionNav />
 
       {(status === 'loading' || status === 'redirecting') && <ProfileSkeleton />}
 

@@ -2,6 +2,7 @@ export { Alert, type AlertProps, type AlertVariant } from './alert';
 export {
   Badge,
   chargeStatusLabel,
+  type BadgeIcon,
   type BadgeProps,
   type BadgeTone,
   type BadgeVariant,

@@ -34,3 +34,23 @@ describe('Badge (RF-000-16)', () => {
     expect(screen.getByText('Atrasado 3 días')).toBeInTheDocument();
   });
 });
+
+describe('Badge: icono propio (spec 007)', () => {
+  it('RNF-007-06: el icono se puede reemplazar sin cambiar el tono ni el texto', () => {
+    const { rerender } = render(
+      <Badge variant="success" data-testid="badge">
+        Bueno
+      </Badge>,
+    );
+    const defaultPath = screen.getByTestId('badge').querySelector('path')?.getAttribute('d');
+    rerender(
+      <Badge variant="success" icon="star" data-testid="badge">
+        Excelente
+      </Badge>,
+    );
+    const badge = screen.getByTestId('badge');
+    expect(badge).toHaveTextContent('Excelente');
+    expect(badge).toHaveClass('bg-status-pagado-bg');
+    expect(badge.querySelector('path')?.getAttribute('d')).not.toBe(defaultPath);
+  });
+});

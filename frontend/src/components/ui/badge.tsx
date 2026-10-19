@@ -9,7 +9,10 @@ export type BadgeTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
 export type BadgeVariant = ChargeStatus | BadgeTone;
 
-type IconName = 'clock' | 'eye' | 'check' | 'alert' | 'x' | 'info' | 'dot';
+export type BadgeIcon =
+  'clock' | 'eye' | 'check' | 'alert' | 'x' | 'info' | 'dot' | 'star' | 'minus';
+
+type IconName = BadgeIcon;
 
 interface VariantStyle {
   className: string;
@@ -49,19 +52,23 @@ const iconPaths: Record<IconName, string> = {
   x: 'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm2.9 4 1.1 1.1-2.9 2.9 2.9 2.9-1.1 1.1-2.9-2.9L7.1 14 6 12.9 8.9 10 6 7.1 7.1 6 10 8.9 12.9 6Z',
   info: 'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 3a1.1 1.1 0 1 1 0 2.2A1.1 1.1 0 0 1 10 5Zm.9 9.5H9.1V8.5h1.8v6Z',
   dot: 'M10 6a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z',
+  star: 'M10 1.5 12.6 6.8 18.5 7.7 14.2 11.8 15.2 17.6 10 14.9 4.8 17.6 5.8 11.8 1.5 7.7 7.4 6.8Z',
+  minus: 'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM6 9.1h8v1.8H6V9.1Z',
 };
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant: BadgeVariant;
   /** Visible text. Required for generic tones; charge states default to their label. */
   children?: ReactNode;
+  /** Replaces the variant icon (for example, one icon per reputation level, spec 007). */
+  icon?: BadgeIcon;
 }
 
 function isChargeStatus(variant: BadgeVariant): variant is ChargeStatus {
   return variant in chargeStatusLabel;
 }
 
-export function Badge({ variant, children, className, ...rest }: BadgeProps) {
+export function Badge({ variant, children, icon, className, ...rest }: BadgeProps) {
   const style = styles[variant];
   const text = children ?? (isChargeStatus(variant) ? chargeStatusLabel[variant] : null);
 
@@ -75,7 +82,7 @@ export function Badge({ variant, children, className, ...rest }: BadgeProps) {
       {...rest}
     >
       <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4 shrink-0" fill="currentColor">
-        <path fillRule="evenodd" d={iconPaths[style.icon]} />
+        <path fillRule="evenodd" d={iconPaths[icon ?? style.icon]} />
       </svg>
       {text}
     </span>
