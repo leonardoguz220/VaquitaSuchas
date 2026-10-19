@@ -142,4 +142,19 @@ export class MessagesRepository {
       [requestId, userId, upToSeq],
     );
   }
+
+  /** Claves de las imágenes del chat de la solicitud (para borrarlas del almacén). */
+  async listImageKeys(q: Queryable, requestId: string): Promise<string[]> {
+    const result = await q.query<{ image_key: string }>(
+      'SELECT image_key FROM join_messages WHERE request_id = $1 AND image_key IS NOT NULL',
+      [requestId],
+    );
+    return result.rows.map((row) => row.image_key);
+  }
+
+  /** Borra el chat de la solicitud; solo la retención (declara `vaquita.allow_purge` en su transacción). */
+  async purgeByRequest(q: Queryable, requestId: string): Promise<void> {
+    await q.query("SELECT set_config('vaquita.allow_purge', 'on', true)");
+    await q.query('DELETE FROM join_messages WHERE request_id = $1', [requestId]);
+  }
 }

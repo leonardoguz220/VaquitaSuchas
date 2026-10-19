@@ -168,4 +168,33 @@ export class DisputesRepository {
     );
     return toRecord(result.rows[0] as Row);
   }
+
+  /** Reclamos resueltos hace 2 meses o más cuya evidencia sigue sin purgar (RNF-010-09). */
+  async listPurgeCandidates(
+    q: Queryable,
+    cutoff: Date,
+    limit: number,
+  ): Promise<{ id: string; keys: string[] }[]> {
+    const result = await q.query<{
+      id: string;
+      evidence_key: string | null;
+      response_evidence_key: string | null;
+    }>(
+      `SELECT id, evidence_key, response_evidence_key FROM join_disputes
+        WHERE status = 'resuelto' AND resolved_at <= $1 AND evidence_purged_at IS NULL
+        ORDER BY resolved_at LIMIT $2`,
+      [cutoff, limit],
+    );
+    return result.rows.map((row) => ({
+      id: row.id,
+      keys: [row.evidence_key, row.response_evidence_key].filter((k): k is string => k !== null),
+    }));
+  }
+
+  async markEvidencePurged(q: Queryable, id: string, now: Date): Promise<void> {
+    await q.query(
+      'UPDATE join_disputes SET evidence_purged_at = $2 WHERE id = $1 AND evidence_purged_at IS NULL',
+      [id, now],
+    );
+  }
 }
