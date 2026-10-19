@@ -64,7 +64,7 @@
 **Meta:** el titular puede excluir un cobro mal calificado por un error y el dueño puede reportarlo.
 **Prueba independiente:** el titular excluye un cobro con motivo y la calificación del dueño se recalcula en la misma operación.
 
-- [ ] T028 [BD] Migraciones `0061_charge_reputation_exclusions.sql` (cobro único, titular, motivo de 10 a 300, fecha) y `0062_reputation_reports.sql` (cobro, dueño, comentario de 10 a 300; un reporte por persona y cobro) — Depende: T002 · Cubre: RF-007-14
+- [x] T028 [BD] Migraciones `0061_charge_reputation_exclusions.sql` (cobro único, titular, motivo de 10 a 300, fecha) y `0062_reputation_reports.sql` (cobro, dueño, comentario de 10 a 300; un reporte por persona y cobro) — Depende: T002 · Cubre: RF-007-14
 - [ ] T029 [P] [US4] [BE] `backend/test/reports.e2e-spec.ts`: CA-007-13 (exclusión con motivo, registrada y recalculada), `CHARGE_ALREADY_EXCLUDED`, `REPORT_ALREADY_SENT`, solo el titular del grupo excluye y solo el dueño reporta — Depende: T028 · Cubre: CA-007-13, RF-007-14
 - [ ] T030 [US4] [BE] `services/reports.service.ts`, `repositories/exclusions.repository.ts` y `controllers/reports.controller.ts` (`POST /charges/:id/reputation-report`, `POST /charges/:id/reputation-exclusion`, que recalcula con `recomputeUser` en la misma transacción) — Depende: T029, T009 · Cubre: RF-007-14, CA-007-13
 - [x] T031 [BD] Completar `reputation.integrity.test.ts` con las pruebas de exclusiones, reportes e insignias (únicos) — Depende: T017, T028 · Cubre: RF-007-08, RF-007-14
