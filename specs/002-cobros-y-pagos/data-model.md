@@ -2,7 +2,7 @@
 
 - **Responsable:** Camila Fuentes (Base de datos)
 - **Migraciones:** `0040` a `0044` (rango de la spec 002)
-- **Estado:** propuesto; se congela al aprobar el plan
+- **Estado:** congelado (plan aprobado); ajustes H1–H4 y M1–M3 de `/speckit-analyze` aprobados por BD el 2026-10-19
 - Convenciones de `specs/000-setup-del-proyecto/data-model.md`. Períodos y ciclo inicial: `specs/001-suscripciones-compartidas/research.md` R1 y R2.
 
 ## 1. Tablas
@@ -27,18 +27,22 @@ billing_cycles
 - exchange_rate: numeric(10,4) (NULL)           CHECK ((currency = 'USD') = (exchange_rate IS NOT NULL))
 - total_bs_cents: bigint (NOT NULL)             CHECK > 0
 - member_count: smallint (NOT NULL)             miembros activos incluido el titular; CHECK >= 1
-- base_share_cents: bigint (NOT NULL)           floor(total / member_count)
+- base_share_cents: bigint (NOT NULL)           floor(total / member_count); CHECK >= 0
 - owner_share_cents: bigint (NOT NULL)          base + resto (referencia del titular, RN-001-10)
-- remainder_cents: bigint (NOT NULL)            CHECK >= 0
+- remainder_cents: bigint (NOT NULL)            CHECK >= 0 AND remainder_cents < member_count   (con Σ = total obliga a que la base sea floor y el resto lo asuma el titular, H4)
 - finalized_at: timestamptz (NULL)              solo el ciclo inicial: mientras sea NULL se recalcula con cada ingreso o salida (research 001 R1)
 CHECK (cycle_type = 'inicial' OR finalized_at IS NOT NULL)
 CHECK (base_share_cents * (member_count - 1) + owner_share_cents = total_bs_cents)       Σ cuotas = total
 CHECK (owner_share_cents - base_share_cents = remainder_cents)
+CHECK (period = to_char(cut_date, 'YYYY-MM'))                         el período es el mes del corte (M2)
+CHECK (due_date = cut_date + 3)                                           RF-002-03 (M2)
 - created_at, updated_at
 UNIQUE (group_id, period)
 UNIQUE INDEX billing_cycles_initial_uq (group_id) WHERE cycle_type = 'inicial'
 INDEX billing_cycles_group_period_idx (group_id, period DESC)
 ```
+
+**Vigencia de `billing_day`** (spec 001, PR #43 M5): el corte del ciclo siguiente se calcula a partir del último `cut_date` del grupo; un cambio de `billing_day` rige desde el corte posterior a ese.
 
 Un ciclo `regular` es inmutable: el disparador `billing_cycles_immutable` rechaza cualquier `UPDATE` salvo en el ciclo `inicial` con `finalized_at IS NULL` (solo cambian `member_count` y las cuotas) y el cierre del inicial (`finalized_at`).
 
@@ -60,6 +64,7 @@ charges
 - amount_cents: bigint (NOT NULL)                               CHECK > 0: cuota en Bs
 - price_cents: bigint (NOT NULL), currency: text (NOT NULL), exchange_rate: numeric(10,4) (NULL)
 - total_bs_cents: bigint (NOT NULL), member_count: smallint (NOT NULL)
+  CHECK price_cents > 0; currency IN ('USD','BS'); ((currency = 'USD') = (exchange_rate IS NOT NULL)); exchange_rate IS NULL OR exchange_rate > 0; total_bs_cents > 0; member_count >= 1   (los mismos que el ciclo, H3)
 - issued_at: timestamptz (NOT NULL)                             fecha real de emisión
 - due_at: timestamptz (NOT NULL)                                instante exclusivo: el mayor entre el inicio del día corte+4 en La Paz y `issued_at + 3 días` (research 001 R2, RF-002-03)
 -- Datos para reputación (RN-002-08)
@@ -78,6 +83,7 @@ CHECKS de coherencia:
   (status = 'cancelado') = (cancelled_at IS NOT NULL AND cancelled_by IS NOT NULL AND cancel_reason IS NOT NULL)
   (settlement = 'comprobante') => first_submitted_at IS NOT NULL
   paid_at IS NULL OR paid_at >= issued_at - interval '1 minute'           (el pago manual no puede ser anterior a la emisión)
+  (origin = 'ingreso') = (settlement IS NOT DISTINCT FROM 'ingreso')       solo el cobro de ingreso se liquida como ingreso (H2)
 UNIQUE INDEX charges_member_period_uq (group_id, user_id, period) WHERE status <> 'cancelado'      RF-002-04 (ver nota)
 INDEX charges_user_status_idx (user_id, status, due_at)                    "mis cobros" (RF-002-15) y reputación
 INDEX charges_group_period_idx (group_id, period, status)                  resumen del mes y del titular
@@ -91,10 +97,12 @@ INDEX charges_cycle_idx (cycle_id)
 
 | Disparador | Qué impone | Criterio |
 |---|---|---|
-| `charges_snapshot_immutable` (antes de `UPDATE`) | Las columnas de copia, `group_id`, `user_id`, `cycle_id`, `period`, `origin`, `issued_at` y `due_at` no cambian. | RN-002-02, CA-002-16 |
-| `charges_transition_guard` (antes de `UPDATE OF status`) | Solo las transiciones de RN-002-01 (`pagado` y `cancelado` son finales); `version` aumenta en 1 en cada cambio de estado. | RNF-002-03, CA-002-21 |
+| `charges_snapshot_immutable` (antes de `UPDATE`) | Las columnas de copia, `group_id`, `user_id`, `cycle_id`, `period`, `origin`, `issued_at` y `due_at` no cambian; `first_submitted_at` no cambia una vez fijado (dato de la reputación, M1). | RN-002-02, CA-002-16 |
+| `charges_initial_status` (antes de `INSERT`) | Un cobro `ciclo` nace `pendiente`; uno `ingreso` nace `pagado` (spec 010) (H2). | RN-002-01, RN-002-10 |
+| `charges_transition_guard` (antes de `UPDATE OF status`) | Solo las transiciones de RN-002-01; `version` aumenta en 1 en cada cambio de estado. | RNF-002-03, CA-002-21 |
+| `charges_final_readonly` (antes de `UPDATE`) | Un cobro `pagado` o `cancelado` no admite ningún cambio (M1). | RN-002-01, RNF-002-04 |
 | `charges_not_owner` (antes de `INSERT`) | `user_id` no es `groups.owner_id` del grupo. | RN-002-03, RN-001-10 |
-| `charges_cycle_consistency` (antes de `INSERT`) | `cycle_id` pertenece al mismo `group_id` y `period`. | integridad |
+| `charges_cycle_consistency` (antes de `INSERT`) | `cycle_id` pertenece al mismo `group_id` y `period`; si `origin = 'ciclo'`, la copia (`price_cents`, `currency`, `exchange_rate`, `total_bs_cents`, `member_count`) es la del ciclo y `amount_cents = base_share_cents` (H3). | constitución II |
 
 La lista de transiciones válidas está **duplicada a propósito** (función pura del backend y disparador): el backend da el mensaje claro; la base impide que un error de programación corrompa el historial.
 
@@ -153,11 +161,11 @@ charge_events
 - type: text (NOT NULL)                          CHECK IN ('generado','ingreso_registrado','comprobante_subido','comprobante_reemplazado','rechazado','confirmado','pago_manual','atrasado','cancelado','retiro_por_mora')
 - actor_kind: text (NOT NULL)                    CHECK IN ('usuario','sistema')
 - actor_id: uuid (NULL, FK users)                CHECK ((actor_kind = 'usuario') = (actor_id IS NOT NULL))
-- from_status: text (NULL), to_status: text (NULL)
+- from_status: text (NULL), to_status: text (NULL)   CHECK IN ('pendiente','en_revision','pagado','atrasado','cancelado') en las dos (H1)
 - reason: text (NULL)                            motivo de rechazo o cancelación, nota del pago manual
 - metadata: jsonb (NOT NULL, default '{}')       { "receiptId": "…", "invalidReceipt": true, "paidAt": "…" }
 - occurred_at: timestamptz (NOT NULL, default now())
-- created_at, updated_at                         updated_at = created_at (tabla de solo anexado)
+- created_at, updated_at                         updated_at = created_at (solo anexado; lleva set_updated_at y forbid_update_delete)
 INDEX charge_events_charge_idx (charge_id, occurred_at)
 INDEX charge_events_group_idx (group_id, occurred_at DESC)
 ```
@@ -197,4 +205,8 @@ INDEX charge_events_group_idx (group_id, occurred_at DESC)
 | Dos comprobantes `vigente` del mismo cobro fallan | RF-002-08 |
 | Referencia repetida activa en el mismo grupo falla; liberada o en otro grupo se acepta | CA-002-27, CA-010-41 |
 | Comprobante de 6 MB o con `mime` distinto a los permitidos falla | CA-002-05 |
-| `UPDATE` y `DELETE` en `charge_events` fallan | RNF-002-04 |
+| `UPDATE` y `DELETE` en `charge_events` fallan; `from_status`/`to_status` fuera de los estados fallan | RNF-002-04 |
+| Un ciclo con base distinta de floor (resto ≥ miembros o base negativa), con `period` que no es el mes del corte o `due_date` distinto de corte + 3 falla | RN-001-02, RF-002-03 |
+| Un cobro `ciclo` que no nace `pendiente`, uno `ingreso` que no nace `pagado`, o con `settlement` incoherente con el origen, falla | RN-002-01, RN-002-10 |
+| Un cobro `ciclo` con copia o monto distintos de su ciclo falla; una copia con moneda inválida o tipo de cambio incoherente falla | constitución II |
+| Cualquier cambio a un cobro `pagado` o `cancelado` falla; `first_submitted_at` no cambia una vez fijado | RN-002-01, RN-002-08 |
