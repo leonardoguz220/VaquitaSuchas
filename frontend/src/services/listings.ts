@@ -6,6 +6,7 @@
  * `listings.mock.ts`; al conectar el backend solo cambia el cuerpo por `apiRequest`.
  */
 import type { CatalogCategory } from './catalog';
+import type { JoinRequest } from './join-requests';
 import * as mock from './listings.mock';
 import type { RatingLevel } from './reputation';
 
@@ -86,6 +87,22 @@ export interface ListingRequestOptions {
   signal?: AbortSignal;
 }
 
+/** Cuerpo de `POST /listings/:id/requests`: el mensaje es opcional, hasta 200 caracteres. */
+export interface ListingSeatInput {
+  message?: string;
+}
+
+/**
+ * Solicitud que se abre desde una publicación. El contrato devuelve el `JoinRequest` completo
+ * (spec 010); esta pantalla solo necesita el `id` para ir a `/solicitudes/[id]`.
+ */
+export type ListingSeatRequest = Pick<JoinRequest, 'id'>;
+
+/** Ruta del contrato para pedir un cupo, por el proxy `/api`. */
+export function listingRequestPath(listingId: string): string {
+  return `/api/listings/${encodeURIComponent(listingId)}/requests`;
+}
+
 /**
  * Arma la query de `GET /listings` con los nombres del contrato. Solo agrega lo que tiene valor,
  * así una búsqueda sin filtros va sin parámetros.
@@ -123,4 +140,20 @@ export function getListing(
   options: ListingRequestOptions = {},
 ): Promise<ListingView> {
   return mock.getListing(listingId, options);
+}
+
+/**
+ * `POST /listings/:id/requests` (RF-008-10; CA-008-08 a 10, 23): abre una solicitud `abierta` con
+ * el mensaje opcional. Lanza `ApiError` `400 VALIDATION_ERROR` (mensaje de más de 200),
+ * `404 LISTING_NOT_FOUND`, `403 ACCOUNT_RESTRICTED` o `422 BUSINESS_RULE` con `details.code`
+ * (`ENTRY_WINDOW_CLOSED`, `ACTIVE_REQUEST_EXISTS`, `TOO_MANY_ACTIVE_REQUESTS`,
+ * `OPEN_CHARGES_IN_GROUP`, `NO_SLOTS_AVAILABLE`). Con la API conectada, el cuerpo será
+ * `apiRequest(listingRequestPath(id), { method: 'POST', body: { message } })`.
+ */
+export function requestListingSeat(
+  listingId: string,
+  input: ListingSeatInput,
+  options: ListingRequestOptions = {},
+): Promise<ListingSeatRequest> {
+  return mock.requestListingSeat(listingId, input, options);
 }

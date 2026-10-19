@@ -102,11 +102,12 @@ describe('/cupos/[id] detalle de un cupo (spec 008 T015)', () => {
     expect(screen.getByText('El titular no indicó condiciones.')).toBeVisible();
   });
 
-  it('RF-008-07: no muestra todavía el botón de solicitar ni el de reportar', async () => {
+  it('RF-008-10: muestra el botón Solicitar, pero no el de reportar (llega con su tarea)', async () => {
     mockedGet.mockResolvedValue(listing());
     render(<ListingDetailView listingId="l1" />);
     await screen.findByRole('heading', { level: 1 });
-    expect(screen.queryByRole('button', { name: /Solicitar|Reportar/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Solicitar' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /Reportar/ })).not.toBeInTheDocument();
   });
 
   it('RF-008-07: un 404 muestra que la publicación ya no existe, con volver a la lista', async () => {

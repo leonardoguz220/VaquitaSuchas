@@ -6,8 +6,11 @@
  */
 import { ApiError } from './http';
 import type {
+  ListingCannotRequestReason,
   ListingOwner,
   ListingRequestOptions,
+  ListingSeatInput,
+  ListingSeatRequest,
   ListingSort,
   ListingView,
   ListingsPage,
@@ -51,10 +54,17 @@ export const MOCK_LISTING_IDS = {
   netflixStandard: id('08'),
   /** Llena: sin cupos libres. La búsqueda no la lista, pero su detalle sí responde. */
   maxFull: id('09'),
+  /** El usuario ya tiene una solicitud activa en este grupo. */
+  activeRequest: id('10'),
 } as const;
 
 /** Un id que no existe: el detalle responde `404 LISTING_NOT_FOUND`. */
 export const MOCK_MISSING_LISTING_ID = '7a1f0c2e-0000-4000-8000-00000000dead';
+
+/** Solicitud activa propia en `MOCK_LISTING_IDS.activeRequest` (spec 010). */
+export const MOCK_ACTIVE_REQUEST_ID = '9b2e4d10-0000-4000-8000-000000000001';
+/** Id de la solicitud que devuelve el simulador al abrir una nueva. */
+export const MOCK_NEW_REQUEST_ID = '9b2e4d10-0000-4000-8000-000000000002';
 
 const EXPIRES_AT = '2026-10-29T14:00:00.000Z';
 /** Ventana abierta hasta el 19 de octubre (23:59 en La Paz). */
@@ -259,6 +269,29 @@ const LISTINGS: ListingView[] = [
     cannotRequestReason: null,
   },
   {
+    id: MOCK_LISTING_IDS.activeRequest,
+    service: {
+      name: 'Apple TV+',
+      planName: null,
+      logoUrl: null,
+      brandColor: null,
+      category: 'video',
+    },
+    slotsOffered: 1,
+    estimatedShareCents: 2450,
+    estimatedShareLabel: 'estimada',
+    billingDay: 22,
+    owner: owner('Andrea Limachi', 'Bueno'),
+    description: 'Ya enviaste una solicitud a este grupo; el titular la revisa.',
+    conditions: null,
+    publishedAt: '2026-10-18T11:00:00.000Z',
+    expiresAt: EXPIRES_AT,
+    entryWindow: { isOpen: true, opensAt: null, closesAt: CLOSES_OCT_21 },
+    myRequest: { id: MOCK_ACTIVE_REQUEST_ID, status: 'abierta' },
+    canRequest: false,
+    cannotRequestReason: 'SOLICITUD_ACTIVA',
+  },
+  {
     id: MOCK_LISTING_IDS.maxFull,
     service: {
       name: 'Max',
@@ -389,6 +422,59 @@ export function listListings(
   options: ListingRequestOptions = {},
 ): Promise<ListingsPage> {
   return delay(() => search(query), options.signal);
+}
+
+/** Largo máximo del mensaje de la solicitud (contrato 008). */
+const REQUEST_MESSAGE_MAX = 200;
+
+/** Regla del `422 BUSINESS_RULE` que corresponde a cada causa que ya entregó la API. */
+const REFUSAL_RULE: Record<Exclude<ListingCannotRequestReason, 'CUENTA_RESTRINGIDA'>, string> = {
+  VENTANA_CERRADA: 'ENTRY_WINDOW_CLOSED',
+  SOLICITUD_ACTIVA: 'ACTIVE_REQUEST_EXISTS',
+  DEMASIADAS_SOLICITUDES: 'TOO_MANY_ACTIVE_REQUESTS',
+  COBROS_ABIERTOS: 'OPEN_CHARGES_IN_GROUP',
+  SIN_CUPOS: 'NO_SLOTS_AVAILABLE',
+};
+
+/** Error de una publicación que no admite la solicitud, según la causa que ya tenía la API. */
+function refusal(listing: ListingView): ApiError {
+  const reason = listing.cannotRequestReason;
+  if (reason === 'CUENTA_RESTRINGIDA') {
+    return new ApiError(403, 'ACCOUNT_RESTRICTED', 'Tu cuenta está restringida.');
+  }
+  const code = reason ? REFUSAL_RULE[reason] : 'NO_SLOTS_AVAILABLE';
+  return new ApiError(422, 'BUSINESS_RULE', 'No puedes pedir este cupo ahora.', {
+    code,
+    ...(code === 'ENTRY_WINDOW_CLOSED' ? { opensAt: listing.entryWindow.opensAt } : {}),
+  });
+}
+
+/**
+ * `POST /listings/:id/requests`: abre una solicitud de ingreso (spec 010) con el mensaje opcional.
+ * Responde la solicitud `abierta`; el simulador no guarda el mensaje.
+ */
+export function requestListingSeat(
+  listingId: string,
+  input: ListingSeatInput,
+  options: ListingRequestOptions = {},
+): Promise<ListingSeatRequest> {
+  return delay(() => {
+    if (input.message !== undefined && input.message.length > REQUEST_MESSAGE_MAX) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'El mensaje admite hasta 200 caracteres.');
+    }
+    const found = LISTINGS.find((item) => item.id === listingId);
+    if (!found) {
+      throw new ApiError(404, 'LISTING_NOT_FOUND', 'Esta publicación ya no existe.');
+    }
+    // Error fijo: el cupo se ocupó entre que se vio la publicación y se envió la solicitud.
+    if (found.id === MOCK_LISTING_IDS.googleOne) {
+      throw new ApiError(422, 'BUSINESS_RULE', 'Ya no quedan cupos libres en esta publicación.', {
+        code: 'NO_SLOTS_AVAILABLE',
+      });
+    }
+    if (!found.canRequest) throw refusal(found);
+    return { id: MOCK_NEW_REQUEST_ID };
+  }, options.signal);
 }
 
 /** `GET /listings/:id`: `404 LISTING_NOT_FOUND` si no existe o no está disponible para ver. */

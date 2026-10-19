@@ -89,3 +89,67 @@ export function listingErrorText(error: ApiError): { title: string; body: string
   }
   return { title: LISTING_MESSAGES.loadFailed, body: LISTING_MESSAGES.unexpected };
 }
+
+export const REQUEST_MESSAGES = {
+  request: 'Solicitar',
+  formTitle: 'Pedir un cupo',
+  messageLabel: 'Mensaje para el titular (opcional)',
+  send: 'Enviar solicitud',
+  cancel: 'Cancelar',
+  sending: 'Enviando la solicitud…',
+  sentTitle: 'Solicitud enviada',
+  sentBody:
+    'El titular revisará tu solicitud. Puedes seguirla y chatear con él desde tu solicitud.',
+  viewRequest: 'Ver mi solicitud',
+  windowOpensOn: (date: string) => `La ventana de ingreso se abre el ${date}.`,
+  windowClosed: 'La ventana de ingreso de este grupo ya cerró.',
+  activeRequest: 'Ya tienes una solicitud en esta publicación.',
+  tooMany: 'Ya tienes 5 solicitudes activas. Espera a que alguna termine para abrir otra.',
+  openCharges: 'Tienes un cobro abierto en este grupo. Págalo para volver a entrar.',
+  noSlots: 'No quedan cupos libres en esta publicación.',
+  accountRestricted: 'Tu cuenta está restringida y no puede pedir cupos.',
+  notAllowed: 'No puedes pedir este cupo ahora.',
+  messageTooLong: 'El mensaje admite hasta 200 caracteres.',
+  listingGone: 'Esta publicación ya no existe.',
+  connection: 'Revisa tu internet y vuelve a intentarlo.',
+  unexpected: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
+} as const;
+
+/** Largo máximo del mensaje (contrato 008). */
+export const REQUEST_MESSAGE_MAX = 200;
+
+/**
+ * Código de la regla incumplida: el contrato lo da como `422 BUSINESS_RULE` con `details.code`;
+ * si llega como `code` propio, se usa ese.
+ */
+export function listingErrorCode(error: ApiError): string {
+  if (error.code === 'BUSINESS_RULE' && typeof error.details?.code === 'string') {
+    return error.details.code;
+  }
+  return error.code;
+}
+
+/** Aviso de un envío fallido, por `code` (nunca el `message` crudo). */
+export function requestErrorText(error: ApiError): string {
+  if (isConnectionError(error)) return REQUEST_MESSAGES.connection;
+  switch (listingErrorCode(error)) {
+    case 'VALIDATION_ERROR':
+      return REQUEST_MESSAGES.messageTooLong;
+    case 'LISTING_NOT_FOUND':
+      return REQUEST_MESSAGES.listingGone;
+    case 'ACCOUNT_RESTRICTED':
+      return REQUEST_MESSAGES.accountRestricted;
+    case 'ENTRY_WINDOW_CLOSED':
+      return REQUEST_MESSAGES.windowClosed;
+    case 'ACTIVE_REQUEST_EXISTS':
+      return REQUEST_MESSAGES.activeRequest;
+    case 'TOO_MANY_ACTIVE_REQUESTS':
+      return REQUEST_MESSAGES.tooMany;
+    case 'OPEN_CHARGES_IN_GROUP':
+      return REQUEST_MESSAGES.openCharges;
+    case 'NO_SLOTS_AVAILABLE':
+      return REQUEST_MESSAGES.noSlots;
+    default:
+      return REQUEST_MESSAGES.unexpected;
+  }
+}

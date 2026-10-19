@@ -16,6 +16,7 @@ import {
   slotsText,
   windowStatus,
 } from './listing-messages';
+import { ListingRequestPanel } from './listing-request';
 
 function BackLink() {
   return (
@@ -126,6 +127,7 @@ function ListingDetail({ listing }: { listing: ListingView }) {
         text={listing.conditions}
         empty={LISTING_MESSAGES.noConditions}
       />
+      <ListingRequestPanel listing={listing} />
     </article>
   );
 }
@@ -151,9 +153,9 @@ function DetailSkeleton() {
 }
 
 /**
- * Detalle de una publicación `/cupos/[id]` (spec 008, plan §6; mockup `Cupo.dc.html`). Sin el
- * formulario de solicitud ni el reporte: esos llegan con las tareas de solicitud y de reporte. Un
- * `404` (ya no existe o ya es parte del grupo) se muestra con su aviso propio.
+ * Detalle de una publicación `/cupos/[id]` (spec 008, plan §6; mockup `Cupo.dc.html`). Pedir el
+ * cupo va en `ListingRequestPanel`; el reporte llega con su tarea. Un `404` (ya no existe o ya es
+ * parte del grupo) se muestra con su aviso propio.
  */
 export function ListingDetailView({ listingId }: { listingId: string }) {
   const { status, data, error, reload } = useListing(listingId);
