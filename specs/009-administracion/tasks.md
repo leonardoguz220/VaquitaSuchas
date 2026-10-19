@@ -84,7 +84,7 @@
 
 - [ ] T033 [P] [US7] [BE] `backend/test/admin.stats.e2e-spec.ts` (CA-009-16 totales por estado coinciden, CA-009-17 solo agregados) y `admin.stats.perf-spec.ts` (CA-009-21: tablero con 10.000 usuarios en menos de 2 s) — Depende: T011 · Cubre: CA-009-16, CA-009-17, CA-009-21
 - [ ] T034 [US7] [BE] `services/stats.service.ts`, `repositories/stats.repository.ts` (consultas agregadas con caché en memoria de 5 minutos) y `controllers/admin-stats.controller.ts` `GET /admin/stats` — Depende: T033 · Cubre: RF-009-15, RF-009-16, RF-009-17, CA-009-16, CA-009-17, CA-009-21, RN-009-06, RNF-009-04
-- [ ] T035 [P] [US7] [FE] `/admin` (tarjetas y tablas de estadísticas con alternativa en tabla, sin depender del color) con mock, conectado al terminar T034 — Depende: T017 · Cubre: RF-009-15, RNF-009-02
+- [x] T035 [P] [US7] [FE] `/admin` (tarjetas y tablas de estadísticas con alternativa en tabla, sin depender del color) con mock, conectado al terminar T034 — Depende: T017 · Cubre: RF-009-15, RNF-009-02
 
 ## Fase 9: Cierre
 
