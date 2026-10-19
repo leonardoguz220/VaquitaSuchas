@@ -3,9 +3,15 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { jest } from '@jest/globals';
-import { type DynamicModule, type INestApplication, Logger, Module } from '@nestjs/common';
+import {
+  type DynamicModule,
+  type INestApplication,
+  Logger,
+  Module,
+  type ModuleMetadata,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { Test, type TestingModule } from '@nestjs/testing';
+import { Test, type TestingModule, type TestingModuleBuilder } from '@nestjs/testing';
 import { Client, Pool } from 'pg';
 import { BillingModule } from '../../src/modules/billing/billing.module.js';
 import { Clock } from '../../src/shared/clock/clock.js';
@@ -159,6 +165,17 @@ export class BillingHarness {
   private userSeq = 0;
   private groupSeq = 0;
 
+  /**
+   * `options.imports` agrega módulos a la aplicación de prueba (p. ej. los adaptadores de puertos
+   * de la spec 001) y `options.configure` permite sustituir proveedores (p. ej. un puerto falso).
+   */
+  constructor(
+    private readonly options: {
+      imports?: ModuleMetadata['imports'];
+      configure?: (builder: TestingModuleBuilder) => TestingModuleBuilder;
+    } = {},
+  ) {}
+
   async start(): Promise<void> {
     try {
       await withAdminClient((client) => client.query(`CREATE DATABASE "${this.databaseName}"`));
@@ -185,7 +202,7 @@ export class BillingHarness {
     process.env.TELEGRAM_MODE = 'dev';
     process.env.TELEGRAM_WEBHOOK_SECRET = 'webhook-secret-de-prueba';
 
-    this.moduleRef = await Test.createTestingModule({
+    const builder = Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ ignoreEnvFile: true, isGlobal: true }),
         ClockModule,
@@ -196,11 +213,12 @@ export class BillingHarness {
         memoryStorageModule(this.storage),
         fakeMailModule(),
         BillingModule,
+        ...(this.options.imports ?? []),
       ],
     })
       .overrideProvider(Clock)
-      .useValue(this.clock)
-      .compile();
+      .useValue(this.clock);
+    this.moduleRef = await (this.options.configure?.(builder) ?? builder).compile();
     this.app = this.moduleRef.createNestApplication({ logger: false });
     await this.app.init();
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);

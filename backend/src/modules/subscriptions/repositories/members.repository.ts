@@ -12,6 +12,11 @@ export interface MemberRow {
   joined_at: Date;
 }
 
+export interface MemberDetailRow extends MemberRow {
+  full_name: string;
+  phone_e164: string | null;
+}
+
 /** Único lugar con SQL sobre `group_members` (0031_group_members.sql). */
 @Injectable()
 export class MembersRepository {
@@ -51,6 +56,19 @@ export class MembersRepository {
          FROM group_members
         WHERE group_id = $1 AND left_at IS NULL
         ORDER BY (role = 'titular') DESC, joined_at, id`,
+      [groupId],
+    );
+    return result.rows;
+  }
+
+  /** Miembros activos con el nombre y el celular de su cuenta (titular primero). */
+  async listActiveDetailed(q: Queryable, groupId: string): Promise<MemberDetailRow[]> {
+    const result = await q.query<MemberDetailRow>(
+      `SELECT m.id, m.group_id, m.user_id, m.role, m.joined_at, u.full_name, u.phone_e164
+         FROM group_members m
+         JOIN users u ON u.id = m.user_id
+        WHERE m.group_id = $1 AND m.left_at IS NULL
+        ORDER BY (m.role = 'titular') DESC, m.joined_at, m.id`,
       [groupId],
     );
     return result.rows;

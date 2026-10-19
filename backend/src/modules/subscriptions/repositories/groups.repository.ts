@@ -7,8 +7,12 @@ export interface GroupRow {
   name: string;
   status: 'activo' | 'cerrado';
   frozen_at: Date | null;
+  frozen_reason: 'titular_baneado' | null;
+  catalog_plan_id: string | null;
   service_name_snapshot: string;
   plan_name_snapshot: string | null;
+  logo_url_snapshot: string | null;
+  brand_color_snapshot: string | null;
   price_cents: string;
   currency: 'USD' | 'BS';
   exchange_rate: string | null;
@@ -17,14 +21,16 @@ export interface GroupRow {
   total_slots: number;
   invite_code: string;
   accepting_members: boolean;
+  payment_info_text: string | null;
   version: number;
   created_at: Date;
 }
 
-const COLUMNS = `id, owner_id, name, status, frozen_at, service_name_snapshot, plan_name_snapshot,
+const COLUMNS = `id, owner_id, name, status, frozen_at, frozen_reason, catalog_plan_id,
+  service_name_snapshot, plan_name_snapshot, logo_url_snapshot, brand_color_snapshot,
   price_cents::text AS price_cents, currency, exchange_rate::text AS exchange_rate,
   total_bs_cents::text AS total_bs_cents, billing_day, total_slots, invite_code,
-  accepting_members, version, created_at`;
+  accepting_members, payment_info_text, version, created_at`;
 
 export interface NewGroup {
   ownerId: string;
@@ -33,6 +39,11 @@ export interface NewGroup {
   planName?: string | null;
   catalogPlanId?: string | null;
   planMaxSlots?: number | null;
+  logoUrl?: string | null;
+  brandColor?: string | null;
+  individualPriceCents?: number | null;
+  individualPriceCurrency?: 'USD' | 'BS' | null;
+  paymentInfoText?: string | null;
   priceCents: number;
   currency: 'USD' | 'BS';
   exchangeRate?: string | null;
@@ -47,9 +58,11 @@ export class GroupsRepository {
   async insert(q: Queryable, g: NewGroup): Promise<GroupRow> {
     const result = await q.query<GroupRow>(
       `INSERT INTO groups (owner_id, name, service_name_snapshot, plan_name_snapshot, catalog_plan_id,
-                           plan_max_slots_snapshot, price_cents, currency, exchange_rate,
+                           plan_max_slots_snapshot, logo_url_snapshot, brand_color_snapshot,
+                           individual_price_cents_snapshot, individual_price_currency_snapshot,
+                           payment_info_text, price_cents, currency, exchange_rate,
                            billing_day, total_slots, invite_code)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
        RETURNING ${COLUMNS}`,
       [
         g.ownerId,
@@ -58,6 +71,11 @@ export class GroupsRepository {
         g.planName ?? null,
         g.catalogPlanId ?? null,
         g.planMaxSlots ?? null,
+        g.logoUrl ?? null,
+        g.brandColor ?? null,
+        g.individualPriceCents ?? null,
+        g.individualPriceCurrency ?? null,
+        g.paymentInfoText ?? null,
         g.priceCents,
         g.currency,
         g.exchangeRate ?? null,
@@ -107,6 +125,14 @@ export class GroupsRepository {
       [userId],
     );
     return Number(result.rows[0]?.count ?? 0);
+  }
+
+  /**
+   * Serializa las altas y transferencias de un titular hasta el fin de la transacción: usa la misma
+   * clave que el disparador `groups_max_active_owned`, así «contar y luego insertar» no tiene carrera.
+   */
+  async lockOwner(q: Queryable, ownerId: string): Promise<void> {
+    await q.query('SELECT pg_advisory_xact_lock(hashtext($1::text))', [ownerId]);
   }
 
   /** Reemplaza el código en una sentencia; el anterior deja de existir. */
