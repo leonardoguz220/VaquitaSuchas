@@ -2,7 +2,13 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { CatalogServicesState, UseCatalogServicesResult } from '@/hooks/use-catalog-services';
 import { ApiError } from '@/services/http';
-import { catalogServices, netflix, spotify, tigoPlay } from './__fixtures__/catalog';
+import {
+  catalogCategories,
+  catalogServices,
+  netflix,
+  spotify,
+  tigoPlay,
+} from './__fixtures__/catalog';
 import { ServicePicker } from './service-picker';
 
 function catalog(
@@ -15,6 +21,11 @@ function catalog(
     loadMore: jest.fn(),
     isLoadingMore: false,
     loadMoreFailed: false,
+    query: '',
+    setQuery: jest.fn(),
+    category: null,
+    setCategory: jest.fn(),
+    categories: { status: 'success', items: catalogCategories },
     ...extra,
   };
 }
@@ -146,5 +157,82 @@ describe('ServicePicker (T011, plan 004 §6, paso 1 de /grupos/nuevo)', () => {
       expect(button).toHaveClass('w-full', 'min-h-20');
     }
     expect(screen.getByRole('button', { name: CUSTOM })).toHaveClass('w-full', 'min-h-20');
+  });
+});
+
+describe('ServicePicker: búsqueda, categorías y vacío (T016, plan 004 §6)', () => {
+  it('CA-004-03: escribir en la búsqueda entrega el texto tal cual y admite 60 caracteres', async () => {
+    const user = userEvent.setup();
+    const value = success();
+    render(<ServicePicker catalog={value} onSelect={jest.fn()} onCustom={jest.fn()} />);
+    const input = screen.getByRole('searchbox', { name: 'Buscar servicio' });
+    expect(input).toHaveAttribute('maxLength', '60');
+
+    await user.type(input, 'ñ');
+    expect(value.setQuery).toHaveBeenLastCalledWith('ñ');
+  });
+
+  it('CA-004-02: los chips salen de las categorías y marcan la elegida', () => {
+    renderPicker(success([netflix], null));
+    const group = screen.getByRole('group', { name: 'Filtrar por categoría' });
+    expect(within(group).getByRole('button', { name: 'Todas' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(within(group).getByRole('button', { name: 'Música' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('CA-004-02: elegir una categoría la pide y «Todas» quita el filtro', async () => {
+    const user = userEvent.setup();
+    const value = catalog(
+      { status: 'success', items: [netflix], nextCursor: null },
+      { category: 'musica' },
+    );
+    render(<ServicePicker catalog={value} onSelect={jest.fn()} onCustom={jest.fn()} />);
+    expect(screen.getByRole('button', { name: 'Música' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Video' }));
+    expect(value.setCategory).toHaveBeenLastCalledWith('video');
+
+    await user.click(screen.getByRole('button', { name: 'Todas' }));
+    expect(value.setCategory).toHaveBeenLastCalledWith(null);
+  });
+
+  it('CA-004-02: si no cargan las categorías no hay chips, pero la lista sigue', () => {
+    renderPicker(
+      catalog(
+        { status: 'success', items: [netflix], nextCursor: null },
+        { categories: { status: 'error' } },
+      ),
+    );
+    expect(screen.queryByRole('group', { name: 'Filtrar por categoría' })).not.toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Servicios del catálogo' })).toBeVisible();
+  });
+
+  it('CA-004-03: una búsqueda sin resultados lo dice y sugiere el personalizado', async () => {
+    const user = userEvent.setup();
+    const { onCustom } = renderPicker(
+      catalog({ status: 'success', items: [], nextCursor: null }, { query: 'xyz' }),
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('No encontramos servicios para «xyz».');
+    expect(screen.queryByText('Todavía no hay servicios en el catálogo.')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: CUSTOM }));
+    expect(onCustom).toHaveBeenCalled();
+  });
+
+  it('CA-004-02: una categoría sin servicios muestra su propio vacío', () => {
+    renderPicker(
+      catalog({ status: 'success', items: [], nextCursor: null }, { category: 'juegos' }),
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('No hay servicios en esta categoría.');
+  });
+
+  it('CA-004-03: mientras carga la búsqueda sigue visible (no se oculta con el esqueleto)', () => {
+    renderPicker(catalog({ status: 'loading' }, { query: 'net' }));
+    expect(screen.getByRole('searchbox', { name: 'Buscar servicio' })).toHaveValue('net');
+    expect(screen.getByText('Cargando servicios…')).toBeInTheDocument();
   });
 });

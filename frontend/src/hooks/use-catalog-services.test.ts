@@ -1,17 +1,19 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import {
+  catalogCategories,
   catalogServices,
   netflix,
   spotify,
   tigoPlay,
 } from '@/components/features/catalog/__fixtures__/catalog';
-import { CATALOG_PAGE_SIZE, listServices } from '@/services/catalog';
+import { CATALOG_PAGE_SIZE, listCategories, listServices } from '@/services/catalog';
 import { ApiError } from '@/services/http';
 import { useCatalogServices } from './use-catalog-services';
 
 jest.mock('@/services/catalog', () => ({
   ...jest.requireActual('@/services/catalog'),
   listServices: jest.fn(),
+  listCategories: jest.fn(),
 }));
 
 const replace = jest.fn();
@@ -21,9 +23,12 @@ jest.mock('next/navigation', () => ({
 }));
 
 const mockedList = jest.mocked(listServices);
+const mockedCategories = jest.mocked(listCategories);
 
 beforeEach(() => {
   mockedList.mockReset();
+  mockedCategories.mockReset();
+  mockedCategories.mockResolvedValue({ items: catalogCategories });
   replace.mockReset();
   window.history.replaceState(null, '', '/grupos/nuevo');
 });
@@ -103,5 +108,106 @@ describe('useCatalogServices (RF-004-04, plan 004 §6)', () => {
 
     unmount();
     expect(signal?.aborted).toBe(true);
+  });
+});
+
+describe('useCatalogServices: búsqueda, categoría y categorías (T016)', () => {
+  it('CA-004-03: espera 250 ms tras la última tecla antes de pedir la búsqueda', () => {
+    jest.useFakeTimers();
+    try {
+      mockedList.mockResolvedValue({ items: [netflix], nextCursor: null });
+      const { result } = renderHook(() => useCatalogServices());
+
+      act(() => result.current.setQuery('n'));
+      act(() => jest.advanceTimersByTime(200));
+      act(() => result.current.setQuery('netflix'));
+      act(() => jest.advanceTimersByTime(249));
+      expect(mockedList).toHaveBeenCalledTimes(1);
+
+      act(() => jest.advanceTimersByTime(1));
+      expect(mockedList).toHaveBeenCalledTimes(2);
+      expect(mockedList).toHaveBeenLastCalledWith(
+        { q: 'netflix' },
+        { signal: expect.any(AbortSignal) },
+      );
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('CA-004-03: la búsqueda envía el texto sin espacios sobrantes y sin q si queda vacío', async () => {
+    mockedList.mockResolvedValue({ items: [netflix], nextCursor: null });
+    const { result } = renderHook(() => useCatalogServices());
+    await waitFor(() => expect(result.current.state.status).toBe('success'));
+
+    act(() => result.current.setQuery('  música  '));
+    await waitFor(() =>
+      expect(mockedList).toHaveBeenLastCalledWith(
+        { q: 'música' },
+        { signal: expect.any(AbortSignal) },
+      ),
+    );
+
+    act(() => result.current.setQuery('   '));
+    await waitFor(() =>
+      expect(mockedList).toHaveBeenLastCalledWith(
+        { q: undefined },
+        { signal: expect.any(AbortSignal) },
+      ),
+    );
+  });
+
+  it('CA-004-02: elegir una categoría vuelve a pedir la lista filtrada y muestra su resultado', async () => {
+    mockedList.mockResolvedValueOnce({ items: catalogServices, nextCursor: null });
+    const { result } = renderHook(() => useCatalogServices());
+    await waitFor(() => expect(result.current.state.status).toBe('success'));
+
+    mockedList.mockResolvedValueOnce({ items: [spotify], nextCursor: null });
+    act(() => result.current.setCategory('musica'));
+    expect(result.current.state.status).toBe('loading');
+    expect(mockedList).toHaveBeenLastCalledWith(
+      { category: 'musica' },
+      { signal: expect.any(AbortSignal) },
+    );
+    await waitFor(() =>
+      expect(result.current.state).toMatchObject({ status: 'success', items: [spotify] }),
+    );
+    expect(result.current.category).toBe('musica');
+  });
+
+  it('CA-004-02: «Ver más» conserva la categoría y la búsqueda activas', async () => {
+    mockedList.mockResolvedValue({ items: [netflix], nextCursor: 'c1' });
+    const { result } = renderHook(() => useCatalogServices());
+    await waitFor(() => expect(result.current.state.status).toBe('success'));
+
+    act(() => result.current.setCategory('video'));
+    await waitFor(() => expect(result.current.state.status).toBe('success'));
+
+    mockedList.mockResolvedValueOnce({ items: [tigoPlay], nextCursor: null });
+    act(() => result.current.loadMore());
+    await waitFor(() => expect(result.current.state).toMatchObject({ nextCursor: null }));
+    expect(mockedList).toHaveBeenLastCalledWith(
+      { category: 'video', q: undefined, cursor: 'c1', limit: CATALOG_PAGE_SIZE },
+      { signal: expect.any(AbortSignal) },
+    );
+  });
+
+  it('RF-004-03: carga las categorías de GET /catalog/categories para los chips', async () => {
+    mockedList.mockResolvedValue({ items: catalogServices, nextCursor: null });
+    const { result } = renderHook(() => useCatalogServices());
+
+    expect(result.current.categories.status).toBe('loading');
+    await waitFor(() => expect(result.current.categories.status).toBe('success'));
+    expect(result.current.categories).toEqual({ status: 'success', items: catalogCategories });
+    expect(mockedCategories).toHaveBeenCalledTimes(1);
+  });
+
+  it('RF-004-03: si fallan las categorías la lista sigue funcionando', async () => {
+    mockedCategories.mockRejectedValueOnce(new ApiError(500, 'INTERNAL_ERROR', 'x'));
+    mockedList.mockResolvedValue({ items: catalogServices, nextCursor: null });
+    const { result } = renderHook(() => useCatalogServices());
+
+    await waitFor(() => expect(result.current.categories.status).toBe('error'));
+    expect(result.current.state).toMatchObject({ status: 'success', items: catalogServices });
   });
 });

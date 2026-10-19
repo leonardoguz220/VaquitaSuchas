@@ -2,7 +2,12 @@
  * Datos de prueba fieles a `specs/004-catalogo-de-servicios/contracts/api.md`. Solo los importan
  * las pruebas: la aplicación siempre lee el catálogo de la API. Nombres y montos inventados.
  */
-import type { CatalogPlan, CatalogService, CatalogServiceDetail } from '@/services/catalog';
+import type {
+  CatalogCategoryOption,
+  CatalogPlan,
+  CatalogService,
+  CatalogServiceDetail,
+} from '@/services/catalog';
 
 export const netflix: CatalogService = {
   id: '3f1c2a4e-0000-4000-8000-000000000001',
@@ -116,3 +121,13 @@ export const tigoPlayDetail: CatalogServiceDetail = {
     },
   ],
 };
+
+/** Respuesta de `GET /catalog/categories` (RF-004-03): las seis categorías del contrato. */
+export const catalogCategories: CatalogCategoryOption[] = [
+  { value: 'video', label: 'Video', servicesCount: 2 },
+  { value: 'musica', label: 'Música', servicesCount: 1 },
+  { value: 'juegos', label: 'Juegos', servicesCount: 0 },
+  { value: 'educacion', label: 'Educación', servicesCount: 0 },
+  { value: 'almacenamiento', label: 'Almacenamiento', servicesCount: 0 },
+  { value: 'otras', label: 'Otras', servicesCount: 0 },
+];

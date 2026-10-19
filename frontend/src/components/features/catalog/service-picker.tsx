@@ -2,7 +2,7 @@
 
 import { Alert, Button } from '@/components/ui';
 import type { UseCatalogServicesResult } from '@/hooks/use-catalog-services';
-import type { CatalogService } from '@/services/catalog';
+import type { CatalogCategory, CatalogService } from '@/services/catalog';
 import { isConnectionError, type ApiError } from '@/services/http';
 import { fromPriceLabel } from './catalog-format';
 import { ServiceLogo } from './ServiceLogo';
@@ -14,6 +14,13 @@ const CARD =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink';
 
 const SKELETON_CARDS = [0, 1, 2, 3, 4, 5];
+
+// Chip de categoría: 44 px de alto como mínimo para tocarlo con el dedo.
+const CHIP =
+  'inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-bold transition-colors ' +
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink';
+
+const SEARCH_MAX_LENGTH = 60;
 
 function ServiceCard({ service, onSelect }: { service: CatalogService; onSelect: () => void }) {
   const from = fromPriceLabel(service);
@@ -73,10 +80,37 @@ function ServicesSkeleton() {
   );
 }
 
+function CategoryChip({
+  pressed,
+  onClick,
+  children,
+}: {
+  pressed: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={onClick}
+      className={`${CHIP} ${pressed ? 'border-primary bg-primary text-white' : 'border-line bg-surface text-ink'}`}
+    >
+      {children}
+    </button>
+  );
+}
+
 function errorTitle(error: ApiError): string {
   return isConnectionError(error)
     ? 'No se pudo contactar con el servidor.'
     : 'No pudimos cargar el catálogo.';
+}
+
+function emptyMessage(query: string, category: CatalogCategory | null) {
+  if (query !== '') return `No encontramos servicios para «${query}».`;
+  if (category !== null) return 'No hay servicios en esta categoría.';
+  return null;
 }
 
 export interface ServicePickerProps {
@@ -92,9 +126,19 @@ export interface ServicePickerProps {
  * tarjeta del servicio personalizado. Cubre cargando, vacío, error y con datos.
  */
 export function ServicePicker({ catalog, onSelect, onCustom }: ServicePickerProps) {
-  const { state, retry, loadMore, isLoadingMore, loadMoreFailed } = catalog;
+  const {
+    state,
+    retry,
+    loadMore,
+    isLoadingMore,
+    loadMoreFailed,
+    query,
+    setQuery,
+    category,
+    setCategory,
+    categories,
+  } = catalog;
 
-  if (state.status === 'loading') return <ServicesSkeleton />;
   if (state.status === 'redirecting') {
     return (
       <p role="status" className="text-muted">
@@ -103,8 +147,42 @@ export function ServicePicker({ catalog, onSelect, onCustom }: ServicePickerProp
     );
   }
 
+  const filtered = query !== '' || category !== null;
+  const noResults = state.status === 'success' && state.items.length === 0;
+
   return (
     <div className="flex flex-col gap-4">
+      <label className="flex flex-col gap-1.5">
+        <span className="font-bold">Buscar servicio</span>
+        <input
+          type="search"
+          value={query}
+          maxLength={SEARCH_MAX_LENGTH}
+          placeholder="Netflix, Spotify…"
+          onChange={(event) => setQuery(event.target.value)}
+          className="min-h-11 rounded-field border border-field-border bg-surface px-3 text-base text-ink"
+        />
+      </label>
+
+      {categories.status === 'success' && (
+        <div role="group" aria-label="Filtrar por categoría" className="flex flex-wrap gap-2">
+          <CategoryChip pressed={category === null} onClick={() => setCategory(null)}>
+            Todas
+          </CategoryChip>
+          {categories.items.map((option) => (
+            <CategoryChip
+              key={option.value}
+              pressed={category === option.value}
+              onClick={() => setCategory(option.value)}
+            >
+              {option.label}
+            </CategoryChip>
+          ))}
+        </div>
+      )}
+
+      {state.status === 'loading' && <ServicesSkeleton />}
+
       {state.status === 'error' && (
         <Alert
           variant="error"
@@ -120,7 +198,16 @@ export function ServicePicker({ catalog, onSelect, onCustom }: ServicePickerProp
         </Alert>
       )}
 
-      {state.status === 'success' && state.items.length === 0 && (
+      {noResults && filtered && (
+        <div role="status" className="rounded-card border border-line bg-surface p-5">
+          <p className="font-bold">{emptyMessage(query, category)}</p>
+          <p className="text-muted">
+            Prueba con otro nombre o quita el filtro. Si no aparece, créalo como personalizado.
+          </p>
+        </div>
+      )}
+
+      {noResults && !filtered && (
         <div role="status" className="rounded-card border border-line bg-surface p-5">
           <p className="font-bold">Todavía no hay servicios en el catálogo.</p>
           <p className="text-muted">
@@ -160,7 +247,7 @@ export function ServicePicker({ catalog, onSelect, onCustom }: ServicePickerProp
         </div>
       )}
 
-      <CustomCard onCustom={onCustom} />
+      {state.status !== 'loading' && <CustomCard onCustom={onCustom} />}
     </div>
   );
 }

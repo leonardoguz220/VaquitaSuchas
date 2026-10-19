@@ -192,3 +192,17 @@ describe('Asistente /grupos/nuevo con habilitación y código (T016)', () => {
     expect(mockedEligibility).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('Asistente /grupos/nuevo con el catálogo real (T012)', () => {
+  it('RF-004-05: elegir un servicio pide su detalle con el slug y muestra sus planes tal como llegan', async () => {
+    const user = userEvent.setup();
+    render(<NewGroupWizard onComplete={jest.fn()} />);
+
+    await user.click(await screen.findByRole('button', { name: /Netflix/ }));
+
+    await waitFor(() =>
+      expect(getService).toHaveBeenCalledWith('netflix', { signal: expect.any(AbortSignal) }),
+    );
+    expect(await screen.findByRole('radio', { name: /Estándar/ })).toBeVisible();
+  });
+});
