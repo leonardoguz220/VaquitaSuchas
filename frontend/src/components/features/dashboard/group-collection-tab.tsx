@@ -1,16 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, Badge, Button, Select } from '@/components/ui';
 import { useGroupCollection } from '@/hooks/use-dashboard';
 import { formatPeriod } from '@/lib/dates';
 import { formatBs } from '@/lib/money';
 import { chargePath } from '@/lib/routes';
 import type { ApiError } from '@/services/http';
-import type { GroupCollection } from '@/services/reports';
+import { exportGroupHistoryCsv, type GroupCollection } from '@/services/reports';
 import { CollectionCard } from './collection-card';
 import { dashboardErrorMessage } from './dashboard-messages';
+import { ExportCsvButton } from './export-csv-button';
 
 function collectionErrorText(error: ApiError): string {
   if (error.statusCode === 403) return 'Solo el titular del grupo ve la cobranza.';
@@ -27,8 +28,15 @@ function periodOptions(data: GroupCollection | null, period: string | null): str
 }
 
 /** Tabla por miembro con filtro por miembro (solo muestra u oculta filas de la API). */
-function MembersTable({ data }: { data: GroupCollection }) {
-  const [userId, setUserId] = useState('');
+function MembersTable({
+  data,
+  userId,
+  setUserId,
+}: {
+  data: GroupCollection;
+  userId: string;
+  setUserId: (userId: string) => void;
+}) {
   const rows = userId ? data.members.filter((member) => member.userId === userId) : data.members;
 
   if (data.members.length === 0) {
@@ -119,7 +127,17 @@ function MembersTable({ data }: { data: GroupCollection }) {
  */
 export function GroupCollectionTab({ groupId }: { groupId: string }) {
   const [period, setPeriod] = useState<string | null>(null);
+  const [userId, setUserId] = useState('');
   const { status, data, error, reload } = useGroupCollection(groupId, period);
+  const exportPeriod = period ?? data?.period ?? null;
+  const exportRequest = useCallback(
+    () =>
+      exportGroupHistoryCsv(groupId, {
+        ...(exportPeriod ? { period: exportPeriod } : {}),
+        ...(userId ? { userId } : {}),
+      }),
+    [groupId, exportPeriod, userId],
+  );
   const periods = periodOptions(data, period);
 
   return (
@@ -129,7 +147,10 @@ export function GroupCollectionTab({ groupId }: { groupId: string }) {
           label="Mes"
           value={period ?? data?.period ?? ''}
           disabled={periods.length === 0}
-          onChange={(event) => setPeriod(event.target.value || null)}
+          onChange={(event) => {
+            setUserId('');
+            setPeriod(event.target.value || null);
+          }}
         >
           {periods.length === 0 && <option value="">Mes actual</option>}
           {periods.map((value) => (
@@ -169,7 +190,16 @@ export function GroupCollectionTab({ groupId }: { groupId: string }) {
       {status === 'success' && data && (
         <>
           <CollectionCard summary={data} showPeriod={false} />
-          <MembersTable key={data.period} data={data} />
+          <MembersTable data={data} userId={userId} setUserId={setUserId} />
+          <ExportCsvButton
+            label="Exportar CSV del grupo"
+            request={exportRequest}
+            fallbackName="vaquita-historial-grupo.csv"
+          />
+          <p className="text-[15px] text-muted">
+            El archivo incluye el mes elegido{userId ? ' y el miembro filtrado' : ''}, sin
+            comprobantes ni referencias.
+          </p>
         </>
       )}
     </div>

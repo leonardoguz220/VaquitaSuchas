@@ -121,3 +121,68 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   if (!parsed.ok) throw new ApiError(response.status, UNEXPECTED_RESPONSE_CODE, GENERIC_MESSAGE);
   return parsed.value as T;
 }
+
+/** Archivo descargado de la API (por ejemplo, un CSV de la spec 006). */
+export interface ApiDownload {
+  blob: Blob;
+  /** Nombre que propone el servidor en `Content-Disposition`, o `null` si no lo envía. */
+  filename: string | null;
+}
+
+/**
+ * Lee el nombre de archivo de un encabezado `Content-Disposition`: prefiere `filename*`
+ * (RFC 5987, `UTF-8''…`) y si no `filename="…"`. Devuelve solo el nombre, sin rutas.
+ */
+export function filenameFromDisposition(header: string | null): string | null {
+  if (!header) return null;
+  let name: string | null = null;
+  const extended = /filename\*\s*=\s*(?:UTF-8|utf-8)''([^;]+)/.exec(header);
+  if (extended) {
+    try {
+      name = decodeURIComponent(extended[1].trim());
+    } catch {
+      name = null;
+    }
+  }
+  if (!name) {
+    const plain = /filename\s*=\s*(?:"([^"]*)"|([^;\s]+))/.exec(header);
+    name = plain ? (plain[1] ?? plain[2] ?? null) : null;
+  }
+  if (!name) return null;
+  const base = name.split(/[\\/]/).pop()?.trim() ?? '';
+  return base === '' || base === '.' || base === '..' ? null : base;
+}
+
+/**
+ * Descarga un archivo de una ruta del proxy (`/api/...`) con `GET`. Devuelve el contenido como
+ * `Blob` y el nombre que propone el servidor. Si la respuesta no es 2xx, lanza el `ApiError`
+ * del cuerpo JSON (contrato A.2), igual que `apiRequest`; si la red falla, `NETWORK_ERROR`.
+ */
+export async function apiDownload(
+  path: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<ApiDownload> {
+  const init: RequestInit = {
+    method: 'GET',
+    headers: { Accept: 'text/csv, application/json' },
+    credentials: 'same-origin',
+    cache: 'no-store',
+  };
+  if (options.signal) init.signal = options.signal;
+
+  let response: Response;
+  try {
+    response = await fetch(path, init);
+  } catch {
+    throw new ApiError(0, NETWORK_ERROR_CODE, 'No se pudo contactar con el servidor.');
+  }
+  if (!response.ok) throw errorFromBody(response.status, await response.text());
+  try {
+    return {
+      blob: await response.blob(),
+      filename: filenameFromDisposition(response.headers.get('content-disposition')),
+    };
+  } catch {
+    throw new ApiError(0, NETWORK_ERROR_CODE, 'No se pudo contactar con el servidor.');
+  }
+}

@@ -202,3 +202,6 @@ export const PANEL_PATH = '/panel';
 
 /** Calendario de cortes y vencimientos (plan 006 §6). Ruta protegida. */
 export const PANEL_CALENDAR_PATH = '/panel/calendario';
+
+/** Historial de cobros con exportación a CSV (plan 006 §6). Ruta protegida. */
+export const PANEL_HISTORY_PATH = '/panel/historial';

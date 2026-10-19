@@ -7,7 +7,7 @@ import { useDashboard, type DashboardFilters } from '@/hooks/use-dashboard';
 import { useGroups } from '@/hooks/use-groups';
 import { formatPeriod } from '@/lib/dates';
 import { formatBs, formatSignedBs } from '@/lib/money';
-import { JOIN_PATH, NEW_GROUP_PATH, PANEL_CALENDAR_PATH } from '@/lib/routes';
+import { JOIN_PATH, NEW_GROUP_PATH, PANEL_CALENDAR_PATH, PANEL_HISTORY_PATH } from '@/lib/routes';
 import type { DashboardSummary, SpendLine } from '@/services/reports';
 import { ChargeLinesSection } from './charge-lines-section';
 import { DashboardCharts } from './dashboard-charts';
@@ -20,7 +20,10 @@ import {
 } from './dashboard-messages';
 
 /** Pantallas del panel que ya existen. */
-const PANEL_LINKS = [{ href: PANEL_CALENDAR_PATH, label: 'Calendario' }];
+const PANEL_LINKS = [
+  { href: PANEL_CALENDAR_PATH, label: 'Calendario' },
+  { href: PANEL_HISTORY_PATH, label: 'Historial' },
+];
 
 function DashboardSkeleton() {
   return (

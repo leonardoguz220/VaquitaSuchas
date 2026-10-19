@@ -1,5 +1,8 @@
-import { apiRequest } from './http';
+import { apiDownload, apiRequest } from './http';
 import {
+  exportGroupHistoryCsv,
+  exportHistoryCsv,
+  listHistory,
   getCalendar,
   getDashboard,
   getDashboardCharts,
@@ -11,6 +14,7 @@ import {
 jest.mock('./http', () => ({
   ...jest.requireActual('./http'),
   apiRequest: jest.fn(),
+  apiDownload: jest.fn(),
 }));
 
 const mockedRequest = jest.mocked(apiRequest);
@@ -78,5 +82,45 @@ describe('services/reports (contrato 006): calendario', () => {
     expect(mockedRequest).toHaveBeenLastCalledWith('/api/me/calendar/upcoming?days=30');
     await getUpcomingEvents(7);
     expect(mockedRequest).toHaveBeenLastCalledWith('/api/me/calendar/upcoming?days=7');
+  });
+});
+
+describe('services/reports (contrato 006): historial y exportación', () => {
+  const mockedDownload = jest.mocked(apiDownload);
+  beforeEach(() => mockedDownload.mockReset());
+
+  it('RF-006-13: listHistory hace GET /api/me/history con filtros, límite y cursor', async () => {
+    mockedRequest.mockResolvedValue({ items: [], nextCursor: null });
+    await listHistory();
+    expect(mockedRequest).toHaveBeenLastCalledWith('/api/me/history');
+    await listHistory({
+      period: '2026-09',
+      groupId: 'g2',
+      status: 'pagado',
+      limit: 25,
+      cursor: 'k',
+    });
+    expect(mockedRequest).toHaveBeenLastCalledWith(
+      '/api/me/history?period=2026-09&groupId=g2&status=pagado&limit=25&cursor=k',
+    );
+  });
+
+  it('RF-006-14: exportHistoryCsv descarga /api/me/history/export.csv con los filtros', async () => {
+    const file = { blob: new Blob(['x']), filename: 'a.csv' };
+    mockedDownload.mockResolvedValue(file);
+    await expect(exportHistoryCsv()).resolves.toBe(file);
+    expect(mockedDownload).toHaveBeenLastCalledWith('/api/me/history/export.csv');
+    await exportHistoryCsv({ period: '2026-10', status: 'atrasado' });
+    expect(mockedDownload).toHaveBeenLastCalledWith(
+      '/api/me/history/export.csv?period=2026-10&status=atrasado',
+    );
+  });
+
+  it('CA-006-17: exportGroupHistoryCsv descarga el CSV del grupo con período y miembro', async () => {
+    mockedDownload.mockResolvedValue({ blob: new Blob(['x']), filename: null });
+    await exportGroupHistoryCsv('g/1', { period: '2026-10', userId: 'u5' });
+    expect(mockedDownload).toHaveBeenLastCalledWith(
+      '/api/groups/g%2F1/history/export.csv?period=2026-10&userId=u5',
+    );
   });
 });

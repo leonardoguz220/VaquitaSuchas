@@ -35,3 +35,30 @@ export const ROLE_LABEL: Record<ReportRole, string> = {
 export function chargesCount(count: number): string {
   return `${count} ${count === 1 ? 'cobro' : 'cobros'}`;
 }
+
+function waitText(seconds: unknown): string {
+  if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds <= 0) {
+    return 'en un rato';
+  }
+  if (seconds < 60) return 'en menos de 1 minuto';
+  const minutes = Math.ceil(seconds / 60);
+  return `en ${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}`;
+}
+
+/**
+ * Error de una exportación a CSV (RF-006-14; plan 006 §6): `429` con el tiempo de espera de
+ * `details.retryAfterSeconds`, `422 EXPORT_TOO_LARGE` y `403` del CSV del grupo (CA-006-17).
+ */
+export function exportErrorMessage(error: ApiError): string {
+  if (error.statusCode === 429) {
+    return `Llegaste al límite de 10 exportaciones por hora. Vuelve a intentarlo ${waitText(
+      error.details?.retryAfterSeconds,
+    )}.`;
+  }
+  if (error.statusCode === 422) {
+    return 'El historial tiene demasiadas filas para un archivo. Filtra por mes y vuelve a exportar.';
+  }
+  if (error.statusCode === 403) return 'Solo el titular puede exportar el historial del grupo.';
+  if (error.statusCode === 404) return 'No encontramos ese historial.';
+  return isConnectionError(error) ? DASHBOARD_MESSAGES.connection : DASHBOARD_MESSAGES.unexpected;
+}

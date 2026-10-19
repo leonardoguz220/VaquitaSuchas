@@ -127,13 +127,17 @@ describe('/panel (spec 006 T012)', () => {
     expect(mockedDashboard).toHaveBeenCalledWith({});
   });
 
-  it('RF-006-11: el panel enlaza al calendario', () => {
+  it('RF-006-11 / RF-006-13: el panel enlaza al calendario y al historial', () => {
     mockedDashboard.mockReturnValue(new Promise(() => {}));
     renderPage();
     const nav = screen.getByRole('navigation', { name: 'Secciones del panel' });
     expect(within(nav).getByRole('link', { name: 'Calendario' })).toHaveAttribute(
       'href',
       '/panel/calendario',
+    );
+    expect(within(nav).getByRole('link', { name: 'Historial' })).toHaveAttribute(
+      'href',
+      '/panel/historial',
     );
   });
 

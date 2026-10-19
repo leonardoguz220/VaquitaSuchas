@@ -10,7 +10,12 @@ import {
 } from '@/services/charges';
 import { getGroup, updateGroup, type GroupDetail } from '@/services/groups';
 import { ApiError } from '@/services/http';
-import { getGroupCollection, type GroupCollection } from '@/services/reports';
+import {
+  exportGroupHistoryCsv,
+  getGroupCollection,
+  type GroupCollection,
+} from '@/services/reports';
+import { saveBlob } from '@/lib/download';
 import { collection } from '@/services/__fixtures__/reports';
 import GroupPage, { metadata } from './page';
 
@@ -24,7 +29,11 @@ jest.mock('@/services/groups', () => ({
   regenerateInviteCode: jest.fn(),
 }));
 
-jest.mock('@/services/reports', () => ({ getGroupCollection: jest.fn() }));
+jest.mock('@/services/reports', () => ({
+  getGroupCollection: jest.fn(),
+  exportGroupHistoryCsv: jest.fn(),
+}));
+jest.mock('@/lib/download', () => ({ saveBlob: jest.fn() }));
 
 jest.mock('@/services/charges', () => ({
   ...jest.requireActual('@/services/charges'),
@@ -723,5 +732,52 @@ describe('/grupos/[id] (spec 006 T014): pestaña Cobranza del titular', () => {
     await actor.click(screen.getByRole('button', { name: 'Reintentar' }));
     expect(await screen.findByText('Solo el titular del grupo ve la cobranza.')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Reintentar' })).toBeNull();
+  });
+
+  describe('Exportar CSV del grupo (spec 006 T026)', () => {
+    const mockedExport = jest.mocked(exportGroupHistoryCsv);
+    const mockedSave = jest.mocked(saveBlob);
+
+    beforeEach(() => {
+      mockedExport.mockReset();
+      mockedSave.mockReset();
+    });
+
+    it('RF-006-14: exporta el mes mostrado y el miembro filtrado con el nombre del servidor', async () => {
+      const blob = new Blob(['x'], { type: 'text/csv' });
+      mockedCollection.mockResolvedValue(october);
+      mockedExport.mockResolvedValue({ blob, filename: 'vaquita-grupo-2026-10.csv' });
+      const actor = await openCollection();
+      await screen.findByRole('table', { name: 'Cobros por miembro de Octubre 2026' });
+      await actor.click(screen.getByRole('button', { name: 'Exportar CSV del grupo' }));
+      expect(mockedExport).toHaveBeenLastCalledWith('g2', { period: '2026-10' });
+      expect(mockedSave).toHaveBeenCalledWith(blob, 'vaquita-grupo-2026-10.csv');
+      await actor.selectOptions(screen.getByRole('combobox', { name: 'Miembro' }), 'u5');
+      await actor.click(screen.getByRole('button', { name: 'Exportar CSV del grupo' }));
+      expect(mockedExport).toHaveBeenLastCalledWith('g2', { period: '2026-10', userId: 'u5' });
+    });
+
+    it('CA-006-17: si la API responde 403 explica que solo el titular exporta el grupo', async () => {
+      mockedCollection.mockResolvedValue(october);
+      mockedExport.mockRejectedValue(new ApiError(403, 'FORBIDDEN', 'x'));
+      const actor = await openCollection();
+      await screen.findByRole('table', { name: 'Cobros por miembro de Octubre 2026' });
+      await actor.click(screen.getByRole('button', { name: 'Exportar CSV del grupo' }));
+      expect(
+        await screen.findByText('Solo el titular puede exportar el historial del grupo.'),
+      ).toBeVisible();
+      expect(mockedSave).not.toHaveBeenCalled();
+    });
+
+    it('RF-006-14: un 429 muestra la espera', async () => {
+      mockedCollection.mockResolvedValue(october);
+      mockedExport.mockRejectedValue(
+        new ApiError(429, 'RATE_LIMITED', 'x', { retryAfterSeconds: 61 }),
+      );
+      const actor = await openCollection();
+      await screen.findByRole('table', { name: 'Cobros por miembro de Octubre 2026' });
+      await actor.click(screen.getByRole('button', { name: 'Exportar CSV del grupo' }));
+      expect(await screen.findByText(/Vuelve a intentarlo en 2 minutos\./)).toBeVisible();
+    });
   });
 });

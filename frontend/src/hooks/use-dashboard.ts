@@ -1,7 +1,11 @@
 'use client';
 
 import { useCallback } from 'react';
+import { saveBlob } from '@/lib/download';
+import type { ApiDownload } from '@/services/http';
 import {
+  listHistory,
+  type HistoryFilters,
   getCalendar,
   getUpcomingEvents,
   getDashboard,
@@ -11,6 +15,7 @@ import {
   type DashboardListName,
 } from '@/services/reports';
 import { useApiResource } from './use-api-resource';
+import { useApiSubmit } from './use-api-submit';
 import { usePaginatedResource } from './use-paginated-resource';
 
 /** Cobros por página de las listas del panel (contrato 000 A: `limit` de 1 a 100). */
@@ -87,4 +92,41 @@ export function useCalendar(month: string | null) {
 export function useUpcomingEvents() {
   const load = useCallback(() => getUpcomingEvents(30), []);
   return useApiResource(load);
+}
+
+/** Cobros por página del historial (contrato 000 A: `limit` de 1 a 100). */
+export const HISTORY_PAGE_SIZE = 25;
+
+/**
+ * Historial propio (`GET /me/history`, RF-006-13) con filtros de mes, suscripción y estado
+ * aplicados por la API y «Cargar más» por cursor.
+ */
+export function useHistory({ period, groupId, status }: HistoryFilters) {
+  const loadPage = useCallback(
+    (cursor?: string) =>
+      listHistory({
+        ...(period ? { period } : {}),
+        ...(groupId ? { groupId } : {}),
+        ...(status ? { status } : {}),
+        limit: HISTORY_PAGE_SIZE,
+        ...(cursor ? { cursor } : {}),
+      }),
+    [period, groupId, status],
+  );
+  return usePaginatedResource(loadPage);
+}
+
+/**
+ * Descarga de un CSV (RF-006-14): pide el archivo y lo guarda con el nombre del servidor (o
+ * `fallbackName` si no lo envía). Devuelve el resultado de `useApiSubmit` para mostrar los
+ * errores (`429` con la espera, `422 EXPORT_TOO_LARGE`, `403`).
+ */
+export function useCsvDownload(request: () => Promise<ApiDownload>, fallbackName: string) {
+  const download = useCallback(async () => {
+    const file = await request();
+    const filename = file.filename ?? fallbackName;
+    saveBlob(file.blob, filename);
+    return { filename };
+  }, [request, fallbackName]);
+  return useApiSubmit<void, { filename: string }>(download);
 }

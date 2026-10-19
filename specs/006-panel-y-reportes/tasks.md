@@ -62,7 +62,7 @@
 
 - [ ] T024 [P] [US5] [BE] `backend/test/export.e2e-spec.ts`: CA-006-15 (acentos y montos numéricos con BOM), CA-006-16 (`=CMD()` escapado), CA-006-17 (el miembro exporta el grupo → `403`), límite de 10 exportaciones por hora (`429` con el tiempo de espera) y de 20.000 filas; historial paginado con filtros por mes, suscripción y estado — Depende: T007, T006 · Cubre: CA-006-15, CA-006-16, CA-006-17, RF-006-13, RF-006-14, RF-006-15, RNF-006-04
 - [ ] T025 [US5] [BE] `services/history.service.ts` y `services/export.service.ts` (CSV en flujo con cursor de base, límite de filas y `rate_limit_events` cubo `export:user`) con `controllers/history.controller.ts` y `export.controller.ts`: `GET /me/history`, `GET /me/history/export.csv` y `GET /groups/:groupId/history/export.csv` (titular; `403` miembro, `404` ajeno; sin comprobantes) — Depende: T024 · Cubre: RF-006-13, RF-006-14, RF-006-15, RNF-006-03, RNF-006-04, CA-006-15, CA-006-16, CA-006-17
-- [ ] T026 [P] [US5] [FE] `/panel/historial` (tabla con filtros de mes, suscripción y estado, «Cargar más» y **Exportar CSV**) y **Exportar CSV del grupo** en la pestaña **Cobranza** del titular, con mock y mensaje de espera para `429` — Depende: T012 · Cubre: RF-006-13, RF-006-14
+- [x] T026 [P] [US5] [FE] `/panel/historial` (tabla con filtros de mes, suscripción y estado, «Cargar más» y **Exportar CSV**) y **Exportar CSV del grupo** en la pestaña **Cobranza** del titular, con mock y mensaje de espera para `429` — Depende: T012 · Cubre: RF-006-13, RF-006-14
 - [ ] T027 [US5] [FE] Conectar historial y exportaciones con los endpoints (descarga con el nombre de archivo del servidor) — Depende: T025, T026 · Cubre: RF-006-13, RF-006-14
 
 ## Fase 6: Cierre

@@ -4,7 +4,7 @@
  * son centavos de Bs calculados por el backend: el frontend no suma, no resta ni calcula
  * porcentajes (plan 006 §6).
  */
-import { apiRequest } from './http';
+import { apiDownload, apiRequest, type ApiDownload } from './http';
 
 export type ReportRole = 'miembro' | 'titular';
 
@@ -230,4 +230,86 @@ export function getCalendar(month?: string): Promise<CalendarResponse> {
 /** `GET /me/calendar/upcoming?days=` (RF-006-11): próximos días, de 1 a 90. */
 export function getUpcomingEvents(days = 30): Promise<CalendarResponse> {
   return apiRequest<CalendarResponse>(`/api/me/calendar/upcoming${query({ days })}`);
+}
+
+export type HistoryStatus = 'pendiente' | 'en_revision' | 'pagado' | 'atrasado' | 'cancelado';
+
+/** Cobro propio del historial (RF-006-13): también `cancelado` y de grupos que dejó. */
+export interface HistoryItem {
+  chargeId: string;
+  period: string;
+  groupId: string;
+  groupName: string;
+  serviceName: string;
+  amountCents: number;
+  status: HistoryStatus;
+  origin: 'ciclo' | 'ingreso';
+  /** `YYYY-MM-DD` de La Paz. */
+  dueDate: string;
+  /** ISO 8601 en UTC. */
+  paidAt: string | null;
+}
+
+export interface HistoryPage {
+  items: HistoryItem[];
+  nextCursor: string | null;
+}
+
+export interface HistoryFilters {
+  period?: string;
+  groupId?: string;
+  status?: HistoryStatus;
+}
+
+/** `GET /me/history?period=&groupId=&status=&limit=&cursor=` (RF-006-13), por período descendente. */
+export function listHistory(
+  params: HistoryFilters & { limit?: number; cursor?: string } = {},
+): Promise<HistoryPage> {
+  return apiRequest<HistoryPage>(
+    `/api/me/history${query({
+      period: params.period,
+      groupId: params.groupId,
+      status: params.status,
+      limit: params.limit,
+      cursor: params.cursor,
+    })}`,
+  );
+}
+
+/**
+ * `GET /me/history/export.csv?period=&groupId=&status=` (RF-006-14, RF-006-15). El nombre del
+ * archivo lo da el servidor. `429 RATE_LIMITED` (10 por hora, `details.retryAfterSeconds`) y
+ * `422 BUSINESS_RULE` (`EXPORT_TOO_LARGE`).
+ */
+export function exportHistoryCsv(filters: HistoryFilters = {}): Promise<ApiDownload> {
+  return apiDownload(
+    `/api/me/history/export.csv${query({
+      period: filters.period,
+      groupId: filters.groupId,
+      status: filters.status,
+    })}`,
+  );
+}
+
+export interface GroupExportFilters {
+  period?: string;
+  userId?: string;
+  status?: HistoryStatus;
+}
+
+/**
+ * `GET /groups/:groupId/history/export.csv?period=&userId=&status=` (RF-006-14; CA-006-17):
+ * solo el titular (`403` a un miembro, `404` ajeno). Mismos errores que el historial propio.
+ */
+export function exportGroupHistoryCsv(
+  groupId: string,
+  filters: GroupExportFilters = {},
+): Promise<ApiDownload> {
+  return apiDownload(
+    `/api/groups/${encodeURIComponent(groupId)}/history/export.csv${query({
+      period: filters.period,
+      userId: filters.userId,
+      status: filters.status,
+    })}`,
+  );
 }
