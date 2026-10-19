@@ -3,14 +3,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { PlanPicker } from '@/components/features/catalog/plan-picker';
 import { ServicePicker } from '@/components/features/catalog/service-picker';
-import { Button } from '@/components/ui';
+import { Alert, Button } from '@/components/ui';
 import { cx } from '@/components/ui/cx';
 import { useCatalogService } from '@/hooks/use-catalog-service';
 import { useCatalogServices } from '@/hooks/use-catalog-services';
-import type { CatalogPlan, CatalogService } from '@/services/catalog';
+import type { CreateGroupOutcome } from '@/hooks/use-create-group';
+import { useHostEligibility, type UseHostEligibilityResult } from '@/hooks/use-host-eligibility';
+import type { CatalogService } from '@/services/catalog';
+import { isConnectionError } from '@/services/http';
+import { GroupCreated } from './group-created';
+import { HostEligibilityPanel } from './host-eligibility-panel';
+import { NEW_GROUP_MESSAGES } from './new-group-errors';
+import { NewGroupForm } from './new-group-form';
+import type { NewGroupChoice } from './new-group-form-model';
 
-/** Resultado de los pasos 1 y 2: un plan del catálogo o un servicio personalizado (RF-004-09). */
-export type NewGroupChoice = { service: CatalogService; plan: CatalogPlan } | { custom: true };
+export type { NewGroupChoice } from './new-group-form-model';
 
 type WizardStep =
   { step: 1 } | { step: 2; service: CatalogService } | { step: 3; choice: NewGroupChoice };
@@ -88,14 +95,58 @@ function ChoiceSummary({ choice }: { choice: NewGroupChoice }) {
   );
 }
 
+function EligibilityNotice({
+  eligibility,
+  onShowPanel,
+}: {
+  eligibility: UseHostEligibilityResult;
+  onShowPanel: () => void;
+}) {
+  const { state, retry } = eligibility;
+  if (state.status === 'error') {
+    return (
+      <Alert
+        variant="error"
+        title={NEW_GROUP_MESSAGES.eligibilityLoadFailed}
+        action={
+          <Button variant="secondary" onClick={retry} className="w-full sm:w-auto">
+            Reintentar
+          </Button>
+        }
+      >
+        {isConnectionError(state.error)
+          ? NEW_GROUP_MESSAGES.connection
+          : 'Puedes seguir llenando los datos; lo volvemos a revisar al crear.'}
+      </Alert>
+    );
+  }
+  if (state.status !== 'success') return null;
+  const { eligible, canCreateMore } = state.eligibility;
+  if (eligible && canCreateMore) return null;
+  return (
+    <Alert
+      variant="warning"
+      title={eligible ? NEW_GROUP_MESSAGES.tooManyGroups : NEW_GROUP_MESSAGES.notEligible}
+      action={
+        <Button variant="secondary" onClick={onShowPanel} className="w-full sm:w-auto">
+          Ver qué me falta
+        </Button>
+      }
+    >
+      Puedes ver los servicios y planes, pero no crear la suscripción.
+    </Alert>
+  );
+}
+
 export interface NewGroupWizardProps {
   /** Se llama al terminar el paso 2 (o al elegir «personalizado»), antes del paso 3. */
   onComplete?: (choice: NewGroupChoice) => void;
 }
 
 /**
- * Asistente de `/grupos/nuevo` (plan 001 §6): 1) servicio o personalizado, 2) plan, 3) datos del
- * grupo. Esta versión hace los pasos 1 y 2 (spec 004 T011); el 3 llega con la spec 001 (T016).
+ * Asistente de `/grupos/nuevo` (plan 001 §6): 1) servicio o personalizado, 2) plan (spec 004
+ * T011), 3) datos del grupo (spec 001 T016). Si el usuario no está habilitado como titular
+ * (RF-001-21) o ya tiene 5 grupos activos (RN-001-14), abre el panel que explica qué falta.
  * El paso vive en el cliente: «Volver» no pierde la lista ya cargada.
  */
 export function NewGroupWizard({ onComplete }: NewGroupWizardProps) {
@@ -110,6 +161,13 @@ export function NewGroupWizard({ onComplete }: NewGroupWizardProps) {
         ? current.choice.service.slug
         : null;
   const detail = useCatalogService(selectedSlug);
+  const eligibility = useHostEligibility();
+  const [panelDismissed, setPanelDismissed] = useState(false);
+  const [created, setCreated] = useState<CreateGroupOutcome | null>(null);
+  const eligibilityData =
+    eligibility.state.status === 'success' ? eligibility.state.eligibility : null;
+  const blocked =
+    eligibilityData !== null && !(eligibilityData.eligible && eligibilityData.canCreateMore);
 
   // Al cambiar de paso, el foco va al título del paso (no al montar la página).
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -140,8 +198,18 @@ export function NewGroupWizard({ onComplete }: NewGroupWizardProps) {
         ? `Elige el plan de ${current.service.name}`
         : 'Datos del grupo';
 
+  if (created) return <GroupCreated group={created.group} qrError={created.qrError} />;
+
   return (
     <div className="flex flex-col gap-6">
+      {eligibilityData && (
+        <HostEligibilityPanel
+          open={blocked && !panelDismissed}
+          onClose={() => setPanelDismissed(true)}
+          eligibility={eligibilityData}
+        />
+      )}
+      <EligibilityNotice eligibility={eligibility} onShowPanel={() => setPanelDismissed(false)} />
       <StepList current={current} />
       <section
         aria-labelledby="paso-actual"
@@ -193,19 +261,21 @@ export function NewGroupWizard({ onComplete }: NewGroupWizardProps) {
 
         {current.step === 3 && (
           <>
-            {/* spec 001 T016: datos del grupo */}
             <ChoiceSummary choice={current.choice} />
-            <Button
-              variant="secondary"
-              onClick={() => {
+            <NewGroupForm
+              choice={current.choice}
+              blocked={blocked}
+              onBack={() => {
                 const { choice } = current;
                 if ('custom' in choice) setCurrent({ step: 1 });
                 else setCurrent({ step: 2, service: choice.service });
               }}
-              className="w-full sm:w-auto sm:self-start"
-            >
-              Volver
-            </Button>
+              onCreated={setCreated}
+              onEligibilityProblem={() => {
+                eligibility.retry();
+                setPanelDismissed(false);
+              }}
+            />
           </>
         )}
       </section>

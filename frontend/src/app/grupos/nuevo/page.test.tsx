@@ -17,6 +17,26 @@ jest.mock('@/services/catalog', () => ({
   getService: jest.fn(),
 }));
 
+jest.mock('@/services/groups', () => ({
+  getHostEligibility: jest.fn().mockResolvedValue({
+    eligible: true,
+    source: 'manual',
+    activeGroups: 0,
+    maxActiveGroups: 5,
+    canCreateMore: true,
+    requirement: { minStars: 4.5, minConsideredCharges: 6, windowMonths: 12 },
+    current: { stars: 0, consideredCharges: 0, level: 'Nuevo' },
+  }),
+  quoteGroup: jest.fn().mockResolvedValue({
+    totalBsCents: 10203,
+    baseShareCents: 2550,
+    ownerShareCents: 2553,
+    remainderCents: 3,
+  }),
+  createGroup: jest.fn(),
+  updatePaymentInfo: jest.fn(),
+}));
+
 const replace = jest.fn();
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
