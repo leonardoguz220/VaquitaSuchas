@@ -8,9 +8,18 @@ import {
   updateGroup,
   updatePaymentInfo,
 } from './groups';
-import { MOCK_GROUP, MOCK_INVITE_CODE } from './groups.mock';
+import {
+  MOCK_GROUP,
+  MOCK_GROUPS,
+  MOCK_INVITE_CODE,
+  MOCK_REGENERATED_CODES,
+  resetMockGroups,
+} from './groups.mock';
 
-beforeEach(() => jest.useFakeTimers());
+beforeEach(() => {
+  jest.useFakeTimers();
+  resetMockGroups();
+});
 afterEach(() => jest.useRealTimers());
 
 async function settle<T>(promise: Promise<T>): Promise<T> {
@@ -93,6 +102,38 @@ describe('services/groups con datos simulados (T016, contrato 001)', () => {
     );
     expect((await settle(regenerateInviteCode(MOCK_GROUP.id))).inviteCode).toMatch(/^[A-Z0-9]{8}$/);
     await expectRejection(getGroup('otro'), { statusCode: 404, code: 'NOT_FOUND' });
+  });
+
+  it('CA-001-09: el código regenerado reemplaza al anterior y no tiene caracteres ambiguos', async () => {
+    const { inviteCode } = await settle(regenerateInviteCode(MOCK_GROUP.id));
+    expect(inviteCode).toBe(MOCK_REGENERATED_CODES[0]);
+    expect(inviteCode).not.toBe(MOCK_INVITE_CODE);
+    expect(inviteCode).toMatch(/^[A-HJ-NP-Z2-9]{8}$/);
+    expect((await settle(getGroup(MOCK_GROUP.id))).inviteCode).toBe(inviteCode);
+    expect((await settle(regenerateInviteCode(MOCK_GROUP.id))).inviteCode).toBe(
+      MOCK_REGENERATED_CODES[1],
+    );
+  });
+
+  it('RF-001-09: PATCH cambia acceptingMembers y sube version; una version vieja da 409', async () => {
+    const updated = await settle(
+      updateGroup(MOCK_GROUP.id, { acceptingMembers: false, version: MOCK_GROUP.version }),
+    );
+    expect(updated.entryWindow.acceptingMembers).toBe(false);
+    expect(updated.version).toBe(MOCK_GROUP.version + 1);
+    await expectRejection(
+      updateGroup(MOCK_GROUP.id, { acceptingMembers: true, version: MOCK_GROUP.version }),
+      { statusCode: 409, code: 'STALE_STATE' },
+    );
+  });
+
+  it('CA-001-11: un miembro recibe 403 al regenerar o cambiar la recepción', async () => {
+    const memberId = MOCK_GROUPS.find(({ detail }) => detail.myRole === 'miembro')!.detail.id;
+    await expectRejection(regenerateInviteCode(memberId), { statusCode: 403, code: 'FORBIDDEN' });
+    await expectRejection(updateGroup(memberId, { acceptingMembers: false }), {
+      statusCode: 403,
+      code: 'FORBIDDEN',
+    });
   });
 
   it('CA-001-20: GET /groups filtra por rol y estado y cada grupo trae su rol y cuota', async () => {

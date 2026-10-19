@@ -523,32 +523,65 @@ export function listGroups(params: ListGroupsParams, signal?: AbortSignal): Prom
   }, signal);
 }
 
+/**
+ * Estado simulado de cada grupo: `PATCH` y regenerar el código lo cambian, para que la pantalla
+ * vea el `version` nuevo y un `version` viejo responda `409 STALE_STATE`.
+ */
+const store = new Map<string, GroupDetail>();
+
+/** Vuelve los grupos simulados a su estado inicial (para tests). */
+export function resetMockGroups(): void {
+  store.clear();
+  for (const { detail } of MOCK_GROUPS) store.set(detail.id, detail);
+  nextCode = 0;
+}
+
+/** Códigos de 8 caracteres sin ambiguos (RF-001-06) que entrega «Regenerar código», en orden. */
+export const MOCK_REGENERATED_CODES = ['P4W8ZR2N', 'H6N3KT7V', 'Z9C2WM4R'] as const;
+let nextCode = 0;
+resetMockGroups();
+
+function found(groupId: string): GroupDetail {
+  const group = store.get(groupId);
+  if (!group) throw new ApiError(404, 'NOT_FOUND', 'No encontrado.');
+  return group;
+}
+
+/** Reglas del contrato para cambios del titular: `403` a un miembro y `422` si está cerrado o congelado. */
+function ownedAndEditable(groupId: string): GroupDetail {
+  const group = found(groupId);
+  if (group.myRole !== 'titular') throw new ApiError(403, 'FORBIDDEN', 'Sin permiso.');
+  if (group.status === 'cerrado') {
+    throw new ApiError(422, 'GROUP_CLOSED', 'Grupo cerrado.', { rule: 'RN-001-07' });
+  }
+  if (group.frozenReason !== null) throw new ApiError(422, 'GROUP_FROZEN', 'Grupo congelado.');
+  return group;
+}
+
 /** `404` para un id que no está entre los grupos del usuario (CA-001-10). */
 export function getGroup(groupId: string, signal?: AbortSignal): Promise<GroupDetail> {
-  return delay(() => {
-    const found = MOCK_GROUPS.find((group) => group.detail.id === groupId);
-    if (!found) throw new ApiError(404, 'NOT_FOUND', 'No encontrado.');
-    return found.detail;
-  }, signal);
+  return delay(() => found(groupId), signal);
 }
 
 export function updateGroup(groupId: string, input: UpdateGroupRequest): Promise<GroupDetail> {
   return delay(() => {
-    if (groupId !== MOCK_GROUP_ID) throw new ApiError(404, 'NOT_FOUND', 'No encontrado.');
-    if (input.version !== undefined && input.version !== MOCK_GROUP.version) {
+    const group = ownedAndEditable(groupId);
+    const { acceptingMembers, exchangeRate, version, ...fields } = input;
+    if (version !== undefined && version !== group.version) {
       throw new ApiError(409, 'STALE_STATE', 'El grupo cambió.');
     }
-    const { acceptingMembers, exchangeRate, ...fields } = input;
-    return {
-      ...MOCK_GROUP,
+    const updated: GroupDetail = {
+      ...group,
       ...fields,
-      exchangeRate: exchangeRate === undefined ? MOCK_GROUP.exchangeRate : exchangeRate,
+      exchangeRate: exchangeRate === undefined ? group.exchangeRate : exchangeRate,
       entryWindow: {
-        ...MOCK_GROUP.entryWindow,
-        acceptingMembers: acceptingMembers ?? MOCK_GROUP.entryWindow.acceptingMembers,
+        ...group.entryWindow,
+        acceptingMembers: acceptingMembers ?? group.entryWindow.acceptingMembers,
       },
-      version: MOCK_GROUP.version + 1,
+      version: group.version + 1,
     };
+    store.set(groupId, updated);
+    return updated;
   });
 }
 
@@ -564,9 +597,13 @@ export function updatePaymentInfo(
   });
 }
 
+/** El código anterior deja de existir en el mismo paso (RF-001-08). */
 export function regenerateInviteCode(groupId: string): Promise<{ inviteCode: string }> {
   return delay(() => {
-    if (groupId !== MOCK_GROUP_ID) throw new ApiError(404, 'NOT_FOUND', 'No encontrado.');
-    return { inviteCode: 'P4W8ZR2N' };
+    const group = ownedAndEditable(groupId);
+    const inviteCode = MOCK_REGENERATED_CODES[nextCode % MOCK_REGENERATED_CODES.length];
+    nextCode += 1;
+    store.set(groupId, { ...group, inviteCode });
+    return { inviteCode };
   });
 }

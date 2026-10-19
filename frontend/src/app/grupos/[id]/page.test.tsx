@@ -182,7 +182,7 @@ describe('/grupos/[id] (T020, plan 001 §6)', () => {
     mocked.mockResolvedValue(ownerGroup);
     render(<GroupDetailView groupId={ownerGroup.id} ownerPanel={ownerPanel} />);
     expect(await screen.findByText('Panel del titular')).toBeVisible();
-    expect(ownerPanel).toHaveBeenCalledWith(ownerGroup);
+    expect(ownerPanel).toHaveBeenCalledWith(ownerGroup, { onGroupChange: expect.any(Function) });
   });
 
   it('un 401 redirige a /ingresar', async () => {

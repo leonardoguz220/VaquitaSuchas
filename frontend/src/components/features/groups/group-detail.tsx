@@ -102,13 +102,18 @@ function GroupHeader({ group }: { group: GroupDetail }) {
   );
 }
 
+export interface OwnerPanelActions {
+  /** Muestra el grupo que devolvió la API tras un cambio del titular. */
+  onGroupChange: (group: GroupDetail) => void;
+}
+
 export interface GroupDetailViewProps {
   groupId: string;
   /**
-   * Panel que solo ve el titular, entre la cabecera y las pestañas. Aquí se monta el panel del
-   * código de invitación de T025.
+   * Panel que solo ve el titular, entre la cabecera y las pestañas (el del código de invitación
+   * de T025).
    */
-  ownerPanel?: (group: GroupDetail) => ReactNode;
+  ownerPanel?: (group: GroupDetail, actions: OwnerPanelActions) => ReactNode;
 }
 
 /**
@@ -116,7 +121,7 @@ export interface GroupDetailViewProps {
  * Un `404` de la API (grupo ajeno o inexistente) muestra «Grupo no encontrado» (CA-001-10).
  */
 export function GroupDetailView({ groupId, ownerPanel }: GroupDetailViewProps) {
-  const { state, retry } = useGroup(groupId);
+  const { state, retry, update } = useGroup(groupId);
   const [tab, setTab] = useState<GroupTabId>('resumen');
 
   return (
@@ -142,7 +147,7 @@ export function GroupDetailView({ groupId, ownerPanel }: GroupDetailViewProps) {
       {state.status === 'success' && (
         <>
           <GroupHeader group={state.group} />
-          {state.group.myRole === 'titular' && ownerPanel?.(state.group)}
+          {state.group.myRole === 'titular' && ownerPanel?.(state.group, { onGroupChange: update })}
           <GroupTabs
             idPrefix={TABS_PREFIX}
             label="Secciones del grupo"

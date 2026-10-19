@@ -16,6 +16,8 @@ export type GroupState =
 export interface UseGroupResult {
   state: GroupState;
   retry: () => void;
+  /** Reemplaza el grupo en pantalla por el que devolvió la API tras un cambio, sin recargar. */
+  update: (group: GroupDetail) => void;
 }
 
 /** `GET /groups/:groupId`: el detalle de un grupo al que pertenece el usuario. */
@@ -50,6 +52,10 @@ export function useGroup(groupId: string): UseGroupResult {
   }, [groupId, key]);
 
   const retry = useCallback(() => setAttempt((current) => current + 1), []);
+  const update = useCallback(
+    (group: GroupDetail) => setSettled({ key, state: { status: 'success', group } }),
+    [key],
+  );
   const state: GroupState = settled?.key === key ? settled.state : { status: 'loading' };
-  return { state, retry };
+  return { state, retry, update };
 }
