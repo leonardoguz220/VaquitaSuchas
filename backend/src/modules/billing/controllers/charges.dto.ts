@@ -51,3 +51,45 @@ export class ListMyChargesQueryDto {
   @IsString()
   cursor?: string;
 }
+
+/** Query de `GET /groups/:groupId/charges` (contracts/api.md). */
+export class ListGroupChargesQueryDto {
+  @ApiPropertyOptional({ example: '2026-10' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-(0[1-9]|1[0-2])$/)
+  period?: string;
+
+  @ApiPropertyOptional({ enum: STATUSES, isArray: true })
+  @IsOptional()
+  @Transform(toList)
+  @IsIn(STATUSES, { each: true })
+  status?: ChargeStatus[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  userId?: string;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: MAX_PAGE_SIZE, default: DEFAULT_PAGE_SIZE })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(MAX_PAGE_SIZE)
+  limit?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+}
+
+/** Query de `GET /groups/:groupId/billing/summary`. */
+export class PeriodSummaryQueryDto {
+  @ApiPropertyOptional({ example: '2026-10', description: 'Por omisión, el del último ciclo.' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-(0[1-9]|1[0-2])$/)
+  period?: string;
+}

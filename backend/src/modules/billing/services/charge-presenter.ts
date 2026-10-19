@@ -3,7 +3,13 @@ import type { ChargeEventRecord } from '../repositories/events.repository.js';
 import type { GroupBrief } from '../repositories/charge-read.repository.js';
 import type { ChargeRecord } from '../repositories/charges.repository.js';
 import type { ReceiptRecord } from '../repositories/receipts.repository.js';
-import type { ChargeEventView, ChargeView, PersonRef, ReceiptView } from './charge-views.js';
+import type {
+  ChargeEventView,
+  ChargePublicView,
+  ChargeView,
+  PersonRef,
+  ReceiptView,
+} from './charge-views.js';
 
 export interface ChargeViewInput {
   charge: ChargeRecord;
@@ -116,5 +122,34 @@ export function presentCharge(input: ChargeViewInput): ChargeView {
       groupStateOf({ status: group.status, frozen: group.frozen }),
     ),
     version: charge.version,
+  };
+}
+
+/**
+ * Versión pública del cobro (RF-002-16, RF-002-17, RNF-002-07): estado, monto y línea de tiempo con
+ * evento, autor y fecha. Nunca lleva comprobantes, referencias, motivos, notas ni metadatos.
+ */
+export function presentPublicCharge(input: {
+  charge: ChargeRecord;
+  memberActive: boolean;
+  events: readonly ChargeEventRecord[];
+  names: ReadonlyMap<string, string>;
+}): ChargePublicView {
+  const { charge, names } = input;
+  return {
+    id: charge.id,
+    groupId: charge.groupId,
+    period: charge.period,
+    origin: charge.origin,
+    member: { ...personRef(charge.userId, names), isFormerMember: !input.memberActive },
+    amountCents: charge.amountCents,
+    status: charge.status,
+    dueAt: charge.dueAt.toISOString(),
+    paidAt: iso(charge.paidAt),
+    timeline: input.events.map((event) => ({
+      type: event.type,
+      actor: event.actorId ? personRef(event.actorId, names) : null,
+      occurredAt: event.occurredAt.toISOString(),
+    })),
   };
 }

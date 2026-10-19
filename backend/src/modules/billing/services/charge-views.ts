@@ -73,3 +73,51 @@ export interface MyChargesPage {
   items: MyChargeView[];
   nextCursor: string | null;
 }
+
+/** Evento de la línea de tiempo pública: sin motivos, notas ni metadatos (RNF-002-07). */
+export interface PublicEventView {
+  type: string;
+  /** `null` = lo hizo el sistema. */
+  actor: PersonRef | null;
+  occurredAt: string;
+}
+
+/** Lo que ve cualquier miembro del grupo de un cobro (contrato, `ChargePublic`). */
+export interface ChargePublicView {
+  id: string;
+  groupId: string;
+  period: string;
+  origin: 'ciclo' | 'ingreso';
+  member: PersonRef & { isFormerMember: boolean };
+  amountCents: number;
+  status: ChargeStatus;
+  dueAt: string;
+  paidAt: string | null;
+  timeline: PublicEventView[];
+}
+
+export interface PeriodSummaryView {
+  period: string;
+  cycleType: 'inicial' | 'regular';
+  cutDate: string;
+  dueAt: string;
+  totalBsCents: number;
+  memberCount: number;
+  baseShareCents: number;
+  ownerShareCents: number;
+  rows: { charge: ChargePublicView; isFormerMember: boolean }[];
+  /** Solo si consulta el titular (RF-002-18). */
+  ownerTotals?: {
+    expectedCents: number;
+    collectedCents: number;
+    pendingCents: number;
+    overdueCents: number;
+  };
+  availablePeriods: string[];
+}
+
+/** Historial del grupo: `Charge` completo para el titular y `ChargePublic` para los demás. */
+export interface GroupChargesPage {
+  items: (ChargePublicView | ChargeView)[];
+  nextCursor: string | null;
+}
