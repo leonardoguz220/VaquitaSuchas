@@ -137,6 +137,13 @@ describe('RequestChat (spec 010 T034): conversación', () => {
     expect(items[1]).toHaveClass('items-start');
   });
 
+  it('RNF-010-06: el registro de mensajes es enfocable para desplazarse con teclado', async () => {
+    mockedList.mockResolvedValue(page([message(1, ANA, '¿Tienes un cupo?')]));
+    renderChat();
+    const log = await screen.findByRole('log', { name: 'Mensajes con Rodrigo' });
+    expect(log).toHaveAttribute('tabindex', '0');
+  });
+
   it('CA-010-22: un mensaje con <script> se muestra como texto plano', async () => {
     const evil = '<script>alert(1)</script><b>hola</b>';
     mockedList.mockResolvedValue(page([message(1, RODRIGO, evil)]));
