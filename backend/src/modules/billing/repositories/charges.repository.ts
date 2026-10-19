@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { Queryable } from '../../../shared/db/db.service.js';
 import type { ChargeStatus } from '../domain/charge-state.js';
 import type { ChargeDraft } from '../domain/cycle-calculation.js';
+import type { EntryChargeDraft } from '../domain/entry-charge.js';
 
 export type ChargeOrigin = 'ciclo' | 'ingreso';
 export type Settlement = 'comprobante' | 'manual' | 'ingreso';
@@ -106,6 +107,17 @@ export interface MyChargesFilter {
   after: { dueAt: Date; id: string } | null;
 }
 
+/** Filtros del historial del grupo (RF-002-17); `after` es la posición del cursor. */
+export interface GroupHistoryFilter {
+  groupId: string;
+  period: string | null;
+  statuses: readonly ChargeStatus[];
+  userId: string | null;
+  /** Se piden `limit + 1` filas para saber si hay otra página. */
+  limit: number;
+  after: { period: string; issuedAt: Date; id: string } | null;
+}
+
 /** Columnas que acompañan a un cambio de estado; las ausentes (`undefined`) no se tocan. */
 export interface ChargeStatusPatch {
   /** Se fija con la primera subida y no cambia después (RN-002-08). */
@@ -160,6 +172,50 @@ export class ChargesRepository {
     return row ? toRecord(row) : null;
   }
 
+  /**
+   * Inserta el cobro de ingreso, ya `pagado` (RF-002-19). Devuelve `null` si la persona ya tiene un
+   * cobro no cancelado en el período (CA-002-24).
+   */
+  async insertEntry(
+    q: Queryable,
+    groupId: string,
+    cycleId: string,
+    joinRequestId: string,
+    settledBy: string,
+    draft: EntryChargeDraft,
+  ): Promise<ChargeRecord | null> {
+    const result = await q.query<ChargeRow>(
+      `INSERT INTO charges (group_id, user_id, cycle_id, period, origin, join_request_id, status,
+                            amount_cents, price_cents, currency, exchange_rate, total_bs_cents,
+                            member_count, issued_at, due_at, paid_at, settled_by, settlement)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+       ON CONFLICT (group_id, user_id, period) WHERE status <> 'cancelado' DO NOTHING
+       RETURNING ${COLUMNS}`,
+      [
+        groupId,
+        draft.userId,
+        cycleId,
+        draft.period,
+        draft.origin,
+        joinRequestId,
+        draft.status,
+        draft.amountCents,
+        draft.priceCents,
+        draft.currency,
+        draft.exchangeRate,
+        draft.totalBsCents,
+        draft.memberCount,
+        draft.issuedAt,
+        draft.dueAt,
+        draft.paidAt,
+        settledBy,
+        draft.settlement,
+      ],
+    );
+    const row = result.rows[0];
+    return row ? toRecord(row) : null;
+  }
+
   async findById(q: Queryable, id: string): Promise<ChargeRecord | null> {
     const result = await q.query<ChargeRow>(`SELECT ${COLUMNS} FROM charges WHERE id = $1`, [id]);
     const row = result.rows[0];
@@ -202,6 +258,34 @@ export class ChargesRepository {
       `SELECT ${COLUMNS} FROM charges WHERE group_id = $1 AND period = $2
         ORDER BY issued_at, id`,
       [groupId, period],
+    );
+    return result.rows.map(toRecord);
+  }
+
+  /**
+   * Historial del grupo (RF-002-17): período y emisión descendentes, con desempate por `id`.
+   * `statuses` vacío = todos.
+   */
+  async listGroupHistory(q: Queryable, filter: GroupHistoryFilter): Promise<ChargeRecord[]> {
+    const result = await q.query<ChargeRow>(
+      `SELECT ${COLUMNS} FROM charges
+        WHERE group_id = $1
+          AND ($2::text IS NULL OR period = $2)
+          AND (cardinality($3::text[]) = 0 OR status = ANY($3::text[]))
+          AND ($4::uuid IS NULL OR user_id = $4)
+          AND ($5::text IS NULL OR (period, issued_at, id) < ($5::text, $6::timestamptz, $7::uuid))
+        ORDER BY period DESC, issued_at DESC, id DESC
+        LIMIT $8`,
+      [
+        filter.groupId,
+        filter.period,
+        [...filter.statuses],
+        filter.userId,
+        filter.after?.period ?? null,
+        filter.after?.issuedAt ?? null,
+        filter.after?.id ?? null,
+        filter.limit,
+      ],
     );
     return result.rows.map(toRecord);
   }

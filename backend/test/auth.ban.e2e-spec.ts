@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { DbService } from '../src/shared/db/db.service.js';
 import { IdentityService } from '../src/modules/users/services/identity.service.js';
 import { startAuthApp, tokenFromUrl, type AuthTestApp } from './support/auth-app.js';
@@ -11,7 +10,7 @@ describe('Bloqueo de identidades en el registro (spec 003)', () => {
     t = await startAuthApp();
     const identity = t.app.get(IdentityService);
     const db = t.app.get(DbService);
-    // Cuenta baneada: sus huellas quedan en banned_identities y la cuenta desaparece.
+    // Cuenta baneada: sus huellas quedan en banned_identities.
     const user = await t.db.query<{ id: string }>(
       `INSERT INTO users (full_name, email, email_fingerprint, password_hash, ci_encrypted,
          ci_fingerprint, phone_e164, telegram_user_id, verified_at, data_policy_accepted_at,
@@ -20,8 +19,24 @@ describe('Bloqueo de identidades en el registro (spec 003)', () => {
          now(), 'v1') RETURNING id`,
       [identity.emailFingerprint('bane.ado@gmail.com'), identity.fingerprint('ci', '7654321')],
     );
-    await db.withTransaction((tx) => identity.blockIdentities(tx, user.rows[0]!.id, randomUUID()));
-    await t.db.query('DELETE FROM users WHERE id = $1', [user.rows[0]!.id]);
+    // El baneo es una fila de bans (spec 009, migración 0090) y la cuenta queda baneada: banned_identities
+    // referencia a bans por ban_ref, así que el baneo debe existir antes de bloquear las huellas.
+    const admin = await t.db.query<{ id: string }>(
+      `INSERT INTO users (full_name, email, email_fingerprint, password_hash, ci_encrypted,
+         ci_fingerprint, role, verified_at, data_policy_accepted_at, data_policy_version)
+       VALUES ('Administrador', 'admin.ban@example.com', $1, 'h', '\\x00', $2, 'admin', now(),
+         now(), 'v1') RETURNING id`,
+      [identity.emailFingerprint('admin.ban@example.com'), identity.fingerprint('ci', '1111111')],
+    );
+    const ban = await t.db.query<{ id: string }>(
+      `INSERT INTO bans (user_id, reason, source, banned_by)
+       VALUES ($1, 'Prueba de bloqueo de identidades', 'admin', $2) RETURNING id`,
+      [user.rows[0]!.id, admin.rows[0]!.id],
+    );
+    await db.withTransaction((tx) =>
+      identity.blockIdentities(tx, user.rows[0]!.id, ban.rows[0]!.id),
+    );
+    await t.db.query("UPDATE users SET status = 'baneado' WHERE id = $1", [user.rows[0]!.id]);
   }, 60_000);
 
   afterAll(async () => {

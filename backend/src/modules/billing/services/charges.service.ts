@@ -9,10 +9,18 @@ import type {
 } from '../../../shared/events/charge-events.js';
 import { TxEventBus } from '../../../shared/events/tx-event-bus.js';
 import { transition, type ChargeAction, type ChargeStatus } from '../domain/charge-state.js';
+import { entryChargeDraft, type EntrySnapshot } from '../domain/entry-charge.js';
 import { resolveManualPaidAt } from '../domain/manual-payment.js';
-import { ChargesRepository } from '../repositories/charges.repository.js';
+import { GroupsRepository } from '../../subscriptions/repositories/groups.repository.js';
+import { ChargesRepository, type ChargeRecord } from '../repositories/charges.repository.js';
+import { CyclesRepository } from '../repositories/cycles.repository.js';
 import { ChargeEventsRepository } from '../repositories/events.repository.js';
-import { ReceiptsRepository } from '../repositories/receipts.repository.js';
+import {
+  ReceiptsRepository,
+  type PaymentMethod,
+  type ReceiptMime,
+} from '../repositories/receipts.repository.js';
+import { BillingCyclesService } from './billing-cycles.service.js';
 import { BillingReadService } from './billing-read.service.js';
 import { ChargeAccessService, forbidden, type ChargeContext } from './charge-access.service.js';
 import type { ChargeView } from './charge-views.js';
@@ -32,6 +40,34 @@ export interface ManualPaymentInput extends ReviewInput {
 }
 export interface CancelInput extends ReviewInput {
   reason: string;
+}
+
+/** Comprobante de la solicitud de ingreso que pasa a ser el del cobro (RF-002-19). */
+export interface EntryProof {
+  /** Clave ya copiada al espacio de comprobantes del cobro por la spec 010. */
+  fileKey: string;
+  mime: ReceiptMime;
+  sizeBytes: number;
+  method: PaymentMethod;
+  reference: string;
+  uploadedAt: Date;
+}
+
+export interface EntryChargeInput {
+  groupId: string;
+  userId: string;
+  joinRequestId: string;
+  /** Cuota cotizada en la solicitud, en centavos de Bs. */
+  amountCents: number;
+  snapshot: EntrySnapshot;
+  /** `null` si el titular registró el pago en efectivo (sin comprobante). */
+  proof: EntryProof | null;
+}
+
+export interface EntryChargeResult {
+  charge: ChargeRecord;
+  /** `false` si la persona ya tenía un cobro no cancelado en el período y no se creó otro. */
+  created: boolean;
 }
 
 const groupFrozen = (): DomainError =>
@@ -68,7 +104,93 @@ export class ChargesService {
     private readonly events: ChargeEventsRepository,
     private readonly references: PaymentReferenceService,
     private readonly reads: BillingReadService,
+    private readonly groups: GroupsRepository,
+    private readonly cycles: CyclesRepository,
+    private readonly billingCycles: BillingCyclesService,
   ) {}
+
+  /**
+   * Cobro de ingreso para la spec 010 (RF-002-19, RN-002-10). Corre en la transacción del llamador
+   * (la aceptación de la solicitud) y no abre otra. Antes de crear el cobro llama a
+   * `ensureCurrentCycle`, así el período existe y la generación no le crea un segundo cobro
+   * (CA-002-24); el llamador debe haberlo hecho ANTES de dar de alta al miembro (plan §2). El cobro
+   * nace `pagado` (`origin = settlement = 'ingreso'`), liquidado por el titular. Si la persona ya
+   * tiene un cobro no cancelado en ese período no se crea otro y se devuelve el existente.
+   */
+  async createEntryCharge(tx: Tx, input: EntryChargeInput): Promise<EntryChargeResult> {
+    const now = this.clock.now();
+    const group = await this.groups.findById(tx, input.groupId);
+    if (!group) throw new Error('El grupo del cobro de ingreso no existe.');
+    await this.billingCycles.ensureCurrentCycle(tx, input.groupId, now);
+    const cycle = await this.cycles.findLatest(tx, input.groupId);
+    if (!cycle) throw new Error('El grupo no tiene ciclo para el cobro de ingreso.');
+
+    const existing = await this.charges.findActiveByMemberPeriod(
+      tx,
+      input.groupId,
+      input.userId,
+      cycle.period,
+    );
+    if (existing) return { charge: existing, created: false };
+
+    const draft = entryChargeDraft({
+      userId: input.userId,
+      period: cycle.period,
+      amountCents: input.amountCents,
+      snapshot: input.snapshot,
+      now,
+    });
+    const charge = await this.charges.insertEntry(
+      tx,
+      input.groupId,
+      cycle.id,
+      input.joinRequestId,
+      group.owner_id,
+      draft,
+    );
+    if (!charge) {
+      // Carrera con la generación: otra transacción creó el cobro del período entre medias.
+      const winner = await this.charges.findActiveByMemberPeriod(
+        tx,
+        input.groupId,
+        input.userId,
+        cycle.period,
+      );
+      if (!winner) throw new Error('No se pudo crear el cobro de ingreso.');
+      return { charge: winner, created: false };
+    }
+
+    let receiptId: string | null = null;
+    if (input.proof) {
+      const receipt = await this.receipts.insert(tx, {
+        chargeId: charge.id,
+        uploadedBy: input.userId,
+        fileKey: input.proof.fileKey,
+        mime: input.proof.mime,
+        sizeBytes: input.proof.sizeBytes,
+        method: input.proof.method,
+        reference: input.proof.reference,
+        uploadedAt: input.proof.uploadedAt,
+      });
+      await this.receipts.setStatus(tx, receipt.id, 'confirmado');
+      receiptId = receipt.id;
+    }
+    await this.events.append(tx, {
+      chargeId: charge.id,
+      groupId: input.groupId,
+      type: 'ingreso_registrado',
+      actorId: group.owner_id,
+      fromStatus: null,
+      toStatus: 'pagado',
+      metadata: {
+        joinRequestId: input.joinRequestId,
+        method: input.proof ? 'comprobante' : 'efectivo',
+        ...(receiptId && { receiptId }),
+      },
+      occurredAt: now,
+    });
+    return { charge, created: true };
+  }
 
   /** `POST /charges/:id/confirm` (RF-002-10, CA-002-06). */
   async confirm(userId: string, chargeId: string, input: ReviewInput): Promise<ChargeView> {

@@ -104,6 +104,21 @@ export class BillingReadService {
     return { items: items.map(({ receipts: _receipts, ...item }) => item), nextCursor };
   }
 
+  /**
+   * `Charge` completo de cada cobro para el titular del grupo (historial del grupo, RF-002-17).
+   * El llamador ya comprobó que quien consulta es el titular.
+   */
+  async ownerViews(charges: readonly ChargeRecord[]): Promise<ChargeView[]> {
+    const groups = await this.reads.findGroupBriefs(this.db, [
+      ...new Set(charges.map((charge) => charge.groupId)),
+    ]);
+    const items = await this.compose(
+      charges.map((charge) => ({ charge, access: 'titular' as const })),
+      groups,
+    );
+    return items.map(({ group: _group, ...view }) => view);
+  }
+
   /** Arma las vistas completas de los cobros, con una consulta por tipo de dato (sin N+1). */
   private async compose(
     entries: readonly { charge: ChargeRecord; access: ChargeAccess }[],
