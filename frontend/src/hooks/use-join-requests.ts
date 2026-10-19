@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ACTIVE_JOIN_STATUSES,
   cancelJoinRequest,
@@ -8,8 +8,11 @@ import {
   extendJoinRequest,
   FINAL_JOIN_STATUSES,
   getJoinRequest,
+  getJoinRequestsSummary,
   getPaymentQr,
+  getProofFile,
   listDisputes,
+  listGroupJoinRequests,
   listJoinRequests,
   openDispute,
   openJoinRequest,
@@ -17,6 +20,7 @@ import {
   rejectJoinRequest,
   respondDispute,
   sendPaymentData,
+  type JoinRequestsSummary,
   type OpenDisputeRequest,
   type RespondDisputeRequest,
   type RejectJoinRequestRequest,
@@ -30,6 +34,12 @@ import { usePaginatedResource } from './use-paginated-resource';
 
 /** Solicitudes por página de "Mis solicitudes" (contrato 000 A: `limit` de 1 a 100). */
 export const MY_REQUESTS_PAGE_SIZE = 20;
+
+/** Cada cuánto la barra consulta las insignias de solicitudes (RF-010-26). */
+export const SUMMARY_POLL_MS = 30_000;
+
+/** Solicitudes por página de la cola del titular. */
+export const HOST_QUEUE_PAGE_SIZE = 20;
 
 /** Pestañas de "Mis solicitudes": las activas o el historial (estados finales). */
 export type MyRequestsScope = 'activas' | 'historial';
@@ -50,6 +60,56 @@ export function useMyJoinRequests(scope: MyRequestsScope) {
     [scope],
   );
   return usePaginatedResource(loadPage);
+}
+
+/**
+ * Cola del titular en la pestaña Solicitudes de `/grupos/[id]` (`GET /groups/:id/join-requests`,
+ * RF-010-26): la más antigua primero, con «Ver más». `firstPage.slots` trae los cupos del grupo.
+ */
+export function useGroupJoinRequests(groupId: string) {
+  const loadPage = useCallback(
+    (cursor?: string) =>
+      listGroupJoinRequests(groupId, {
+        limit: HOST_QUEUE_PAGE_SIZE,
+        ...(cursor ? { cursor } : {}),
+      }),
+    [groupId],
+  );
+  return usePaginatedResource(loadPage);
+}
+
+/**
+ * Insignias de la barra (`GET /me/join-requests/summary`, RF-010-26): consulta al montar y cada
+ * 30 s. Un fallo no bloquea la barra: se conserva el último valor y se vuelve a intentar.
+ */
+export function useJoinRequestsSummary(): JoinRequestsSummary | null {
+  const [summary, setSummary] = useState<JoinRequestsSummary | null>(null);
+  useEffect(() => {
+    let active = true;
+    const refresh = () => {
+      getJoinRequestsSummary().then(
+        (data) => {
+          if (active) setSummary(data);
+        },
+        () => {
+          // Se vuelve a intentar en el próximo sondeo.
+        },
+      );
+    };
+    refresh();
+    const timer = setInterval(refresh, SUMMARY_POLL_MS);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, []);
+  return summary;
+}
+
+/** Enlace firmado del comprobante para el titular (`GET …/proof/file`, RF-010-13). */
+export function useProofFile(requestId: string) {
+  const request = useCallback(() => getProofFile(requestId), [requestId]);
+  return useApiSubmit(request);
 }
 
 /** Abrir una solicitud con el código de invitación (`POST /join-requests`, RF-010-01). */

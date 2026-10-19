@@ -19,10 +19,11 @@ const GROUPS_PATH = '/grupos';
 const TABS_PREFIX = 'grupo';
 
 /**
- * Pestañas de T020, Cobros (002 T037), Ranking (007 T026) y Cobranza del titular (006 T014).
- * Solicitudes y Ajustes se agregan en sus tareas.
+ * Pestañas de T020, Cobros (002 T037), Ranking (007 T026), Cobranza del titular (006 T014) y
+ * Solicitudes del titular (010 T018). Ajustes se agrega en su tarea.
  */
-type GroupTabId = 'resumen' | 'miembros' | 'cobros' | 'ranking' | 'cobranza' | 'publicar';
+type GroupTabId =
+  'resumen' | 'miembros' | 'cobros' | 'ranking' | 'cobranza' | 'solicitudes' | 'publicar';
 
 const TABS: readonly GroupTab<GroupTabId>[] = [
   { id: 'resumen', label: 'Resumen' },
@@ -33,6 +34,7 @@ const TABS: readonly GroupTab<GroupTabId>[] = [
 
 const OWNER_TABS: readonly GroupTab<GroupTabId>[] = [
   ...TABS,
+  { id: 'solicitudes', label: 'Solicitudes' },
   { id: 'cobranza', label: 'Cobranza' },
   { id: 'publicar', label: 'Publicar cupos' },
 ];
@@ -130,6 +132,8 @@ export interface GroupDetailViewProps {
   ownerPanel?: (group: GroupDetail, actions: OwnerPanelActions) => ReactNode;
   /** Cola «Por revisar» del titular dentro de la pestaña Cobros (002 T026). */
   reviewQueue?: (group: GroupDetail) => ReactNode;
+  /** Pestaña «Solicitudes» del titular: cupos y cola de solicitudes (010 T018). */
+  requestsTab?: (group: GroupDetail) => ReactNode;
   /** Pestaña «Publicar cupos» del titular (008 T011). */
   listingTab?: (group: GroupDetail) => ReactNode;
   /** Insignia «El grupo publicó cupos» que ven los miembros (008 T011). */
@@ -146,6 +150,7 @@ export function GroupDetailView({
   groupId,
   ownerPanel,
   reviewQueue,
+  requestsTab,
   listingTab,
   memberBadge,
   adminPanel,
@@ -206,6 +211,9 @@ export function GroupDetailView({
             {tab === 'cobranza' && state.group.myRole === 'titular' && (
               <GroupCollectionTab groupId={state.group.id} />
             )}
+            {tab === 'solicitudes' &&
+              state.group.myRole === 'titular' &&
+              requestsTab?.(state.group)}
             {tab === 'publicar' && state.group.myRole === 'titular' && listingTab?.(state.group)}
           </div>
         </>
