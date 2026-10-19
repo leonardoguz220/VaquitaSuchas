@@ -4,6 +4,12 @@ export type ChargeAccess = 'titular' | 'dueno' | 'dueno_retirado' | 'miembro' | 
 export type GroupState = 'activo' | 'cerrado' | 'congelado';
 export type AllowedAction = 'uploadReceipt' | 'confirm' | 'reject' | 'manualPayment' | 'cancel';
 
+/** Estado del grupo para `allowedActions`: el congelado manda sobre el cerrado (R5). */
+export function groupStateOf(group: { status: 'activo' | 'cerrado'; frozen: boolean }): GroupState {
+  if (group.frozen) return 'congelado';
+  return group.status === 'cerrado' ? 'cerrado' : 'activo';
+}
+
 export interface AccessInput {
   user: { id: string };
   charge: { userId: string; status: ChargeStatus };
@@ -39,6 +45,9 @@ export function allowedActions(
     if (status === 'en_revision') return ['confirm', 'reject'];
     return open ? ['manualPayment', 'cancel'] : [];
   }
-  if (access === 'dueno' || access === 'dueno_retirado') return open ? ['uploadReceipt'] : [];
+  if (access === 'dueno' || access === 'dueno_retirado') {
+    // RF-002-08: mientras está en revisión también puede reemplazar el comprobante.
+    return open || status === 'en_revision' ? ['uploadReceipt'] : [];
+  }
   return [];
 }

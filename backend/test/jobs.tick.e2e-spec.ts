@@ -173,8 +173,8 @@ describe('POST /internal/jobs/tick contra PostgreSQL real', () => {
       ran: [
         { job: 'example.noop', status: 'ok', processed: 0 },
         { job: 'maintenance.cleanup', status: 'ok', processed: 0 },
-        { job: 'billing.generate', status: 'ok', processed: 0 },
         { job: 'auth.purge_unverified', status: 'ok', processed: 0 },
+        { job: 'billing.generate', status: 'ok', processed: 0 },
       ],
     });
   });
@@ -294,8 +294,8 @@ describe('POST /internal/jobs/tick contra PostgreSQL real', () => {
       ran: [
         { job: 'example.noop', status: 'ok', processed: 0 },
         { job: 'maintenance.cleanup', status: 'ok', processed: 0 },
-        { job: 'billing.generate', status: 'ok', processed: 0 },
         { job: 'auth.purge_unverified', status: 'ok', processed: 0 },
+        { job: 'billing.generate', status: 'ok', processed: 0 },
         { job: 'test.boom', status: 'error', error: 'Error' },
       ],
     });
