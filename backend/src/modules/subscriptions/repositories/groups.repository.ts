@@ -29,29 +29,25 @@ export interface GroupRow {
   created_at: Date;
 }
 
-export interface GroupListRow {
-  id: string;
-  name: string;
-  status: 'activo' | 'cerrado';
-  frozen_reason: 'titular_baneado' | null;
-  service_name_snapshot: string;
-  logo_url_snapshot: string | null;
-  brand_color_snapshot: string | null;
-  total_slots: number;
-  price_cents: string;
-  currency: 'USD' | 'BS';
-  exchange_rate: string | null;
-  billing_day: number;
-  created_at: Date;
-  role: 'titular' | 'miembro';
-  member_count: number;
-}
-
 const COLUMNS = `id, owner_id, name, status, frozen_at, frozen_reason, catalog_plan_id,
   plan_max_slots_snapshot, service_name_snapshot, plan_name_snapshot, logo_url_snapshot, brand_color_snapshot,
   price_cents::text AS price_cents, currency, exchange_rate::text AS exchange_rate,
   total_bs_cents::text AS total_bs_cents, billing_day, total_slots, invite_code,
   accepting_members, payment_info_text, payment_qr_key, payment_qr_mime, version, created_at`;
+
+/** Fila de «Mis suscripciones»: el grupo, el rol de la persona y los miembros activos. */
+export interface GroupListRow extends GroupRow {
+  my_role: 'titular' | 'miembro';
+  member_count: string;
+  my_joined_at: Date;
+}
+
+export interface GroupListFilter {
+  role?: 'titular' | 'miembro';
+  status: 'activo' | 'cerrado';
+  after?: { joinedAt: Date; groupId: string };
+  limit: number;
+}
 
 export interface NewGroup {
   ownerId: string;
@@ -198,61 +194,53 @@ export class GroupsRepository {
     return result.rows[0] as GroupRow;
   }
 
-  /**
-   * Guarda texto y QR de pago. No sube `version`: no cambia ningún campo del PATCH, así que no debe
-   * provocar un `STALE_STATE` falso en otra pantalla de edición.
-   */
+  /** Guarda texto y/o QR de pago sin tocar `version` (no es una edición del grupo). */
   async updatePaymentInfo(
     q: Queryable,
     groupId: string,
-    info: { text: string | null; qrKey: string | null; qrMime: 'image/jpeg' | 'image/png' | null },
-  ): Promise<GroupRow> {
-    const result = await q.query<GroupRow>(
-      `UPDATE groups SET payment_info_text = $2, payment_qr_key = $3, payment_qr_mime = $4
-        WHERE id = $1 RETURNING ${COLUMNS}`,
-      [groupId, info.text, info.qrKey, info.qrMime],
+    change: { text?: string | null; qr?: { key: string; mime: string } | null },
+  ): Promise<void> {
+    await q.query(
+      `UPDATE groups
+          SET payment_info_text = CASE WHEN $2::boolean THEN $3 ELSE payment_info_text END,
+              payment_qr_key = CASE WHEN $4::boolean THEN $5 ELSE payment_qr_key END,
+              payment_qr_mime = CASE WHEN $4::boolean THEN $6 ELSE payment_qr_mime END
+        WHERE id = $1`,
+      [
+        groupId,
+        change.text !== undefined,
+        change.text ?? null,
+        change.qr !== undefined,
+        change.qr?.key ?? null,
+        change.qr?.mime ?? null,
+      ],
     );
-    return result.rows[0] as GroupRow;
   }
 
-  /**
-   * Grupos activos (sin `left_at`) de la persona con su rol y los miembros activos, en una sola
-   * consulta, ordenados del más reciente al más antiguo (`created_at`, `id`). Pide `limit + 1`
-   * filas para saber si hay otra página (RF-001-19, RNF-001-05).
-   */
-  async listForUser(
-    q: Queryable,
-    userId: string,
-    filter: {
-      role?: 'titular' | 'miembro';
-      status?: 'activo' | 'cerrado';
-      after?: { createdAt: Date; id: string };
-      limit: number;
-    },
-  ): Promise<GroupListRow[]> {
-    const params: unknown[] = [userId];
-    const where = ['m.user_id = $1', 'm.left_at IS NULL'];
-    if (filter.role) where.push(`m.role = $${params.push(filter.role)}`);
-    if (filter.status) where.push(`g.status = $${params.push(filter.status)}`);
-    if (filter.after) {
-      const at = params.push(filter.after.createdAt);
-      const id = params.push(filter.after.id);
-      // Milisegundos: el cursor viaja como `Date` de JS y no guarda microsegundos.
-      where.push(`(date_trunc('milliseconds', g.created_at), g.id) < ($${at}, $${id})`);
-    }
-    const limit = params.push(filter.limit + 1);
+  /** Grupos de la persona (miembro activo) con su rol y conteo de miembros, de uno en uno (RF-001-19). */
+  async listForUser(q: Queryable, userId: string, f: GroupListFilter): Promise<GroupListRow[]> {
     const result = await q.query<GroupListRow>(
-      `SELECT g.id, g.name, g.status, g.frozen_reason, g.service_name_snapshot, g.logo_url_snapshot,
-              g.brand_color_snapshot, g.total_slots, g.price_cents::text AS price_cents, g.currency,
-              g.exchange_rate::text AS exchange_rate, g.billing_day, g.created_at, m.role,
-              (SELECT count(*) FROM group_members c
-                WHERE c.group_id = g.id AND c.left_at IS NULL)::int AS member_count
-         FROM group_members m
-         JOIN groups g ON g.id = m.group_id
-        WHERE ${where.join(' AND ')}
-        ORDER BY date_trunc('milliseconds', g.created_at) DESC, g.id DESC
-        LIMIT $${limit}`,
-      params,
+      `WITH me AS (
+         SELECT group_id, role, joined_at FROM group_members WHERE user_id = $1 AND left_at IS NULL
+       )
+       SELECT ${COLUMNS}, me.role AS my_role, me.joined_at AS my_joined_at,
+              (SELECT count(*) FROM group_members m
+                WHERE m.group_id = groups.id AND m.left_at IS NULL)::text AS member_count
+         FROM groups
+         JOIN me ON me.group_id = groups.id
+        WHERE status = $2
+          AND ($3::text IS NULL OR me.role = $3)
+          AND ($4::timestamptz IS NULL OR (me.joined_at, groups.id) < ($4::timestamptz, $5::uuid))
+        ORDER BY me.joined_at DESC, groups.id DESC
+        LIMIT $6`,
+      [
+        userId,
+        f.status,
+        f.role ?? null,
+        f.after?.joinedAt ?? null,
+        f.after?.groupId ?? null,
+        f.limit,
+      ],
     );
     return result.rows;
   }

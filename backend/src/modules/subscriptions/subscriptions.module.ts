@@ -8,6 +8,7 @@ import {
   GroupAdminController,
   GroupsController,
   GroupViewController,
+  InviteCodeController,
   LeaveController,
   MembersController,
   PaymentInfoController,
@@ -16,9 +17,9 @@ import { GroupsRepository } from './repositories/groups.repository.js';
 import { MembersRepository } from './repositories/members.repository.js';
 import { TxEventBus } from '../../shared/events/tx-event-bus.js';
 import type { UserBanned, UserUnbanned } from '../../shared/events/user-events.js';
-import { GroupsService } from './services/groups.service.js';
 import { GroupViewService } from './services/group-view.service.js';
 import { PaymentInfoService } from './services/payment-info.service.js';
+import { GroupsService } from './services/groups.service.js';
 import { InviteAttemptsRepository } from './repositories/invite-attempts.repository.js';
 import { InviteCodeService } from './services/invite-code.service.js';
 import { MembershipService } from './services/membership.service.js';
@@ -32,10 +33,11 @@ import { UserEventsHandler } from './services/user-events.handler.js';
   controllers: [
     GroupsController,
     GroupViewController,
-    PaymentInfoController,
     GroupAdminController,
     MembersController,
     LeaveController,
+    PaymentInfoController,
+    InviteCodeController,
   ],
   providers: [
     GroupsRepository,
@@ -54,7 +56,6 @@ import { UserEventsHandler } from './services/user-events.handler.js';
     GroupsRepository,
     MembersRepository,
     GroupsService,
-    PaymentInfoService,
     MembershipService,
     InviteCodeService,
     GroupMemberGuard,

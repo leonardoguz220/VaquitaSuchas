@@ -5,173 +5,135 @@ import { DomainError } from '../../../shared/errors/domain-error.js';
 import { DEFAULT_MESSAGES, ErrorCode } from '../../../shared/errors/error-codes.js';
 import { FileStorage } from '../../../shared/ports/file-storage.js';
 import {
-  checkPaymentQr,
+  checkQrFile,
   normalizePaymentText,
-  paymentQrKey,
-  paymentQrMime,
-  PAYMENT_QR_URL_TTL_SECONDS,
-  planPaymentInfoChange,
-  type PaymentQrMime,
-} from '../domain/payment-qr.js';
+  QR_URL_TTL_SECONDS,
+  qrStorageKey,
+} from '../domain/payment-info.js';
 import { GroupsRepository, type GroupRow } from '../repositories/groups.repository.js';
-import { groupClosed, groupFrozen } from './group-errors.js';
+import { assertGroupWritable, fieldsError } from './group-errors.js';
+
+export interface UpdatePaymentInfoInput {
+  /** `undefined` conserva el texto; vacío lo borra. */
+  text?: string;
+  qrBytes?: Uint8Array;
+  removeQr?: boolean;
+}
 
 export interface PaymentInfoView {
   text: string | null;
-  /** URL firmada de 10 minutos; solo se genera al consultar un miembro (RF-001-20). */
   qrUrl: string | null;
   configured: boolean;
 }
 
-export interface UpdatePaymentInfoInput {
-  /** `undefined`: no se toca el texto; vacío: se borra. */
-  text: string | undefined;
-  /** Contenido del QR adjunto; `undefined` si la petición no trajo ninguno. */
-  qrBytes: Uint8Array | undefined;
-  removeQr: boolean;
-}
-
-const validationError = (field: string, code: string): DomainError =>
-  new DomainError(ErrorCode.VALIDATION_ERROR, 400, DEFAULT_MESSAGES.VALIDATION_ERROR, {
-    fields: { [field]: [code] },
-  });
-
-const storageUnavailable = (): DomainError =>
-  new DomainError(
-    ErrorCode.SERVICE_UNAVAILABLE,
-    503,
-    'No pudimos guardar el archivo, intenta de nuevo.',
-  );
-
-const notFound = (): DomainError =>
-  new DomainError(ErrorCode.NOT_FOUND, 404, DEFAULT_MESSAGES.NOT_FOUND);
-
-/**
- * Datos de pago del grupo (spec 001, RF-001-20): texto de hasta 500 caracteres y QR por
- * `FileStorage`. El QR nuevo se guarda primero con una clave generada por el servidor; el cambio en
- * la base va en una transacción; el QR anterior se borra solo después de confirmar. Si algo falla
- * antes de confirmar, el archivo nuevo se borra y el anterior sigue vigente. Los permisos (titular)
- * los resuelve `GroupOwnerGuard`.
- */
+/** Datos de pago del grupo: texto y QR (RF-001-20). */
 @Injectable()
 export class PaymentInfoService {
   private readonly logger = new Logger(PaymentInfoService.name);
 
   constructor(
     private readonly db: DbService,
-    private readonly storage: FileStorage,
     private readonly groups: GroupsRepository,
+    private readonly storage: FileStorage,
   ) {}
 
-  /** `PUT /groups/:id/payment-info`. */
-  async update(groupId: string, input: UpdatePaymentInfoInput): Promise<PaymentInfoView> {
-    const text = this.checkText(input.text);
-    const qr = this.checkQr(input.qrBytes, input.removeQr);
-
-    // Antes de tocar el almacén: un grupo cerrado o congelado no recibe archivos.
-    this.assertWritable(await this.groups.findById(this.db, groupId));
-
-    let newQr: { key: string; mime: PaymentQrMime } | undefined;
-    if (qr && input.qrBytes) {
-      newQr = {
-        key: paymentQrKey({ groupId, fileId: randomUUID(), type: qr.type }),
-        mime: paymentQrMime(qr.type),
-      };
-      try {
-        await this.storage.put(newQr.key, input.qrBytes, { contentType: newQr.mime });
-      } catch {
-        this.logger.warn('El almacén de archivos falló al guardar el QR de pago de un grupo.');
-        throw storageUnavailable();
-      }
-    }
-
-    let saved: { row: GroupRow; obsoleteQrKey: string | null };
+  /** URL firmada de 10 minutos del QR; solo se pide al consultar un miembro. `null` si no hay o falla. */
+  async qrUrl(group: Pick<GroupRow, 'payment_qr_key'>): Promise<string | null> {
+    if (!group.payment_qr_key) return null;
     try {
-      saved = await this.db.withTransaction(async (tx) => {
-        const group = await this.groups.findByIdForUpdate(tx, groupId);
-        this.assertWritable(group);
-        const plan = planPaymentInfoChange(
-          {
-            text: (group as GroupRow).payment_info_text,
-            qrKey: (group as GroupRow).payment_qr_key,
-            qrMime: (group as GroupRow).payment_qr_mime,
-          },
-          { text, ...(newQr && { newQr }), removeQr: input.removeQr },
-        );
-        const row = await this.groups.updatePaymentInfo(tx, groupId, plan.next);
-        return { row, obsoleteQrKey: plan.obsoleteQrKey };
-      });
-    } catch (error) {
-      if (newQr) await this.discard(newQr.key, 'tras una actualización fallida');
-      throw error;
-    }
-
-    // Confirmado: el QR anterior ya no lo usa nadie.
-    if (saved.obsoleteQrKey) await this.discard(saved.obsoleteQrKey, 'reemplazado');
-    return this.view(saved.row);
-  }
-
-  /** Texto, QR firmado y `configured` de un grupo; para un miembro que consulta. */
-  async view(
-    group: Pick<GroupRow, 'payment_info_text' | 'payment_qr_key'>,
-  ): Promise<PaymentInfoView> {
-    const qrUrl = await this.signedQrUrl(group.payment_qr_key);
-    return {
-      text: group.payment_info_text,
-      qrUrl,
-      configured: group.payment_info_text !== null || group.payment_qr_key !== null,
-    };
-  }
-
-  /** URL firmada de 10 minutos; si el almacén falla se responde sin QR en lugar de romper la vista. */
-  async signedQrUrl(qrKey: string | null): Promise<string | null> {
-    if (qrKey === null) return null;
-    try {
-      return await this.storage.signedUrl(qrKey, PAYMENT_QR_URL_TTL_SECONDS);
+      return await this.storage.signedUrl(group.payment_qr_key, QR_URL_TTL_SECONDS);
     } catch {
-      this.logger.warn('No se pudo firmar el QR de pago de un grupo.');
+      this.logger.warn('No se pudo firmar la URL del QR de pago.');
       return null;
     }
   }
 
-  private checkText(raw: string | undefined): string | null | undefined {
-    if (raw === undefined) return undefined;
-    const check = normalizePaymentText(raw);
-    if (!check.ok) throw validationError('text', 'TOO_LONG');
-    return check.value;
+  async view(group: GroupRow): Promise<PaymentInfoView> {
+    const qrUrl = await this.qrUrl(group);
+    return {
+      text: group.payment_info_text,
+      qrUrl,
+      configured: group.payment_info_text !== null || qrUrl !== null,
+    };
   }
 
-  private checkQr(
-    bytes: Uint8Array | undefined,
-    removeQr: boolean,
-  ): { type: 'jpeg' | 'png' } | null {
-    if (bytes === undefined) return null;
-    if (removeQr) throw validationError('removeQr', 'CONFLICTS_WITH_QR');
-    const check = checkPaymentQr(bytes);
-    if (check.ok) return { type: check.type };
-    if (check.reason === 'empty') throw validationError('qr', 'EMPTY_FILE');
-    if (check.reason === 'too_large') {
-      throw new DomainError(ErrorCode.FILE_TOO_LARGE, 413, DEFAULT_MESSAGES.FILE_TOO_LARGE);
+  /**
+   * `PUT /groups/:id/payment-info`. Valida texto, tamaño y tipo real antes de tocar nada; sube el QR
+   * nuevo, actualiza la fila y solo entonces borra el QR anterior: si algo falla se conserva el anterior.
+   */
+  async update(
+    groupId: string,
+    input: UpdatePaymentInfoInput,
+  ): Promise<{ paymentInfo: PaymentInfoView }> {
+    const fields: Record<string, string[]> = {};
+    let text: string | null | undefined;
+    if (input.text !== undefined) {
+      const normalized = normalizePaymentText(input.text);
+      if (normalized) text = normalized.text;
+      else fields['text'] = ['TOO_LONG'];
     }
-    throw new DomainError(
+    if (input.qrBytes !== undefined && input.removeQr) fields['removeQr'] = ['CONFLICTS_WITH_QR'];
+    if (Object.keys(fields).length > 0) throw fieldsError(fields);
+
+    let upload: { key: string; mime: string } | null = null;
+    if (input.qrBytes !== undefined) {
+      const check = checkQrFile(input.qrBytes);
+      if (!check.ok) throw this.fileError(check.reason);
+      upload = { key: qrStorageKey(groupId, randomUUID(), check.extension), mime: check.mime };
+      try {
+        await this.storage.put(upload.key, input.qrBytes, { contentType: upload.mime });
+      } catch {
+        this.logger.warn('El almacén de archivos falló al guardar un QR de pago.');
+        throw new DomainError(
+          ErrorCode.SERVICE_UNAVAILABLE,
+          503,
+          DEFAULT_MESSAGES.SERVICE_UNAVAILABLE,
+        );
+      }
+    }
+
+    let result: { previousKey: string | null; row: GroupRow };
+    try {
+      result = await this.db.withTransaction(async (tx) => {
+        const group = await this.groups.findByIdForUpdate(tx, groupId);
+        if (!group) throw new DomainError(ErrorCode.NOT_FOUND, 404, DEFAULT_MESSAGES.NOT_FOUND);
+        assertGroupWritable(group);
+        const qr = upload ?? (input.removeQr ? null : undefined);
+        await this.groups.updatePaymentInfo(tx, groupId, {
+          ...(text !== undefined && { text }),
+          ...(qr !== undefined && { qr }),
+        });
+        const row = (await this.groups.findById(tx, groupId)) as GroupRow;
+        return { previousKey: group.payment_qr_key, row };
+      });
+    } catch (error) {
+      if (upload) await this.discard(upload.key);
+      throw error;
+    }
+
+    if (result.previousKey && result.previousKey !== result.row.payment_qr_key) {
+      await this.discard(result.previousKey);
+    }
+    return { paymentInfo: await this.view(result.row) };
+  }
+
+  private async discard(key: string): Promise<void> {
+    try {
+      await this.storage.delete(key);
+    } catch {
+      this.logger.warn('No se pudo borrar un archivo QR del almacén.');
+    }
+  }
+
+  private fileError(reason: 'empty' | 'too_large' | 'unsupported_type'): DomainError {
+    if (reason === 'empty') return fieldsError({ qr: ['EMPTY_FILE'] });
+    if (reason === 'too_large') {
+      return new DomainError(ErrorCode.FILE_TOO_LARGE, 413, DEFAULT_MESSAGES.FILE_TOO_LARGE);
+    }
+    return new DomainError(
       ErrorCode.UNSUPPORTED_FILE_TYPE,
       415,
       'Solo se aceptan imágenes JPG o PNG.',
     );
-  }
-
-  private assertWritable(group: GroupRow | null): void {
-    if (!group) throw notFound();
-    if (group.status === 'cerrado') throw groupClosed();
-    if (group.frozen_at !== null) throw groupFrozen();
-  }
-
-  /** El archivo sobrante se borra; si el borrado falla queda uno privado sin referencia. */
-  private async discard(key: string, why: string): Promise<void> {
-    try {
-      await this.storage.delete(key);
-    } catch {
-      this.logger.warn(`No se pudo borrar un archivo de QR de pago (${why}).`);
-    }
   }
 }

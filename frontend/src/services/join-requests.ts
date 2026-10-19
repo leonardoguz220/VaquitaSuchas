@@ -2,9 +2,14 @@
  * Cliente de los endpoints de solicitudes de ingreso y chat (spec 010, `contracts/api.md`). Una
  * función por endpoint; los tipos salen del contrato congelado. El frontend no calcula cuotas,
  * plazos ni estados: usa `quote.amountCents`, `phase` y `allowedActions` del backend, y dibuja la
- * cuenta regresiva con `deadlineAt` y `serverNow`. Por ahora cada función responde con datos
- * simulados de `join-requests.mock.ts`; al conectar el backend solo cambia el cuerpo por `apiRequest`.
+ * cuenta regresiva con `deadlineAt` y `serverNow`.
+ *
+ * Conectadas al backend (T018, T023, T027): apertura, listados, detalle, datos de pago, prórroga,
+ * comprobante, enlaces firmados y resumen de la barra. Las decisiones del titular (T031), el chat
+ * (T035) y los reclamos (T040) siguen con datos simulados de `join-requests.mock.ts` hasta sus
+ * tareas.
  */
+import { apiRequest } from './http';
 import * as mock from './join-requests.mock';
 
 export type JoinRequestStatus =
@@ -167,6 +172,8 @@ export interface JoinRequest {
   finalReason: string | null;
   rejectReason: string | null;
   rejectedAsFalse: boolean;
+  /** Solo en `aceptada`: por comprobante o en efectivo (RF-010-18). */
+  acceptedMethod?: 'comprobante' | 'efectivo' | null;
   chargeId: string | null;
   unreadCount: number;
   disputes: JoinDisputeRef[];
@@ -182,6 +189,25 @@ export interface JoinRequestsPage {
   nextCursor: string | null;
 }
 
+/** Cupos del grupo para el titular (RN-010-02): `reserved` cuenta las solicitudes activas. */
+export interface GroupJoinSlots {
+  total: number;
+  members: number;
+  reserved: number;
+  available: number;
+}
+
+export interface GroupJoinRequestsPage extends JoinRequestsPage {
+  slots: GroupJoinSlots;
+}
+
+/** `GET /me/join-requests/summary`: insignias de la barra de navegación (RF-010-26). */
+export interface JoinRequestsSummary {
+  unreadMessages: number;
+  actionableAsHost: number;
+  activeAsApplicant: number;
+}
+
 export type JoinRequestRole = 'solicitante' | 'titular';
 
 export interface ListJoinRequestsParams {
@@ -193,6 +219,24 @@ export interface ListJoinRequestsParams {
   cursor?: string;
 }
 
+const REQUESTS_API = '/api/join-requests';
+
+function requestPath(requestId: string, suffix = ''): string {
+  return `${REQUESTS_API}/${encodeURIComponent(requestId)}${suffix}`;
+}
+
+function listQuery(params: ListJoinRequestsParams): string {
+  const query = new URLSearchParams();
+  if (params.role) query.set('role', params.role);
+  // El backend acepta `status=a,b` (además de `status=a&status=b`).
+  if (params.status?.length) query.set('status', params.status.join(','));
+  if (params.groupId) query.set('groupId', params.groupId);
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.cursor) query.set('cursor', params.cursor);
+  const text = query.toString();
+  return text ? `?${text}` : '';
+}
+
 /**
  * `POST /join-requests` (RF-010-01, RF-010-03): abre una solicitud `abierta` con el código; no une
  * a la persona al grupo. Lanza `ApiError` `422 INVALID_INVITE_CODE`, `429 RATE_LIMITED`, `422
@@ -201,7 +245,7 @@ export interface ListJoinRequestsParams {
  * `OPEN_CHARGES_IN_GROUP`, `ALREADY_MEMBER`, `GROUP_FROZEN`) o `403 ACCOUNT_RESTRICTED`.
  */
 export function openJoinRequest(code: string): Promise<JoinRequest> {
-  return mock.openJoinRequest(code);
+  return apiRequest<JoinRequest>(REQUESTS_API, { method: 'POST', body: { code } });
 }
 
 /**
@@ -209,7 +253,19 @@ export function openJoinRequest(code: string): Promise<JoinRequest> {
  * como titular, las de sus grupos (más antigua primero).
  */
 export function listJoinRequests(params: ListJoinRequestsParams = {}): Promise<JoinRequestsPage> {
-  return mock.listJoinRequests(params);
+  return apiRequest<JoinRequestsPage>(`${REQUESTS_API}${listQuery(params)}`);
+}
+
+/**
+ * `GET /groups/:id/join-requests` (RF-010-26): cola del titular, de la más antigua a la más
+ * reciente, con los cupos del grupo. `403` si es miembro y `404` si el grupo es ajeno.
+ */
+export function listGroupJoinRequests(
+  groupId: string,
+  params: Omit<ListJoinRequestsParams, 'groupId' | 'role'> = {},
+): Promise<GroupJoinRequestsPage> {
+  const path = `/api/groups/${encodeURIComponent(groupId)}/join-requests`;
+  return apiRequest<GroupJoinRequestsPage>(`${path}${listQuery(params)}`);
 }
 
 /**
@@ -217,7 +273,12 @@ export function listJoinRequests(params: ListJoinRequestsParams = {}): Promise<J
  * `ApiError` `403` (miembro que no participa) o `404` (ajeno), CA-010-20.
  */
 export function getJoinRequest(requestId: string): Promise<JoinRequest> {
-  return mock.getJoinRequest(requestId);
+  return apiRequest<JoinRequest>(requestPath(requestId));
+}
+
+/** `GET /me/join-requests/summary`: contadores para la barra de navegación. */
+export function getJoinRequestsSummary(): Promise<JoinRequestsSummary> {
+  return apiRequest<JoinRequestsSummary>('/api/me/join-requests/summary');
 }
 
 export interface SendPaymentDataRequest {
@@ -239,19 +300,26 @@ export function sendPaymentData(
   requestId: string,
   input: SendPaymentDataRequest = {},
 ): Promise<JoinRequest> {
-  return mock.sendPaymentData(requestId, input);
+  const form = new FormData();
+  if (input.text !== undefined) form.append('text', input.text);
+  if (input.qr) form.append('qr', input.qr);
+  if (input.version !== undefined) form.append('version', String(input.version));
+  return apiRequest<JoinRequest>(requestPath(requestId, '/payment-data'), {
+    method: 'POST',
+    body: form,
+  });
 }
 
 /**
  * `POST /join-requests/:id/extend` (RF-010-28), solo titular: 15 minutos más, una sola vez.
- * Lanza `ApiError` `422 ALREADY_EXTENDED` o `409 INVALID_TRANSITION`.
- * [NECESITA ACLARACIÓN] el contrato no lista cuerpo; se manda `{ version? }` como en las demás.
+ * Lanza `ApiError` `422 ALREADY_EXTENDED` o `409 INVALID_TRANSITION`. El contrato no lleva cuerpo,
+ * así que se envía sin él; `input` se conserva para no cambiar las llamadas de la pantalla.
  */
 export function extendJoinRequest(
   requestId: string,
-  input: { version?: number } = {},
+  _input: { version?: number } = {},
 ): Promise<JoinRequest> {
-  return mock.extendJoinRequest(requestId, input);
+  return apiRequest<JoinRequest>(requestPath(requestId, '/extend'), { method: 'POST' });
 }
 
 /** URL firmada de 10 minutos como máximo (`{ url, expiresAt, mime }`). */
@@ -266,7 +334,7 @@ export interface SignedFileLink {
  * `410 FILE_DELETED` tras la retención.
  */
 export function getPaymentQr(requestId: string): Promise<SignedFileLink> {
-  return mock.getPaymentQr(requestId);
+  return apiRequest<SignedFileLink>(requestPath(requestId, '/payment-qr'));
 }
 
 export interface UploadJoinProofRequest {
@@ -288,7 +356,24 @@ export function uploadJoinProof(
   requestId: string,
   input: UploadJoinProofRequest,
 ): Promise<JoinRequest> {
-  return mock.uploadJoinProof(requestId, input);
+  const form = new FormData();
+  form.append('file', input.file);
+  form.append('method', input.method);
+  form.append('reference', input.reference);
+  if (input.version !== undefined) form.append('version', String(input.version));
+  return apiRequest<JoinRequest>(requestPath(requestId, '/proof'), {
+    method: 'POST',
+    body: form,
+  });
+}
+
+/**
+ * `GET /join-requests/:id/proof/file` (RF-010-13): enlace firmado del comprobante, solo para el
+ * titular en la pantalla. Lanza `ApiError` `404` si no hay comprobante y `410 FILE_DELETED` tras
+ * la retención.
+ */
+export function getProofFile(requestId: string): Promise<SignedFileLink> {
+  return apiRequest<SignedFileLink>(requestPath(requestId, '/proof/file'));
 }
 
 /**
@@ -299,7 +384,10 @@ export function confirmJoinRequest(
   requestId: string,
   input: { version?: number } = {},
 ): Promise<JoinRequest> {
-  return mock.confirmJoinRequest(requestId, input);
+  return apiRequest<JoinRequest>(requestPath(requestId, '/confirm'), {
+    method: 'POST',
+    body: input,
+  });
 }
 
 /**
@@ -310,7 +398,10 @@ export function registerCashPayment(
   requestId: string,
   input: { version?: number } = {},
 ): Promise<JoinRequest> {
-  return mock.registerCashPayment(requestId, input);
+  return apiRequest<JoinRequest>(requestPath(requestId, '/cash-payment'), {
+    method: 'POST',
+    body: input,
+  });
 }
 
 export interface RejectJoinRequestRequest {
@@ -329,7 +420,10 @@ export function rejectJoinRequest(
   requestId: string,
   input: RejectJoinRequestRequest,
 ): Promise<JoinRequest> {
-  return mock.rejectJoinRequest(requestId, input);
+  return apiRequest<JoinRequest>(requestPath(requestId, '/reject'), {
+    method: 'POST',
+    body: input,
+  });
 }
 
 /**
@@ -337,11 +431,8 @@ export function rejectJoinRequest(
  * `esperando_pago`. Lanza `ApiError` `409 INVALID_TRANSITION` (en `pago_informado` o final).
  * [NECESITA ACLARACIÓN] el contrato no lista cuerpo; se manda `{ version? }` como en las demás.
  */
-export function cancelJoinRequest(
-  requestId: string,
-  input: { version?: number } = {},
-): Promise<JoinRequest> {
-  return mock.cancelJoinRequest(requestId, input);
+export function cancelJoinRequest(requestId: string): Promise<JoinRequest> {
+  return apiRequest<JoinRequest>(requestPath(requestId, '/cancel'), { method: 'POST' });
 }
 
 /** Mensaje del chat (`JoinMessage`). El texto es plano y nunca se interpreta como HTML. */
@@ -367,7 +458,13 @@ export function listMessages(
   requestId: string,
   params: { afterSeq?: number; limit?: number } = {},
 ): Promise<JoinMessagesPage> {
-  return mock.listMessages(requestId, params);
+  const query = new URLSearchParams();
+  if (params.afterSeq !== undefined) query.set('afterSeq', String(params.afterSeq));
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  const text = query.toString();
+  return apiRequest<JoinMessagesPage>(
+    `${requestPath(requestId, '/messages')}${text ? `?${text}` : ''}`,
+  );
 }
 
 export interface SendMessageRequest {
@@ -383,17 +480,28 @@ export interface SendMessageRequest {
  * `429 RATE_LIMITED` con `details.retryAfterSeconds`. No hay operaciones para editar ni borrar.
  */
 export function sendMessage(requestId: string, input: SendMessageRequest): Promise<JoinMessage> {
-  return mock.sendMessage(requestId, input);
+  const form = new FormData();
+  if (input.text !== undefined) form.append('text', input.text);
+  if (input.image) form.append('image', input.image);
+  return apiRequest<JoinMessage>(requestPath(requestId, '/messages'), {
+    method: 'POST',
+    body: form,
+  });
 }
 
 /** `GET /join-requests/:id/messages/:messageId/image`: URL firmada de la imagen (≤ 10 min). */
 export function getMessageImage(requestId: string, messageId: string): Promise<SignedFileLink> {
-  return mock.getMessageImage(requestId, messageId);
+  return apiRequest<SignedFileLink>(
+    requestPath(requestId, `/messages/${encodeURIComponent(messageId)}/image`),
+  );
 }
 
 /** `POST /join-requests/:id/read` (RF-010-09): marca como leído hasta `upToSeq`. Responde 204. */
 export function markMessagesRead(requestId: string, upToSeq: number): Promise<void> {
-  return mock.markMessagesRead(requestId, upToSeq);
+  return apiRequest<void>(requestPath(requestId, '/read'), {
+    method: 'POST',
+    body: { upToSeq },
+  });
 }
 
 export type DisputeResult = 'estafa_confirmada' | 'sin_falta';

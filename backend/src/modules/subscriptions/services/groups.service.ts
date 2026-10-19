@@ -1,7 +1,6 @@
-import { randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { Clock } from '../../../shared/clock/clock.js';
-import { DbService, type Queryable } from '../../../shared/db/db.service.js';
+import { DbService, type DbTransaction } from '../../../shared/db/db.service.js';
 import { DomainError } from '../../../shared/errors/domain-error.js';
 import { DEFAULT_MESSAGES, ErrorCode } from '../../../shared/errors/error-codes.js';
 import type { GroupCreated } from '../../../shared/events/group-events.js';
@@ -17,7 +16,6 @@ import {
   type GroupRule,
 } from '../domain/group-rules.js';
 import { applyGroupPatch, type GroupPatch } from '../domain/group-edit.js';
-import { generateInviteCode } from '../domain/invite-code.js';
 import type { Currency } from '../domain/money.js';
 import {
   HOST_ELIGIBILITY_PORT,
@@ -26,10 +24,9 @@ import {
 } from '../ports/host-eligibility.port.js';
 import { GroupsRepository, type GroupRow } from '../repositories/groups.repository.js';
 import { MembersRepository } from '../repositories/members.repository.js';
-import { groupClosed, groupFrozen } from './group-errors.js';
+import { assertGroupWritable, fieldsError } from './group-errors.js';
+import { InviteCodeService } from './invite-code.service.js';
 import { PaymentInfoService } from './payment-info.service.js';
-
-export const INVITE_CODE_ATTEMPTS = 5;
 
 export interface CreateGroupInput {
   catalogPlanSlug: string | null;
@@ -55,9 +52,6 @@ export interface HostEligibilityView extends HostEligibility {
   maxActiveGroups: number;
   canCreateMore: boolean;
 }
-
-const fieldsError = (fields: Record<string, string[]>): DomainError =>
-  new DomainError(ErrorCode.VALIDATION_ERROR, 400, DEFAULT_MESSAGES.VALIDATION_ERROR, { fields });
 
 const businessRule = (
   rule: string,
@@ -87,6 +81,7 @@ export class GroupsService {
     private readonly members: MembersRepository,
     private readonly catalog: CatalogService,
     private readonly paymentInfo: PaymentInfoService,
+    private readonly invites: InviteCodeService,
     @Inject(HOST_ELIGIBILITY_PORT) private readonly eligibility: HostEligibilityPort,
   ) {}
 
@@ -176,7 +171,7 @@ export class GroupsService {
         planCopy ? planCopy.plan.maxSlots : null,
       );
 
-      const inviteCode = await this.freshInviteCode(tx);
+      const inviteCode = await this.invites.generateUnique(tx);
       const individual = planCopy?.plan.individualPriceCents ?? null;
       const group = await this.groups.insert(tx, {
         ownerId: userId,
@@ -220,8 +215,7 @@ export class GroupsService {
     return this.db.withTransaction(async (tx) => {
       const group = await this.groups.findByIdForUpdate(tx, groupId);
       if (!group) throw new DomainError(ErrorCode.NOT_FOUND, 404, DEFAULT_MESSAGES.NOT_FOUND);
-      if (group.status === 'cerrado') throw groupClosed();
-      if (group.frozen_at !== null) throw groupFrozen();
+      assertGroupWritable(group);
       if (input.version !== undefined && input.version !== group.version) {
         throw new DomainError(
           'STALE_STATE',
@@ -251,7 +245,7 @@ export class GroupsService {
   }
 
   /** `GroupDetail` de un miembro activo; quien no lo es recibe 404 (RNF-001-01). */
-  async detail(q: Queryable, groupId: string, viewerId: string): Promise<GroupDetail> {
+  async detail(q: DbTransaction, groupId: string, viewerId: string): Promise<GroupDetail> {
     const group = await this.groups.findById(q, groupId);
     const member = group ? await this.members.findActive(q, groupId, viewerId) : null;
     if (!group || !member) {
@@ -296,27 +290,13 @@ export class GroupsService {
     }
   }
 
-  /** Código único: hasta 5 intentos ante una colisión (RF-001-06). */
-  private async freshInviteCode(q: Queryable): Promise<string> {
-    for (let attempt = 0; attempt < INVITE_CODE_ATTEMPTS; attempt++) {
-      const code = generateInviteCode((size) => randomBytes(size));
-      if (!(await this.groups.findByInviteCode(q, code))) return code;
-    }
-    throw new DomainError(
-      ErrorCode.SERVICE_UNAVAILABLE,
-      503,
-      'No pudimos generar el código de invitación. Intenta de nuevo.',
-    );
-  }
-
-  /** `GroupDetail` para un miembro que consulta, con la URL del QR firmada por 10 minutos. */
+  /** `GroupDetail` para quien consulta; la URL del QR se firma al consultar. */
   private async detailFor(
-    q: Queryable,
+    q: DbTransaction,
     group: GroupRow,
     viewerRole: 'titular' | 'miembro',
   ): Promise<GroupDetail> {
     const members = await this.members.listActiveDetailed(q, group.id);
-    const paymentQrUrl = await this.paymentInfo.signedQrUrl(group.payment_qr_key);
     return buildGroupDetail({
       group: {
         id: group.id,
@@ -347,8 +327,7 @@ export class GroupsService {
         joinedAt: m.joined_at,
       })),
       viewerRole,
-      paymentQrUrl,
-      hasPaymentQr: group.payment_qr_key !== null,
+      paymentQrUrl: await this.paymentInfo.qrUrl(group),
       now: this.clock.now(),
     });
   }

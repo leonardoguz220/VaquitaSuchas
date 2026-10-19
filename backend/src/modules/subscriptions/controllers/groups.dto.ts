@@ -168,14 +168,14 @@ export class TransferOwnershipDto {
   toUserId!: string;
 }
 
-/** Query de `GET /groups` (RF-001-19). */
+/** Query de `GET /groups` (contracts/api.md). */
 export class ListGroupsQueryDto {
   @ApiPropertyOptional({ enum: ['titular', 'miembro'] })
   @IsOptional()
   @IsIn(['titular', 'miembro'])
   role?: 'titular' | 'miembro';
 
-  @ApiPropertyOptional({ enum: ['activo', 'cerrado'] })
+  @ApiPropertyOptional({ enum: ['activo', 'cerrado'], default: 'activo' })
   @IsOptional()
   @IsIn(['activo', 'cerrado'])
   status?: 'activo' | 'cerrado';
@@ -191,26 +191,17 @@ export class ListGroupsQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @MaxLength(200)
   cursor?: string;
 }
 
-/** Archivo recibido por `multer` en memoria (el paquete de tipos no está instalado). */
-export interface UploadedQrFile {
-  buffer: Buffer;
-}
-
-/** Campos de texto de `PUT /groups/:id/payment-info` (multipart; el QR va aparte). */
-export class UpdatePaymentInfoDto {
-  @ApiPropertyOptional({
-    maxLength: 500,
-    description: 'Vacío borra el texto; ausente lo conserva.',
-  })
+/** Campos de texto de `PUT /groups/:id/payment-info` (multipart; el QR llega como archivo). */
+export class PaymentInfoDto {
+  @ApiPropertyOptional({ maxLength: 500, description: 'Vacío borra el texto.' })
   @IsOptional()
   @IsString()
   text?: string;
 
-  @ApiPropertyOptional({ description: 'true borra la imagen del QR.' })
+  @ApiPropertyOptional({ description: '`true` borra la imagen del QR.' })
   @IsOptional()
   @Transform(({ value }: { value: unknown }) =>
     value === 'true' ? true : value === 'false' ? false : value,

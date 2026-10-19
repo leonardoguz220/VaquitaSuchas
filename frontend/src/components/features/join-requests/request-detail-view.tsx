@@ -16,6 +16,7 @@ import {
 } from './join-messages';
 import { PaymentInfoCard } from './payment-info-card';
 import { PROOF_SECTION_ID, ProofUpload } from './proof-upload';
+import { ProofFileButton } from './proof-file-button';
 import { ProofSummary } from './proof-summary';
 import { RequestChat } from './request-chat';
 import { RequestDisputes } from './request-disputes';
@@ -271,7 +272,13 @@ export function RequestDetailView({ requestId }: RequestDetailViewProps) {
               onStale={handleStale}
             />
           )}
-          {request.proof && <ProofSummary proof={request.proof} />}
+          {request.proof && (
+            <ProofSummary proof={request.proof}>
+              {viewer === 'titular' && request.proof.fileAvailable && (
+                <ProofFileButton requestId={request.id} />
+              )}
+            </ProofSummary>
+          )}
           {viewer === 'titular' && <HostCheckBank request={request} />}
           <p className="rounded-field bg-bg p-4 text-[15px]">
             {viewer === 'titular'

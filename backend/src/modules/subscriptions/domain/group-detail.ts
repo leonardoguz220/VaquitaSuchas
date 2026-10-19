@@ -69,12 +69,9 @@ export function buildGroupDetail(input: {
   members: GroupDetailMember[];
   viewerRole: 'titular' | 'miembro';
   paymentQrUrl: string | null;
-  /** Hay un QR guardado aunque su URL no se haya podido firmar; por omisión, si hay URL. */
-  hasPaymentQr?: boolean;
   now: Date;
 }) {
   const { group, members, viewerRole, paymentQrUrl, now } = input;
-  const hasQr = input.hasPaymentQr ?? paymentQrUrl !== null;
   const breakdown = buildBreakdown(group, members.length);
   const window = entryWindow({ billingDay: group.billingDay, createdAt: group.createdAt }, now);
   return {
@@ -114,7 +111,7 @@ export function buildGroupDetail(input: {
     paymentInfo: {
       text: group.paymentInfoText,
       qrUrl: paymentQrUrl,
-      configured: group.paymentInfoText !== null || hasQr,
+      configured: group.paymentInfoText !== null || paymentQrUrl !== null,
     },
     ...(viewerRole === 'titular' ? { inviteCode: group.inviteCode } : {}),
     version: group.version,
