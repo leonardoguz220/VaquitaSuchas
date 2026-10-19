@@ -168,7 +168,7 @@ describe('Aceptación de solicitudes de ingreso', () => {
       ]);
     });
 
-    it('CA-010-12: la generación del mismo período no crea un segundo cobro y en el siguiente corte llega el regular', async () => {
+    it('CA-010-12 y CA-001-22: la generación del mismo período no crea un segundo cobro y en el siguiente corte llega el regular', async () => {
       // El período aún no tiene ciclo: se crea con ensureCurrentCycle ANTES del alta (R2).
       await harness.pool.query('DELETE FROM billing_cycles WHERE group_id = $1', [group.id]);
 
@@ -198,6 +198,19 @@ describe('Aceptación de solicitudes de ingreso', () => {
       );
       expect(next.rows.map((r) => r.period)).toEqual(['2026-10', '2026-11']);
       expect(next.rows[1]?.origin).not.toBe('ingreso');
+    });
+
+    it('CA-001-12: al confirmar un ingreso la suma de cuotas del grupo coincide exactamente con el total', async () => {
+      await confirm(group.ownerId).expect(200);
+
+      const detail = await http()
+        .get(`/groups/${group.id}`)
+        .set('Authorization', `Bearer ${harness.token(group.ownerId)}`)
+        .expect(200);
+
+      const b = detail.body.breakdown;
+      expect(b.memberCount).toBe(3);
+      expect(b.baseShareCents * (b.memberCount - 1) + b.ownerShareCents).toBe(b.totalBsCents);
     });
 
     it('CA-010-13: el titular y el nuevo miembro se ven el celular mutuamente', async () => {
