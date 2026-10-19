@@ -200,4 +200,123 @@ describe('Catálogo de servicios (spec 004)', () => {
       servicesCount: 1,
     });
   });
+  describe('listado y búsqueda', () => {
+    async function seedMixed(): Promise<void> {
+      const netflix = await insertService('netflix', 'Netflix', { category: 'video' });
+      await insertPlan(netflix, 'netflix-basico', { priceCents: 1000 });
+      await insertPlan(netflix, 'netflix-premium', { priceCents: 2000 });
+      const spotify = await insertService('spotify', 'Spotify', { category: 'musica' });
+      await insertPlan(spotify, 'spotify-duo', { priceCents: 1299 });
+      const plus = await insertService('musica-plus', 'Música Plus', { category: 'otras' });
+      await insertPlan(plus, 'musica-plus-1', { priceCents: 500, currency: 'BS' });
+      const hbo = await insertService('hbo', 'HBO', { category: 'video', active: false });
+      await insertPlan(hbo, 'hbo-plan', { priceCents: 900 });
+    }
+    const slugs = (res: { body: { items: { slug: string }[] } }) =>
+      res.body.items.map((s) => s.slug);
+
+    it('CA-004-01: GET /catalog/services lista solo activos con plan activo, alfabéticos', async () => {
+      await seedMixed();
+      const res = await get('/catalog/services');
+      expect(res.status).toBe(200);
+      expect(slugs(res)).toEqual(['musica-plus', 'netflix', 'spotify']);
+      expect(res.body.nextCursor).toBeNull();
+    });
+
+    it('CA-004-02: el filtro de categoría solo trae esa categoría', async () => {
+      await seedMixed();
+      expect(slugs(await get('/catalog/services?category=musica'))).toEqual(['spotify']);
+      expect(slugs(await get('/catalog/services?category=video'))).toEqual(['netflix']);
+      expect(slugs(await get('/catalog/services?category=juegos'))).toEqual([]);
+      const unknown = await get('/catalog/services?category=cocina');
+      expect(unknown.status).toBe(400);
+      expect(unknown.body.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('CA-004-03: "musica" sin tilde encuentra la categoría Música y los nombres que coinciden', async () => {
+      await seedMixed();
+      expect(slugs(await get('/catalog/services?q=musica'))).toEqual(['musica-plus', 'spotify']);
+      expect(slugs(await get('/catalog/services?q=M%C3%BAsica'))).toEqual([
+        'musica-plus',
+        'spotify',
+      ]);
+    });
+
+    it('CA-004-03: busca por nombre sin distinguir mayúsculas y tildes', async () => {
+      await seedMixed();
+      expect(slugs(await get('/catalog/services?q=NETFLIX'))).toEqual(['netflix']);
+      expect(slugs(await get('/catalog/services?q=net'))).toEqual(['netflix']);
+      expect(slugs(await get('/catalog/services?q=zzz'))).toEqual([]);
+      const ñ = await insertService('ano-nuevo', 'Año Nuevo TV');
+      await insertPlan(ñ, 'ano-nuevo-1', { priceCents: 100 });
+      expect(slugs(await get('/catalog/services?q=ano'))).toEqual(['ano-nuevo']);
+    });
+
+    it('CA-004-03: la clave de búsqueda coincide con immutable_unaccent(lower()) de la base', async () => {
+      const { normalizeSearchTerm } =
+        await import('../src/modules/catalog/domain/catalog-search.js');
+      for (const word of ['Música', 'Canción', 'Piñata', 'ÁÉÍÓÚ', 'Ñandú', 'Educación']) {
+        const row = await t.db.query<{ key: string }>(
+          'SELECT immutable_unaccent(lower($1)) AS key',
+          [word],
+        );
+        expect(normalizeSearchTerm(word)).toBe(row.rows[0]!.key);
+      }
+    });
+
+    it('RF-004-04: % y _ en la búsqueda no actúan como comodines', async () => {
+      await seedMixed();
+      expect(slugs(await get('/catalog/services?q=%25'))).toEqual([]);
+      expect(slugs(await get('/catalog/services?q=_'))).toEqual([]);
+    });
+
+    it('RF-004-04: q de más de 60 caracteres o vacío responde 400', async () => {
+      const long = await get(`/catalog/services?q=${'a'.repeat(61)}`);
+      expect(long.status).toBe(400);
+      expect(long.body.code).toBe('VALIDATION_ERROR');
+      expect((await get('/catalog/services?q=')).status).toBe(400);
+    });
+
+    it('RF-004-04: trae el precio desde el plan más barato activo y la cantidad de planes', async () => {
+      await seedMixed();
+      const res = await get('/catalog/services?q=netflix');
+      expect(res.body.items[0]).toMatchObject({
+        slug: 'netflix',
+        fromPriceCents: 1000,
+        fromCurrency: 'USD',
+        plansCount: 2,
+      });
+    });
+
+    it('RF-004-04: con monedas distintas, el precio sale de la moneda del primer plan por orden', async () => {
+      const id = await insertService('mixto', 'Mixto');
+      await t.db.query(
+        `INSERT INTO catalog_plans (service_id, slug, name, price_cents, currency, max_slots, sort_order)
+         VALUES ($1, 'mixto-bs', 'Plan Bs', 9000, 'BS', 4, 1), ($1, 'mixto-usd', 'Plan USD', 1000, 'USD', 4, 2)`,
+        [id],
+      );
+      const res = await get('/catalog/services?q=mixto');
+      expect(res.body.items[0]).toMatchObject({
+        fromPriceCents: 9000,
+        fromCurrency: 'BS',
+        plansCount: 2,
+      });
+    });
+
+    it('CA-004-01: la paginación por cursor recorre todo sin repetir', async () => {
+      await seedMixed();
+      const first = await get('/catalog/services?limit=2');
+      expect(slugs(first)).toEqual(['musica-plus', 'netflix']);
+      expect(first.body.nextCursor).toEqual(expect.any(String));
+      const second = await get(
+        `/catalog/services?limit=2&cursor=${encodeURIComponent(first.body.nextCursor as string)}`,
+      );
+      expect(slugs(second)).toEqual(['spotify']);
+      expect(second.body.nextCursor).toBeNull();
+    });
+
+    it('CA-004-09: el listado sin sesión responde 401', async () => {
+      expect((await t.http().get('/catalog/services')).status).toBe(401);
+    });
+  });
 });

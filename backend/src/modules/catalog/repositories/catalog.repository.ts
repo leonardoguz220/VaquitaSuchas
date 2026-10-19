@@ -87,11 +87,18 @@ export class CatalogRepository {
 
   /**
    * Servicios activos con al menos un plan activo (RN-004-05), alfabéticos por `(name, id)`.
+   * `likePattern` ya viene normalizado y con `%`/`_` escapados; busca en nombre y categoría.
+   * El precio «desde» sale de la moneda del primer plan por `sort_order`.
    * Pide `limit + 1` filas al llamador: él decide si hay página siguiente.
    */
   async listServices(
     q: Queryable,
-    options: { category: Category | null; limit: number; cursor: ServiceCursor | null },
+    options: {
+      category: Category | null;
+      likePattern: string | null;
+      limit: number;
+      cursor: ServiceCursor | null;
+    },
   ): Promise<ListedServiceRow[]> {
     const result = await q.query<ListedServiceRow>(
       `SELECT ${SERVICE_COLUMNS}, cheapest.price_cents::text AS from_price_cents,
@@ -101,15 +108,29 @@ export class CatalogRepository {
            SELECT p.price_cents, p.currency, count(*) OVER () AS plans_count
              FROM catalog_plans p
             WHERE p.service_id = s.id AND p.is_active
-            ORDER BY p.currency, p.price_cents
+            ORDER BY (p.currency = (
+                        SELECT f.currency FROM catalog_plans f
+                         WHERE f.service_id = s.id AND f.is_active
+                         ORDER BY f.sort_order, f.slug LIMIT 1)) DESC,
+                     p.price_cents, p.sort_order, p.slug
             LIMIT 1
          ) cheapest
         WHERE s.is_active
           AND ($1::text IS NULL OR s.category = $1)
-          AND ($2::text IS NULL OR (s.name, s.id) > ($2::text, $3::uuid))
+          AND ($2::text IS NULL OR EXISTS (
+                SELECT 1 FROM catalog_service_search k
+                 WHERE k.id = s.id
+                   AND (k.name_key LIKE $2 ESCAPE '\\' OR k.category_key LIKE $2 ESCAPE '\\')))
+          AND ($3::text IS NULL OR (s.name, s.id) > ($3::text, $4::uuid))
         ORDER BY s.name, s.id
-        LIMIT $4`,
-      [options.category, options.cursor?.name ?? null, options.cursor?.id ?? null, options.limit],
+        LIMIT $5`,
+      [
+        options.category,
+        options.likePattern,
+        options.cursor?.name ?? null,
+        options.cursor?.id ?? null,
+        options.limit,
+      ],
     );
     return result.rows;
   }
