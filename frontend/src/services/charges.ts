@@ -48,8 +48,9 @@ export interface ChargePublicEvent {
 export interface ChargeEvent extends ChargePublicEvent {
   id: string;
   fromStatus: ChargeStatus | null;
-  toStatus: ChargeStatus;
+  toStatus: ChargeStatus | null;
   reason: string | null;
+  metadata?: Record<string, unknown>;
 }
 
 export interface Receipt {
@@ -204,7 +205,9 @@ export type ChargesErrorCode =
   | 'GROUP_FROZEN'
   | 'INVALID_TRANSITION'
   | 'FILE_TOO_LARGE'
-  | 'UNSUPPORTED_FILE_TYPE';
+  | 'UNSUPPORTED_FILE_TYPE'
+  | 'STALE_STATE'
+  | 'SERVICE_UNAVAILABLE';
 
 /**
  * Query de `GET /me/charges`: `status` se repite por cada estado (`?status=a&status=b`) y los
