@@ -10,6 +10,7 @@ import {
   ADMIN_CATALOG_PATH,
   ADMIN_DISPUTES_PATH,
   ADMIN_HOSTS_PATH,
+  ADMIN_MODERATION_PATH,
   ADMIN_USERS_PATH,
   GROUPS_PATH,
 } from '@/lib/routes';
@@ -26,6 +27,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { href: ADMIN_HOSTS_PATH, label: 'Titulares' },
   { href: ADMIN_AUDIT_PATH, label: 'Auditoría' },
   { href: ADMIN_CATALOG_PATH, label: 'Catálogo' },
+  { href: ADMIN_MODERATION_PATH, label: 'Moderación' },
 ];
 
 function isCurrent(pathname: string, href: string): boolean {

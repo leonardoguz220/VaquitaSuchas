@@ -5,6 +5,7 @@
 import type { AuditEntry } from '../admin-audit';
 import type { AdminDisputeEvidence, AdminDisputeRow } from '../admin-disputes';
 import type { HostEnablementRow } from '../admin-hosts';
+import type { ReportedListing } from '../admin-listings';
 import type { AdminUserDetail, AdminUserRow } from '../admin-users';
 
 /** Fila de la lista de usuarios: Camila, activa y usuaria (CA-009-07). */
@@ -168,6 +169,36 @@ export function auditEntry(overrides: Partial<AuditEntry> = {}): AuditEntry {
     reason: 'Comprobantes repetidos en dos grupos',
     // 17 oct 2026, 18:30 en La Paz.
     occurredAt: '2026-10-17T22:30:00.000Z',
+    ...overrides,
+  };
+}
+
+/** Publicación oculta por 3 reportes (CA-009-14). */
+export function reportedListing(overrides: Partial<ReportedListing> = {}): ReportedListing {
+  return {
+    id: 'l1',
+    status: 'oculta',
+    service: { name: 'Netflix', planName: 'Premium' },
+    slotsOffered: 1,
+    owner: { userId: 'u4', fullName: 'Sofía Mamani' },
+    description: 'Cupo barato, escríbeme por WhatsApp para pagar directo.',
+    conditions: null,
+    publishedAt: '2026-10-10T14:00:00.000Z',
+    hiddenAt: '2026-10-17T14:00:00.000Z',
+    reportCount: 3,
+    reports: [
+      {
+        reason: 'conducta_indebida',
+        comment: 'Pide pagar fuera de la app',
+        createdAt: '2026-10-16T14:00:00.000Z',
+      },
+      { reason: 'datos_falsos', comment: null, createdAt: '2026-10-16T15:00:00.000Z' },
+      {
+        reason: 'spam',
+        comment: 'Datos de contacto en la descripción',
+        createdAt: '2026-10-17T14:00:00.000Z',
+      },
+    ],
     ...overrides,
   };
 }

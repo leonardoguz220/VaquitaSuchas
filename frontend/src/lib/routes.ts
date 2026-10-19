@@ -251,6 +251,9 @@ export const ADMIN_AUDIT_PATH = '/admin/auditoria';
 /** Catálogo de servicios e importación (plan 009 §6). */
 export const ADMIN_CATALOG_PATH = '/admin/catalogo';
 
+/** Moderación de publicaciones de cupos (plan 009 §6). */
+export const ADMIN_MODERATION_PATH = '/admin/moderacion';
+
 /** Indica si `pathname` es una ruta del panel de administración (`/admin` o una subruta). */
 export function isAdminPath(pathname: string): boolean {
   return matchesRoute(pathname, ADMIN_PATH);
