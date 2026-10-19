@@ -23,6 +23,8 @@ export interface GroupRow {
   invite_code: string;
   accepting_members: boolean;
   payment_info_text: string | null;
+  payment_qr_key: string | null;
+  payment_qr_mime: 'image/jpeg' | 'image/png' | null;
   version: number;
   created_at: Date;
 }
@@ -31,7 +33,21 @@ const COLUMNS = `id, owner_id, name, status, frozen_at, frozen_reason, catalog_p
   plan_max_slots_snapshot, service_name_snapshot, plan_name_snapshot, logo_url_snapshot, brand_color_snapshot,
   price_cents::text AS price_cents, currency, exchange_rate::text AS exchange_rate,
   total_bs_cents::text AS total_bs_cents, billing_day, total_slots, invite_code,
-  accepting_members, payment_info_text, version, created_at`;
+  accepting_members, payment_info_text, payment_qr_key, payment_qr_mime, version, created_at`;
+
+/** Fila de «Mis suscripciones»: el grupo, el rol de la persona y los miembros activos. */
+export interface GroupListRow extends GroupRow {
+  my_role: 'titular' | 'miembro';
+  member_count: string;
+  my_joined_at: Date;
+}
+
+export interface GroupListFilter {
+  role?: 'titular' | 'miembro';
+  status: 'activo' | 'cerrado';
+  after?: { joinedAt: Date; groupId: string };
+  limit: number;
+}
 
 export interface NewGroup {
   ownerId: string;
@@ -176,6 +192,57 @@ export class GroupsRepository {
       ],
     );
     return result.rows[0] as GroupRow;
+  }
+
+  /** Guarda texto y/o QR de pago sin tocar `version` (no es una edición del grupo). */
+  async updatePaymentInfo(
+    q: Queryable,
+    groupId: string,
+    change: { text?: string | null; qr?: { key: string; mime: string } | null },
+  ): Promise<void> {
+    await q.query(
+      `UPDATE groups
+          SET payment_info_text = CASE WHEN $2::boolean THEN $3 ELSE payment_info_text END,
+              payment_qr_key = CASE WHEN $4::boolean THEN $5 ELSE payment_qr_key END,
+              payment_qr_mime = CASE WHEN $4::boolean THEN $6 ELSE payment_qr_mime END
+        WHERE id = $1`,
+      [
+        groupId,
+        change.text !== undefined,
+        change.text ?? null,
+        change.qr !== undefined,
+        change.qr?.key ?? null,
+        change.qr?.mime ?? null,
+      ],
+    );
+  }
+
+  /** Grupos de la persona (miembro activo) con su rol y conteo de miembros, de uno en uno (RF-001-19). */
+  async listForUser(q: Queryable, userId: string, f: GroupListFilter): Promise<GroupListRow[]> {
+    const result = await q.query<GroupListRow>(
+      `WITH me AS (
+         SELECT group_id, role, joined_at FROM group_members WHERE user_id = $1 AND left_at IS NULL
+       )
+       SELECT ${COLUMNS}, me.role AS my_role, me.joined_at AS my_joined_at,
+              (SELECT count(*) FROM group_members m
+                WHERE m.group_id = groups.id AND m.left_at IS NULL)::text AS member_count
+         FROM groups
+         JOIN me ON me.group_id = groups.id
+        WHERE status = $2
+          AND ($3::text IS NULL OR me.role = $3)
+          AND ($4::timestamptz IS NULL OR (me.joined_at, groups.id) < ($4::timestamptz, $5::uuid))
+        ORDER BY me.joined_at DESC, groups.id DESC
+        LIMIT $6`,
+      [
+        userId,
+        f.status,
+        f.role ?? null,
+        f.after?.joinedAt ?? null,
+        f.after?.groupId ?? null,
+        f.limit,
+      ],
+    );
+    return result.rows;
   }
 
   async setOwner(q: Queryable, groupId: string, ownerId: string): Promise<void> {

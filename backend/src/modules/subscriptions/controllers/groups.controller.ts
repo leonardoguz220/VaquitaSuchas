@@ -7,11 +7,19 @@ import {
   Param,
   Patch,
   Post,
+  Put,
+  Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOkResponse,
   ApiCreatedResponse,
   ApiConflictResponse,
   ApiForbiddenResponse,
@@ -28,11 +36,16 @@ import { GroupMemberGuard } from './group-member.guard.js';
 import { GroupOwnerGuard } from './group-owner.guard.js';
 import {
   CreateGroupDto,
+  ListGroupsQueryDto,
+  PaymentInfoDto,
   QuoteGroupDto,
   TransferOwnershipDto,
   UpdateGroupDto,
 } from './groups.dto.js';
 import { GroupsService, type HostEligibilityView } from '../services/groups.service.js';
+import { GroupViewService } from '../services/group-view.service.js';
+import { MAX_QR_BYTES } from '../domain/payment-info.js';
+import { PaymentInfoService, type PaymentInfoView } from '../services/payment-info.service.js';
 import { MembershipService } from '../services/membership.service.js';
 import type { GroupDetail } from '../domain/group-detail.js';
 
@@ -43,7 +56,21 @@ import type { GroupDetail } from '../domain/group-detail.js';
 @UseGuards(AuthGuard)
 @Controller()
 export class GroupsController {
-  constructor(private readonly groups: GroupsService) {}
+  constructor(
+    private readonly groups: GroupsService,
+    private readonly view: GroupViewService,
+  ) {}
+
+  @Get('groups')
+  @ApiOperation({ summary: 'Mis suscripciones: solo los grupos del usuario (RF-001-19)' })
+  list(@Req() request: AuthenticatedRequest, @Query() query: ListGroupsQueryDto) {
+    return this.view.list(requireUserId(request), {
+      ...(query.role && { role: query.role }),
+      ...(query.status && { status: query.status }),
+      ...(query.limit !== undefined && { limit: query.limit }),
+      ...(query.cursor !== undefined && { cursor: query.cursor }),
+    });
+  }
 
   @Get('users/me/host-eligibility')
   @ApiOperation({ summary: 'Elegibilidad para ser titular (RF-001-21)' })
@@ -193,5 +220,63 @@ export class GroupAdminController {
   })
   close(@Param('id') groupId: string, @Req() request: AuthenticatedRequest): Promise<GroupDetail> {
     return this.membership.close(groupId, requireUserId(request));
+  }
+}
+
+/** Detalle del grupo para un miembro activo (spec 001, US3). */
+@ApiTags('groups')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'UNAUTHENTICATED: sin sesión válida.' })
+@ApiNotFoundResponse({ description: 'NOT_FOUND: el grupo no existe o no eres miembro activo.' })
+@UseGuards(AuthGuard, GroupMemberGuard)
+@Controller('groups/:id')
+export class GroupViewController {
+  constructor(private readonly view: GroupViewService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Detalle del grupo (RF-001-12, RF-001-13)' })
+  @ApiOkResponse({ description: 'GroupDetail; inviteCode solo para el titular.' })
+  detail(@Param('id') groupId: string, @Req() request: AuthenticatedRequest): Promise<GroupDetail> {
+    return this.view.detail(groupId, requireUserId(request));
+  }
+}
+
+/** Datos de pago del titular (spec 001, US1, RF-001-20). */
+@ApiTags('groups')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'UNAUTHENTICATED: sin sesión válida.' })
+@ApiNotFoundResponse({ description: 'NOT_FOUND: el grupo no existe o no eres miembro activo.' })
+@ApiForbiddenResponse({ description: 'FORBIDDEN: no eres el titular.' })
+@UseGuards(AuthGuard, GroupOwnerGuard)
+@Controller('groups/:id/payment-info')
+export class PaymentInfoController {
+  constructor(private readonly paymentInfo: PaymentInfoService) {}
+
+  @Put()
+  // El límite de multer corta la lectura (413); el servicio revisa también el tipo real.
+  @UseInterceptors(FileInterceptor('qr', { limits: { fileSize: MAX_QR_BYTES, files: 1 } }))
+  @ApiOperation({ summary: 'Configurar texto y QR de pago (RF-001-20)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', maxLength: 500 },
+        qr: { type: 'string', format: 'binary', description: 'JPG o PNG, máximo 2 MB.' },
+        removeQr: { type: 'boolean' },
+      },
+    },
+  })
+  @ApiUnprocessableEntityResponse({ description: 'GROUP_CLOSED o GROUP_FROZEN.' })
+  update(
+    @Param('id') groupId: string,
+    @Body() body: PaymentInfoDto,
+    @UploadedFile() qr: { buffer: Buffer } | undefined,
+  ): Promise<{ paymentInfo: PaymentInfoView }> {
+    return this.paymentInfo.update(groupId, {
+      ...(body.text !== undefined && { text: body.text }),
+      ...(qr && { qrBytes: qr.buffer }),
+      ...(body.removeQr !== undefined && { removeQr: body.removeQr }),
+    });
   }
 }

@@ -26,6 +26,8 @@ import {
 } from '../ports/host-eligibility.port.js';
 import { GroupsRepository, type GroupRow } from '../repositories/groups.repository.js';
 import { MembersRepository } from '../repositories/members.repository.js';
+import { assertGroupWritable, fieldsError } from './group-errors.js';
+import { PaymentInfoService } from './payment-info.service.js';
 
 export const INVITE_CODE_ATTEMPTS = 5;
 
@@ -54,9 +56,6 @@ export interface HostEligibilityView extends HostEligibility {
   canCreateMore: boolean;
 }
 
-const fieldsError = (fields: Record<string, string[]>): DomainError =>
-  new DomainError(ErrorCode.VALIDATION_ERROR, 400, DEFAULT_MESSAGES.VALIDATION_ERROR, { fields });
-
 const businessRule = (
   rule: string,
   message: string,
@@ -84,6 +83,7 @@ export class GroupsService {
     private readonly groups: GroupsRepository,
     private readonly members: MembersRepository,
     private readonly catalog: CatalogService,
+    private readonly paymentInfo: PaymentInfoService,
     @Inject(HOST_ELIGIBILITY_PORT) private readonly eligibility: HostEligibilityPort,
   ) {}
 
@@ -217,26 +217,7 @@ export class GroupsService {
     return this.db.withTransaction(async (tx) => {
       const group = await this.groups.findByIdForUpdate(tx, groupId);
       if (!group) throw new DomainError(ErrorCode.NOT_FOUND, 404, DEFAULT_MESSAGES.NOT_FOUND);
-      if (group.status === 'cerrado') {
-        throw new DomainError(
-          'GROUP_CLOSED',
-          422,
-          'El grupo está cerrado y solo se puede consultar.',
-          {
-            rule: 'RN-001-07',
-          },
-        );
-      }
-      if (group.frozen_at !== null) {
-        throw new DomainError(
-          'GROUP_FROZEN',
-          422,
-          'El grupo está congelado y solo se puede consultar.',
-          {
-            rule: 'RF-009-22',
-          },
-        );
-      }
+      assertGroupWritable(group);
       if (input.version !== undefined && input.version !== group.version) {
         throw new DomainError(
           'STALE_STATE',
@@ -324,7 +305,7 @@ export class GroupsService {
     );
   }
 
-  /** `GroupDetail` para quien consulta; la URL del QR firmada se agrega con T015/T019. */
+  /** `GroupDetail` para quien consulta; la URL del QR se firma al consultar. */
   private async detailFor(
     q: DbTransaction,
     group: GroupRow,
@@ -361,7 +342,7 @@ export class GroupsService {
         joinedAt: m.joined_at,
       })),
       viewerRole,
-      paymentQrUrl: null,
+      paymentQrUrl: await this.paymentInfo.qrUrl(group),
       now: this.clock.now(),
     });
   }
