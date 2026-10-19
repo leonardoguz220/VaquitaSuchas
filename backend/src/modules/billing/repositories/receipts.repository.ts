@@ -27,6 +27,8 @@ export interface NewReceipt {
   sizeBytes: number;
   method: PaymentMethod;
   reference: string;
+  /** Instante de la subida, del reloj inyectado; por omisión el de la base. */
+  uploadedAt?: Date;
 }
 
 interface ReceiptRow {
@@ -69,8 +71,9 @@ export class ReceiptsRepository {
    */
   async insert(q: Queryable, input: NewReceipt): Promise<ReceiptRecord> {
     const result = await q.query<ReceiptRow>(
-      `INSERT INTO receipts (charge_id, uploaded_by, file_key, mime, size_bytes, method, reference)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO receipts (charge_id, uploaded_by, file_key, mime, size_bytes, method, reference,
+                             uploaded_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8::timestamptz, now()))
        RETURNING ${COLUMNS}`,
       [
         input.chargeId,
@@ -80,6 +83,7 @@ export class ReceiptsRepository {
         input.sizeBytes,
         input.method,
         input.reference,
+        input.uploadedAt ?? null,
       ],
     );
     return toRecord(result.rows[0] as ReceiptRow);
@@ -106,6 +110,17 @@ export class ReceiptsRepository {
     const result = await q.query<ReceiptRow>(
       `SELECT ${COLUMNS} FROM receipts WHERE charge_id = $1 ORDER BY uploaded_at DESC, id`,
       [chargeId],
+    );
+    return result.rows.map(toRecord);
+  }
+
+  /** Comprobantes de varios cobros a la vez, el más reciente primero. */
+  async listByCharges(q: Queryable, chargeIds: readonly string[]): Promise<ReceiptRecord[]> {
+    if (chargeIds.length === 0) return [];
+    const result = await q.query<ReceiptRow>(
+      `SELECT ${COLUMNS} FROM receipts WHERE charge_id = ANY($1::uuid[])
+        ORDER BY uploaded_at DESC, id`,
+      [[...chargeIds]],
     );
     return result.rows.map(toRecord);
   }

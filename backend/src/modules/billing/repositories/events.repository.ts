@@ -106,6 +106,17 @@ export class ChargeEventsRepository {
     return result.rows.map(toRecord);
   }
 
+  /** Líneas de tiempo de varios cobros a la vez (lista "Mis cobros"), en orden cronológico. */
+  async listByCharges(q: Queryable, chargeIds: readonly string[]): Promise<ChargeEventRecord[]> {
+    if (chargeIds.length === 0) return [];
+    const result = await q.query<EventRow>(
+      `SELECT ${COLUMNS} FROM charge_events WHERE charge_id = ANY($1::uuid[])
+        ORDER BY occurred_at, id`,
+      [[...chargeIds]],
+    );
+    return result.rows.map(toRecord);
+  }
+
   /**
    * Historial del grupo, el más reciente primero. `before` pagina por fecha (eventos estrictamente
    * anteriores); `limit` lo fija el servicio.
