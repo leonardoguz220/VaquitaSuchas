@@ -113,6 +113,9 @@ export function safeNextPath(value: string | string[] | undefined): string | nul
   try {
     const url = new URL(candidate, SAME_ORIGIN_BASE);
     if (url.origin !== SAME_ORIGIN_BASE) return null;
+    // Ni el proxy /api (mostraría JSON crudo) ni una pantalla pública (volvería a /ingresar).
+    if (url.pathname === '/api' || url.pathname.startsWith('/api/')) return null;
+    if (isPublicPath(url.pathname)) return null;
   } catch {
     return null;
   }

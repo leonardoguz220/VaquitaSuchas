@@ -129,6 +129,13 @@ describe('safeNextPath (spec 003 T029, redirección abierta)', () => {
     expect(safeNextPath(value)).toBeNull();
   });
 
+  it.each(['/api/auth/me', '/api', '/ingresar', '/registro/verificar', '/recuperar?x=1'])(
+    'RF-003-08: rechaza volver al proxy /api o a una pantalla pública: %s',
+    (value) => {
+      expect(safeNextPath(value)).toBeNull();
+    },
+  );
+
   it('RF-003-08: sin valor devuelve null y con varios usa el primero', () => {
     expect(safeNextPath(undefined)).toBeNull();
     expect(safeNextPath(['/grupos', '//evil.com'])).toBe('/grupos');
