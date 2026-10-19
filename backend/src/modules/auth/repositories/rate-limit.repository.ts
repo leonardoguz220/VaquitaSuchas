@@ -27,4 +27,20 @@ export class RateLimitRepository {
       [bucket, keyHash, at],
     );
   }
+
+  /** Instantes de los eventos del cubo desde `since` (para el bloqueo de inicio de sesión). */
+  async timestampsSince(
+    q: Queryable,
+    bucket: string,
+    keyHash: string,
+    since: Date,
+  ): Promise<Date[]> {
+    const result = await q.query<{ occurred_at: Date }>(
+      `SELECT occurred_at FROM rate_limit_events
+        WHERE bucket = $1 AND key_hash = $2 AND occurred_at >= $3
+        ORDER BY occurred_at`,
+      [bucket, keyHash, since],
+    );
+    return result.rows.map((row) => row.occurred_at);
+  }
 }

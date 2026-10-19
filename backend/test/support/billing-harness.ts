@@ -22,6 +22,7 @@ import {
   StorageObjectNotFoundError,
   type PutOptions,
 } from '../../src/shared/ports/file-storage.js';
+import { MailService } from '../../src/shared/ports/mail.service.js';
 
 // Soporte de las pruebas de integración de cobros (spec 002): PostgreSQL REAL con una base
 // temporal propia (creada y borrada aquí), almacén de archivos en memoria y el módulo
@@ -87,6 +88,18 @@ export function memoryStorageModule(storage: MemoryFileStorage): DynamicModule {
     global: true,
     providers: [{ provide: FileStorage, useValue: storage }],
     exports: [FileStorage],
+  };
+}
+
+/** `MailService` que no envía nada, registrado como global igual que `MailModule.forRoot()`. */
+export function fakeMailModule(): DynamicModule {
+  @Module({})
+  class FakeMailModule {}
+  return {
+    module: FakeMailModule,
+    global: true,
+    providers: [{ provide: MailService, useValue: { send: () => Promise.resolve() } }],
+    exports: [MailService],
   };
 }
 
@@ -181,6 +194,7 @@ export class BillingHarness {
         JobsModule,
         ErrorsModule,
         memoryStorageModule(this.storage),
+        fakeMailModule(),
         BillingModule,
       ],
     })

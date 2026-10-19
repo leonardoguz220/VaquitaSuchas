@@ -1,4 +1,3 @@
-import { createHmac } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Clock } from '../../../shared/clock/clock.js';
@@ -20,6 +19,7 @@ import {
   tokenExpiry,
   underLimit,
 } from '../domain/registration.js';
+import { keyHash } from '../domain/key-hash.js';
 import { generateToken, hashToken } from '../domain/tokens.js';
 import { validateRegistration } from '../domain/validate-registration.js';
 import { DATA_POLICY_VERSION } from '../policy.js';
@@ -205,9 +205,8 @@ export class RegistrationService {
     if (!underLimit(count, limit)) throw rateLimited(retryAfterSeconds(oldest ?? now, now));
   }
 
-  /** La IP y el correo nunca se guardan: solo un HMAC con la clave del servidor. */
   private keyHash(kind: string, value: string): string {
-    return createHmac('sha256', this.fingerprintKey).update(`${kind}:${value}`).digest('hex');
+    return keyHash(this.fingerprintKey, kind, value);
   }
 
   private emailTaken(): DomainError {
