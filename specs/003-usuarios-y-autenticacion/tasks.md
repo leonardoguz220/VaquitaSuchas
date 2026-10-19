@@ -91,7 +91,7 @@
 - [x] T037 [P] [US4] [BE] `backend/test/users.profile.e2e-spec.ts` (CA-003-14 nombre editado visible), `users.phone-change.e2e-spec.ts` (CA-003-14 celular, CA-003-32 el celular no cambia sin verificar), `auth.leak.e2e-spec.ts` (CA-003-17 las respuestas no traen `password`, `hash`, `ci` ni correos ajenos; CA-003-31 CI propia enmascarada y ajena nunca) — Depende: T013 · Cubre: CA-003-14, CA-003-17, CA-003-31, CA-003-32
 - [x] T038 [US4] [BE] `users/controllers/users.controller.ts` y `users.service.ts`: `PATCH /users/me` (solo `full_name`, 2 a 80), `POST /users/me/phone-change` (token `cambio_celular`, mismo flujo del bot) y `GET /users/me/phone-change/status`; el manejador del bot (T019) actualiza celular y Telegram solo al confirmar; `POST /auth/password/change` (contraseña actual + política, aviso por correo, incrementa `session_version` y emite sesión nueva) — Depende: T019, T013, T007, T037 · Cubre: RF-003-14, RF-003-15, RF-003-16, CA-003-14, CA-003-16, CA-003-17, CA-003-31, CA-003-32
 - [x] T039 [P] [US4] [FE] Pantalla `/perfil` con mock: nombre editable; correo, CI enmascarada y celular de solo lectura; último ingreso; **Cambiar celular** (reutiliza `TelegramVerifyCard`); **Cambiar contraseña**; **Cerrar sesión** — Depende: T024, spec 000 T036 · Cubre: RF-003-14, RF-003-15, RNF-003-04
-- [ ] T040 [US4] [FE] Conectar `/perfil` con `GET /auth/me`, `PATCH /users/me`, `phone-change`, `password/change` y `logout` — Depende: T038, T039 · Cubre: RF-003-14, RF-003-15
+- [x] T040 [US4] [FE] Conectar `/perfil` con `GET /auth/me`, `PATCH /users/me`, `phone-change`, `password/change` y `logout` — Depende: T038, T039 · Cubre: RF-003-14, RF-003-15
 
 ## Fase 7: Seguridad, privacidad y cierre
 

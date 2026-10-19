@@ -41,7 +41,9 @@ describe('services/catalog (contrato 004)', () => {
     expect(mockedRequest).toHaveBeenCalledWith(`/api/catalog/services?limit=${CATALOG_PAGE_SIZE}`, {
       signal: undefined,
     });
-    expect(CATALOG_PAGE_SIZE).toBe(100);
+    // El backend recorta `limit` a 50 (MAX_CATALOG_PAGE_SIZE): nunca pedimos más.
+    expect(CATALOG_PAGE_SIZE).toBe(20);
+    expect(CATALOG_PAGE_SIZE).toBeLessThanOrEqual(50);
   });
 
   it('RF-004-04: listServices envía category, q (sin espacios sobrantes), cursor y limit en la query', async () => {
