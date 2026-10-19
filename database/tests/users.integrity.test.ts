@@ -170,12 +170,12 @@ test('CA-003-02, CA-003-19: dos usuarios con el mismo correo normalizado fallan 
   await rejectsWith(insertUser({ email: 'ana@example.com' }), { code: UNIQUE_VIOLATION });
 });
 
-test('CA-003-26: dos usuarios con el mismo celular fallan', async () => {
+test('CA-003-26, RF-003-05: dos usuarios con el mismo celular fallan', async () => {
   await insertUser({ phone_e164: '+59161111111' });
   await rejectsWith(insertUser({ phone_e164: '+59161111111' }), { code: UNIQUE_VIOLATION });
 });
 
-test('CA-003-26: dos usuarios con la misma CI (misma huella) fallan', async () => {
+test('CA-003-26, RF-003-22: dos usuarios con la misma CI (misma huella) fallan', async () => {
   const ci = fingerprint('ci:7654321');
   await insertUser({ ci_fingerprint: ci });
   await rejectsWith(insertUser({ ci_fingerprint: ci }), { code: UNIQUE_VIOLATION });
@@ -275,7 +275,7 @@ test('RF-003-02: full_name con 2 y con 80 caracteres pasa', async () => {
   await insertUser({ full_name: 'A'.repeat(80) });
 });
 
-test('RF-003-24: session_version negativo falla', async () => {
+test('RF-003-07: session_version negativo falla', async () => {
   await rejectsWith(insertUser({ session_version: -1 }), { code: CHECK_VIOLATION });
 });
 
@@ -410,6 +410,19 @@ test('RF-003-11: un token de recuperación de un usuario inexistente falla', asy
   await rejectsWith(insertResetToken('00000000-0000-4000-8000-000000000000'), {
     code: FK_VIOLATION,
   });
+});
+
+test('RF-003-10, RF-003-13: password_reset_open_idx indexa los tokens de recuperación sin usar', async () => {
+  const [index] = await run<{ indexdef: string }>(
+    "SELECT indexdef FROM pg_indexes WHERE indexname = 'password_reset_open_idx'",
+  );
+  assert.ok(index, 'falta password_reset_open_idx');
+  assert.ok(
+    index.indexdef.endsWith(
+      'ON public.password_reset_tokens USING btree (user_id) WHERE (used_at IS NULL)',
+    ),
+    index.indexdef,
+  );
 });
 
 test('caso borde "sin verificar a las 24 h": borrar un usuario borra sus tokens (ON DELETE CASCADE)', async () => {
