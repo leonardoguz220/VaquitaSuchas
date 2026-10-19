@@ -49,9 +49,9 @@ Detalle en [`data-model.md`](data-model.md): `groups` y `group_members` (migraci
 
 Seed de desarrollo: dos grupos de ejemplo con un titular habilitado y tres miembros, solo con `NODE_ENV != production`.
 
-### Propuesta de cambios al modelo y a las tareas (pendiente de aprobación de las tres capas, 2026-10-18)
+### Cambios al modelo y a las tareas (aprobados el 2026-10-18, PR #43; se aplicaron todas las recomendaciones)
 
-> Detectado por `/speckit-analyze` antes de implementar la capa BD (3 CRITICAL y 3 HIGH). `data-model.md` no se toca hasta que se apruebe. Mientras tanto quedan detenidas T001–T005 y T041 [BD]. Las pruebas de T001 ya están escritas y esperan la decisión.
+> Detectado por `/speckit-analyze` (3 CRITICAL y 3 HIGH). Ya están en `data-model.md` y en `tasks.md` de las specs 001, 003 y 010. M5 se resolvió sin columna nueva: el corte se deriva del último `billing_cycles.cut_date`.
 
 **Bloquean T001–T004 (modelo):**
 
