@@ -54,7 +54,12 @@ async function counts(): Promise<Row> {
             (SELECT count(*)::int FROM group_members) AS members,
             (SELECT count(*)::int FROM join_requests) AS requests,
             (SELECT count(*)::int FROM billing_cycles) AS cycles,
-            (SELECT count(*)::int FROM charges) AS charges`,
+            (SELECT count(*)::int FROM charges) AS charges,
+            (SELECT count(*)::int FROM listings) AS listings,
+            (SELECT count(*)::int FROM join_disputes) AS disputes,
+            (SELECT count(*)::int FROM host_enablements) AS enablements,
+            (SELECT count(*)::int FROM bans) AS bans,
+            (SELECT count(*)::int FROM admin_audit_log) AS audit`,
   );
   assert.ok(row);
   return row;
@@ -62,7 +67,18 @@ async function counts(): Promise<Row> {
 
 test('RF-001-01: sin los usuarios de desarrollo los seeds no siembran grupos', async () => {
   await runSeeds();
-  assert.deepEqual(await counts(), { groups: 0, members: 0, requests: 0, cycles: 0, charges: 0 });
+  assert.deepEqual(await counts(), {
+    groups: 0,
+    members: 0,
+    requests: 0,
+    cycles: 0,
+    charges: 0,
+    listings: 0,
+    disputes: 0,
+    enablements: 0,
+    bans: 0,
+    audit: 0,
+  });
 });
 
 test('RF-001-01: con los usuarios de desarrollo se siembran dos grupos y la segunda corrida no cambia nada', async () => {
@@ -80,6 +96,26 @@ test('RF-001-01: con los usuarios de desarrollo se siembran dos grupos y la segu
         fingerprint(`ci:${i}`),
         `+5917000000${i}`,
         String(100000000 + i),
+      ],
+    );
+  }
+  // Dos administradores como los que crea `npm run seed:admin -w backend`: sin celular ni
+  // Telegram. El segundo permite sembrar el baneo revertido (RF-009-23).
+  for (const n of [1, 2]) {
+    const email = `admin${n}@dev.vaquita`;
+    await run(
+      `INSERT INTO users (full_name, email, email_fingerprint, password_hash, ci_encrypted,
+                          ci_fingerprint, role, verified_at, data_policy_accepted_at,
+                          data_policy_version, created_at)
+       VALUES ($1, $2, $3, $4, '\\x01'::bytea, $5, 'admin', now(), now(), '2026-10-18',
+               now() + $6 * interval '1 second')`,
+      [
+        `Admin Dev ${n}`,
+        email,
+        fingerprint(`email:${email}`),
+        FAKE_HASH,
+        fingerprint(`ci:a${n}`),
+        n,
       ],
     );
   }
@@ -161,6 +197,7 @@ test('RF-002-01: el ciclo regular de DEVGRPAA tiene un cobro pendiente, uno en r
   assert.equal(initial?.finalized, true);
 });
 
+// La rechazada lleva el reclamo de miembro3 (0050) y el de miembro1 (0090, spec 009 T006).
 test('RF-010-02: hay una solicitud en cada estado activo con chat y una rechazada con un reclamo abierto', async () => {
   const rows = await run<{
     code: string;
@@ -206,7 +243,68 @@ test('RF-010-02: hay una solicitud en cada estado activo con chat y una rechazad
       email: 'miembro3@dev.vaquita',
       status: 'rechazada',
       messages: 2,
-      disputes: 1,
+      disputes: 2,
     },
+  ]);
+});
+
+test('RF-008-05, RF-008-18: hay una publicación activa, una oculta con tres reportes y una expirada', async () => {
+  const rows = await run<{ code: string; status: string; reports: number }>(
+    `SELECT g.invite_code AS code, l.status,
+            (SELECT count(*)::int FROM listing_reports r WHERE r.listing_id = l.id) AS reports
+     FROM listings l JOIN groups g ON g.id = l.group_id
+     ORDER BY g.invite_code`,
+  );
+  assert.deepEqual(rows, [
+    { code: 'DEVGRPAA', status: 'expirada', reports: 0 },
+    { code: 'DEVGRPBB', status: 'activa', reports: 0 },
+    { code: 'DEVGRPCC', status: 'oculta', reports: 3 },
+  ]);
+});
+
+test('RF-001-21, RF-009-21: titular@dev.vaquita queda habilitado como titular', async () => {
+  const [row] = await run<{ n: number }>(
+    `SELECT count(*)::int AS n FROM host_enablements h JOIN users u ON u.id = h.user_id
+     WHERE u.email = 'titular@dev.vaquita' AND h.revoked_at IS NULL`,
+  );
+  assert.equal(row?.n, 1);
+});
+
+test('CA-009-20: dos usuarios con reclamos abiertos y un baneo revertido por otro administrador', async () => {
+  const openers = await run<{ email: string }>(
+    `SELECT DISTINCT u.email FROM join_disputes d JOIN users u ON u.id = d.opened_by
+     WHERE d.status = 'abierto' ORDER BY u.email`,
+  );
+  assert.deepEqual(
+    openers.map((row) => row.email),
+    ['miembro1@dev.vaquita', 'miembro3@dev.vaquita'],
+  );
+  const [ban] = await run<{ email: string; reverted: boolean; status: string }>(
+    `SELECT u.email, b.revoked_at IS NOT NULL AND b.revoked_by <> b.banned_by AS reverted,
+            u.status
+     FROM bans b JOIN users u ON u.id = b.user_id`,
+  );
+  assert.deepEqual(ban, { email: 'miembro2@dev.vaquita', reverted: true, status: 'activo' });
+  const actions = await run<{ action: string }>(
+    'SELECT action FROM admin_audit_log ORDER BY occurred_at, action',
+  );
+  assert.deepEqual(actions.map((row) => row.action).sort(), [
+    'baneo_revertir',
+    'titular_habilitar',
+    'usuario_banear',
+  ]);
+});
+
+test('RNF-006-01: titular y miembro1 tienen 12 meses de historial en DEVGRPDD', async () => {
+  const rows = await run<{ role: string; months: number; paid: number }>(
+    `SELECT l.role, count(DISTINCT l.period)::int AS months,
+            count(*) FILTER (WHERE l.status = 'pagado')::int AS paid
+     FROM v_user_cost_lines l JOIN groups g ON g.id = l.group_id
+     WHERE g.invite_code = 'DEVGRPDD'
+     GROUP BY l.role ORDER BY l.role`,
+  );
+  assert.deepEqual(rows, [
+    { role: 'miembro', months: 12, paid: 12 },
+    { role: 'titular', months: 12, paid: 0 },
   ]);
 });
