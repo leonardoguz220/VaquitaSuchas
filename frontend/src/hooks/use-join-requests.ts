@@ -11,6 +11,8 @@ import {
   openJoinRequest,
   sendPaymentData,
   type SendPaymentDataRequest,
+  type UploadJoinProofRequest,
+  uploadJoinProof,
 } from '@/services/join-requests';
 import { useApiResource } from './use-api-resource';
 import { useApiSubmit } from './use-api-submit';
@@ -79,4 +81,13 @@ export function useExtendJoinRequest(requestId: string) {
 export function usePaymentQr(requestId: string, enabled: boolean) {
   const load = useCallback(() => getPaymentQr(requestId), [requestId]);
   return useApiResource(enabled ? load : null);
+}
+
+/** Subir el comprobante de ingreso (`POST /join-requests/:id/proof`, RF-010-13). */
+export function useUploadJoinProof(requestId: string) {
+  const request = useCallback(
+    (input: UploadJoinProofRequest) => uploadJoinProof(requestId, input),
+    [requestId],
+  );
+  return useApiSubmit(request);
 }

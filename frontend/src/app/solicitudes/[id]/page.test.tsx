@@ -8,6 +8,7 @@ import {
   hostOpenRequest,
   hostSelf,
   openRequest,
+  reportedRequest,
   SERVER_NOW,
 } from '@/services/__fixtures__/join-requests';
 import { getMe } from '@/services/auth';
@@ -17,6 +18,7 @@ import {
   getJoinRequest,
   getPaymentQr,
   sendPaymentData,
+  uploadJoinProof,
   type JoinRequest,
 } from '@/services/join-requests';
 import RequestPage, { metadata } from './page';
@@ -32,6 +34,7 @@ jest.mock('@/services/join-requests', () => ({
   sendPaymentData: jest.fn(),
   extendJoinRequest: jest.fn(),
   getPaymentQr: jest.fn(),
+  uploadJoinProof: jest.fn(),
 }));
 
 const mockedMe = jest.mocked(getMe);
@@ -39,6 +42,7 @@ const mockedGet = jest.mocked(getJoinRequest);
 const mockedSend = jest.mocked(sendPaymentData);
 const mockedExtend = jest.mocked(extendJoinRequest);
 const mockedQr = jest.mocked(getPaymentQr);
+const mockedProof = jest.mocked(uploadJoinProof);
 
 const QR_LINK = {
   url: 'https://storage.vaquita.test/jr1/qr?token=abc',
@@ -68,6 +72,7 @@ beforeEach(() => {
   mockedSend.mockReset();
   mockedExtend.mockReset();
   mockedQr.mockReset();
+  mockedProof.mockReset();
   mockedQr.mockResolvedValue(QR_LINK);
 });
 
@@ -369,5 +374,154 @@ describe('/solicitudes/[id] (spec 010 T022): acciones del titular', () => {
     await renderPage();
     const card = await screen.findByRole('region', { name: 'Datos de pago enviados' });
     expect(within(card).queryByRole('button', { name: 'Copiar monto' })).toBeNull();
+  });
+});
+
+describe('/solicitudes/[id] (spec 010 T026): comprobante del solicitante', () => {
+  const proofSection = () => screen.getByRole('region', { name: 'Sube tu comprobante' });
+  const fileInput = () => within(proofSection()).getByLabelText('Elegir archivo');
+  const chooseFile = (file: File) => fireEvent.change(fileInput(), { target: { files: [file] } });
+  const jpg = (bytes = 2 * 1024 * 1024) =>
+    new File([new Uint8Array(bytes)], 'pago.jpg', { type: 'image/jpeg' });
+
+  it('RF-010-13: con uploadProof muestra la subida y el botón de la barra lleva a ella', async () => {
+    as('solicitante', awaitingPaymentRequest);
+    await renderPage();
+    expect(await screen.findByRole('region', { name: 'Sube tu comprobante' })).toBeVisible();
+    expect(within(actionBar()).getByRole('link', { name: 'Subir comprobante' })).toHaveAttribute(
+      'href',
+      '#comprobante',
+    );
+    expect(within(proofSection()).getByText('JPG, PNG o PDF hasta 5 MB')).toBeVisible();
+  });
+
+  it('RF-010-13: sin uploadProof no hay subida', async () => {
+    as('solicitante', openRequest);
+    await renderPage();
+    await screen.findByRole('heading', { name: 'Solicitud a Max de amigos' });
+    expect(screen.queryByRole('region', { name: 'Sube tu comprobante' })).toBeNull();
+  });
+
+  it('CA-010-07: un JPG de 2 MB con referencia pasa a pago informado con la respuesta de la API', async () => {
+    as('solicitante', awaitingPaymentRequest);
+    mockedProof.mockResolvedValue(reportedRequest);
+    const actor = await renderPage();
+    await screen.findByRole('region', { name: 'Sube tu comprobante' });
+    const file = jpg();
+    chooseFile(file);
+    expect(within(proofSection()).getByText('pago.jpg')).toBeVisible();
+    expect(within(proofSection()).getByText('2 MB · JPG, PNG o PDF hasta 5 MB')).toBeVisible();
+    await actor.click(within(proofSection()).getByLabelText('Transferencia'));
+    await actor.type(within(proofSection()).getByLabelText('Referencia (obligatoria)'), ' TRF-1 ');
+    await actor.click(within(proofSection()).getByRole('button', { name: 'Enviar comprobante' }));
+    expect(mockedProof).toHaveBeenCalledWith('jr1', {
+      file,
+      method: 'transferencia',
+      reference: 'TRF-1',
+      version: 2,
+    });
+    expect(
+      await screen.findByText('Enviamos tu comprobante. El titular lo revisará en su banco.'),
+    ).toBeVisible();
+    expect(screen.getByText('Pago informado')).toBeVisible();
+    expect(screen.queryByRole('region', { name: 'Sube tu comprobante' })).toBeNull();
+    const summary = screen.getByRole('region', { name: 'Comprobante de ingreso' });
+    expect(summary).toHaveTextContent('QR-20261018-77120');
+    expect(summary).toHaveTextContent('18 oct 2026, 14:50');
+  });
+
+  it('CA-010-08: un archivo de 6 MB o un .exe se avisan en el cliente y no se envían', async () => {
+    as('solicitante', awaitingPaymentRequest);
+    await renderPage();
+    await screen.findByRole('region', { name: 'Sube tu comprobante' });
+    chooseFile(jpg(6 * 1024 * 1024));
+    expect(fileInput()).toHaveAccessibleDescription(/pesa más de 5 MB/);
+    chooseFile(new File(['MZ'], 'pago.exe', { type: 'application/x-msdownload' }));
+    expect(fileInput()).toHaveAccessibleDescription(/JPG o PNG, o un PDF/);
+    expect(within(proofSection()).getByText('Ningún archivo elegido')).toBeVisible();
+    expect(mockedProof).not.toHaveBeenCalled();
+  });
+
+  it('CA-010-08: si el servidor rechaza el tipo real (415) lo avisa junto al archivo', async () => {
+    as('solicitante', awaitingPaymentRequest);
+    mockedProof.mockRejectedValue(new ApiError(415, 'UNSUPPORTED_FILE_TYPE', 'x'));
+    const actor = await renderPage();
+    await screen.findByRole('region', { name: 'Sube tu comprobante' });
+    chooseFile(jpg(1000));
+    await actor.type(within(proofSection()).getByLabelText('Referencia (obligatoria)'), 'A1');
+    await actor.click(within(proofSection()).getByRole('button', { name: 'Enviar comprobante' }));
+    expect(await within(proofSection()).findByText(/JPG o PNG, o un PDF/)).toBeVisible();
+    expect(screen.getByText('Esperando pago')).toBeVisible();
+  });
+
+  it('CA-010-40: sin referencia avisa junto al campo y no llama a la API', async () => {
+    as('solicitante', awaitingPaymentRequest);
+    const actor = await renderPage();
+    await screen.findByRole('region', { name: 'Sube tu comprobante' });
+    chooseFile(jpg(1000));
+    await actor.click(within(proofSection()).getByRole('button', { name: 'Enviar comprobante' }));
+    expect(
+      within(proofSection()).getByLabelText('Referencia (obligatoria)'),
+    ).toHaveAccessibleDescription(/Escribe la referencia/);
+    expect(mockedProof).not.toHaveBeenCalled();
+  });
+
+  it('CA-010-41: una referencia ya usada en el grupo se avisa junto al campo', async () => {
+    as('solicitante', awaitingPaymentRequest);
+    mockedProof.mockRejectedValue(new ApiError(409, 'REFERENCE_ALREADY_USED', 'x'));
+    const actor = await renderPage();
+    await screen.findByRole('region', { name: 'Sube tu comprobante' });
+    chooseFile(jpg(1000));
+    await actor.type(within(proofSection()).getByLabelText('Referencia (obligatoria)'), 'A1');
+    await actor.click(within(proofSection()).getByRole('button', { name: 'Enviar comprobante' }));
+    expect(
+      await within(proofSection()).findByText('Esa referencia ya fue usada en este grupo'),
+    ).toBeVisible();
+    expect(within(proofSection()).getByText('pago.jpg')).toBeVisible();
+  });
+
+  it('CA-010-10: fuera de plazo avisa que expiró y vuelve a pedir la solicitud', async () => {
+    as('solicitante', awaitingPaymentRequest);
+    mockedProof.mockRejectedValue(
+      new ApiError(422, 'BUSINESS_RULE', 'x', {
+        rule: 'RN-010-06',
+        code: 'PAYMENT_DEADLINE_PASSED',
+      }),
+    );
+    const actor = await renderPage();
+    await screen.findByRole('region', { name: 'Sube tu comprobante' });
+    mockedGet.mockResolvedValue({
+      ...awaitingPaymentRequest,
+      phase: { status: 'expirada', deadlineAt: null, deadlineKind: null, serverNow: SERVER_NOW },
+      finalReason: 'plazo_pago',
+      allowedActions: [],
+    });
+    chooseFile(jpg(1000));
+    await actor.type(within(proofSection()).getByLabelText('Referencia (obligatoria)'), 'A1');
+    await actor.click(within(proofSection()).getByRole('button', { name: 'Enviar comprobante' }));
+    expect(
+      await screen.findByText(
+        'Se venció el plazo de pago: la solicitud expiró y el chat quedó en solo lectura.',
+      ),
+    ).toBeVisible();
+    expect(await screen.findByText('Expirada')).toBeVisible();
+    expect(screen.queryByRole('region', { name: 'Sube tu comprobante' })).toBeNull();
+  });
+
+  it('RF-010-13: con 503 avisa que no se guardó y conserva los datos para reintentar', async () => {
+    as('solicitante', awaitingPaymentRequest);
+    mockedProof.mockRejectedValueOnce(new ApiError(503, 'SERVICE_UNAVAILABLE', 'x'));
+    const actor = await renderPage();
+    await screen.findByRole('region', { name: 'Sube tu comprobante' });
+    chooseFile(jpg(1000));
+    await actor.type(within(proofSection()).getByLabelText('Referencia (obligatoria)'), 'A1');
+    await actor.click(within(proofSection()).getByRole('button', { name: 'Enviar comprobante' }));
+    expect(
+      await within(proofSection()).findByText('No pudimos guardar el archivo, intenta de nuevo'),
+    ).toBeVisible();
+    expect(within(proofSection()).getByLabelText('Referencia (obligatoria)')).toHaveValue('A1');
+    mockedProof.mockResolvedValue(reportedRequest);
+    await actor.click(within(proofSection()).getByRole('button', { name: 'Enviar comprobante' }));
+    expect(await screen.findByText('Pago informado')).toBeVisible();
   });
 });

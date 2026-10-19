@@ -14,6 +14,8 @@ import {
   REQUEST_MESSAGES,
 } from './join-messages';
 import { PaymentInfoCard } from './payment-info-card';
+import { PROOF_SECTION_ID, ProofUpload } from './proof-upload';
+import { ProofSummary } from './proof-summary';
 import { RequestHeader, type RequestViewer } from './request-header';
 import { RequestTimeline } from './request-timeline';
 import { SendPaymentDataModal } from './send-payment-data-modal';
@@ -87,8 +89,8 @@ export interface RequestDetailViewProps {
  * Detalle de la solicitud `/solicitudes/[id]` (spec 010 T022, plan §6; mockups `Solicitud`,
  * `SolicitudAbierta` y `SolicitudTitular`): cabecera con cuenta regresiva corregida con
  * `serverNow`, datos de pago y acciones según `allowedActions` (el titular envía los datos de pago
- * o prorroga). Al llegar a 0 el plazo se vuelve a pedir la solicitud: el estado lo decide el
- * servidor. `403` (miembro que no participa) y `404` (ajeno) muestran su aviso (CA-010-20).
+ * o prorroga; el solicitante sube su comprobante, T026). Al llegar a 0 el plazo se vuelve a
+ * pedir la solicitud: el estado lo decide el servidor. `403` (miembro que no participa) y `404` (ajeno) muestran su aviso (CA-010-20).
  */
 export function RequestDetailView({ requestId }: RequestDetailViewProps) {
   const me = useMe();
@@ -184,6 +186,13 @@ export function RequestDetailView({ requestId }: RequestDetailViewProps) {
   }
 
   const actions: ReactNode[] = [];
+  if (can('uploadProof')) {
+    actions.push(
+      <Button key="proof" href={`#${PROOF_SECTION_ID}`}>
+        Subir comprobante
+      </Button>,
+    );
+  }
   if (can('sendPaymentData')) {
     actions.push(
       <Button key="payment" onClick={() => setPaymentOpen(true)}>
@@ -226,6 +235,14 @@ export function RequestDetailView({ requestId }: RequestDetailViewProps) {
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="flex flex-col gap-5">
           <PaymentInfoCard request={request} viewer={viewer} />
+          {can('uploadProof') && (
+            <ProofUpload
+              request={request}
+              onUploaded={(updated) => handleChanged(updated, REQUEST_MESSAGES.proofSent)}
+              onStale={handleStale}
+            />
+          )}
+          {request.proof && <ProofSummary proof={request.proof} />}
         </div>
         <div className="flex flex-col gap-5">
           <RequestTimeline events={request.timeline} />

@@ -8,6 +8,7 @@ import { formatDateLaPaz, formatDateTimeLaPaz } from '@/lib/dates';
 import { isConnectionError, type ApiError } from '@/services/http';
 import type { JoinRequestPerson, JoinRequestStatus } from '@/services/join-requests';
 import { REGISTER_ERROR_MESSAGES } from '../auth/register-errors';
+import { CHARGE_MESSAGES } from '../billing/charge-messages';
 import { formatDecimal } from '../groups/group-messages';
 
 export const JOIN_MESSAGES = {
@@ -203,6 +204,11 @@ export const REQUEST_MESSAGES = {
   qrDeleted: 'El QR ya no está disponible.',
   qrFailed: 'No pudimos cargar el QR de pago.',
   reviewForm: 'Revisa los datos e inténtalo de nuevo.',
+  proofSent: 'Enviamos tu comprobante. El titular lo revisará en su banco.',
+  deadlinePassed:
+    'Se venció el plazo de pago: la solicitud expiró y el chat quedó en solo lectura.',
+  referenceUsed: 'Esa referencia ya fue usada en este grupo',
+  storageFailed: 'No pudimos guardar el archivo, intenta de nuevo',
 } as const;
 
 /** Qué hacer con un error de una acción sobre la solicitud. */
@@ -236,6 +242,8 @@ export function actionErrorOutcome(error: ApiError): ActionErrorOutcome {
       return plain(JOIN_MESSAGES.accountRestricted);
     case 'VALIDATION_ERROR':
       return plain(REQUEST_MESSAGES.reviewForm);
+    case 'PAYMENT_DEADLINE_PASSED':
+      return { message: REQUEST_MESSAGES.deadlinePassed, refresh: true };
   }
   if (error.statusCode === 403) return plain(REQUEST_MESSAGES.hostOnly);
   return plain(joinErrorMessage(error));
@@ -257,3 +265,27 @@ export const JOIN_EVENT_LABEL: Record<string, string> = {
   reclamo_respondido: 'Reclamo respondido',
   reclamo_resuelto: 'Reclamo resuelto',
 };
+
+/** Qué hacer con un error al subir el comprobante de ingreso (plan 010 §6). */
+export function proofErrorOutcome(error: ApiError): ActionErrorOutcome {
+  const code = joinErrorCode(error);
+  if (code === 'REFERENCE_ALREADY_USED') {
+    return { field: 'reference', message: REQUEST_MESSAGES.referenceUsed, refresh: false };
+  }
+  if (code === 'FILE_TOO_LARGE' || error.statusCode === 413) {
+    return { field: 'file', message: CHARGE_MESSAGES.receiptSize, refresh: false };
+  }
+  if (code === 'UNSUPPORTED_FILE_TYPE' || error.statusCode === 415) {
+    return { field: 'file', message: CHARGE_MESSAGES.receiptType, refresh: false };
+  }
+  if (code === 'VALIDATION_ERROR') {
+    return { field: 'reference', message: CHARGE_MESSAGES.referenceRequired, refresh: false };
+  }
+  if (error.statusCode === 503) {
+    return { message: REQUEST_MESSAGES.storageFailed, refresh: false };
+  }
+  const outcome = actionErrorOutcome(error);
+  return error.statusCode === 403 && !outcome.refresh
+    ? { message: REQUEST_MESSAGES.applicantOnly, refresh: false }
+    : outcome;
+}

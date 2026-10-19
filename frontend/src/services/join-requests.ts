@@ -292,3 +292,33 @@ export function getPaymentQr(requestId: string): Promise<SignedFileLink> {
     `/api/join-requests/${encodeURIComponent(requestId)}/payment-qr`,
   );
 }
+
+export interface UploadJoinProofRequest {
+  /** JPG, PNG o PDF, hasta 5 MB (el servidor valida el tipo real). */
+  file: File;
+  method: JoinPaymentMethod;
+  /** 1 a 100 caracteres; obligatoria y única por grupo (RN-010-14). */
+  reference: string;
+  version?: number;
+}
+
+/**
+ * `POST /join-requests/:id/proof` (RF-010-13), solo solicitante, con `multipart/form-data`.
+ * Devuelve la solicitud en `pago_informado`. Lanza `ApiError` `413`, `415`, `400` (sin referencia
+ * o método), `409 REFERENCE_ALREADY_USED` / `INVALID_TRANSITION` / `STALE_STATE`, `422
+ * PAYMENT_DEADLINE_PASSED` (la solicitud expiró) y `503` (sin cambios).
+ */
+export function uploadJoinProof(
+  requestId: string,
+  input: UploadJoinProofRequest,
+): Promise<JoinRequest> {
+  const form = new FormData();
+  form.append('file', input.file);
+  form.append('method', input.method);
+  form.append('reference', input.reference);
+  if (input.version !== undefined) form.append('version', String(input.version));
+  return apiRequest<JoinRequest>(`/api/join-requests/${encodeURIComponent(requestId)}/proof`, {
+    method: 'POST',
+    formData: form,
+  });
+}

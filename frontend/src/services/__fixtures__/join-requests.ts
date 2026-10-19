@@ -161,3 +161,42 @@ export const hostAwaitingRequest: JoinRequest = {
   unreadCount: 0,
   allowedActions: ['extend', 'cashPayment', 'reject', 'sendMessage'],
 };
+
+/** La solicitud con el pago informado (vista por Ana): el titular tiene 47:10 para decidir. */
+export const reportedRequest: JoinRequest = {
+  ...awaitingPaymentRequest,
+  phase: {
+    status: 'pago_informado',
+    deadlineAt: '2026-10-18T19:28:10.000Z',
+    deadlineKind: 'decision',
+    serverNow: SERVER_NOW,
+  },
+  proof: {
+    method: 'qr',
+    reference: 'QR-20261018-77120',
+    mime: 'image/jpeg',
+    sizeBytes: 2 * 1024 * 1024,
+    uploadedAt: '2026-10-18T18:50:00.000Z',
+    fileAvailable: true,
+  },
+  unreadCount: 0,
+  allowedActions: ['sendMessage'],
+  timeline: [
+    ...awaitingPaymentRequest.timeline,
+    {
+      type: 'comprobante_subido',
+      actor: { userId: 'u2', fullName: 'Ana Quispe Mamani' },
+      fromStatus: 'esperando_pago',
+      toStatus: 'pago_informado',
+      reason: null,
+      occurredAt: '2026-10-18T18:50:00.000Z',
+    },
+  ],
+  version: 3,
+};
+
+/** La misma solicitud vista por el titular: puede confirmar o rechazar. */
+export const hostReportedRequest: JoinRequest = {
+  ...reportedRequest,
+  allowedActions: ['confirm', 'reject', 'sendMessage'],
+};

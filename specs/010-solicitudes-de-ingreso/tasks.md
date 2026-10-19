@@ -56,7 +56,7 @@
 
 - [ ] T024 [P] [US3] [BE] En `join-requests.payment.e2e-spec.ts` agregar CA-010-07 (comprobante a tiempo), CA-010-08 (6 MB y `.exe`), CA-010-10 (plazo vencido → `PAYMENT_DEADLINE_PASSED`), CA-010-40 (sin referencia), CA-010-41 (referencia repetida en el grupo, liberada tras rechazo) — Depende: T019 · Cubre: CA-010-07, CA-010-08, CA-010-10, CA-010-40, CA-010-41, RN-010-14
 - [ ] T025 [US3] [BE] `EntryPaymentService.uploadProof` (misma subida segura de la spec 002 T021: firma binaria, 5 MB, `PaymentReferenceService.reserve`, clave generada, compensación si falla; plazo de decisión de 60 min) con `POST /join-requests/:id/proof` y `GET /join-requests/:id/proof/file` (URL firmada ≤ 10 min) — Depende: T024, T020, spec 002 T021 · Cubre: RF-010-13, RN-010-14, RNF-010-02, CA-010-07, CA-010-08, CA-010-10, CA-010-40, CA-010-41
-- [ ] T026 [P] [US3] [FE] Subida del comprobante en `/solicitudes/[id]` con mock (método, referencia obligatoria, archivo JPG/PNG/PDF hasta 5 MB, vista previa) y errores `REFERENCE_ALREADY_USED`, `PAYMENT_DEADLINE_PASSED` y `503` — Depende: T022 · Cubre: RF-010-13
+- [x] T026 [P] [US3] [FE] Subida del comprobante en `/solicitudes/[id]` con mock (método, referencia obligatoria, archivo JPG/PNG/PDF hasta 5 MB, vista previa) y errores `REFERENCE_ALREADY_USED`, `PAYMENT_DEADLINE_PASSED` y `503` — Depende: T022 · Cubre: RF-010-13
 - [ ] T027 [US3] [FE] Conectar la subida con `POST /join-requests/:id/proof` y «Ver comprobante» para el titular — Depende: T025, T026 · Cubre: RF-010-13
 
 ## Fase 5: US4 — Confirmar, efectivo, rechazar y cancelar (Prioridad: P0) 🎯 MVP

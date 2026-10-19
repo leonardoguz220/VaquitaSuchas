@@ -7,6 +7,7 @@ import {
   listJoinRequests,
   openJoinRequest,
   sendPaymentData,
+  uploadJoinProof,
 } from './join-requests';
 
 jest.mock('./http', () => ({
@@ -91,5 +92,29 @@ describe('services/join-requests (contrato 010): detalle y datos de pago', () =>
     mockedRequest.mockResolvedValue(link);
     await expect(getPaymentQr('jr1')).resolves.toBe(link);
     expect(mockedRequest).toHaveBeenCalledWith('/api/join-requests/jr1/payment-qr');
+  });
+});
+
+describe('services/join-requests (contrato 010): comprobante', () => {
+  it('CA-010-07: uploadJoinProof hace POST multipart con archivo, método, referencia y versión', async () => {
+    mockedRequest.mockResolvedValue(openRequest);
+    const file = new File(['x'], 'pago.jpg', { type: 'image/jpeg' });
+    await uploadJoinProof('jr1', { file, method: 'qr', reference: 'QR-1', version: 2 });
+    const [path, options] = mockedRequest.mock.calls[0];
+    expect(path).toBe('/api/join-requests/jr1/proof');
+    expect(options?.method).toBe('POST');
+    const form = options?.formData as FormData;
+    expect(form.get('file')).toBe(file);
+    expect(form.get('method')).toBe('qr');
+    expect(form.get('reference')).toBe('QR-1');
+    expect(form.get('version')).toBe('2');
+  });
+
+  it('CA-010-40: uploadJoinProof no agrega la versión si no viene', async () => {
+    mockedRequest.mockResolvedValue(openRequest);
+    const file = new File(['x'], 'pago.pdf', { type: 'application/pdf' });
+    await uploadJoinProof('jr1', { file, method: 'transferencia', reference: 'A' });
+    const form = mockedRequest.mock.calls[0][1]?.formData as FormData;
+    expect(form.has('version')).toBe(false);
   });
 });

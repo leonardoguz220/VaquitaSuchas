@@ -18,7 +18,7 @@ import { CHARGE_MESSAGES, PAYMENT_METHOD_LABEL, uploadErrorOutcome } from './cha
 const METHODS: PaymentMethod[] = ['transferencia', 'qr'];
 
 /** URL local para la vista previa de una imagen; se libera al cambiar de archivo o al desmontar. */
-function useImagePreview(file: File | null): string | null {
+export function useImagePreview(file: File | null): string | null {
   const url = useMemo(() => {
     if (!file || !receiptFileType(file).startsWith('image/')) return null;
     if (typeof URL.createObjectURL !== 'function') return null;
@@ -33,7 +33,14 @@ function useImagePreview(file: File | null): string | null {
   return url;
 }
 
-function FilePreview({ file, previewUrl }: { file: File | null; previewUrl: string | null }) {
+/** Vista previa del comprobante elegido: la imagen o un recuadro «PDF». */
+export function FilePreview({
+  file,
+  previewUrl,
+}: {
+  file: File | null;
+  previewUrl: string | null;
+}) {
   if (previewUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- vista previa local (blob:)
