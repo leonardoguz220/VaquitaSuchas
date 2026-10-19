@@ -77,7 +77,7 @@ Una tarea o feature está terminada cuando:
 
 - cumple los criterios de aceptación de la spec, con tests que pasan;
 - lint y tests pasan en CI;
-- la revisó al menos un compañero, idealmente de otra capa;
+- pasó los checks obligatorios del PR (`flow` y la CI); la revisión de un compañero es opcional (decisión del 2026-10-18);
 - la spec, el plan y las tareas reflejan la realidad;
 - no hay secretos, datos reales ni `console.log` de depuración;
 - la tarea está marcada como hecha en `tasks.md`.
@@ -91,7 +91,7 @@ Una tarea o feature está terminada cuando:
 5. No agregan funcionalidades fuera del alcance de la spec.
 6. Escriben los tests ligados a los criterios `CA-xxx` antes o junto con el código.
 7. No modifican el modelo de datos ni el contrato de API aprobados sin proponer antes el cambio en `plan.md`.
-8. Todo lo generado pasa por revisión humana antes del merge.
+8. Todo lo generado entra por PR, sigue el flujo `dev → qa → main` y pasa los checks obligatorios. No hay aprobación humana obligatoria (decisión del 2026-10-18); las personas revisan después, sobre todo en la promoción de `dev` a `qa`.
 9. Los skills, agentes y listas de terceros (`.claude/`) son material de apoyo. Si contradicen este archivo, la constitución, una spec o `CONTRIBUTING.md`, mandan estos últimos. La definición de terminado es la del punto 8 y no la de `.claude/references/definition-of-done.md`. El catálogo de herramientas está en [`ia/herramientas-y-skills.md`](ia/herramientas-y-skills.md).
 10. Para implementar se usa el subagente de la capa (`db-engineer`, `backend-engineer` o `frontend-engineer`), que solo escribe en su carpeta. Antes del PR se pasan `contract-checker` y `ca-traceability-checker`, ambos de solo lectura.
 11. Los hooks de `.claude/settings.json` bloquean leer o escribir secretos, editar migraciones que ya están en `main`, hacer push a `main`, `dev` o `qa` o forzado, subir una rama cuyo lint o tests fallan en las capas que cambió, usar `--no-verify`, resetear una base que no es la local y que un agente modifique los hooks, los agentes o `settings.json`. No se desactivan para saltarse una regla: si un hook bloquea algo legítimo, se corrige el hook por PR.

@@ -18,13 +18,23 @@ const quiet = (): void => undefined;
 // Se verifica que la columna indicada sea la PK. Agregar una entrada requiere que data-model.md
 // de la spec correspondiente la defina así.
 //  - telegram_updates: PK update_id bigint (data-model.md §3, research.md R2; hallazgo F1).
+//  - user_reputation: PK user_id uuid, una fila por usuario (specs/007-reputacion/data-model.md §2).
+//  - notification_preferences: PK user_id uuid, una fila por usuario
+//    (specs/005-notificaciones/data-model.md §1).
 const NATURAL_KEY_TABLES: Readonly<Record<string, string>> = {
   telegram_updates: 'update_id',
+  user_reputation: 'user_id',
+  notification_preferences: 'user_id',
 };
 
-// Claves foráneas que pueden borrar en cascada ('tabla.restricción'). Vacía: ningún historial se
-// borra en cascada (data-model.md §1, "Claves foráneas").
-const CASCADE_FK_EXCEPTIONS: readonly string[] = [];
+// Claves foráneas que pueden borrar en cascada ('tabla.restricción'). Ningún historial se borra en
+// cascada (data-model.md §1, "Claves foráneas"); cada excepción la justifica el modelo de su spec:
+//  - tokens de verificación y de recuperación: datos técnicos descartables de la cuenta
+//    (specs/003-usuarios-y-autenticacion/data-model.md §1).
+const CASCADE_FK_EXCEPTIONS: readonly string[] = [
+  'phone_verification_tokens.phone_verification_tokens_user_id_fkey',
+  'password_reset_tokens.password_reset_tokens_user_id_fkey',
+];
 
 const SNAKE_CASE = /^[a-z][a-z0-9_]*$/;
 const EXCLUDED = 'schema_migrations';

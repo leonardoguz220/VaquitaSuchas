@@ -1,0 +1,168 @@
+{
+  "services": [
+    {
+      "slug": "netflix",
+      "name": "Netflix",
+      "category": "video",
+      "logoUrl": "https://assets.nflxext.com/en_us/layout/ecweb/netflix-app-icon_152.jpg",
+      "brandColor": null,
+      "plans": [
+        {
+          "slug": "netflix-estandar",
+          "name": "Estándar",
+          "priceCents": 699,
+          "currency": "USD",
+          "maxSlots": 2,
+          "individualPriceCents": 499,
+          "verifiedOn": "2026-10-18",
+          "verifiedSource": "https://help.netflix.com/es/node/24926/bo"
+        },
+        {
+          "slug": "netflix-premium",
+          "name": "Premium",
+          "priceCents": 899,
+          "currency": "USD",
+          "maxSlots": 4,
+          "individualPriceCents": 499,
+          "verifiedOn": "2026-10-18",
+          "verifiedSource": "https://help.netflix.com/es/node/24926/bo"
+        }
+      ]
+    },
+    {
+      "slug": "spotify",
+      "name": "Spotify",
+      "category": "musica",
+      "logoUrl": "https://www.scdn.co/i/_global/open-graph-default.png",
+      "brandColor": null,
+      "plans": [
+        {
+          "slug": "spotify-duo",
+          "name": "Premium Duo",
+          "priceCents": 899,
+          "currency": "USD",
+          "maxSlots": 2,
+          "individualPriceCents": 649,
+          "verifiedOn": "2026-10-18",
+          "verifiedSource": "https://www.spotify.com/bo/premium/"
+        },
+        {
+          "slug": "spotify-familiar",
+          "name": "Premium Familiar",
+          "priceCents": 1149,
+          "currency": "USD",
+          "maxSlots": 6,
+          "individualPriceCents": 649,
+          "verifiedOn": "2026-10-18",
+          "verifiedSource": "https://www.spotify.com/bo/premium/"
+        }
+      ]
+    },
+    {
+      "slug": "disney-plus",
+      "name": "Disney+",
+      "category": "video",
+      "logoUrl": "https://static-assets.bamgrid.com/product/disneyplus/favicons/disPlus-favicon-180x180.7d56f648dc95f591721935193bc827cb.png",
+      "brandColor": null,
+      "plans": [
+        {
+          "slug": "disney-plus-estandar",
+          "name": "Estándar",
+          "priceCents": 1249,
+          "currency": "USD",
+          "maxSlots": 2,
+          "individualPriceCents": null,
+          "verifiedOn": "2026-10-18",
+          "verifiedSource": "https://www.disneyplus.com/es-bo"
+        },
+        {
+          "slug": "disney-plus-premium",
+          "name": "Premium",
+          "priceCents": 1899,
+          "currency": "USD",
+          "maxSlots": 4,
+          "individualPriceCents": null,
+          "verifiedOn": "2026-10-18",
+          "verifiedSource": "https://www.disneyplus.com/es-bo"
+        }
+      ]
+    },
+    {
+      "slug": "youtube-premium",
+      "name": "YouTube Premium",
+      "category": "video",
+      "logoUrl": "https://www.youtube.com/s/desktop/5d669aa8/img/favicon_96x96.png",
+      "brandColor": null,
+      "plans": [
+        {
+          "slug": "youtube-premium-familiar",
+          "name": "Familiar",
+          "priceCents": 10990,
+          "currency": "BS",
+          "maxSlots": 6,
+          "individualPriceCents": 5590,
+          "verifiedOn": "2026-10-18",
+          "verifiedSource": "https://www.youtube.com/premium/family?gl=BO&hl=es-419"
+        }
+      ]
+    },
+    {
+      "slug": "max",
+      "name": "HBO Max",
+      "category": "video",
+      "logoUrl": null,
+      "brandColor": "#002BE7",
+      "plans": [
+        {
+          "slug": "max-basico-con-anuncios",
+          "name": "Básico con anuncios",
+          "priceCents": 3290,
+          "currency": "BS",
+          "maxSlots": 2,
+          "individualPriceCents": null,
+          "verifiedOn": "2026-10-18",
+          "verifiedSource": "https://www.hbomax.com/bo/es"
+        },
+        {
+          "slug": "max-estandar",
+          "name": "Estándar",
+          "priceCents": 4290,
+          "currency": "BS",
+          "maxSlots": 2,
+          "individualPriceCents": null,
+          "verifiedOn": "2026-10-18",
+          "verifiedSource": "https://www.hbomax.com/bo/es"
+        },
+        {
+          "slug": "max-platino",
+          "name": "Platino",
+          "priceCents": 5290,
+          "currency": "BS",
+          "maxSlots": 4,
+          "individualPriceCents": null,
+          "verifiedOn": "2026-10-18",
+          "verifiedSource": "https://www.hbomax.com/bo/es"
+        }
+      ]
+    },
+    {
+      "slug": "prime-video",
+      "name": "Prime Video",
+      "category": "video",
+      "logoUrl": "https://m.media-amazon.com/images/G/01/primevideo/seo/primevideo-seo-logo.png",
+      "brandColor": null,
+      "plans": [
+        {
+          "slug": "prime-video-estandar",
+          "name": "Prime Video",
+          "priceCents": 699,
+          "currency": "USD",
+          "maxSlots": 3,
+          "individualPriceCents": null,
+          "verifiedOn": "2026-10-18",
+          "verifiedSource": "https://www.primevideo.com/-/es/offers/nonprimehomepage"
+        }
+      ]
+    }
+  ]
+}
