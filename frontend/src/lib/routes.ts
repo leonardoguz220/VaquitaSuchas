@@ -186,3 +186,9 @@ export const PANEL_CALENDAR_PATH = '/panel/calendario';
 
 /** Historial de cobros con exportación a CSV (plan 006 §6). Ruta protegida. */
 export const PANEL_HISTORY_PATH = '/panel/historial';
+
+/** Mi perfil (spec 003, plan §6). Ruta protegida. */
+export const PROFILE_PATH = '/perfil';
+
+/** Mi reputación y habilitación como titular (spec 007, plan §6). Ruta protegida. */
+export const REPUTATION_PATH = '/perfil/reputacion';
