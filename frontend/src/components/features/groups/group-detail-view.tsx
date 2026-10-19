@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { GroupChargesTab } from '@/components/features/billing/group-charges-tab';
 import { GroupCollectionTab } from '@/components/features/dashboard/group-collection-tab';
 import { ServiceLogo } from '@/components/features/catalog/service-logo';
+import { GroupListingBadge } from '@/components/features/listings/group-listing-badge';
+import { GroupListingTab } from '@/components/features/listings/group-listing-tab';
 import { GroupRankingTab } from '@/components/features/reputation/group-ranking-tab';
 import { Alert, Button, Tabs } from '@/components/ui';
 import { useGroup } from '@/hooks/use-groups';
@@ -15,7 +17,7 @@ import { GroupMembersTab } from './group-members-tab';
 import { GroupSummaryTab } from './group-summary-tab';
 import { OwnerInviteSection } from './owner-invite-section';
 
-type TabId = 'resumen' | 'miembros' | 'cobros' | 'cobranza' | 'ranking';
+type TabId = 'resumen' | 'miembros' | 'cobros' | 'cobranza' | 'ranking' | 'publicar';
 
 function DetailSkeleton() {
   return (
@@ -62,7 +64,8 @@ export interface GroupDetailViewProps {
  * `GrupoMiembros.dc.html`) con las pestañas **Resumen** y **Miembros**; la pestaña
  * **Cobros** (spec 002 T037) muestra el resumen del mes y el historial, y el titular ve además
  * el código de invitación (T025), la cola «Por revisar» (spec 002 T026) y la pestaña
- * **Cobranza** (spec 006 T014). Todos ven la pestaña **Ranking** (spec 007 T026). Quien no
+ * **Cobranza** (spec 006 T014) y **Publicar cupos** (spec 008 T011; un miembro ve la insignia
+ * «El grupo publicó cupos»). Todos ven la pestaña **Ranking** (spec 007 T026). Quien no
  * pertenece al grupo recibe `404` (RNF-001-01) y ve el mismo mensaje que si no existiera.
  */
 export function GroupDetailView({ groupId }: GroupDetailViewProps) {
@@ -127,6 +130,7 @@ export function GroupDetailView({ groupId }: GroupDetailViewProps) {
             </span>
           </div>
           <p className="text-muted">{groupSubtitle(group)}</p>
+          {!isOwner && <GroupListingBadge groupId={group.id} />}
         </div>
       </div>
       <Tabs
@@ -154,6 +158,11 @@ export function GroupDetailView({ groupId }: GroupDetailViewProps) {
                   id: 'cobranza',
                   label: 'Cobranza',
                   content: <GroupCollectionTab groupId={group.id} />,
+                },
+                {
+                  id: 'publicar',
+                  label: 'Publicar cupos',
+                  content: <GroupListingTab group={group} />,
                 },
               ]
             : []),

@@ -19,6 +19,8 @@ import { saveBlob } from '@/lib/download';
 import { collection } from '@/services/__fixtures__/reports';
 import { groupRanking } from '@/services/__fixtures__/reputation';
 import { getGroupRanking } from '@/services/reputation';
+import { ownerListing } from '@/services/__fixtures__/listings';
+import { getGroupListing } from '@/services/listings';
 import GroupPage, { metadata } from './page';
 
 jest.mock('next/navigation', () => ({
@@ -37,6 +39,10 @@ jest.mock('@/services/reports', () => ({
 }));
 jest.mock('@/lib/download', () => ({ saveBlob: jest.fn() }));
 jest.mock('@/services/reputation', () => ({ getGroupRanking: jest.fn() }));
+jest.mock('@/services/listings', () => ({
+  ...jest.requireActual('@/services/listings'),
+  getGroupListing: jest.fn(() => new Promise(() => {})),
+}));
 
 jest.mock('@/services/charges', () => ({
   ...jest.requireActual('@/services/charges'),
@@ -801,5 +807,40 @@ describe('/grupos/[id] (spec 007 T026): pestaña Ranking', () => {
     await actor.click(tab);
     expect(await screen.findByRole('list', { name: 'Ranking del grupo' })).toBeVisible();
     expect(mockedRanking).toHaveBeenCalledWith('g2');
+  });
+});
+
+describe('/grupos/[id] (spec 008 T011): publicar cupos', () => {
+  const mockedListing = jest.mocked(getGroupListing);
+
+  beforeEach(() => {
+    mockedListing.mockReset();
+    mockedListing.mockReturnValue(new Promise(() => {}));
+  });
+
+  it('RF-008-01: la titular tiene la pestaña «Publicar cupos»; un miembro no', async () => {
+    mockedGet.mockResolvedValue(memberView);
+    const { unmount } = render(await GroupPage({ params: Promise.resolve({ id: 'g2' }) }));
+    await screen.findByRole('tab', { name: 'Cobros' });
+    expect(screen.queryByRole('tab', { name: 'Publicar cupos' })).toBeNull();
+    unmount();
+    mockedListing.mockResolvedValue(ownerListing({ groupId: 'g2' }));
+    mockedGet.mockResolvedValue({ ...memberView, myRole: 'titular' });
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('tab', { name: 'Publicar cupos' }));
+    expect(await screen.findByText('Publicación activa hasta el 17 nov 2026.')).toBeVisible();
+  });
+
+  it('RF-008-01: un miembro ve la insignia «El grupo publicó cupos» junto al nombre', async () => {
+    mockedListing.mockResolvedValue({
+      active: true,
+      slotsOffered: 1,
+      expiresAt: '2026-11-17T14:00:00.000Z',
+    });
+    mockedGet.mockResolvedValue(memberView);
+    await renderPage();
+    expect(
+      await screen.findByText('El grupo publicó cupos · 1 cupo hasta el 17 nov 2026'),
+    ).toBeVisible();
   });
 });
