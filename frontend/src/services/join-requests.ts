@@ -322,3 +322,68 @@ export function uploadJoinProof(
     formData: form,
   });
 }
+
+/**
+ * `POST /join-requests/:id/confirm` (RF-010-17), solo titular: la solicitud pasa a `aceptada`
+ * con `chargeId`. Lanza `ApiError` `409 INVALID_TRANSITION` / `STALE_STATE` o `422 GROUP_FROZEN`.
+ */
+export function confirmJoinRequest(
+  requestId: string,
+  input: { version?: number } = {},
+): Promise<JoinRequest> {
+  return apiRequest<JoinRequest>(`/api/join-requests/${encodeURIComponent(requestId)}/confirm`, {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/**
+ * `POST /join-requests/:id/cash-payment` (RF-010-18), solo titular y desde `esperando_pago`:
+ * acepta sin comprobante, con el mismo efecto que `confirm`.
+ */
+export function registerCashPayment(
+  requestId: string,
+  input: { version?: number } = {},
+): Promise<JoinRequest> {
+  return apiRequest<JoinRequest>(
+    `/api/join-requests/${encodeURIComponent(requestId)}/cash-payment`,
+    { method: 'POST', body: input },
+  );
+}
+
+export interface RejectJoinRequestRequest {
+  /** 5 a 200 caracteres (RF-010-16). */
+  reason: string;
+  /** Solo en `pago_informado`: habilita el reclamo por comprobante falso (RF-010-21). */
+  markProofAsFalse?: boolean;
+  version?: number;
+}
+
+/**
+ * `POST /join-requests/:id/reject` (RF-010-16), solo titular: la solicitud pasa a `rechazada` y
+ * se libera el cupo. Lanza `ApiError` `400` (sin motivo), `409 INVALID_TRANSITION` o `422`.
+ */
+export function rejectJoinRequest(
+  requestId: string,
+  input: RejectJoinRequestRequest,
+): Promise<JoinRequest> {
+  return apiRequest<JoinRequest>(`/api/join-requests/${encodeURIComponent(requestId)}/reject`, {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/**
+ * `POST /join-requests/:id/cancel` (RF-010-15), solo solicitante, en `abierta` o
+ * `esperando_pago`. Lanza `ApiError` `409 INVALID_TRANSITION` (en `pago_informado` o final).
+ * [NECESITA ACLARACIÓN] el contrato no lista cuerpo; se manda `{ version? }` como en las demás.
+ */
+export function cancelJoinRequest(
+  requestId: string,
+  input: { version?: number } = {},
+): Promise<JoinRequest> {
+  return apiRequest<JoinRequest>(`/api/join-requests/${encodeURIComponent(requestId)}/cancel`, {
+    method: 'POST',
+    body: input,
+  });
+}

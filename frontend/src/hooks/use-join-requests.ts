@@ -3,13 +3,18 @@
 import { useCallback } from 'react';
 import {
   ACTIVE_JOIN_STATUSES,
+  cancelJoinRequest,
+  confirmJoinRequest,
   extendJoinRequest,
   FINAL_JOIN_STATUSES,
   getJoinRequest,
   getPaymentQr,
   listJoinRequests,
   openJoinRequest,
+  registerCashPayment,
+  rejectJoinRequest,
   sendPaymentData,
+  type RejectJoinRequestRequest,
   type SendPaymentDataRequest,
   type UploadJoinProofRequest,
   uploadJoinProof,
@@ -87,6 +92,40 @@ export function usePaymentQr(requestId: string, enabled: boolean) {
 export function useUploadJoinProof(requestId: string) {
   const request = useCallback(
     (input: UploadJoinProofRequest) => uploadJoinProof(requestId, input),
+    [requestId],
+  );
+  return useApiSubmit(request);
+}
+
+type VersionInput = { version?: number };
+
+function useRequestAction(
+  requestId: string,
+  call: (id: string, input: VersionInput) => ReturnType<typeof confirmJoinRequest>,
+) {
+  const request = useCallback((input: VersionInput) => call(requestId, input), [requestId, call]);
+  return useApiSubmit(request);
+}
+
+/** Confirmar el ingreso como titular (`POST /join-requests/:id/confirm`, RF-010-17). */
+export function useConfirmJoinRequest(requestId: string) {
+  return useRequestAction(requestId, confirmJoinRequest);
+}
+
+/** Registrar un pago en efectivo (`POST /join-requests/:id/cash-payment`, RF-010-18). */
+export function useCashPayment(requestId: string) {
+  return useRequestAction(requestId, registerCashPayment);
+}
+
+/** Cancelar la solicitud como solicitante (`POST /join-requests/:id/cancel`, RF-010-15). */
+export function useCancelJoinRequest(requestId: string) {
+  return useRequestAction(requestId, cancelJoinRequest);
+}
+
+/** Rechazar con motivo (`POST /join-requests/:id/reject`, RF-010-16). */
+export function useRejectJoinRequest(requestId: string) {
+  const request = useCallback(
+    (input: RejectJoinRequestRequest) => rejectJoinRequest(requestId, input),
     [requestId],
   );
   return useApiSubmit(request);

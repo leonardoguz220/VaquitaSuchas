@@ -209,7 +209,25 @@ export const REQUEST_MESSAGES = {
     'Se venció el plazo de pago: la solicitud expiró y el chat quedó en solo lectura.',
   referenceUsed: 'Esa referencia ya fue usada en este grupo',
   storageFailed: 'No pudimos guardar el archivo, intenta de nuevo',
+  reasonLength: 'El motivo debe tener entre 5 y 200 caracteres.',
+  cancelled: 'Cancelaste la solicitud. El cupo quedó libre.',
+  noCustodyApplicant:
+    'Vaquita no custodia el dinero ni lo devuelve. Si pagas y no te agregan, podrás abrir un reclamo con esta conversación como evidencia.',
+  noCustodyHost:
+    'Vaquita no custodia el dinero: confirma solo cuando veas el pago en tu banco. El reclamo sirve para sancionar y dejar constancia.',
 } as const;
+
+/** Avisos tras una decisión del titular, con el nombre del solicitante. */
+export function decisionMessage(kind: 'confirm' | 'cash' | 'reject', applicantName: string) {
+  switch (kind) {
+    case 'confirm':
+      return `Confirmaste el ingreso. ${applicantName} ya es miembro y su pago quedó como su cobro del mes.`;
+    case 'cash':
+      return `Registraste el pago en efectivo. ${applicantName} ya es miembro.`;
+    case 'reject':
+      return `Rechazaste la solicitud. ${applicantName} verá el motivo.`;
+  }
+}
 
 /** Qué hacer con un error de una acción sobre la solicitud. */
 export interface ActionErrorOutcome {

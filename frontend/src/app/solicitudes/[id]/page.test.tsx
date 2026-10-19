@@ -6,6 +6,7 @@ import {
   awaitingPaymentRequest,
   hostAwaitingRequest,
   hostOpenRequest,
+  hostReportedRequest,
   hostSelf,
   openRequest,
   reportedRequest,
@@ -14,9 +15,13 @@ import {
 import { getMe } from '@/services/auth';
 import { ApiError } from '@/services/http';
 import {
+  cancelJoinRequest,
+  confirmJoinRequest,
   extendJoinRequest,
   getJoinRequest,
   getPaymentQr,
+  registerCashPayment,
+  rejectJoinRequest,
   sendPaymentData,
   uploadJoinProof,
   type JoinRequest,
@@ -35,6 +40,10 @@ jest.mock('@/services/join-requests', () => ({
   extendJoinRequest: jest.fn(),
   getPaymentQr: jest.fn(),
   uploadJoinProof: jest.fn(),
+  confirmJoinRequest: jest.fn(),
+  registerCashPayment: jest.fn(),
+  rejectJoinRequest: jest.fn(),
+  cancelJoinRequest: jest.fn(),
 }));
 
 const mockedMe = jest.mocked(getMe);
@@ -43,6 +52,10 @@ const mockedSend = jest.mocked(sendPaymentData);
 const mockedExtend = jest.mocked(extendJoinRequest);
 const mockedQr = jest.mocked(getPaymentQr);
 const mockedProof = jest.mocked(uploadJoinProof);
+const mockedConfirm = jest.mocked(confirmJoinRequest);
+const mockedCash = jest.mocked(registerCashPayment);
+const mockedReject = jest.mocked(rejectJoinRequest);
+const mockedCancel = jest.mocked(cancelJoinRequest);
 
 const QR_LINK = {
   url: 'https://storage.vaquita.test/jr1/qr?token=abc',
@@ -73,6 +86,10 @@ beforeEach(() => {
   mockedExtend.mockReset();
   mockedQr.mockReset();
   mockedProof.mockReset();
+  mockedConfirm.mockReset();
+  mockedCash.mockReset();
+  mockedReject.mockReset();
+  mockedCancel.mockReset();
   mockedQr.mockResolvedValue(QR_LINK);
 });
 
@@ -140,7 +157,8 @@ describe('/solicitudes/[id] (spec 010 T022): cabecera', () => {
       'href',
       '/solicitudes',
     );
-    expect(screen.queryByRole('group', { name: 'Acciones de la solicitud' })).toBeNull();
+    expect(within(actionBar()).queryByRole('button', { name: 'Enviar datos de pago' })).toBeNull();
+    expect(within(actionBar()).getByRole('button', { name: 'Cancelar solicitud' })).toBeVisible();
   });
 
   it('RNF-010-06: esperando pago muestra mm:ss y la cuenta se corrige con serverNow', async () => {
@@ -523,5 +541,194 @@ describe('/solicitudes/[id] (spec 010 T026): comprobante del solicitante', () =>
     mockedProof.mockResolvedValue(reportedRequest);
     await actor.click(within(proofSection()).getByRole('button', { name: 'Enviar comprobante' }));
     expect(await screen.findByText('Pago informado')).toBeVisible();
+  });
+});
+
+describe('/solicitudes/[id] (spec 010 T030): decisiones del titular y cancelación', () => {
+  const accepted = (request: JoinRequest, finalReason: string): JoinRequest => ({
+    ...request,
+    phase: { status: 'aceptada', deadlineAt: null, deadlineKind: null, serverNow: SERVER_NOW },
+    finalReason,
+    chargeId: 'c9',
+    allowedActions: [],
+  });
+
+  it('RF-010-25: muestra el texto fijo de que Vaquita no custodia el dinero', async () => {
+    as('solicitante', awaitingPaymentRequest);
+    await renderPage();
+    expect(
+      await screen.findByText(/Vaquita no custodia el dinero ni lo devuelve\. Si pagas y no te/),
+    ).toBeVisible();
+  });
+
+  it('RF-010-17: con el pago informado el titular ve el comprobante, el monto a revisar y sus acciones', async () => {
+    as('titular', hostReportedRequest);
+    await renderPage();
+    const check = await screen.findByRole('region', { name: 'Antes de confirmar' });
+    expect(check).toHaveTextContent(
+      'Revisa en tu banco que llegaron Bs 21,00 con la referencia QR-20261018-77120',
+    );
+    expect(screen.getByText(/Vaquita no custodia el dinero: confirma solo/)).toBeVisible();
+    expect(screen.getByText('para confirmar o rechazar')).toBeVisible();
+    const bar = actionBar();
+    expect(within(bar).getByRole('button', { name: 'Confirmar ingreso' })).toBeVisible();
+    expect(within(bar).getByRole('button', { name: 'Rechazar' })).toBeVisible();
+    expect(within(bar).queryByRole('button', { name: 'Pago en efectivo' })).toBeNull();
+    expect(within(bar).queryByRole('button', { name: 'Cancelar solicitud' })).toBeNull();
+  });
+
+  it('CA-010-11: Confirmar ingreso deja la solicitud aceptada con la respuesta de la API', async () => {
+    as('titular', hostReportedRequest);
+    mockedConfirm.mockResolvedValue(accepted(hostReportedRequest, 'confirmada'));
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Confirmar ingreso' }));
+    expect(mockedConfirm).toHaveBeenCalledWith('jr1', { version: 3 });
+    expect(
+      await screen.findByText(
+        'Confirmaste el ingreso. Ana Quispe Mamani ya es miembro y su pago quedó como su cobro del mes.',
+      ),
+    ).toBeVisible();
+    expect(screen.getByText('Aceptada')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Ver el cobro de ingreso' })).toHaveAttribute(
+      'href',
+      '/cobros/c9',
+    );
+    expect(screen.queryByRole('group', { name: 'Acciones de la solicitud' })).toBeNull();
+  });
+
+  it('CA-010-15: si al confirmar ya expiró por falta de respuesta, avisa y recarga', async () => {
+    as('titular', hostReportedRequest);
+    mockedConfirm.mockRejectedValue(new ApiError(409, 'INVALID_TRANSITION', 'x'));
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Confirmar ingreso' }));
+    expect(
+      await screen.findByText(
+        'La solicitud ya no admite esta acción. Cargamos los datos actualizados.',
+      ),
+    ).toBeVisible();
+    expect(mockedGet).toHaveBeenCalledTimes(2);
+  });
+
+  it('CA-010-16: Pago en efectivo pide confirmar y acepta con la respuesta de la API', async () => {
+    as('titular', hostAwaitingRequest);
+    mockedCash.mockResolvedValue(accepted(hostAwaitingRequest, 'efectivo'));
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Pago en efectivo' }));
+    const dialog = screen.getByRole('dialog', { name: 'Registrar pago en efectivo' });
+    expect(dialog).toHaveTextContent('Acepta a Ana Quispe Mamani sin comprobante');
+    await actor.click(within(dialog).getByRole('button', { name: 'Registrar pago en efectivo' }));
+    expect(mockedCash).toHaveBeenCalledWith('jr1', { version: 2 });
+    expect(
+      await screen.findByText('Registraste el pago en efectivo. Ana Quispe Mamani ya es miembro.'),
+    ).toBeVisible();
+    expect(screen.getByText('El titular registró un pago en efectivo.')).toBeVisible();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('CA-010-17: rechazar sin motivo válido avisa junto al campo y no llama a la API', async () => {
+    as('titular', hostReportedRequest);
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Rechazar' }));
+    const dialog = screen.getByRole('dialog', { name: 'Rechazar solicitud' });
+    await actor.type(within(dialog).getByLabelText(/Motivo/), 'no');
+    await actor.click(within(dialog).getByRole('button', { name: 'Rechazar solicitud' }));
+    expect(within(dialog).getByLabelText(/Motivo/)).toHaveAccessibleDescription(
+      /El motivo debe tener entre 5 y 200 caracteres\./,
+    );
+    expect(mockedReject).not.toHaveBeenCalled();
+  });
+
+  it('CA-010-17: rechazar con motivo y comprobante falso deja la solicitud rechazada', async () => {
+    as('titular', hostReportedRequest);
+    mockedReject.mockResolvedValue({
+      ...hostReportedRequest,
+      phase: { status: 'rechazada', deadlineAt: null, deadlineKind: null, serverNow: SERVER_NOW },
+      finalReason: 'rechazo_titular',
+      rejectReason: 'No me llegó el dinero',
+      rejectedAsFalse: true,
+      allowedActions: [],
+    });
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Rechazar' }));
+    const dialog = screen.getByRole('dialog', { name: 'Rechazar solicitud' });
+    await actor.type(within(dialog).getByLabelText(/Motivo/), ' No me llegó el dinero ');
+    await actor.click(within(dialog).getByLabelText(/El comprobante me parece falso/));
+    await actor.click(within(dialog).getByRole('button', { name: 'Rechazar solicitud' }));
+    expect(mockedReject).toHaveBeenCalledWith('jr1', {
+      reason: 'No me llegó el dinero',
+      markProofAsFalse: true,
+      version: 3,
+    });
+    expect(
+      await screen.findByText('Rechazaste la solicitud. Ana Quispe Mamani verá el motivo.'),
+    ).toBeVisible();
+    expect(screen.getByText('Rechazada')).toBeVisible();
+    expect(screen.getByText('Motivo: No me llegó el dinero')).toBeVisible();
+    expect(screen.getByText('Marcó el comprobante como falso.')).toBeVisible();
+  });
+
+  it('CA-010-17: sin pago informado el modal no ofrece marcar el comprobante como falso', async () => {
+    as('titular', hostOpenRequest);
+    mockedReject.mockResolvedValue({ ...hostOpenRequest, allowedActions: [] });
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Rechazar' }));
+    const dialog = screen.getByRole('dialog', { name: 'Rechazar solicitud' });
+    expect(within(dialog).queryByLabelText(/El comprobante me parece falso/)).toBeNull();
+    await actor.type(within(dialog).getByLabelText(/Motivo/), 'Ya no hay cupo');
+    await actor.click(within(dialog).getByRole('button', { name: 'Rechazar solicitud' }));
+    expect(mockedReject).toHaveBeenCalledWith('jr1', { reason: 'Ya no hay cupo', version: 1 });
+  });
+
+  it('CA-010-17: el solicitante ve el motivo del rechazo', async () => {
+    as('solicitante', {
+      ...reportedRequest,
+      phase: { status: 'rechazada', deadlineAt: null, deadlineKind: null, serverNow: SERVER_NOW },
+      finalReason: 'rechazo_titular',
+      rejectReason: 'El monto no coincide',
+      allowedActions: [],
+    });
+    await renderPage();
+    expect(await screen.findByText('El titular rechazó la solicitud.')).toBeVisible();
+    expect(screen.getByText('Motivo: El monto no coincide')).toBeVisible();
+  });
+
+  it('CA-010-18: el solicitante cancela con confirmación y la solicitud queda cancelada', async () => {
+    as('solicitante', awaitingPaymentRequest);
+    mockedCancel.mockResolvedValue({
+      ...awaitingPaymentRequest,
+      phase: { status: 'cancelada', deadlineAt: null, deadlineKind: null, serverNow: SERVER_NOW },
+      finalReason: 'cancelada_solicitante',
+      allowedActions: [],
+    });
+    const actor = await renderPage();
+    await actor.click(
+      await within(
+        await screen.findByRole('group', { name: 'Acciones de la solicitud' }),
+      ).findByRole('button', { name: 'Cancelar solicitud' }),
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Cancelar solicitud' });
+    await actor.click(within(dialog).getByRole('button', { name: 'Cancelar solicitud' }));
+    expect(mockedCancel).toHaveBeenCalledWith('jr1', { version: 2 });
+    expect(await screen.findByText('Cancelaste la solicitud. El cupo quedó libre.')).toBeVisible();
+    expect(screen.getByText('Cancelada')).toBeVisible();
+  });
+
+  it('CA-010-18: con el pago informado el solicitante no ve Cancelar (lo decide allowedActions)', async () => {
+    as('solicitante', reportedRequest);
+    await renderPage();
+    await screen.findByRole('region', { name: 'Comprobante de ingreso' });
+    expect(screen.queryByRole('button', { name: 'Cancelar solicitud' })).toBeNull();
+  });
+
+  it('CA-010-18: si el servidor ya no permite cancelar, avisa y recarga', async () => {
+    as('solicitante', awaitingPaymentRequest);
+    mockedCancel.mockRejectedValue(new ApiError(409, 'INVALID_TRANSITION', 'x'));
+    const actor = await renderPage();
+    await actor.click(await screen.findByRole('button', { name: 'Cancelar solicitud' }));
+    const dialog = screen.getByRole('dialog', { name: 'Cancelar solicitud' });
+    await actor.click(within(dialog).getByRole('button', { name: 'Cancelar solicitud' }));
+    expect(await screen.findByText(/La solicitud ya no admite esta acción/)).toBeVisible();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(mockedGet).toHaveBeenCalledTimes(2);
   });
 });

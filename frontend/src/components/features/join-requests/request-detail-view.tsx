@@ -5,7 +5,7 @@ import { useState, type ReactNode } from 'react';
 import { Alert, Button } from '@/components/ui';
 import { useJoinRequest, useExtendJoinRequest } from '@/hooks/use-join-requests';
 import { useMe } from '@/hooks/use-me';
-import { groupPath, REQUESTS_PATH } from '@/lib/routes';
+import { chargePath, groupPath, REQUESTS_PATH } from '@/lib/routes';
 import { FINAL_JOIN_STATUSES, type JoinRequest } from '@/services/join-requests';
 import {
   actionErrorOutcome,
@@ -16,6 +16,7 @@ import {
 import { PaymentInfoCard } from './payment-info-card';
 import { PROOF_SECTION_ID, ProofUpload } from './proof-upload';
 import { ProofSummary } from './proof-summary';
+import { DecisionActions, hasDecisionActions, HostCheckBank } from './request-decisions';
 import { RequestHeader, type RequestViewer } from './request-header';
 import { RequestTimeline } from './request-timeline';
 import { SendPaymentDataModal } from './send-payment-data-modal';
@@ -62,7 +63,19 @@ function FinalNotes({ request }: { request: JoinRequest }) {
     );
   }
   if (!reason) return null;
-  return <Alert variant={request.phase.status === 'aceptada' ? 'success' : 'info'}>{reason}</Alert>;
+  return (
+    <Alert variant={request.phase.status === 'aceptada' ? 'success' : 'info'}>
+      <p>{reason}</p>
+      {request.chargeId && (
+        <Link
+          href={chargePath(request.chargeId)}
+          className="inline-flex min-h-11 items-center font-bold underline underline-offset-2"
+        >
+          Ver el cobro de ingreso
+        </Link>
+      )}
+    </Alert>
+  );
 }
 
 /**
@@ -89,7 +102,8 @@ export interface RequestDetailViewProps {
  * Detalle de la solicitud `/solicitudes/[id]` (spec 010 T022, plan §6; mockups `Solicitud`,
  * `SolicitudAbierta` y `SolicitudTitular`): cabecera con cuenta regresiva corregida con
  * `serverNow`, datos de pago y acciones según `allowedActions` (el titular envía los datos de pago
- * o prorroga; el solicitante sube su comprobante, T026). Al llegar a 0 el plazo se vuelve a
+ * o prorroga; el solicitante sube su comprobante, T026; confirmar, efectivo, rechazar y cancelar,
+ * T030). Al llegar a 0 el plazo se vuelve a
  * pedir la solicitud: el estado lo decide el servidor. `403` (miembro que no participa) y `404` (ajeno) muestran su aviso (CA-010-20).
  */
 export function RequestDetailView({ requestId }: RequestDetailViewProps) {
@@ -213,6 +227,17 @@ export function RequestDetailView({ requestId }: RequestDetailViewProps) {
     );
   }
 
+  if (hasDecisionActions(request)) {
+    actions.push(
+      <DecisionActions
+        key="decisions"
+        request={request}
+        onChanged={handleChanged}
+        onStale={handleStale}
+      />,
+    );
+  }
+
   return (
     <div className="flex flex-col gap-5 pb-28 sm:pb-0">
       {viewer === 'titular' ? (
@@ -243,6 +268,12 @@ export function RequestDetailView({ requestId }: RequestDetailViewProps) {
             />
           )}
           {request.proof && <ProofSummary proof={request.proof} />}
+          {viewer === 'titular' && <HostCheckBank request={request} />}
+          <p className="rounded-field bg-bg p-4 text-[15px]">
+            {viewer === 'titular'
+              ? REQUEST_MESSAGES.noCustodyHost
+              : REQUEST_MESSAGES.noCustodyApplicant}
+          </p>
         </div>
         <div className="flex flex-col gap-5">
           <RequestTimeline events={request.timeline} />

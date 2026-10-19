@@ -1,11 +1,15 @@
 import { openRequest } from './__fixtures__/join-requests';
 import { apiRequest } from './http';
 import {
+  cancelJoinRequest,
+  confirmJoinRequest,
   extendJoinRequest,
   getJoinRequest,
   getPaymentQr,
   listJoinRequests,
   openJoinRequest,
+  registerCashPayment,
+  rejectJoinRequest,
   sendPaymentData,
   uploadJoinProof,
 } from './join-requests';
@@ -116,5 +120,29 @@ describe('services/join-requests (contrato 010): comprobante', () => {
     await uploadJoinProof('jr1', { file, method: 'transferencia', reference: 'A' });
     const form = mockedRequest.mock.calls[0][1]?.formData as FormData;
     expect(form.has('version')).toBe(false);
+  });
+});
+
+describe('services/join-requests (contrato 010): decisiones', () => {
+  it.each([
+    ['CA-010-11', 'confirm', confirmJoinRequest],
+    ['CA-010-16', 'cash-payment', registerCashPayment],
+    ['CA-010-18', 'cancel', cancelJoinRequest],
+  ] as const)('%s: hace POST /api/join-requests/:id/%s con la versión', async (_ca, path, call) => {
+    mockedRequest.mockResolvedValue(openRequest);
+    await call('jr1', { version: 4 });
+    expect(mockedRequest).toHaveBeenCalledWith(`/api/join-requests/jr1/${path}`, {
+      method: 'POST',
+      body: { version: 4 },
+    });
+  });
+
+  it('CA-010-17: rejectJoinRequest manda motivo, comprobante falso y versión', async () => {
+    mockedRequest.mockResolvedValue(openRequest);
+    await rejectJoinRequest('jr1', { reason: 'No llegó', markProofAsFalse: true, version: 3 });
+    expect(mockedRequest).toHaveBeenCalledWith('/api/join-requests/jr1/reject', {
+      method: 'POST',
+      body: { reason: 'No llegó', markProofAsFalse: true, version: 3 },
+    });
   });
 });
