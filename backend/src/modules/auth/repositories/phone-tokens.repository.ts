@@ -2,8 +2,11 @@ import { Injectable } from '@nestjs/common';
 import type { Queryable } from '../../../shared/db/db.service.js';
 import type { VerificationOutcome } from '../domain/phone-verification.js';
 
+export type TokenPurpose = 'registro' | 'cambio_celular';
+
 export interface PhoneTokenRow {
   id: string;
+  purpose: TokenPurpose;
   user_id: string;
   expires_at: Date;
   used_at: Date | null;
@@ -11,35 +14,46 @@ export interface PhoneTokenRow {
   started_by_telegram_id: string | null;
 }
 
-const COLUMNS = `id, user_id, expires_at, used_at, started_at, started_by_telegram_id::text`;
+const COLUMNS = `id, purpose, user_id, expires_at, used_at, started_at, started_by_telegram_id::text`;
 
 /** SQL de `phone_verification_tokens` (0011): solo se guarda el hash del token. */
 @Injectable()
 export class PhoneTokensRepository {
   /** Los enlaces anteriores de la cuenta dejan de servir (RF-003-21). */
-  async invalidateOpen(q: Queryable, userId: string, now: Date): Promise<void> {
+  async invalidateOpen(
+    q: Queryable,
+    userId: string,
+    now: Date,
+    purpose: TokenPurpose = 'registro',
+  ): Promise<void> {
     await q.query(
       `UPDATE phone_verification_tokens SET used_at = $2
-        WHERE user_id = $1 AND purpose = 'registro' AND used_at IS NULL`,
-      [userId, now],
+        WHERE user_id = $1 AND purpose = $3 AND used_at IS NULL`,
+      [userId, now, purpose],
     );
   }
 
   async insert(
     q: Queryable,
-    row: { userId: string; tokenHash: string; expiresAt: Date; ipHash: string },
+    row: {
+      userId: string;
+      tokenHash: string;
+      expiresAt: Date;
+      ipHash: string;
+      purpose?: TokenPurpose;
+    },
   ): Promise<void> {
     await q.query(
       `INSERT INTO phone_verification_tokens (user_id, purpose, token_hash, expires_at, requested_ip_hash)
-       VALUES ($1, 'registro', $2, $3, $4)`,
-      [row.userId, row.tokenHash, row.expiresAt, row.ipHash],
+       VALUES ($1, $5, $2, $3, $4)`,
+      [row.userId, row.tokenHash, row.expiresAt, row.ipHash, row.purpose ?? 'registro'],
     );
   }
 
   async findByHashForUpdate(q: Queryable, tokenHash: string): Promise<PhoneTokenRow | null> {
     const result = await q.query<PhoneTokenRow>(
       `SELECT ${COLUMNS} FROM phone_verification_tokens
-        WHERE token_hash = $1 AND purpose = 'registro' FOR UPDATE`,
+        WHERE token_hash = $1 FOR UPDATE`,
       [tokenHash],
     );
     return result.rows[0] ?? null;
@@ -50,7 +64,6 @@ export class PhoneTokensRepository {
     const result = await q.query<PhoneTokenRow>(
       `SELECT ${COLUMNS} FROM phone_verification_tokens
         WHERE started_by_telegram_id = $1 AND used_at IS NULL AND started_at IS NOT NULL
-          AND purpose = 'registro'
         ORDER BY started_at DESC LIMIT 1 FOR UPDATE`,
       [telegramUserId],
     );
@@ -77,6 +90,7 @@ export class PhoneTokensRepository {
   async findLatestByUser(
     q: Queryable,
     userId: string,
+    purpose: TokenPurpose = 'registro',
   ): Promise<{
     expires_at: Date;
     used_at: Date | null;
@@ -91,9 +105,9 @@ export class PhoneTokensRepository {
     }>(
       `SELECT expires_at, used_at, outcome, started_by_telegram_id::text
          FROM phone_verification_tokens
-        WHERE user_id = $1 AND purpose = 'registro'
+        WHERE user_id = $1 AND purpose = $2
         ORDER BY created_at DESC LIMIT 1`,
-      [userId],
+      [userId, purpose],
     );
     return result.rows[0] ?? null;
   }

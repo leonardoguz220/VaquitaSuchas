@@ -13,8 +13,17 @@ describe('Cambio de celular (spec 003)', () => {
   let telegramSeq = 90_000;
   const sessionOf = async (user: { email: string; password: string }) =>
     `Bearer ${(await t.login(user.email, user.password)).body.sessionToken as string}`;
-  const start = (auth: string) =>
-    t.http().post('/users/me/phone-change').set('Authorization', auth).send();
+  // Cada pedido llega desde otra IP: el límite por IP no mezcla casos.
+  let ipSeq = 0;
+  const start = (auth: string) => {
+    ipSeq += 1;
+    return t
+      .http()
+      .post('/users/me/phone-change')
+      .set('Authorization', auth)
+      .set('X-Forwarded-For', `10.3.${Math.floor(ipSeq / 250)}.${ipSeq % 250}`)
+      .send();
+  };
   const status = (auth: string) =>
     t.http().get('/users/me/phone-change/status').set('Authorization', auth);
   const me = async (auth: string) =>
