@@ -359,6 +359,93 @@ export class RequestsRepository {
     return (result.rowCount ?? 0) > 0;
   }
 
+  /**
+   * `esperando_pago` o `pago_informado` → `aceptada` con el cobro de ingreso (RN-010-03). Un solo
+   * `UPDATE`: la base exige `charge_id`, el método y el titular junto con el estado final.
+   */
+  async recordAcceptance(
+    q: Queryable,
+    id: string,
+    from: RequestStatus,
+    data: { method: 'comprobante' | 'efectivo'; chargeId: string; decidedBy: string; now: Date },
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET status = 'aceptada', final_at = $3, final_reason = $4, decided_by = $5,
+              accepted_method = $6, charge_id = $7
+        WHERE id = $1 AND status = $2`,
+      [
+        id,
+        from,
+        data.now,
+        data.method === 'efectivo' ? 'efectivo' : 'confirmada',
+        data.decidedBy,
+        data.method,
+        data.chargeId,
+      ],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Rechazo del titular con motivo (RF-010-16). */
+  async recordRejection(
+    q: Queryable,
+    id: string,
+    from: RequestStatus,
+    data: { reason: string; rejectedAsFalse: boolean; decidedBy: string; now: Date },
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET status = 'rechazada', final_at = $3, final_reason = 'rechazo_titular',
+              decided_by = $4, reject_reason = $5, rejected_as_false = $6
+        WHERE id = $1 AND status = $2`,
+      [id, from, data.now, data.decidedBy, data.reason, data.rejectedAsFalse],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Cancelación por el solicitante o por el sistema (`finalReason` dice cuál). */
+  async recordCancellation(
+    q: Queryable,
+    id: string,
+    from: RequestStatus,
+    finalReason: 'cancelada_solicitante' | 'aceptado_en_otro_grupo',
+    now: Date,
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET status = 'cancelada', final_at = $3, final_reason = $4
+        WHERE id = $1 AND status = $2`,
+      [id, from, now, finalReason],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /**
+   * Solicitudes `abierta` de la persona a OTROS grupos del mismo servicio del catálogo que el
+   * grupo `groupId` (RN-008-05, CA-010-47), bloqueadas en orden de id. Un grupo personalizado
+   * (sin plan de catálogo) no tiene servicio común: devuelve vacío.
+   */
+  async listOpenInSameServiceForUpdate(
+    q: Queryable,
+    applicantId: string,
+    groupId: string,
+    exceptRequestId: string,
+  ): Promise<JoinRequestRecord[]> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_requests jr
+         JOIN groups g ON g.id = jr.group_id
+         JOIN catalog_plans p ON p.id = g.catalog_plan_id
+        WHERE jr.applicant_id = $1 AND jr.status = 'abierta' AND jr.id <> $3 AND jr.group_id <> $2
+          AND p.service_id = (SELECT cp.service_id FROM groups ag
+                                JOIN catalog_plans cp ON cp.id = ag.catalog_plan_id
+                               WHERE ag.id = $2)
+        ORDER BY jr.id FOR UPDATE OF jr`,
+      [applicantId, groupId, exceptRequestId],
+    );
+    return result.rows.map(toRecord);
+  }
+
   /** Cupos reservados con plazo vigente (RN-010-02). */
   async countReserved(q: Queryable, groupId: string, now: Date): Promise<number> {
     const result = await q.query<{ n: string }>(
