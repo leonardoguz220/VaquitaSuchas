@@ -1,0 +1,233 @@
+# Integración continua (spec 000, T041, RF-000-19, RNF-000-03, CA-000-13, CA-000-16).
+# Corre en cada PR (hacia dev, qa y main) y en cada push a main. Los jobs son independientes y van en paralelo.
+# Los nombres de los jobs son los de los checks obligatorios de la protección de rama (T046):
+# lint, build, test-backend, test-frontend, test-database y gitleaks.
+# Las credenciales de PostgreSQL de este archivo son de prueba, viven solo en el runner y no son secretos.
+name: CI
+
+on:
+  pull_request:
+    branches: [main, qa, dev]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: 'true'
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # Cada paquete ejecuta ESLint, Prettier --check y tsc --noEmit (script lint).
+      - name: ESLint, Prettier y tsc --noEmit de los tres paquetes
+        run: npm run lint
+
+      - name: Comprobar que los archivos de entorno reales están ignorados (CA-000-16)
+        run: git check-ignore backend/.env frontend/.env.local
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar backend y frontend
+        run: |
+          npm run build -w backend
+          npm run build -w frontend
+
+  test-database:
+    name: test-database
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      db:
+        image: postgres:16.10-alpine
+        env:
+          POSTGRES_USER: vaquita
+          POSTGRES_PASSWORD: vaquita
+          POSTGRES_DB: vaquita_test
+          TZ: UTC
+          PGTZ: UTC
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vaquita -d vaquita_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://vaquita:vaquita@localhost:5432/vaquita_test
+      TEST_DATABASE_URL: postgres://vaquita:vaquita@localhost:5432/vaquita_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Pruebas de integridad de la base de datos
+        run: npm run test -w database
+
+  test-backend:
+    name: test-backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      db:
+        image: postgres:16.10-alpine
+        env:
+          POSTGRES_USER: vaquita
+          POSTGRES_PASSWORD: vaquita
+          POSTGRES_DB: vaquita_test
+          TZ: UTC
+          PGTZ: UTC
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vaquita -d vaquita_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mail:
+        image: axllent/mailpit:v1.27.0
+        ports:
+          - 1025:1025
+          - 8025:8025
+    env:
+      DATABASE_URL: postgres://vaquita:vaquita@localhost:5432/vaquita_test
+      TEST_DATABASE_URL: postgres://vaquita:vaquita@localhost:5432/vaquita_test
+      SMTP_HOST: localhost
+      SMTP_PORT: '1025'
+      MAILPIT_URL: http://localhost:8025
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Aplicar migraciones a la base de pruebas
+        run: npm run db:migrate
+
+      - name: Pruebas unitarias y de integración del backend
+        run: npm run test -w backend
+
+  test-frontend:
+    name: test-frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Pruebas del frontend
+        run: npm run test -w frontend
+
+  # Numeración de las migraciones y que ninguna ya fusionada en main se edite o se borre (RN-000-02).
+  db-check:
+    name: db-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # db:check compara las migraciones con origin/main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias del paquete database
+        run: npm ci --workspace database
+
+      - name: Validar numeración y checksums de migraciones
+        run: npm run db:check -w database -- --base origin/main
+
+  # Escanea los commits del PR (o los del push a main) en busca de secretos (RNF-000-02, CA-000-18).
+  # Usa el binario oficial, verificado con el archivo de sumas de la misma versión, y no la acción
+  # gitleaks-action (que pide licencia en repositorios de organizaciones).
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: 8.28.0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Instalar gitleaks
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          curl -fsSL -o "$RUNNER_TEMP/$archive" "$base/$archive"
+          curl -fsSL -o "$RUNNER_TEMP/checksums.txt" "$base/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          (cd "$RUNNER_TEMP" && grep " $archive\$" checksums.txt | sha256sum -c -)
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" gitleaks
+          sudo install "$RUNNER_TEMP/gitleaks" /usr/local/bin/gitleaks
+
+      - name: Buscar secretos en los commits nuevos
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            range="${PR_BASE_SHA}..${PR_HEAD_SHA}"
+          elif [ -n "$PUSH_BEFORE" ] && [ "$PUSH_BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            range="${PUSH_BEFORE}..${PUSH_SHA}"
+          else
+            range="${PUSH_SHA}"
+          fi
+          # --redact evita imprimir el valor del secreto en el log público del PR.
+          gitleaks git --redact --verbose --log-opts="$range" .
