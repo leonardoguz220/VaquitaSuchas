@@ -1,10 +1,12 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { adminUserDetail } from '@/services/__fixtures__/admin';
+import { adminUserDetail, adminUserRow } from '@/services/__fixtures__/admin';
+import { enableHost, transferGroupOwnership } from '@/services/admin-hosts';
 import {
   banAdminUser,
   changeAdminUserRole,
   getAdminUser,
+  listAdminUsers,
   reactivateAdminUser,
   revokeAdminBan,
   suspendAdminUser,
@@ -24,6 +26,12 @@ jest.mock('@/services/admin-users', () => ({
   banAdminUser: jest.fn(),
   revokeAdminBan: jest.fn(),
   changeAdminUserRole: jest.fn(),
+  listAdminUsers: jest.fn(),
+}));
+jest.mock('@/services/admin-hosts', () => ({
+  ...jest.requireActual('@/services/admin-hosts'),
+  enableHost: jest.fn(),
+  transferGroupOwnership: jest.fn(),
 }));
 
 const mockedGet = jest.mocked(getAdminUser);
@@ -32,6 +40,9 @@ const mockedReactivate = jest.mocked(reactivateAdminUser);
 const mockedBan = jest.mocked(banAdminUser);
 const mockedRevoke = jest.mocked(revokeAdminBan);
 const mockedRole = jest.mocked(changeAdminUserRole);
+const mockedUsers = jest.mocked(listAdminUsers);
+const mockedEnable = jest.mocked(enableHost);
+const mockedTransfer = jest.mocked(transferGroupOwnership);
 
 const REASON = 'Reclamo abierto por pago sin ingreso, mientras se revisa.';
 
@@ -295,6 +306,91 @@ describe('/admin/usuarios/[id] (spec 009 T017)', () => {
     render(await AdminUserPage({ params: Promise.resolve({ id: 'u1' }) }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'No tienes acceso al panel de administración.',
+    );
+  });
+
+  it('CA-009-28: «Habilitar como titular» desde la ficha envía la habilitación con motivo', async () => {
+    mockedEnable.mockResolvedValue({});
+    const user = await renderPage();
+    await user.click(screen.getByRole('button', { name: 'Habilitar como titular' }));
+    await user.type(within(dialog()).getByRole('textbox'), 'Titular conocido del equipo');
+    mockedGet.mockResolvedValue(
+      adminUserDetail({
+        hostEnablement: {
+          reason: 'Titular conocido del equipo',
+          enabledAt: '2026-10-19T14:00:00.000Z',
+        },
+      }),
+    );
+    await user.click(within(dialog()).getByRole('button', { name: 'Habilitar' }));
+    expect(mockedEnable).toHaveBeenCalledWith('u1', { reason: 'Titular conocido del equipo' });
+    expect(await screen.findByText('Habilitaste a Camila Rojas como titular.')).toBeVisible();
+    expect(
+      await screen.findByText(/Habilitado por un administrador desde el 19 oct 2026/),
+    ).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Quitar habilitación de titular' })).toBeVisible();
+  });
+
+  it('RF-009-24: «Transferir titularidad» solo aparece con el titular suspendido', async () => {
+    await renderPage();
+    expect(
+      screen.queryByRole('button', { name: 'Transferir titularidad' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('CA-009-35: transferir pide grupo, nuevo titular y motivo, y envía la transferencia', async () => {
+    mockedGet.mockResolvedValue(adminUserDetail({ status: 'suspendido' }));
+    mockedUsers.mockResolvedValue({
+      items: [adminUserRow({ id: 'u9', fullName: 'Ana Quispe', email: 'ana@example.com' })],
+      nextCursor: null,
+    });
+    mockedTransfer.mockRejectedValueOnce(
+      new ApiError(422, 'BUSINESS_RULE', 'x', { rule: 'RF-001-21' }),
+    );
+    mockedTransfer.mockResolvedValueOnce({});
+    const user = await renderPage();
+    await user.click(screen.getByRole('button', { name: 'Transferir titularidad' }));
+    expect(dialog()).toHaveTextContent('Solo se puede mientras el titular está suspendido');
+    await user.type(within(dialog()).getByRole('textbox', { name: /^Motivo/ }), REASON);
+    await user.click(within(dialog()).getByRole('button', { name: 'Transferir' }));
+    expect(within(dialog()).getByRole('alert')).toHaveTextContent(
+      'Escribe el identificador del grupo.',
+    );
+    await user.type(within(dialog()).getByLabelText('Identificador del grupo'), ' g1 ');
+    await user.click(within(dialog()).getByRole('button', { name: 'Transferir' }));
+    expect(within(dialog()).getByRole('alert')).toHaveTextContent('Elige al nuevo titular.');
+    await user.type(
+      within(dialog()).getByLabelText('Buscar al nuevo titular por nombre o correo'),
+      'ana{Enter}',
+    );
+    expect(screen.getByRole('dialog')).toBeVisible();
+    await user.click(await within(dialog()).findByRole('radio', { name: /Ana Quispe/ }));
+    await user.click(within(dialog()).getByRole('button', { name: 'Transferir' }));
+    expect(mockedTransfer).toHaveBeenCalledWith('g1', { toUserId: 'u9', reason: REASON });
+    expect(await within(dialog()).findByRole('alert')).toHaveTextContent(
+      'La persona elegida no está habilitada como titular.',
+    );
+    await user.click(within(dialog()).getByRole('button', { name: 'Transferir' }));
+    expect(await screen.findByText('Transferiste la titularidad del grupo.')).toBeVisible();
+  });
+
+  it('CA-009-35: un grupo inexistente se explica sin cerrar el modal', async () => {
+    mockedGet.mockResolvedValue(adminUserDetail({ status: 'suspendido' }));
+    mockedUsers.mockResolvedValue({ items: [adminUserRow({ id: 'u9' })], nextCursor: null });
+    mockedTransfer.mockRejectedValue(new ApiError(404, 'NOT_FOUND', 'x'));
+    const user = await renderPage();
+    await user.click(screen.getByRole('button', { name: 'Transferir titularidad' }));
+    await user.type(within(dialog()).getByLabelText('Identificador del grupo'), 'zz');
+    await user.type(
+      within(dialog()).getByLabelText('Buscar al nuevo titular por nombre o correo'),
+      'camila',
+    );
+    await user.click(within(dialog()).getByRole('button', { name: 'Buscar persona' }));
+    await user.click(await within(dialog()).findByRole('radio', { name: /Camila Rojas/ }));
+    await user.type(within(dialog()).getByRole('textbox', { name: /^Motivo/ }), REASON);
+    await user.click(within(dialog()).getByRole('button', { name: 'Transferir' }));
+    expect(await within(dialog()).findByRole('alert')).toHaveTextContent(
+      'No encontramos ese grupo. Revisa el identificador.',
     );
   });
 });

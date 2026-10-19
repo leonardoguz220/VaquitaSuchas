@@ -84,3 +84,15 @@ export function useAdminUserAction(userId: string) {
   );
   return useApiSubmit(request);
 }
+
+/** Resultados de la búsqueda rápida para elegir a una persona (titulares y transferencia). */
+export const ADMIN_USER_PICKER_SIZE = 5;
+
+/**
+ * Búsqueda rápida de personas (`GET /admin/users?q=…`) para elegir a quién habilitar o a quién
+ * transferir un grupo. Con `q` vacío no pide nada.
+ */
+export function useAdminUserSearch(q: string) {
+  const load = useCallback(() => listAdminUsers({ q, limit: ADMIN_USER_PICKER_SIZE }), [q]);
+  return useApiResource(q ? load : null);
+}

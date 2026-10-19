@@ -2,6 +2,7 @@
  * Datos simulados que respetan el contrato 009 (`contracts/api.md`), solo para las pruebas.
  * Nombres, correos, celulares y fechas son inventados.
  */
+import type { HostEnablementRow } from '../admin-hosts';
 import type { AdminUserDetail, AdminUserRow } from '../admin-users';
 
 /** Fila de la lista de usuarios: Camila, activa y usuaria (CA-009-07). */
@@ -39,6 +40,18 @@ export function adminUserDetail(overrides: Partial<AdminUserDetail> = {}): Admin
     ban: null,
     suspension: null,
     hostEnablement: null,
+    ...overrides,
+  };
+}
+
+/** Habilitación manual vigente de Rodrigo, hecha por Leonardo el 10 ene 2026 (RF-009-21). */
+export function hostEnablementRow(overrides: Partial<HostEnablementRow> = {}): HostEnablementRow {
+  return {
+    id: 'he1',
+    user: { id: 'u5', fullName: 'Rodrigo Salazar', email: 'rodrigo@example.com' },
+    reason: 'Primer titular del grupo de prueba',
+    enabledBy: { id: 'a1', fullName: 'Leonardo Guzman' },
+    enabledAt: '2026-01-10T14:00:00.000Z',
     ...overrides,
   };
 }

@@ -35,6 +35,11 @@ const RULE_CODES: Record<string, string> = {
   'RN-009-07': 'ADMIN_TARGET_FORBIDDEN',
   'RF-009-19': 'USER_BANNED',
   'RF-009-23': 'SAME_ADMIN',
+  'RF-009-24': 'OWNER_NOT_SUSPENDED',
+  'RF-001-17': 'NOT_A_MEMBER',
+  'RF-001-21': 'NOT_HOST_ELIGIBLE',
+  'RN-001-14': 'TOO_MANY_ACTIVE_GROUPS',
+  'RN-010-09': 'JOIN_REQUESTS_IN_PAYMENT',
 };
 
 /**
@@ -88,6 +93,20 @@ export function adminActionOutcome(error: ApiError): AdminActionOutcome {
     case 'SAME_ADMIN':
       return plain(
         'Quien baneó no puede revertir el baneo. Pide a otro administrador que lo revise.',
+      );
+    case 'OWNER_NOT_SUSPENDED':
+      return plain('Solo se transfiere un grupo cuyo titular está suspendido.');
+    case 'NOT_A_MEMBER':
+      return plain('La persona elegida no es miembro activo de ese grupo. Elige a otra.');
+    case 'NOT_HOST_ELIGIBLE':
+      return plain(
+        'La persona elegida no está habilitada como titular. Habilítala primero o elige a otra.',
+      );
+    case 'TOO_MANY_ACTIVE_GROUPS':
+      return plain('La persona elegida ya es titular de 5 grupos activos. Elige a otra.');
+    case 'JOIN_REQUESTS_IN_PAYMENT':
+      return plain(
+        'El grupo tiene solicitudes de ingreso en pago. Espera a que se resuelvan y vuelve a intentarlo.',
       );
     case 'INVALID_TRANSITION':
     case 'DISPUTE_NOT_OPEN':

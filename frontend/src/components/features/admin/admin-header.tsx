@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Logo } from '@/components/features/brand/logo';
 import { cx } from '@/components/ui/cx';
-import { ADMIN_USERS_PATH, GROUPS_PATH } from '@/lib/routes';
+import { ADMIN_HOSTS_PATH, ADMIN_USERS_PATH, GROUPS_PATH } from '@/lib/routes';
 
 interface AdminNavItem {
   href: string;
@@ -13,7 +13,10 @@ interface AdminNavItem {
 }
 
 /** Secciones del panel de administración (plan 009 §6; mockup `AdminUsuarios.dc.html`). */
-export const ADMIN_NAV_ITEMS: AdminNavItem[] = [{ href: ADMIN_USERS_PATH, label: 'Usuarios' }];
+export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
+  { href: ADMIN_USERS_PATH, label: 'Usuarios' },
+  { href: ADMIN_HOSTS_PATH, label: 'Titulares' },
+];
 
 function isCurrent(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);

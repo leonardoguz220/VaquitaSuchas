@@ -3,17 +3,21 @@
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import { RatingBadge } from '@/components/features/reputation/rating-badge';
-import { Alert, Button, Card, type ButtonVariant } from '@/components/ui';
+import { Alert, Button, Card, Field, type ButtonVariant } from '@/components/ui';
+import { useHostEnablementAction, useTransferOwnership } from '@/hooks/use-admin-hosts';
 import { useAdminUser, useAdminUserAction, type AdminUserAction } from '@/hooks/use-admin-users';
 import { formatDateLaPaz, formatDateTimeLaPaz } from '@/lib/dates';
 import { formatPhone } from '@/lib/phone';
 import { ADMIN_USERS_PATH } from '@/lib/routes';
-import type { AdminUserDetail } from '@/services/admin-users';
+import type { AdminUserDetail, AdminUserRow } from '@/services/admin-users';
+import type { ApiSubmitResult } from '@/hooks/use-api-submit';
 import { adminActionOutcome } from './admin-messages';
 import { AdminLoadError, UserRoleBadge, UserStatusBadge } from './admin-states';
+import { AdminUserPicker } from './admin-user-picker';
 import { ReasonModal, type ReasonModalResult } from './reason-modal';
 
-type ActionKind = 'suspend' | 'reactivate' | 'ban' | 'revokeBan' | 'promote' | 'demote';
+type UserActionKind = 'suspend' | 'reactivate' | 'ban' | 'revokeBan' | 'promote' | 'demote';
+type ActionKind = UserActionKind | 'enableHost' | 'revokeHost' | 'transfer';
 
 interface ActionCopy {
   button: string;
@@ -85,6 +89,34 @@ const ACTIONS: Record<ActionKind, ActionCopy> = {
     reasonRequired: true,
     done: (name) => `${name} ya no es administrador.`,
   },
+  enableHost: {
+    button: 'Habilitar como titular',
+    title: (name) => `¿Habilitar a ${name} como titular?`,
+    description: 'Podrá crear suscripciones aunque su calificación sea menor al umbral.',
+    confirm: 'Habilitar',
+    variant: 'primary',
+    reasonRequired: true,
+    done: (name) => `Habilitaste a ${name} como titular.`,
+  },
+  revokeHost: {
+    button: 'Quitar habilitación de titular',
+    title: (name) => `¿Quitar la habilitación de ${name}?`,
+    description: 'Desde ahora solo podrá crear suscripciones si su calificación lo permite.',
+    confirm: 'Quitar habilitación',
+    variant: 'danger',
+    reasonRequired: true,
+    done: (name) => `Quitaste la habilitación de ${name}.`,
+  },
+  transfer: {
+    button: 'Transferir titularidad',
+    title: (name) => `¿Transferir un grupo de ${name}?`,
+    description:
+      'Solo se puede mientras el titular está suspendido y a pedido de los miembros. El nuevo titular debe ser miembro activo del grupo y estar habilitado como titular.',
+    confirm: 'Transferir',
+    variant: 'danger',
+    reasonRequired: true,
+    done: () => 'Transferiste la titularidad del grupo.',
+  },
 };
 
 /**
@@ -97,14 +129,19 @@ function availableActions(user: AdminUserDetail): ActionKind[] {
     if (user.ban) actions.push('revokeBan');
     return actions;
   }
-  if (user.role === 'admin') return ['demote'];
-  if (user.status === 'activo') actions.push('suspend');
-  if (user.status === 'suspendido') actions.push('reactivate');
-  actions.push('ban', 'promote');
+  if (user.role === 'admin') {
+    actions.push('demote');
+  } else {
+    if (user.status === 'activo') actions.push('suspend');
+    if (user.status === 'suspendido') actions.push('reactivate');
+    actions.push('ban', 'promote');
+  }
+  actions.push(user.hostEnablement ? 'revokeHost' : 'enableHost');
+  if (user.status === 'suspendido' && user.groupsAsHost > 0) actions.push('transfer');
   return actions;
 }
 
-function toRequest(kind: ActionKind, user: AdminUserDetail, reason: string): AdminUserAction {
+function toRequest(kind: UserActionKind, user: AdminUserDetail, reason: string): AdminUserAction {
   switch (kind) {
     case 'suspend':
       return { kind: 'suspend', reason };
@@ -183,24 +220,64 @@ function AccountNotice({ user }: { user: AdminUserDetail }) {
  * `/admin/usuarios/[id]` (spec 009 T017, plan §6; mockup `AdminUsuarios.dc.html`): ficha con la
  * CI enmascarada tal como llega (CA-009-36), sin contraseñas ni comprobantes (CA-009-08), grupos
  * y nivel de puntualidad (RF-009-09), y las acciones **Suspender**, **Reactivar**, **Banear**,
- * **Revertir baneo** y **Promover/Quitar rol**, cada una con modal de confirmación y motivo de 10
- * a 300 caracteres con contador (RNF-009-02). Todo queda en auditoría en el servidor.
+ * **Revertir baneo**, **Promover/Quitar rol**, **Habilitar como titular** y, con el titular
+ * suspendido, **Transferir titularidad** (spec 009 T021, RF-009-24), cada una con modal de
+ * confirmación y motivo de 10 a 300 caracteres con contador (RNF-009-02). Todo queda en auditoría
+ * en el servidor.
  */
 export function AdminUserDetailView({ userId }: { userId: string }) {
   const { status, data: user, error, reload, refresh } = useAdminUser(userId);
   const { submit } = useAdminUserAction(userId);
+  const hostAction = useHostEnablementAction();
+  const transferAction = useTransferOwnership();
   const [open, setOpen] = useState<ActionKind | null>(null);
   const [notice, setNotice] = useState<{ message: string; ok: boolean } | null>(null);
+  const [groupId, setGroupId] = useState('');
+  const [newHost, setNewHost] = useState<AdminUserRow | null>(null);
+
+  function openAction(kind: ActionKind) {
+    setNotice(null);
+    setGroupId('');
+    setNewHost(null);
+    setOpen(kind);
+  }
+
+  function run(
+    kind: ActionKind,
+    target: AdminUserDetail,
+    reason: string,
+  ): Promise<ApiSubmitResult<void> | null> {
+    switch (kind) {
+      case 'enableHost':
+      case 'revokeHost':
+        return hostAction.submit({ userId: target.id, enable: kind === 'enableHost', reason });
+      case 'transfer':
+        return transferAction.submit({
+          groupId: groupId.trim(),
+          toUserId: newHost?.id ?? '',
+          reason,
+        });
+      default:
+        return submit(toRequest(kind, target, reason));
+    }
+  }
 
   async function confirm(kind: ActionKind, reason: string): Promise<ReasonModalResult> {
     if (!user) return null;
-    const response = await submit(toRequest(kind, user, reason));
+    const response = await run(kind, user, reason);
     if (!response) return null;
     if (response.ok) {
       setOpen(null);
       setNotice({ ok: true, message: ACTIONS[kind].done(user.fullName) });
       await refresh();
       return { ok: true };
+    }
+    if (kind === 'transfer' && response.error.statusCode === 404) {
+      return {
+        ok: false,
+        message: 'No encontramos ese grupo. Revisa el identificador.',
+        field: null,
+      };
     }
     const outcome = adminActionOutcome(response.error);
     if (outcome.refresh) {
@@ -305,10 +382,7 @@ export function AdminUserDetailView({ userId }: { userId: string }) {
                 <Button
                   key={kind}
                   variant={ACTIONS[kind].variant === 'danger' ? 'danger' : 'secondary'}
-                  onClick={() => {
-                    setNotice(null);
-                    setOpen(kind);
-                  }}
+                  onClick={() => openAction(kind)}
                 >
                   {ACTIONS[kind].button}
                 </Button>
@@ -323,9 +397,36 @@ export function AdminUserDetailView({ userId }: { userId: string }) {
               confirmLabel={ACTIONS[open].confirm}
               confirmVariant={ACTIONS[open].variant}
               reasonRequired={ACTIONS[open].reasonRequired}
+              validate={
+                open === 'transfer'
+                  ? () =>
+                      !groupId.trim()
+                        ? 'Escribe el identificador del grupo.'
+                        : !newHost
+                          ? 'Elige al nuevo titular.'
+                          : null
+                  : undefined
+              }
               onConfirm={(reason) => confirm(open, reason)}
               onClose={() => setOpen(null)}
-            />
+            >
+              {open === 'transfer' && (
+                <>
+                  <Field
+                    label="Identificador del grupo"
+                    hint="Lo envían los miembros al pedir la transferencia."
+                    value={groupId}
+                    onChange={(event) => setGroupId(event.target.value)}
+                    autoComplete="off"
+                  />
+                  <AdminUserPicker
+                    label="Buscar al nuevo titular por nombre o correo"
+                    selected={newHost}
+                    onSelect={setNewHost}
+                  />
+                </>
+              )}
+            </ReasonModal>
           )}
         </>
       )}

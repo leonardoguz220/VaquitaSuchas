@@ -234,6 +234,9 @@ export function adminUserPath(userId: string): string {
   return `${ADMIN_USERS_PATH}/${encodeURIComponent(userId)}`;
 }
 
+/** Habilitación manual de titulares (plan 009 §6). */
+export const ADMIN_HOSTS_PATH = '/admin/titulares';
+
 /** Indica si `pathname` es una ruta del panel de administración (`/admin` o una subruta). */
 export function isAdminPath(pathname: string): boolean {
   return matchesRoute(pathname, ADMIN_PATH);
