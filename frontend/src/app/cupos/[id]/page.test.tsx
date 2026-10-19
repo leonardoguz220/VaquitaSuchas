@@ -129,3 +129,10 @@ describe('/cupos/[id] (spec 008 T019): solicitar', () => {
     expect(within(card).getByRole('button', { name: 'Solicitar cupo' })).toBeEnabled();
   });
 });
+
+describe('/cupos/[id] (spec 008 T023): reportar', () => {
+  it('RF-008-17: el detalle ofrece «Reportar esta publicación»', async () => {
+    await renderPage();
+    expect(await screen.findByRole('button', { name: 'Reportar esta publicación' })).toBeVisible();
+  });
+});

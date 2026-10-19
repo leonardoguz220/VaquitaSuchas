@@ -8,12 +8,14 @@ import {
   isOwnerListing,
   listListings,
   renewGroupListing,
+  reportListing,
   requestListingSeat,
   updateGroupListing,
   withdrawGroupListing,
   type CreateListingRequest,
   type GroupListingSummary,
   type ListListingsParams,
+  type ListingReportReason,
   type OwnerListing,
   type UpdateListingRequest,
 } from '@/services/listings';
@@ -108,6 +110,15 @@ export function useListing(listingId: string) {
 export function useRequestListingSeat(listingId: string) {
   const request = useCallback(
     (message: string) => requestListingSeat(listingId, message ? { message } : {}),
+    [listingId],
+  );
+  return useApiSubmit(request);
+}
+
+/** Reportar una publicación (`POST /listings/:id/reports`, RF-008-17). */
+export function useReportListing(listingId: string) {
+  const request = useCallback(
+    (input: { reason: ListingReportReason; comment?: string }) => reportListing(listingId, input),
     [listingId],
   );
   return useApiSubmit(request);

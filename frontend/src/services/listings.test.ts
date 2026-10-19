@@ -5,6 +5,7 @@ import {
   getListing,
   isOwnerListing,
   listListings,
+  reportListing,
   requestListingSeat,
   renewGroupListing,
   updateGroupListing,
@@ -101,6 +102,17 @@ describe('services/listings (contrato 008): solicitar', () => {
     expect(mockedRequest).toHaveBeenCalledWith('/api/listings/l1/requests', {
       method: 'POST',
       body: { message: 'Hola' },
+    });
+  });
+});
+
+describe('services/listings (contrato 008): reportes', () => {
+  it('RF-008-17: reportListing hace POST /api/listings/:id/reports con motivo y comentario', async () => {
+    mockedRequest.mockResolvedValue(undefined);
+    await reportListing('l1', { reason: 'datos_falsos', comment: 'El precio no coincide.' });
+    expect(mockedRequest).toHaveBeenCalledWith('/api/listings/l1/reports', {
+      method: 'POST',
+      body: { reason: 'datos_falsos', comment: 'El precio no coincide.' },
     });
   });
 });

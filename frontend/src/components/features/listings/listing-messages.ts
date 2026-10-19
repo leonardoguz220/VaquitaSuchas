@@ -4,7 +4,7 @@
  */
 import { formatDateLaPaz, formatDateTimeLaPaz } from '@/lib/dates';
 import { isConnectionError, type ApiError } from '@/services/http';
-import type { CannotRequestReason, ListingView } from '@/services/listings';
+import type { CannotRequestReason, ListingReportReason, ListingView } from '@/services/listings';
 import { REGISTER_ERROR_MESSAGES } from '../auth/register-errors';
 
 export const LISTING_MESSAGES = {
@@ -116,4 +116,48 @@ export function cannotRequestText(
 /** Primer nombre para el rótulo del mensaje: «Mensaje para Valeria». */
 export function firstName(fullName: string): string {
   return fullName.trim().split(/\s+/)[0] ?? fullName;
+}
+
+/** Motivos del reporte (RF-008-17), en el orden del contrato. */
+export const REPORT_REASONS: Array<{ value: ListingReportReason; label: string }> = [
+  { value: 'spam', label: 'Spam o publicidad' },
+  { value: 'datos_falsos', label: 'Datos falsos' },
+  { value: 'conducta_indebida', label: 'Conducta indebida' },
+  { value: 'otro', label: 'Otro motivo' },
+];
+
+export interface ReportErrorOutcome {
+  message: string;
+  /** Ya no tiene sentido volver a intentarlo: se oculta el botón. */
+  finished: boolean;
+}
+
+/** Error de `POST /listings/:id/reports` por `code` y estado HTTP (contrato 008). */
+export function reportErrorOutcome(error: ApiError): ReportErrorOutcome {
+  switch (error.code) {
+    case 'ALREADY_REPORTED':
+      return { message: 'Ya reportaste esta publicación. Gracias por avisar.', finished: true };
+    case 'CANNOT_REPORT_OWN_LISTING':
+      return { message: 'No puedes reportar tu propia publicación.', finished: true };
+    case 'ACCOUNT_RESTRICTED':
+      return { message: 'Tu cuenta está restringida: no puedes reportar.', finished: true };
+    case 'LISTING_NOT_FOUND':
+      return { message: 'Esta publicación ya no está activa.', finished: true };
+  }
+  if (error.statusCode === 429) {
+    return {
+      message: 'Llegaste al límite de 10 reportes por día. Vuelve a intentarlo mañana.',
+      finished: true,
+    };
+  }
+  if (error.statusCode === 400) {
+    return {
+      message: 'Revisa el motivo y usa hasta 300 caracteres en el comentario.',
+      finished: false,
+    };
+  }
+  if (error.statusCode === 404) {
+    return { message: 'Esta publicación ya no está activa.', finished: true };
+  }
+  return { message: listingLoadErrorMessage(error), finished: false };
 }

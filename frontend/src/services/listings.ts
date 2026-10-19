@@ -199,3 +199,20 @@ export function requestListingSeat(
     body: input,
   });
 }
+
+export type ListingReportReason = 'spam' | 'datos_falsos' | 'conducta_indebida' | 'otro';
+
+/**
+ * `POST /listings/:id/reports` (RF-008-17, RF-008-18): `204`. Al tercer reporte de personas
+ * distintas la publicación se oculta. Errores: `409 ALREADY_REPORTED`,
+ * `422 CANNOT_REPORT_OWN_LISTING`, `429 RATE_LIMITED`, `403 ACCOUNT_RESTRICTED`, `404`.
+ */
+export function reportListing(
+  listingId: string,
+  input: { reason: ListingReportReason; comment?: string },
+): Promise<void> {
+  return apiRequest<void>(`/api/listings/${encodeURIComponent(listingId)}/reports`, {
+    method: 'POST',
+    body: input,
+  });
+}
