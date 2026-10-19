@@ -220,3 +220,17 @@ export function adminUserPath(userId: string): string {
 
 /** Habilitaciones manuales de titulares (spec 009, RF-009-21). */
 export const ADMIN_HOSTS_PATH = '/admin/titulares';
+
+/** Cola de reclamos de ingreso (spec 009, RF-009-20). */
+export const ADMIN_DISPUTES_PATH = '/admin/reclamos';
+
+/** Detalle de un reclamo: evidencia y resolución (spec 009, RF-009-20). */
+export function adminDisputePath(disputeId: string): string {
+  return `${ADMIN_DISPUTES_PATH}/${encodeURIComponent(disputeId)}`;
+}
+
+/** Catálogo de servicios y planes (spec 009, RF-009-04). */
+export const ADMIN_CATALOG_PATH = '/admin/catalogo';
+
+/** Publicaciones reportadas u ocultas de cupos (spec 009, RF-009-12). */
+export const ADMIN_MODERATION_PATH = '/admin/moderacion';
