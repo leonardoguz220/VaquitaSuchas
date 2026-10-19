@@ -409,7 +409,7 @@ export class RequestsRepository {
     q: Queryable,
     id: string,
     from: RequestStatus,
-    finalReason: 'cancelada_solicitante' | 'aceptado_en_otro_grupo',
+    finalReason: 'cancelada_solicitante' | 'aceptado_en_otro_grupo' | 'solicitante_suspendido',
     now: Date,
   ): Promise<boolean> {
     const result = await q.query(
@@ -419,6 +419,137 @@ export class RequestsRepository {
       [id, from, now, finalReason],
     );
     return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Rechazo del sistema (grupo cerrado o titular baneado): sin titular que decida ni motivo escrito. */
+  async recordSystemRejection(
+    q: Queryable,
+    id: string,
+    from: RequestStatus,
+    finalReason: 'grupo_cerrado' | 'titular_baneado',
+    now: Date,
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET status = 'rechazada', final_at = $3, final_reason = $4
+        WHERE id = $1 AND status = $2`,
+      [id, from, now, finalReason],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Solicitudes activas de un grupo, bloqueadas en orden de id (cierre del grupo). */
+  async listActiveByGroupForUpdate(q: Queryable, groupId: string): Promise<JoinRequestRecord[]> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_requests jr
+        WHERE jr.group_id = $1 AND jr.status = ANY($2::text[])
+        ORDER BY jr.id FOR UPDATE OF jr`,
+      [groupId, ACTIVE_STATUSES],
+    );
+    return result.rows.map(toRecord);
+  }
+
+  /** Solicitudes activas a los grupos que posee la persona, bloqueadas en orden de id (baneo del titular). */
+  async listActiveByHostForUpdate(q: Queryable, hostId: string): Promise<JoinRequestRecord[]> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_requests jr JOIN groups g ON g.id = jr.group_id
+        WHERE g.owner_id = $1 AND jr.status = ANY($2::text[])
+        ORDER BY jr.id FOR UPDATE OF jr`,
+      [hostId, ACTIVE_STATUSES],
+    );
+    return result.rows.map(toRecord);
+  }
+
+  /** Bloquea la solicitud si nadie más la tiene (`SKIP LOCKED`): la tarea no espera a una acción en curso. */
+  async findByIdForUpdateSkipLocked(q: Queryable, id: string): Promise<JoinRequestRecord | null> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_requests jr WHERE jr.id = $1 FOR UPDATE OF jr SKIP LOCKED`,
+      [id],
+    );
+    const row = result.rows[0];
+    return row ? toRecord(row) : null;
+  }
+
+  /** Ids de solicitudes activas cuyo plazo ya venció (barrido; usa `join_requests_sweep_idx`). */
+  async listDueIds(q: Queryable, now: Date, limit: number): Promise<string[]> {
+    const result = await q.query<{ id: string }>(
+      `SELECT id FROM join_requests
+        WHERE (status = 'abierta' AND open_deadline_at <= $1)
+           OR (status = 'esperando_pago' AND pay_deadline_at <= $1)
+           OR (status = 'pago_informado' AND decision_deadline_at <= $1)
+        ORDER BY COALESCE(decision_deadline_at, pay_deadline_at, open_deadline_at), id
+        LIMIT $2`,
+      [now, limit],
+    );
+    return result.rows.map((r) => r.id);
+  }
+
+  /** Ids de `pago_informado` vigentes, sin recordatorio y con el comprobante subido hasta `uploadedBefore`. */
+  async listReminderDueIds(
+    q: Queryable,
+    now: Date,
+    uploadedBefore: Date,
+    limit: number,
+  ): Promise<string[]> {
+    const result = await q.query<{ id: string }>(
+      `SELECT id FROM join_requests
+        WHERE status = 'pago_informado' AND reminder_sent_at IS NULL
+          AND proof_uploaded_at <= $2 AND decision_deadline_at > $1
+        ORDER BY proof_uploaded_at, id
+        LIMIT $3`,
+      [now, uploadedBefore, limit],
+    );
+    return result.rows.map((r) => r.id);
+  }
+
+  /** Marca el recordatorio una sola vez (no cambia de estado ni la versión). */
+  async markReminderSent(q: Queryable, id: string, now: Date): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests SET reminder_sent_at = $2
+        WHERE id = $1 AND status = 'pago_informado' AND reminder_sent_at IS NULL`,
+      [id, now],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** ¿Hay solicitudes en pago con plazo vigente? (RN-010-09: impide transferir o cerrar el grupo). */
+  async hasPayingRequests(q: Queryable, groupId: string, now: Date): Promise<boolean> {
+    return (await this.countReserved(q, groupId, now)) > 0;
+  }
+
+  /**
+   * Ids de solicitudes cuyo contenido ya cumplió la retención (RNF-010-09): estado final hace 2
+   * meses o más, sin reclamo abierto y, si hubo reclamos, con el último resuelto hace 2 meses o más.
+   * `onlyId` repite la comprobación para una sola solicitud, ya bloqueada.
+   */
+  async listPurgeableIds(
+    q: Queryable,
+    cutoff: Date,
+    limit: number,
+    onlyId: string | null = null,
+  ): Promise<string[]> {
+    const result = await q.query<{ id: string }>(
+      `SELECT jr.id FROM join_requests jr
+        WHERE jr.final_at IS NOT NULL AND jr.content_purged_at IS NULL
+          AND ($3::uuid IS NULL OR jr.id = $3)
+          AND NOT EXISTS (SELECT 1 FROM join_disputes d
+                           WHERE d.request_id = jr.id AND d.status = 'abierto')
+          AND GREATEST(jr.final_at,
+                       COALESCE((SELECT max(d.resolved_at) FROM join_disputes d
+                                  WHERE d.request_id = jr.id), jr.final_at)) <= $1
+        ORDER BY jr.final_at, jr.id
+        LIMIT $2`,
+      [cutoff, limit, onlyId],
+    );
+    return result.rows.map((r) => r.id);
+  }
+
+  /** Marca el contenido como eliminado; es lo único que admite una solicitud en estado final. */
+  async markContentPurged(q: Queryable, id: string, now: Date): Promise<void> {
+    await q.query(
+      'UPDATE join_requests SET content_purged_at = $2 WHERE id = $1 AND content_purged_at IS NULL',
+      [id, now],
+    );
   }
 
   /**

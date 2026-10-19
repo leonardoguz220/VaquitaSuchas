@@ -168,4 +168,13 @@ export class DisputesRepository {
     );
     return toRecord(result.rows[0] as Row);
   }
+
+  /** Marca la evidencia de los reclamos de la solicitud como eliminada del almacén (retención). */
+  async markEvidencePurged(q: Queryable, requestId: string, now: Date): Promise<void> {
+    await q.query(
+      `UPDATE join_disputes SET evidence_purged_at = $2
+        WHERE request_id = $1 AND evidence_purged_at IS NULL`,
+      [requestId, now],
+    );
+  }
 }
