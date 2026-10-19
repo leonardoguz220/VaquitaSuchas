@@ -29,11 +29,14 @@ describe('Retención de comprobantes', () => {
   /** Grupo con un cobro y un comprobante guardado en el almacén. */
   async function groupWithReceipt(
     reference: string,
+    status: 'pendiente' | 'pagado' = 'pagado',
   ): Promise<{ group: TestGroup; chargeId: string; receiptId: string; fileKey: string }> {
     const group = await harness.createGroup({ members: 1 });
     const payer = group.memberIds[0] as string;
     const chargeId = await harness.insertCharge(group, payer);
     const receipt = await harness.insertReceipt(chargeId, payer, { reference });
+    // La retención solo alcanza cobros ya saldados (pagado o cancelado).
+    await setChargeStatus(chargeId, status);
     return { group, chargeId, receiptId: receipt.id, fileKey: receipt.fileKey };
   }
 
@@ -85,7 +88,7 @@ describe('Retención de comprobantes', () => {
       [old.receiptId],
     );
     expect(kept.rows).toEqual([
-      { reference: 'REF-VIEJA', status: 'vigente', amount: 3333, charge_status: 'pendiente' },
+      { reference: 'REF-VIEJA', status: 'vigente', amount: 3333, charge_status: 'pagado' },
     ]);
     const titular = old.group.ownerId;
     const history = await get(titular, `/groups/${old.group.id}/charges`).expect(200);
@@ -93,7 +96,7 @@ describe('Retención de comprobantes', () => {
       expect.objectContaining({
         id: old.chargeId,
         amountCents: 3333,
-        status: 'pendiente',
+        status: 'pagado',
         receipts: [expect.objectContaining({ id: old.receiptId, fileAvailable: false })],
       }),
     ]);
@@ -129,6 +132,104 @@ describe('Retención de comprobantes', () => {
     expect(harness.storage.files.has(edge.fileKey)).toBe(false);
   });
 
+  /** Cobro extra del grupo, con comprobante, en el estado indicado. */
+  async function extraCharge(
+    old: { group: TestGroup },
+    period: string,
+    status: 'pendiente' | 'en_revision' | 'atrasado' | 'pagado' | 'cancelado',
+  ): Promise<{ chargeId: string; receiptId: string; fileKey: string }> {
+    const payer = old.group.memberIds[0] as string;
+    const chargeId = await harness.insertCharge(old.group, payer, {
+      period,
+      dueAt: `${period}-19T04:00:00.000Z`,
+    });
+    const receipt = await harness.insertReceipt(chargeId, payer, { reference: `REF-${status}` });
+    await setChargeStatus(chargeId, status);
+    return { chargeId, receiptId: receipt.id, fileKey: receipt.fileKey };
+  }
+
+  /** Deja el cobro en el estado indicado cumpliendo las restricciones de la tabla. */
+  async function setChargeStatus(chargeId: string, status: string): Promise<void> {
+    await harness.pool.query(
+      `UPDATE charges SET status = $2,
+              paid_at = CASE WHEN $2 = 'pagado' THEN $3::timestamptz END,
+              settled_by = CASE WHEN $2 = 'pagado' THEN user_id END,
+              settlement = CASE WHEN $2 = 'pagado' THEN 'manual' END,
+              cancelled_at = CASE WHEN $2 = 'cancelado' THEN $3::timestamptz END,
+              cancelled_by = CASE WHEN $2 = 'cancelado' THEN user_id END,
+              cancel_reason = CASE WHEN $2 = 'cancelado' THEN 'Cobro de prueba' END
+        WHERE id = $1`,
+      [chargeId, status, NOW],
+    );
+  }
+
+  it('CA-002-33: en un grupo cerrado no se borran los comprobantes de cobros pendiente, en_revision ni atrasado', async () => {
+    const old = await groupWithReceipt('REF-PEND', 'pendiente');
+    await closeGroup(old.group, '2026-06-01T12:00:00Z');
+    const review = await extraCharge(old, '2026-09', 'en_revision');
+    const late = await extraCharge(old, '2026-08', 'atrasado');
+
+    const outcome = await retention.purgeExpiredReceipts(new Date(NOW));
+
+    expect(outcome).toEqual({ deleted: 0, failed: 0 });
+    for (const kept of [old, review, late]) {
+      expect(harness.storage.files.has(kept.fileKey)).toBe(true);
+      expect(await deletedAt(kept.receiptId)).toBeNull();
+    }
+    expect(harness.storage.deleted).toEqual([]);
+  });
+
+  it('CA-002-33: un cobro en_revision que luego se paga o se cancela pierde su archivo en la siguiente corrida', async () => {
+    const old = await groupWithReceipt('REF-PEND', 'pendiente');
+    await closeGroup(old.group, '2026-06-01T12:00:00Z');
+    const toPay = await extraCharge(old, '2026-09', 'en_revision');
+    const toCancel = await extraCharge(old, '2026-08', 'en_revision');
+    expect((await retention.purgeExpiredReceipts(new Date(NOW))).deleted).toBe(0);
+
+    await setChargeStatus(toPay.chargeId, 'pagado');
+    // Un cobro en revisión solo se cancela tras ser rechazado (vuelve a pendiente).
+    await setChargeStatus(toCancel.chargeId, 'pendiente');
+    expect((await retention.purgeExpiredReceipts(new Date(NOW))).deleted).toBe(1);
+    await setChargeStatus(toCancel.chargeId, 'cancelado');
+    const outcome = await retention.purgeExpiredReceipts(new Date('2026-10-17T15:00:00Z'));
+
+    expect(outcome).toEqual({ deleted: 1, failed: 0 });
+    expect(harness.storage.files.has(toPay.fileKey)).toBe(false);
+    expect(harness.storage.files.has(toCancel.fileKey)).toBe(false);
+    expect(await deletedAt(toPay.receiptId)).not.toBeNull();
+    expect(await deletedAt(toCancel.receiptId)).not.toBeNull();
+    // El cobro que sigue pendiente conserva su archivo.
+    expect(harness.storage.files.has(old.fileKey)).toBe(true);
+    expect(await deletedAt(old.receiptId)).toBeNull();
+  });
+
+  it('CA-002-33: los cobros pagado y cancelado de un grupo cerrado hace más de 2 meses se siguen borrando', async () => {
+    const old = await groupWithReceipt('REF-PEND', 'pendiente');
+    await closeGroup(old.group, '2026-06-01T12:00:00Z');
+    const paid = await extraCharge(old, '2026-09', 'pagado');
+    const cancelled = await extraCharge(old, '2026-08', 'cancelado');
+
+    const outcome = await retention.purgeExpiredReceipts(new Date(NOW));
+
+    expect(outcome).toEqual({ deleted: 2, failed: 0 });
+    expect(harness.storage.files.has(paid.fileKey)).toBe(false);
+    expect(harness.storage.files.has(cancelled.fileKey)).toBe(false);
+    expect(harness.storage.files.has(old.fileKey)).toBe(true);
+  });
+
+  it('RN-002-06: el límite estricto de 2 meses también aplica a cobros pagados', async () => {
+    const edge = await groupWithReceipt('REF-PEND', 'pendiente');
+    await closeGroup(edge.group, '2026-08-16T15:00:00Z');
+    const paid = await extraCharge(edge, '2026-09', 'pagado');
+
+    expect((await retention.purgeExpiredReceipts(new Date(NOW))).deleted).toBe(0);
+    expect(harness.storage.files.has(paid.fileKey)).toBe(true);
+    expect((await retention.purgeExpiredReceipts(new Date('2026-10-16T15:00:01Z'))).deleted).toBe(
+      1,
+    );
+    expect(harness.storage.files.has(paid.fileKey)).toBe(false);
+  });
+
   it('CA-002-33: la tarea es idempotente, la segunda pasada no borra nada', async () => {
     const old = await groupWithReceipt('REF-IDEM');
     await closeGroup(old.group, '2026-07-01T12:00:00Z');
@@ -149,6 +250,7 @@ describe('Retención de comprobantes', () => {
       dueAt: '2026-09-19T04:00:00.000Z',
     });
     const second = await harness.insertReceipt(other, payer, { reference: 'REF-B' });
+    await setChargeStatus(other, 'cancelado');
     await harness.pool.query(`UPDATE receipts SET status = 'reemplazado' WHERE id = $1`, [
       second.id,
     ]);

@@ -138,8 +138,9 @@ export class ReceiptsRepository {
   }
 
   /**
-   * Archivos aún no borrados de los grupos cerrados antes de `closedBefore` (CA-002-33). El orden
-   * es estable para que reintentos y lotes avancen siempre igual.
+   * Archivos aún no borrados de cobros `pagado` o `cancelado` de los grupos cerrados antes de
+   * `closedBefore` (CA-002-33). Un cobro abierto conserva su comprobante porque un grupo cerrado
+   * aún permite saldarlo. El orden es estable para que reintentos y lotes avancen siempre igual.
    */
   async listExpiredFiles(
     q: Queryable,
@@ -153,6 +154,7 @@ export class ReceiptsRepository {
          JOIN groups g ON g.id = c.group_id
         WHERE r.file_deleted_at IS NULL
           AND g.status = 'cerrado' AND g.closed_at < $1
+          AND c.status IN ('pagado', 'cancelado')
         ORDER BY r.uploaded_at, r.id
         LIMIT $2`,
       [closedBefore, limit],
