@@ -29,7 +29,7 @@ export class JobRunsRepository {
           SET status = $2,
               finished_at = $3,
               processed_count = $4,
-              error_message = $5
+              error_message = COALESCE($5, error_message)
         WHERE id = $1`,
       [
         id,
@@ -38,6 +38,21 @@ export class JobRunsRepository {
         outcome.status === 'ok' ? outcome.processedCount : 0,
         outcome.status === 'error' ? outcome.errorMessage : null,
       ],
+    );
+  }
+
+  /**
+   * Deja una advertencia en la ejecución en curso (`running`) de la tarea. `finish` la conserva
+   * si la ejecución termina en `ok` (columna `error_message`), así que el mensaje debe ser breve
+   * y sin datos personales.
+   */
+  async addWarning(jobName: string, startedAt: Date, message: string): Promise<void> {
+    await this.db.query(
+      `UPDATE job_runs SET error_message = $3
+        WHERE id = (SELECT id FROM job_runs
+                     WHERE job_name = $1 AND status = 'running' AND started_at = $2
+                     ORDER BY created_at DESC LIMIT 1)`,
+      [jobName, startedAt, message.slice(0, 500)],
     );
   }
 

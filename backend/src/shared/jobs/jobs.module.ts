@@ -27,7 +27,7 @@ import { MaintenanceCleanupJob } from './tasks/maintenance-cleanup.job.js';
     }),
   ],
   providers: [JobRegistry, JobRunner, JobRunsRepository, MaintenanceCleanupRepository, JobsCron],
-  exports: [JobRegistry, JobRunner],
+  exports: [JobRegistry, JobRunner, JobRunsRepository],
 })
 export class JobsModule implements OnModuleInit {
   constructor(
