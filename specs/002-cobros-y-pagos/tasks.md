@@ -72,7 +72,7 @@
 
 - [x] T028 [P] [US4] [BE] En `charges.review.e2e-spec.ts` agregar CA-002-14 (pago manual con `paid_at` no anterior a la emisión y nota ≤ 200 caracteres) y CA-002-15 (cancelar un cobro `atrasado` con motivo de 5 a 200 caracteres; `cancelado` no cuenta como deuda) — Depende: T024 · Cubre: CA-002-14, CA-002-15
 - [x] T029 [US4] [BE] `ChargesService.manualPayment` y `cancel` con `POST /charges/:id/manual-payment` (`settlement = 'manual'`, `paid_at`, `manual_note`) y `POST /charges/:id/cancel` (`cancel_reason`; libera la referencia reservada si la hubiera) — Depende: T025, T028 · Cubre: RF-002-12, RF-002-13, RN-002-07, RN-002-08, CA-002-14, CA-002-15
-- [ ] T030 [US7] [FE] Acciones **Pago en efectivo** (fecha y nota) y **Cancelar** (modal con motivo) del titular, conectadas con el backend — Depende: T026, T029 · Cubre: RF-002-12, RF-002-13
+- [x] T030 [US7] [FE] Acciones **Pago en efectivo** (fecha y nota) y **Cancelar** (modal con motivo) del titular, conectadas con el backend — Depende: T026, T029 · Cubre: RF-002-12, RF-002-13
 
 ## Fase 7: US8 — Atrasos, retiro por mora y deuda del retirado (Prioridad: P0) 🎯 MVP
 

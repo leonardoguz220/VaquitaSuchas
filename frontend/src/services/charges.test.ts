@@ -1,5 +1,6 @@
 import {
   buildListMyChargesQuery,
+  cancelCharge,
   confirmCharge,
   rejectCharge,
   getBillingSummary,
@@ -7,6 +8,7 @@ import {
   getGroupCharges,
   getReceiptFile,
   listMyCharges,
+  registerManualPayment,
   uploadReceipt,
   type ChargeStatus,
 } from './charges';
@@ -67,15 +69,19 @@ async function fakeBackend(url: string, init?: RequestInit): Promise<Response> {
       );
       return jsonResponse(200, file);
     }
-    const actionMatch = /^\/api\/charges\/([^/]+)\/(confirm|reject)$/.exec(target.pathname);
+    const actionMatch = /^\/api\/charges\/([^/]+)\/(confirm|reject|manual-payment|cancel)$/.exec(
+      target.pathname,
+    );
     if (actionMatch && init?.method === 'POST') {
       const chargeId = decodeURIComponent(actionMatch[1]);
       const body = JSON.parse(String(init.body ?? '{}'));
-      const charge =
-        actionMatch[2] === 'confirm'
-          ? await mock.confirmCharge(chargeId, body)
-          : await mock.rejectCharge(chargeId, body);
-      return jsonResponse(200, charge);
+      const actions = {
+        confirm: () => mock.confirmCharge(chargeId, body),
+        reject: () => mock.rejectCharge(chargeId, body),
+        'manual-payment': () => mock.manualPayment(chargeId, body),
+        cancel: () => mock.cancelCharge(chargeId, body),
+      };
+      return jsonResponse(200, await actions[actionMatch[2] as keyof typeof actions]());
     }
     const match = /^\/api\/charges\/([^/]+)$/.exec(target.pathname);
     if (match) {
@@ -266,7 +272,54 @@ describe('services/charges conectado a GET /me/charges y GET /charges/:id (T019,
     );
   });
 
-  it('T027: un 409 STALE_STATE llega como ApiError con su código (CA-002-19)', async () => {
+  it('T030: pago en efectivo y cancelar salen por POST con su cuerpo (CA-002-14, CA-002-15)', async () => {
+    const owner = MOCK_CHARGE_IDS.ownerOverdue;
+    const current = await settle(getCharge(owner));
+    fetchMock.mockClear();
+
+    const paid = await settle(
+      registerManualPayment(owner, { note: ' Entregó en mano ', version: current.version }),
+    );
+    expect(paid).toMatchObject({
+      status: 'pagado',
+      settlement: 'manual',
+      manualNote: 'Entregó en mano',
+    });
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/charges/${owner}/manual-payment`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ note: ' Entregó en mano ', version: current.version }),
+      }),
+    );
+
+    const cancelled = await settle(cancelCharge(owner, { reason: 'Se dio de baja' }));
+    expect(cancelled).toMatchObject({ status: 'cancelado', cancelReason: 'Se dio de baja' });
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/charges/${owner}/cancel`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ reason: 'Se dio de baja' }),
+      }),
+    );
+  });
+
+  it('T030: un cobro que no admite pago ni cancelación, o un motivo corto responden 409 y 400 (CA-002-14, CA-002-15)', async () => {
+    await expectRejection(registerManualPayment(MOCK_CHARGE_IDS.ownerInReview), {
+      statusCode: 409,
+      code: 'INVALID_TRANSITION',
+    });
+    await expectRejection(cancelCharge(MOCK_CHARGE_IDS.ownerInReview, { reason: 'Motivo' }), {
+      statusCode: 409,
+      code: 'INVALID_TRANSITION',
+    });
+    await expectRejection(cancelCharge(MOCK_CHARGE_IDS.ownerInReviewOverdue, { reason: 'no' }), {
+      statusCode: 400,
+      code: 'VALIDATION_ERROR',
+    });
+  });
+
+  it('CA-002-19: un 409 STALE_STATE llega como ApiError con su código', async () => {
     const owner = MOCK_CHARGE_IDS.ownerInReview;
     await expectRejection(confirmCharge(owner, { version: 1 }), {
       statusCode: 409,

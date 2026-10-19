@@ -162,6 +162,20 @@ export interface RejectChargeInput {
   version?: number;
 }
 
+export interface ManualPaymentInput {
+  /** Hasta 200 caracteres. */
+  note?: string;
+  /** ISO 8601, entre la emisión y ahora. Sin valor, el servidor usa la hora actual. */
+  paidAt?: string;
+  version?: number;
+}
+
+export interface CancelChargeInput {
+  /** 5 a 200 caracteres. */
+  reason: string;
+  version?: number;
+}
+
 export interface GroupChargesParams {
   period?: string;
   status?: ChargeStatus[];
@@ -285,6 +299,25 @@ export function confirmCharge(chargeId: string, input: ConfirmChargeInput = {}):
 /** `POST /charges/:chargeId/reject` (RF-002-11): solo el titular, con motivo. */
 export function rejectCharge(chargeId: string, input: RejectChargeInput): Promise<Charge> {
   return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/reject`, {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/** `POST /charges/:chargeId/manual-payment` (RF-002-12, CA-002-14): pago en efectivo del titular. */
+export function registerManualPayment(
+  chargeId: string,
+  input: ManualPaymentInput = {},
+): Promise<Charge> {
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/manual-payment`, {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/** `POST /charges/:chargeId/cancel` (RF-002-13, CA-002-15): cancela con motivo, solo el titular. */
+export function cancelCharge(chargeId: string, input: CancelChargeInput): Promise<Charge> {
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/cancel`, {
     method: 'POST',
     body: input,
   });
