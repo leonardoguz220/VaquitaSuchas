@@ -274,14 +274,20 @@ export function getReceiptFile(
   );
 }
 
-/** `POST /charges/:chargeId/confirm` (RF-002-10): solo el titular. */
+/** `POST /charges/:chargeId/confirm` (RF-002-10): solo el titular. `409 STALE_STATE` si cambió. */
 export function confirmCharge(chargeId: string, input: ConfirmChargeInput = {}): Promise<Charge> {
-  return mock.confirmCharge(chargeId, input);
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/confirm`, {
+    method: 'POST',
+    body: input,
+  });
 }
 
 /** `POST /charges/:chargeId/reject` (RF-002-11): solo el titular, con motivo. */
 export function rejectCharge(chargeId: string, input: RejectChargeInput): Promise<Charge> {
-  return mock.rejectCharge(chargeId, input);
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/reject`, {
+    method: 'POST',
+    body: input,
+  });
 }
 
 /** `GET /groups/:groupId/charges` (RF-002-17): el titular recibe `Charge` completo. */

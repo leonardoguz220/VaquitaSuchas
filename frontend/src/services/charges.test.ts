@@ -67,6 +67,16 @@ async function fakeBackend(url: string, init?: RequestInit): Promise<Response> {
       );
       return jsonResponse(200, file);
     }
+    const actionMatch = /^\/api\/charges\/([^/]+)\/(confirm|reject)$/.exec(target.pathname);
+    if (actionMatch && init?.method === 'POST') {
+      const chargeId = decodeURIComponent(actionMatch[1]);
+      const body = JSON.parse(String(init.body ?? '{}'));
+      const charge =
+        actionMatch[2] === 'confirm'
+          ? await mock.confirmCharge(chargeId, body)
+          : await mock.rejectCharge(chargeId, body);
+      return jsonResponse(200, charge);
+    }
     const match = /^\/api\/charges\/([^/]+)$/.exec(target.pathname);
     if (match) {
       const charge = await mock.getCharge(decodeURIComponent(match[1]), signal);
@@ -230,6 +240,38 @@ describe('services/charges conectado a GET /me/charges y GET /charges/:id (T019,
       getGroupCharges(MOCK_BILLING_GROUP_IDS.owner, { status: ['en_revision'] }),
     );
     expect(queue.items.map((charge) => charge.id)).toContain(owner);
+  });
+
+  it('T027: confirmar y rechazar salen por POST al proxy con version y motivo (CA-002-06, CA-002-07, CA-002-08)', async () => {
+    const owner = MOCK_CHARGE_IDS.ownerInReview;
+    const inReview = await settle(getCharge(owner));
+    fetchMock.mockClear();
+
+    await settle(confirmCharge(owner, { version: inReview.version }));
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/charges/${owner}/confirm`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ version: inReview.version }),
+      }),
+    );
+
+    await settle(rejectCharge(owner, { reason: 'Monto distinto', invalidReceipt: true }));
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/charges/${owner}/reject`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ reason: 'Monto distinto', invalidReceipt: true }),
+      }),
+    );
+  });
+
+  it('T027: un 409 STALE_STATE llega como ApiError con su código (CA-002-19)', async () => {
+    const owner = MOCK_CHARGE_IDS.ownerInReview;
+    await expectRejection(confirmCharge(owner, { version: 1 }), {
+      statusCode: 409,
+      code: 'STALE_STATE',
+    });
   });
 
   it('T022: la subida simulada agrega el evento, reemplaza en revisión y responde los errores fijos', async () => {
