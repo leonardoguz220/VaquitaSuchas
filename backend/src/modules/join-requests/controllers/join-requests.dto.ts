@@ -1,6 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, IsUUID, Length, Max, Min } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Length,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
+import { MAX_REFERENCE_LENGTH } from '../../billing/domain/reference.js';
+import { MAX_PAYMENT_TEXT } from '../domain/payment-info.js';
 import type { RequestStatus } from '../domain/request-state.js';
 import { MAX_PAGE_SIZE } from '../services/join-requests.service.js';
 
@@ -60,4 +73,49 @@ export class ListJoinRequestsQueryDto {
   @IsString()
   @Length(1, 200)
   cursor?: string;
+}
+
+/** Archivo recibido por `multer` en memoria (el paquete de tipos no está instalado). */
+export interface UploadedRequestFile {
+  buffer: Buffer;
+}
+
+/** `version` llega como texto en `multipart/form-data`. */
+const toVersion = ({ value }: { value: unknown }): unknown =>
+  typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value;
+
+/** Campos de texto de `POST /join-requests/:id/payment-data` (multipart; el QR va aparte). */
+export class PaymentDataDto {
+  @ApiPropertyOptional({ maxLength: MAX_PAYMENT_TEXT })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_PAYMENT_TEXT)
+  text?: string;
+
+  @ApiPropertyOptional({ description: 'Versión de la solicitud que el titular tenía en pantalla.' })
+  @IsOptional()
+  @Transform(toVersion)
+  @IsInt()
+  @Min(1)
+  version?: number;
+}
+
+/** Campos de texto de `POST /join-requests/:id/proof` (multipart; el archivo va aparte). */
+export class UploadProofDto {
+  @ApiProperty({ enum: ['qr', 'transferencia'] })
+  @IsIn(['qr', 'transferencia'])
+  method!: 'qr' | 'transferencia';
+
+  @ApiProperty({ maxLength: MAX_REFERENCE_LENGTH })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(MAX_REFERENCE_LENGTH)
+  reference!: string;
+
+  @ApiPropertyOptional({ description: 'Versión de la solicitud que la persona tenía en pantalla.' })
+  @IsOptional()
+  @Transform(toVersion)
+  @IsInt()
+  @Min(1)
+  version?: number;
 }

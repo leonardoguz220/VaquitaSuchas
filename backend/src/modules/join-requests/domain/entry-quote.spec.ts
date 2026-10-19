@@ -1,4 +1,4 @@
-import { quoteEntryShare } from './entry-quote.js';
+import { buildEntryQuote, quoteEntryShare } from './entry-quote.js';
 
 describe('quoteEntryShare', () => {
   it('CA-010-04: Bs 90,00 con 2 miembros → Bs 30,00', () => {
@@ -17,5 +17,23 @@ describe('quoteEntryShare', () => {
     expect(() => quoteEntryShare(0, 2)).toThrow();
     expect(() => quoteEntryShare(1000, 0)).toThrow();
     expect(() => quoteEntryShare(10.5, 2)).toThrow();
+  });
+});
+
+describe('buildEntryQuote', () => {
+  it('CA-010-26: copia precio, moneda, tipo de cambio y total del momento de la cotización', () => {
+    expect(
+      buildEntryQuote(
+        { priceCents: 1000, currency: 'USD', exchangeRate: '9.0000', totalBsCents: 9000 },
+        2,
+      ),
+    ).toEqual({
+      amountCents: 3000,
+      priceCents: 1000,
+      currency: 'USD',
+      exchangeRate: '9.0000',
+      totalBsCents: 9000,
+      memberCount: 2,
+    });
   });
 });
