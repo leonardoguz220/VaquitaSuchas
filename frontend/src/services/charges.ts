@@ -1,8 +1,9 @@
 /**
  * Cliente de cobros y pagos (`specs/002-cobros-y-pagos/contracts/api.md`). Reúne los tipos de
  * toda la spec 002 para que los reutilicen T022 (subida), T026 (confirmar y rechazar) y T037
- * (historial y resumen del grupo). `listMyCharges` y `getCharge` ya llaman al backend (T019); el
- * resto responde con datos simulados de `charges.mock.ts` hasta que su endpoint exista.
+ * (historial y resumen del grupo). `listMyCharges`, `getCharge`, `uploadReceipt` y
+ * `getReceiptFile` llaman al backend (T019 y T023); el resto responde con datos simulados de
+ * `charges.mock.ts` hasta que su endpoint exista.
  */
 import * as mock from './charges.mock';
 import { apiRequest } from './http';
@@ -237,9 +238,25 @@ export function getCharge(chargeId: string, options: ChargesRequestOptions = {})
   });
 }
 
+/**
+ * Arma el `multipart/form-data` del comprobante: `file`, `method`, `reference` y `version` (solo
+ * si viene). Campos y nombres según `receipts.controller.ts`.
+ */
+export function buildReceiptFormData(input: UploadReceiptInput): FormData {
+  const form = new FormData();
+  form.append('file', input.file);
+  form.append('method', input.method);
+  form.append('reference', input.reference);
+  if (input.version !== undefined) form.append('version', String(input.version));
+  return form;
+}
+
 /** `POST /charges/:chargeId/receipts` (RF-002-06 a 08), `multipart/form-data`. */
 export function uploadReceipt(chargeId: string, input: UploadReceiptInput): Promise<Charge> {
-  return mock.uploadReceipt(chargeId, input);
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/receipts`, {
+    method: 'POST',
+    body: buildReceiptFormData(input),
+  });
 }
 
 /** `GET /charges/:chargeId/receipts/:receiptId/file`: URL firmada; `410 FILE_DELETED`. */
@@ -248,7 +265,10 @@ export function getReceiptFile(
   receiptId: string,
   options: ChargesRequestOptions = {},
 ): Promise<ReceiptFile> {
-  return mock.getReceiptFile(chargeId, receiptId, options.signal);
+  return apiRequest<ReceiptFile>(
+    `/api/charges/${encodeURIComponent(chargeId)}/receipts/${encodeURIComponent(receiptId)}/file`,
+    { signal: options.signal },
+  );
 }
 
 /** `POST /charges/:chargeId/confirm` (RF-002-10): solo el titular. */

@@ -26,6 +26,7 @@ export const REVIEW_MESSAGES = {
   rejected: 'Comprobante rechazado',
   fileDeleted: 'El comprobante ya fue eliminado por antigüedad',
   fileForbidden: 'No tienes acceso a este comprobante',
+  fileNotFound: 'No encontramos este comprobante',
   fileGeneric: 'No pudimos abrir el comprobante. Intenta de nuevo.',
 } as const;
 
@@ -104,6 +105,7 @@ export function reviewSuccess(charge: Charge, action: ReviewAction): ReviewNotic
 export function receiptFileError(error: ApiError): string {
   if (error.statusCode === 410 || error.code === 'FILE_DELETED') return REVIEW_MESSAGES.fileDeleted;
   if (error.statusCode === 403) return REVIEW_MESSAGES.fileForbidden;
+  if (error.statusCode === 404) return REVIEW_MESSAGES.fileNotFound;
   if (error.code === NETWORK_ERROR_CODE || isConnectionError(error)) return REVIEW_MESSAGES.offline;
   return REVIEW_MESSAGES.fileGeneric;
 }

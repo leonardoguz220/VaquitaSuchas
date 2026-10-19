@@ -46,6 +46,27 @@ async function fakeBackend(url: string, init?: RequestInit): Promise<Response> {
       );
       return jsonResponse(200, page);
     }
+    const receiptMatch = /^\/api\/charges\/([^/]+)\/receipts$/.exec(target.pathname);
+    if (receiptMatch && init?.method === 'POST' && init.body instanceof FormData) {
+      const form = init.body;
+      const version = form.get('version');
+      const charge = await mock.uploadReceipt(decodeURIComponent(receiptMatch[1]), {
+        file: form.get('file') as File,
+        method: form.get('method') as 'qr' | 'transferencia',
+        reference: String(form.get('reference')),
+        version: version === null ? undefined : Number(version),
+      });
+      return jsonResponse(201, charge);
+    }
+    const fileMatch = /^\/api\/charges\/([^/]+)\/receipts\/([^/]+)\/file$/.exec(target.pathname);
+    if (fileMatch) {
+      const file = await mock.getReceiptFile(
+        decodeURIComponent(fileMatch[1]),
+        decodeURIComponent(fileMatch[2]),
+        signal,
+      );
+      return jsonResponse(200, file);
+    }
     const match = /^\/api\/charges\/([^/]+)$/.exec(target.pathname);
     if (match) {
       const charge = await mock.getCharge(decodeURIComponent(match[1]), signal);
@@ -348,6 +369,113 @@ describe('services/charges: mapeo de query y ruta hacia la API (T019)', () => {
     await expectRejection(getCharge(MOCK_CHARGE_IDS.paid), {
       statusCode: 500,
       code: 'UNEXPECTED_RESPONSE',
+    });
+  });
+});
+
+describe('services/charges: subida y archivo conectados a la API (T023, contrato 002)', () => {
+  const PENDING = MOCK_CHARGE_IDS.pendingRejected;
+
+  function lastFormData(): FormData {
+    const init = fetchMock.mock.calls.at(-1)?.[1] as RequestInit;
+    expect(init.body).toBeInstanceOf(FormData);
+    return init.body as FormData;
+  }
+
+  it('RF-002-06: el FormData lleva file, method, reference y version, y POST a la ruta del cobro', async () => {
+    const file = new File(['x'], 'c.png', { type: 'image/png' });
+    await settle(uploadReceipt(PENDING, { file, method: 'qr', reference: 'QR-7', version: 3 }));
+
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/charges/${encodeURIComponent(PENDING)}/receipts`,
+      expect.objectContaining({ method: 'POST', credentials: 'same-origin' }),
+    );
+    const form = lastFormData();
+    expect(form.get('file')).toBe(file);
+    expect(form.get('method')).toBe('qr');
+    expect(form.get('reference')).toBe('QR-7');
+    expect(form.get('version')).toBe('3');
+  });
+
+  it('RF-002-06: sin version el FormData no la incluye', async () => {
+    const file = new File(['x'], 'c.pdf', { type: 'application/pdf' });
+    await settle(uploadReceipt(PENDING, { file, method: 'transferencia', reference: 'TRX-1' }));
+    const form = lastFormData();
+    expect(form.has('version')).toBe(false);
+    expect(form.get('method')).toBe('transferencia');
+  });
+
+  it('CA-002-04: un JPG de 2 MB se sube y el cobro queda en_revision con el comprobante vigente', async () => {
+    const file = new File([new Uint8Array(2 * 1024 * 1024)], 'pago.jpg', { type: 'image/jpeg' });
+    const charge = await settle(
+      uploadReceipt(PENDING, { file, method: 'qr', reference: 'QR-2MB' }),
+    );
+    expect(charge).toMatchObject({
+      status: 'en_revision',
+      currentReceipt: { reference: 'QR-2MB', mime: 'image/jpeg', status: 'vigente' },
+    });
+    expect(charge.timeline.at(-1)).toMatchObject({ type: 'comprobante_subido' });
+  });
+
+  it('CA-002-05: un archivo de 6 MB responde 413 FILE_TOO_LARGE y un .exe responde 415', async () => {
+    const big = new File([new Uint8Array(6 * 1024 * 1024)], 'grande.jpg', { type: 'image/jpeg' });
+    await expectRejection(uploadReceipt(PENDING, { file: big, method: 'qr', reference: 'A1' }), {
+      statusCode: 413,
+      code: 'FILE_TOO_LARGE',
+    });
+    const exe = new File(['x'], 'virus.exe', { type: 'application/x-msdownload' });
+    await expectRejection(uploadReceipt(PENDING, { file: exe, method: 'qr', reference: 'A2' }), {
+      statusCode: 415,
+      code: 'UNSUPPORTED_FILE_TYPE',
+    });
+  });
+
+  it('CA-002-26: sin referencia el servidor rechaza con 400 y el cobro no cambia', async () => {
+    const file = new File(['x'], 'c.png', { type: 'image/png' });
+    await expectRejection(uploadReceipt(PENDING, { file, method: 'qr', reference: '   ' }), {
+      statusCode: 400,
+      code: 'VALIDATION_ERROR',
+    });
+    const after = await settle(getCharge(PENDING));
+    expect(after.status).toBe('pendiente');
+    expect(after.currentReceipt).toBeNull();
+  });
+
+  it('CA-002-27: una referencia repetida en el grupo responde 409 REFERENCE_ALREADY_USED', async () => {
+    const file = new File(['x'], 'c.png', { type: 'image/png' });
+    await expectRejection(
+      uploadReceipt(PENDING, {
+        file,
+        method: 'qr',
+        reference: MOCK_RECEIPT_REFERENCES.alreadyUsed,
+      }),
+      { statusCode: 409, code: 'REFERENCE_ALREADY_USED' },
+    );
+  });
+
+  it('CA-002-11: subir a un cobro pagado responde 409 INVALID_TRANSITION', async () => {
+    const file = new File(['x'], 'c.png', { type: 'image/png' });
+    await expectRejection(
+      uploadReceipt(MOCK_CHARGE_IDS.paid, { file, method: 'qr', reference: 'TARDE-1' }),
+      { statusCode: 409, code: 'INVALID_TRANSITION' },
+    );
+  });
+
+  it('RF-002-06: GET del archivo devuelve la URL firmada y 410 FILE_DELETED si ya se borró', async () => {
+    const owner = await settle(getCharge(MOCK_CHARGE_IDS.ownerInReview));
+    const signed = await settle(getReceiptFile(owner.id, owner.currentReceipt?.id ?? ''));
+    expect(signed).toMatchObject({ url: expect.any(String), mime: expect.any(String) });
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `/api/charges/${encodeURIComponent(owner.id)}/receipts/${encodeURIComponent(
+        owner.currentReceipt?.id ?? '',
+      )}/file`,
+      expect.objectContaining({ credentials: 'same-origin' }),
+    );
+
+    const overdue = await settle(getCharge(MOCK_CHARGE_IDS.ownerInReviewOverdue));
+    await expectRejection(getReceiptFile(overdue.id, overdue.currentReceipt?.id ?? ''), {
+      statusCode: 410,
+      code: 'FILE_DELETED',
     });
   });
 });
