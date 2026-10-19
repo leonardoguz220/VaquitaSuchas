@@ -504,3 +504,40 @@ test('CA-003-24: banned_identities solo tiene id, kind, fingerprint, ban_ref, cr
   const plain = columns.filter((name) => /^(email|phone|ci|telegram)(_|$)/.test(name));
   assert.deepEqual(plain, [], 'ninguna columna guarda correo, celular, CI ni Telegram en claro');
 });
+
+// T044: users no recibe columnas de otras specs (preferencias en notification_preferences, 0071;
+// baneos en bans, 0090) y la FK banned_identities.ban_ref -> bans la agrega la spec 009.
+test('RF-003-19: users conserva solo las columnas de la spec 003', async () => {
+  const columns = await columnsOf('users');
+  assert.deepEqual([...columns].sort(), [
+    'ci_encrypted',
+    'ci_fingerprint',
+    'created_at',
+    'data_policy_accepted_at',
+    'data_policy_version',
+    'email',
+    'email_fingerprint',
+    'full_name',
+    'id',
+    'last_login_at',
+    'password_hash',
+    'phone_e164',
+    'registration_secret_expires_at',
+    'registration_secret_hash',
+    'registration_secret_redeemed_at',
+    'role',
+    'session_version',
+    'status',
+    'telegram_user_id',
+    'updated_at',
+    'verified_at',
+  ]);
+});
+
+test('RF-003-19: banned_identities.ban_ref es FK a bans (id) sin borrado en cascada', async () => {
+  const [fk] = await run<{ target: string; on_delete: string }>(
+    `SELECT confrelid::regclass::text AS target, confdeltype::text AS on_delete
+     FROM pg_constraint WHERE conname = 'banned_identities_ban_ref_fkey'`,
+  );
+  assert.deepEqual(fk, { target: 'bans', on_delete: 'r' });
+});
