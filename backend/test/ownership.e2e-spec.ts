@@ -1,10 +1,16 @@
 import request from 'supertest';
-import { NoOwnershipBlockersAdapter } from '../src/app-adapters/ownership-blockers.adapter.js';
+import {
+  JOIN_REQUESTS_IN_PAYMENT,
+  JoinRequestOwnershipBlockersAdapter,
+} from '../src/app-adapters/ownership-blockers.adapter.js';
+import { RequestsRepository } from '../src/modules/join-requests/repositories/requests.repository.js';
+import { FakeClock } from '../src/shared/clock/fake-clock.js';
 import { HOST_ELIGIBILITY_PORT } from '../src/modules/subscriptions/ports/host-eligibility.port.js';
 import { OWNERSHIP_BLOCKERS_PORT } from '../src/modules/subscriptions/ports/ownership-blockers.port.js';
 import type { OwnerChanged } from '../src/shared/events/group-events.js';
 import { TxEventBus } from '../src/shared/events/tx-event-bus.js';
-import { BillingHarness, type TestGroup } from './support/billing-harness.js';
+import { BillingHarness, NOW, type TestGroup } from './support/billing-harness.js';
+import { seedRequest } from './support/join-requests-fixtures.js';
 import { insertOwnedGroup } from './support/groups-fixtures.js';
 
 // Transferencia de titularidad (spec 001 T035/T036) contra PostgreSQL real. El puerto de
@@ -204,7 +210,22 @@ describe('Transferir la titularidad', () => {
     ).toBe('GROUP_FROZEN');
   });
 
-  it('RN-010-09: el adaptador por defecto de OwnershipBlockersPort no informa bloqueos (spec 010 pendiente)', async () => {
-    await expect(new NoOwnershipBlockersAdapter().blockers(harness.pool, 'g')).resolves.toEqual([]);
+  it('RN-010-09: el adaptador real de OwnershipBlockersPort informa solo las solicitudes en pago vigentes', async () => {
+    const adapter = new JoinRequestOwnershipBlockersAdapter(
+      new RequestsRepository(),
+      new FakeClock(NOW),
+    );
+    const group = await newGroup();
+    const user = await harness.insertUser();
+    await expect(adapter.blockers(harness.pool, group.id)).resolves.toEqual([]);
+
+    await seedRequest(harness, group, user, 'abierta');
+    await expect(adapter.blockers(harness.pool, group.id)).resolves.toEqual([]);
+
+    const other = await harness.insertUser();
+    await seedRequest(harness, group, other, 'esperando_pago');
+    await expect(adapter.blockers(harness.pool, group.id)).resolves.toEqual([
+      JOIN_REQUESTS_IN_PAYMENT,
+    ]);
   });
 });

@@ -142,4 +142,24 @@ export class MessagesRepository {
       [requestId, userId, upToSeq],
     );
   }
+
+  /** Claves de las imágenes del chat (para borrarlas del almacén). */
+  async listImageKeys(q: Queryable, requestId: string): Promise<string[]> {
+    const result = await q.query<{ image_key: string }>(
+      'SELECT image_key FROM join_messages WHERE request_id = $1 AND image_key IS NOT NULL',
+      [requestId],
+    );
+    return result.rows.map((r) => r.image_key);
+  }
+
+  /**
+   * Borra el chat de la solicitud (retención, RNF-010-09). El disparador de la base solo lo
+   * permite si la transacción declara `vaquita.allow_purge = 'on'`, y solo en esta transacción.
+   */
+  async purgeByRequest(q: Queryable, requestId: string): Promise<number> {
+    await q.query("SELECT set_config('vaquita.allow_purge', 'on', true)");
+    const result = await q.query('DELETE FROM join_messages WHERE request_id = $1', [requestId]);
+    await q.query("SELECT set_config('vaquita.allow_purge', 'off', true)");
+    return result.rowCount ?? 0;
+  }
 }
