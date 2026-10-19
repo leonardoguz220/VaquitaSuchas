@@ -98,6 +98,23 @@ export interface ListingSeatInput {
  */
 export type ListingSeatRequest = Pick<JoinRequest, 'id'>;
 
+/** Motivos del reporte de una publicación (contrato 008, RF-008-17). */
+export type ListingReportReason = 'spam' | 'datos_falsos' | 'conducta_indebida' | 'otro';
+
+/** Largo máximo del comentario del reporte (contrato 008). */
+export const LISTING_REPORT_COMMENT_MAX = 300;
+
+/** Cuerpo de `POST /listings/:id/reports`: el comentario es opcional, hasta 300 caracteres. */
+export interface ListingReportInput {
+  reason: ListingReportReason;
+  comment?: string;
+}
+
+/** Ruta del contrato para reportar una publicación, por el proxy `/api`. */
+export function listingReportPath(listingId: string): string {
+  return `/api/listings/${encodeURIComponent(listingId)}/reports`;
+}
+
 /** Ruta del contrato para pedir un cupo, por el proxy `/api`. */
 export function listingRequestPath(listingId: string): string {
   return `/api/listings/${encodeURIComponent(listingId)}/requests`;
@@ -156,4 +173,19 @@ export function requestListingSeat(
   options: ListingRequestOptions = {},
 ): Promise<ListingSeatRequest> {
   return mock.requestListingSeat(listingId, input, options);
+}
+
+/**
+ * `POST /listings/:id/reports` (RF-008-17): reporta una publicación. Responde `204`, sin cuerpo.
+ * Lanza `ApiError` `409 ALREADY_REPORTED` si el usuario ya la reportó, `404 LISTING_NOT_FOUND`,
+ * `422 BUSINESS_RULE` (`CANNOT_REPORT_OWN_LISTING`), `429 RATE_LIMITED` (10 por día),
+ * `403 ACCOUNT_RESTRICTED` o `400 VALIDATION_ERROR` (comentario de más de 300). Con la API
+ * conectada, el cuerpo será `apiRequest(listingReportPath(id), { method: 'POST', body: input })`.
+ */
+export function reportListing(
+  listingId: string,
+  input: ListingReportInput,
+  options: ListingRequestOptions = {},
+): Promise<void> {
+  return mock.reportListing(listingId, input, options);
 }

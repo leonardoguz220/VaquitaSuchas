@@ -8,6 +8,7 @@ import { ApiError } from './http';
 import type {
   ListingCannotRequestReason,
   ListingOwner,
+  ListingReportInput,
   ListingRequestOptions,
   ListingSeatInput,
   ListingSeatRequest,
@@ -474,6 +475,32 @@ export function requestListingSeat(
     }
     if (!found.canRequest) throw refusal(found);
     return { id: MOCK_NEW_REQUEST_ID };
+  }, options.signal);
+}
+
+/** Largo máximo del comentario del reporte (contrato 008). */
+const REPORT_COMMENT_MAX = 300;
+
+/**
+ * `POST /listings/:id/reports`: responde `204` (sin cuerpo). La publicación `netflixStandard` del
+ * simulador ya fue reportada por el usuario, así que responde `409 ALREADY_REPORTED`.
+ */
+export function reportListing(
+  listingId: string,
+  input: ListingReportInput,
+  options: ListingRequestOptions = {},
+): Promise<void> {
+  return delay(() => {
+    if (input.comment !== undefined && input.comment.length > REPORT_COMMENT_MAX) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'El comentario admite hasta 300 caracteres.');
+    }
+    const found = LISTINGS.find((item) => item.id === listingId);
+    if (!found) {
+      throw new ApiError(404, 'LISTING_NOT_FOUND', 'Esta publicación ya no existe.');
+    }
+    if (found.id === MOCK_LISTING_IDS.netflixStandard) {
+      throw new ApiError(409, 'ALREADY_REPORTED', 'Ya reportaste esta publicación.');
+    }
   }, options.signal);
 }
 

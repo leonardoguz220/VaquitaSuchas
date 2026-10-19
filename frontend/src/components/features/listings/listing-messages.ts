@@ -5,7 +5,7 @@
 import type { BadgeTone } from '@/components/ui';
 import type { CatalogCategory } from '@/services/catalog';
 import { isConnectionError, type ApiError } from '@/services/http';
-import type { ListingEntryWindow, ListingService } from '@/services/listings';
+import type { ListingEntryWindow, ListingReportReason, ListingService } from '@/services/listings';
 import { formatDateLaPaz } from '@/lib/dates';
 
 export const LISTING_MESSAGES = {
@@ -149,6 +149,53 @@ export function requestErrorText(error: ApiError): string {
       return REQUEST_MESSAGES.openCharges;
     case 'NO_SLOTS_AVAILABLE':
       return REQUEST_MESSAGES.noSlots;
+    default:
+      return REQUEST_MESSAGES.unexpected;
+  }
+}
+
+export const REPORT_MESSAGES = {
+  report: 'Reportar',
+  formTitle: 'Reportar esta publicación',
+  formDescription: 'Cuéntanos qué pasa con esta publicación.',
+  reasonLabel: 'Motivo',
+  reasonPlaceholder: 'Elige un motivo',
+  reasonRequired: 'Elige un motivo para enviar el reporte.',
+  commentLabel: 'Comentario (opcional)',
+  send: 'Enviar reporte',
+  sending: 'Enviando el reporte…',
+  cancel: 'Cancelar',
+  close: 'Cerrar',
+  sentTitle: 'Reporte enviado',
+  sentBody: 'Gracias por avisar. Revisaremos la publicación.',
+  alreadyReported: 'Ya reportaste esta publicación.',
+  ownListing: 'No puedes reportar tu propia publicación.',
+  rateLimited: 'Llegaste al límite de reportes de hoy. Inténtalo mañana.',
+} as const;
+
+export const REPORT_REASON_LABEL: Record<ListingReportReason, string> = {
+  spam: 'Spam o publicidad',
+  datos_falsos: 'Datos falsos',
+  conducta_indebida: 'Conducta indebida',
+  otro: 'Otro motivo',
+};
+
+/** Aviso de un reporte fallido, por `code` (nunca el `message` crudo). */
+export function reportErrorText(error: ApiError): string {
+  if (isConnectionError(error)) return REQUEST_MESSAGES.connection;
+  switch (listingErrorCode(error)) {
+    case 'VALIDATION_ERROR':
+      return 'El comentario admite hasta 300 caracteres.';
+    case 'LISTING_NOT_FOUND':
+      return REQUEST_MESSAGES.listingGone;
+    case 'ALREADY_REPORTED':
+      return REPORT_MESSAGES.alreadyReported;
+    case 'CANNOT_REPORT_OWN_LISTING':
+      return REPORT_MESSAGES.ownListing;
+    case 'RATE_LIMITED':
+      return REPORT_MESSAGES.rateLimited;
+    case 'ACCOUNT_RESTRICTED':
+      return REQUEST_MESSAGES.accountRestricted;
     default:
       return REQUEST_MESSAGES.unexpected;
   }
