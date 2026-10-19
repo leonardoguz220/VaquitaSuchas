@@ -72,4 +72,29 @@ export class PhoneTokensRepository {
       now,
     ]);
   }
+
+  /** Último token de registro de la cuenta (estado del sondeo). */
+  async findLatestByUser(
+    q: Queryable,
+    userId: string,
+  ): Promise<{
+    expires_at: Date;
+    used_at: Date | null;
+    outcome: VerificationOutcome | null;
+    started_by_telegram_id: string | null;
+  } | null> {
+    const result = await q.query<{
+      expires_at: Date;
+      used_at: Date | null;
+      outcome: VerificationOutcome | null;
+      started_by_telegram_id: string | null;
+    }>(
+      `SELECT expires_at, used_at, outcome, started_by_telegram_id::text
+         FROM phone_verification_tokens
+        WHERE user_id = $1 AND purpose = 'registro'
+        ORDER BY created_at DESC LIMIT 1`,
+      [userId],
+    );
+    return result.rows[0] ?? null;
+  }
 }

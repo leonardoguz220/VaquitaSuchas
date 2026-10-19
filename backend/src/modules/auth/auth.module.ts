@@ -8,6 +8,7 @@ import { AUTH_SESSION_PORT } from '../../shared/ports/auth-session.port.js';
 import { AuthController } from './controllers/auth.controller.js';
 import { SessionRenewalInterceptor } from './controllers/session-renewal.interceptor.js';
 import { PurgeUnverifiedJob } from './jobs/purge-unverified.job.js';
+import { LoginRepository } from './repositories/login.repository.js';
 import { PhoneTokensRepository } from './repositories/phone-tokens.repository.js';
 import { RateLimitRepository } from './repositories/rate-limit.repository.js';
 import { RegistrationRepository } from './repositories/registration.repository.js';
@@ -15,6 +16,8 @@ import { AuthSessionRepository } from './repositories/auth-session.repository.js
 import { UnverifiedUsersRepository } from './repositories/unverified-users.repository.js';
 import { AuthSessionService } from './services/auth-session.service.js';
 import { PasswordHasher } from './services/password-hasher.js';
+import { LoginService } from './services/login.service.js';
+import { RegistrationStatusService } from './services/registration-status.service.js';
 import { RegistrationService } from './services/registration.service.js';
 import { TelegramVerificationHandler } from './services/telegram-verification.handler.js';
 import { SessionService } from './services/session.service.js';
@@ -29,6 +32,9 @@ import { SessionService } from './services/session.service.js';
     RegistrationRepository,
     PasswordHasher,
     RegistrationService,
+    RegistrationStatusService,
+    LoginRepository,
+    LoginService,
     TelegramVerificationHandler,
     AuthSessionRepository,
     UnverifiedUsersRepository,
