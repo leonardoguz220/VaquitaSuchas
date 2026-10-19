@@ -1,4 +1,8 @@
 import {
+  ADMIN_PATH,
+  ADMIN_USERS_PATH,
+  adminUserPath,
+  isAdminPath,
   PANEL_HISTORY_PATH,
   PANEL_CALENDAR_PATH,
   PANEL_PATH,
@@ -292,5 +296,19 @@ describe('rutas del panel (plan 006 §6)', () => {
   it('RF-006-13: /panel/historial es protegida', () => {
     expect(PANEL_HISTORY_PATH).toBe('/panel/historial');
     expect(isPublicPath(PANEL_HISTORY_PATH)).toBe(false);
+  });
+});
+
+describe('rutas de administración (plan 009 §6)', () => {
+  it('RF-009-01: /admin y sus subrutas son protegidas y se reconocen como de administración', () => {
+    expect(ADMIN_PATH).toBe('/admin');
+    expect(ADMIN_USERS_PATH).toBe('/admin/usuarios');
+    expect(adminUserPath('u/1')).toBe('/admin/usuarios/u%2F1');
+    expect(isPublicPath(ADMIN_PATH)).toBe(false);
+    expect(isPublicPath(ADMIN_USERS_PATH)).toBe(false);
+    expect(isAdminPath('/admin')).toBe(true);
+    expect(isAdminPath('/admin/usuarios/u1')).toBe(true);
+    expect(isAdminPath('/administrar')).toBe(false);
+    expect(isAdminPath('/panel')).toBe(false);
   });
 });

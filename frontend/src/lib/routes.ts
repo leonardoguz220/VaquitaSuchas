@@ -222,3 +222,19 @@ export const LISTINGS_PATH = '/cupos';
 export function listingPath(listingId: string): string {
   return `${LISTINGS_PATH}/${encodeURIComponent(listingId)}`;
 }
+
+/** Tablero del panel de administración (plan 009 §6). Protegida en el servidor por rol. */
+export const ADMIN_PATH = '/admin';
+
+/** Usuarios del panel de administración (plan 009 §6). */
+export const ADMIN_USERS_PATH = '/admin/usuarios';
+
+/** Ficha de un usuario en el panel de administración (plan 009 §6). */
+export function adminUserPath(userId: string): string {
+  return `${ADMIN_USERS_PATH}/${encodeURIComponent(userId)}`;
+}
+
+/** Indica si `pathname` es una ruta del panel de administración (`/admin` o una subruta). */
+export function isAdminPath(pathname: string): boolean {
+  return matchesRoute(pathname, ADMIN_PATH);
+}
