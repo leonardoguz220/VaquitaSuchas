@@ -88,6 +88,22 @@ export const RECOVER_PATH = '/recuperar';
  */
 export const JOIN_PATH = '/unirse';
 
+/** "Mis suscripciones" (plan 001 §6): inicio de quien tiene sesión. Ruta protegida. */
+export const GROUPS_PATH = '/grupos';
+
+/** Asistente "Crear suscripción" (plan 001 §6). Ruta protegida. */
+export const NEW_GROUP_PATH = '/grupos/nuevo';
+
+/** Detalle de un grupo (plan 001 §6). Ruta protegida. */
+export function groupPath(groupId: string): string {
+  return `${GROUPS_PATH}/${encodeURIComponent(groupId)}`;
+}
+
+/** Enlace a "Unirme con un código" con el código ya puesto (`/unirse?codigo=…`, plan 010 §6). */
+export function buildJoinPath(inviteCode: string): string {
+  return `${JOIN_PATH}?${new URLSearchParams({ [INVITE_CODE_PARAM]: inviteCode }).toString()}`;
+}
+
 /** Destino tras ingresar cuando no hay otro: la raíz redirige según la sesión (RF-000-16). */
 export const DEFAULT_AFTER_LOGIN_PATH = '/';
 

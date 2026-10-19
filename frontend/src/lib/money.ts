@@ -47,6 +47,14 @@ export function formatPrice(cents: number, currency: PriceCurrency): string {
   return currency === 'USD' ? formatUsd(cents) : formatBs(cents);
 }
 
+/**
+ * Monto en centavos como texto para un campo editable, sin prefijo: `formatAmountInput(146600)`
+ * → `1.466,00`. `parseBsToCents` lo vuelve a leer igual. Sirve para proponer un precio (RF-001-05).
+ */
+export function formatAmountInput(cents: number): string {
+  return formatCents('', cents).trimStart();
+}
+
 // Parte entera: sin separadores, o con punto de miles en grupos exactos de tres.
 // Parte decimal opcional: coma seguida de uno o dos dígitos.
 const BS_INPUT = /^(?:bs\s*)?(\d+|\d{1,3}(?:\.\d{3})+)(?:,(\d{1,2}))?$/i;

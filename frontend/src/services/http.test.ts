@@ -46,6 +46,20 @@ describe('services/http (contrato 000 A.2 y C)', () => {
     });
   });
 
+  it('RF-001-20: con formData envía multipart sin Content-Type propio (lo pone el navegador)', async () => {
+    fetchMock.mockResolvedValue(fakeResponse(200, '{}'));
+    const form = new FormData();
+    form.append('text', 'Banco Unión');
+    await apiRequest('/api/groups/g1/payment-info', { method: 'PUT', formData: form });
+    expect(fetchMock).toHaveBeenCalledWith('/api/groups/g1/payment-info', {
+      method: 'PUT',
+      headers: { Accept: 'application/json' },
+      body: form,
+      credentials: 'same-origin',
+      cache: 'no-store',
+    });
+  });
+
   it('RF-000-11: una respuesta sin cuerpo (204) devuelve undefined', async () => {
     fetchMock.mockResolvedValue(fakeResponse(204, ''));
     await expect(apiRequest('/api/auth/logout', { method: 'POST' })).resolves.toBeUndefined();

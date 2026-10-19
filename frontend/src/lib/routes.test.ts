@@ -1,5 +1,9 @@
 import {
   DEV_TELEGRAM_PATH,
+  GROUPS_PATH,
+  NEW_GROUP_PATH,
+  buildJoinPath,
+  groupPath,
   LOGIN_PATH,
   PUBLIC_ROUTES,
   REGISTER_VERIFY_PATH,
@@ -167,5 +171,21 @@ describe('resolvePostLoginPath (spec 003 T029)', () => {
   it('RF-003-08: sin parámetros va a la raíz, que redirige según la sesión', () => {
     expect(resolvePostLoginPath()).toBe('/');
     expect(resolvePostLoginPath({ codigo: '  ' })).toBe('/');
+  });
+});
+
+describe('rutas de grupos (plan 001 §6)', () => {
+  it('RF-001-19: /grupos, /grupos/nuevo y /grupos/[id] son rutas protegidas', () => {
+    expect(GROUPS_PATH).toBe('/grupos');
+    expect(NEW_GROUP_PATH).toBe('/grupos/nuevo');
+    expect(groupPath('g1')).toBe('/grupos/g1');
+    expect(groupPath('a/b')).toBe('/grupos/a%2Fb');
+    for (const path of [GROUPS_PATH, NEW_GROUP_PATH, groupPath('g1')]) {
+      expect(isPublicPath(path)).toBe(false);
+    }
+  });
+
+  it('RF-001-06: buildJoinPath arma /unirse?codigo=… con el código de invitación', () => {
+    expect(buildJoinPath('K7M2Q9PX')).toBe('/unirse?codigo=K7M2Q9PX');
   });
 });

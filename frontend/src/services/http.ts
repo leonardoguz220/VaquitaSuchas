@@ -52,6 +52,11 @@ export interface ApiRequestOptions {
   method?: HttpMethod;
   /** Se envía como JSON. */
   body?: unknown;
+  /**
+   * Se envía como `multipart/form-data` (subida de archivos, por ejemplo el QR de pago). El
+   * navegador pone el `Content-Type` con su `boundary`. No se combina con `body`.
+   */
+  formData?: FormData;
   /** Permite cancelar la petición (por ejemplo, por un tiempo máximo en el cliente). */
   signal?: AbortSignal;
 }
@@ -88,7 +93,7 @@ function errorFromBody(status: number, text: string): ApiError {
  */
 export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   const method = options.method ?? 'GET';
-  const hasBody = options.body !== undefined;
+  const hasBody = options.body !== undefined && options.formData === undefined;
   const init: RequestInit = {
     method,
     headers: hasBody
@@ -97,7 +102,8 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     credentials: 'same-origin',
     cache: 'no-store',
   };
-  if (hasBody) init.body = JSON.stringify(options.body);
+  if (options.formData) init.body = options.formData;
+  else if (hasBody) init.body = JSON.stringify(options.body);
   if (options.signal) init.signal = options.signal;
 
   let response: Response;
