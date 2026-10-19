@@ -1,11 +1,12 @@
 'use client';
 
+import { ReviewQueue } from '@/components/features/charges/review-queue';
 import { GroupDetailView } from './group-detail';
 import { GroupInvitePanel } from './group-invite-panel';
 
 /**
  * `/grupos/[id]` con los paneles del titular. Es un componente de cliente porque `ownerPanel`
- * es una función y no puede pasar desde la página (componente de servidor).
+ * y `reviewQueue` son funciones y no pueden pasar desde la página (componente de servidor).
  */
 export function GroupPageView({ groupId }: { groupId: string }) {
   return (
@@ -14,6 +15,7 @@ export function GroupPageView({ groupId }: { groupId: string }) {
       ownerPanel={(group, { onGroupChange }) => (
         <GroupInvitePanel group={group} onGroupChange={onGroupChange} />
       )}
+      reviewQueue={(group) => <ReviewQueue groupId={group.id} />}
     />
   );
 }

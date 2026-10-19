@@ -100,3 +100,66 @@ export function formatCalendarDayLaPaz(day: string): string {
   }
   return `${Number(match[3])} ${MONTHS[month - 1]} ${match[1]}`;
 }
+
+const MONTH_NAMES = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+];
+
+const PERIOD = /^(\d{4})-(\d{2})$/;
+
+/**
+ * Período de cobro que entrega la API (`YYYY-MM`) como texto: `formatPeriod('2026-10')` →
+ * `Octubre 2026`. Lanza `RangeError` si el texto no tiene esa forma.
+ */
+export function formatPeriod(period: string): string {
+  const match = PERIOD.exec(period);
+  const month = match ? Number(match[2]) : 0;
+  if (!match || month < 1 || month > 12) {
+    throw new RangeError('Período inválido: se esperaba YYYY-MM.');
+  }
+  return `${MONTH_NAMES[month - 1]} ${match[1]}`;
+}
+
+/**
+ * Los `count` meses calendario de La Paz que terminan en el de `now`, del más reciente al más
+ * antiguo (`YYYY-MM`). Solo arma las opciones de un filtro; el servidor decide qué cobros hay.
+ */
+export function recentPeriods(now: string | Date, count: number): string[] {
+  const { year, month } = toLaPazParts(now);
+  return Array.from({ length: count }, (_, index) => {
+    const zeroBased = year * 12 + (month - 1) - index;
+    return `${Math.floor(zeroBased / 12)}-${pad2((zeroBased % 12) + 1)}`;
+  });
+}
+
+/**
+ * Tiempo restante para mostrar en una cuenta regresiva: `formatRemaining(90061)` →
+ * `1 día, 1 hora y 1 minuto`. Menos de un minuto → `menos de 1 minuto`.
+ */
+export function formatRemaining(totalSeconds: number): string {
+  const minutesLeft = Math.floor(Math.max(0, totalSeconds) / 60);
+  const days = Math.floor(minutesLeft / 1440);
+  const hours = Math.floor((minutesLeft % 1440) / 60);
+  const minutes = minutesLeft % 60;
+  const plural = (value: number, one: string, many: string) =>
+    `${value} ${value === 1 ? one : many}`;
+  const parts = [
+    days > 0 ? plural(days, 'día', 'días') : null,
+    hours > 0 ? plural(hours, 'hora', 'horas') : null,
+    minutes > 0 ? plural(minutes, 'minuto', 'minutos') : null,
+  ].filter((part): part is string => part !== null);
+  if (parts.length === 0) return 'menos de 1 minuto';
+  if (parts.length === 1) return parts[0];
+  return `${parts.slice(0, -1).join(', ')} y ${parts[parts.length - 1]}`;
+}
