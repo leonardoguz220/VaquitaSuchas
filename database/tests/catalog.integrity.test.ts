@@ -111,7 +111,7 @@ const insertPlan = (serviceId: string, overrides: Partial<PlanValues> = {}): Pro
 
 // --- Restricciones de catalog_services y catalog_plans (0020_catalog.sql) ----------------------
 
-test('RF-004-01: un servicio y un plan válidos se insertan con los valores por defecto', async () => {
+test('RF-004-01, RF-004-02: un servicio y un plan válidos se insertan con los valores por defecto', async () => {
   const serviceId = await insertService({ brandColor: '#E50914' });
   assert.match(serviceId, UUID);
   const [service] = await queryRows<{ is_active: boolean; created_at: Date; updated_at: Date }>(

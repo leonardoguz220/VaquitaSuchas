@@ -1,4 +1,4 @@
-// RF-004-07, RN-004-06, CA-004-11: el catálogo versionado (seeds/catalog.json) es válido, tiene
+// RF-004-07, RNF-004-04, RN-004-06, CA-004-11: el catálogo versionado (seeds/catalog.json) es válido, tiene
 // las seis plataformas decididas en la spec 004 y db:seed lo carga de forma idempotente.
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -28,7 +28,7 @@ after(async () => {
   await db?.drop();
 });
 
-test('RF-004-07: catalog.json pasa la validación y trae las seis plataformas de la spec', () => {
+test('RF-004-07, RNF-004-04: catalog.json versionado pasa la validación y trae las seis plataformas de la spec', () => {
   assert.deepEqual(
     catalog.services.map((service) => service.slug),
     SERVICES,
