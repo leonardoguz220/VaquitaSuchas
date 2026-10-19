@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Queryable } from '../../../shared/db/db.service.js';
+import type { EntryQuote } from '../domain/entry-quote.js';
 import type { RequestStatus } from '../domain/request-state.js';
 
 export const ACTIVE_STATUSES: readonly RequestStatus[] = [
@@ -246,6 +247,114 @@ export class RequestsRepository {
           SET status = 'expirada', final_at = $4, final_reason = $3, version = version + 1
         WHERE id = $1 AND status = $2`,
       [id, from, finalReason, now],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Datos de pago configurados en el grupo (spec 001, RF-001-20), para copiarlos a la solicitud. */
+  async groupPaymentInfo(
+    q: Queryable,
+    groupId: string,
+  ): Promise<{ text: string | null; qrKey: string | null; qrMime: string | null }> {
+    const result = await q.query<{
+      payment_info_text: string | null;
+      payment_qr_key: string | null;
+      payment_qr_mime: string | null;
+    }>('SELECT payment_info_text, payment_qr_key, payment_qr_mime FROM groups WHERE id = $1', [
+      groupId,
+    ]);
+    const row = result.rows[0];
+    return {
+      text: row?.payment_info_text ?? null,
+      qrKey: row?.payment_qr_key ?? null,
+      qrMime: row?.payment_qr_mime ?? null,
+    };
+  }
+
+  /** `abierta` → `esperando_pago` con la cotización y los datos de pago (un solo `UPDATE`, RN-010-01). */
+  async recordPaymentData(
+    q: Queryable,
+    id: string,
+    data: {
+      quote: EntryQuote;
+      paymentText: string | null;
+      qrKey: string | null;
+      qrMime: string | null;
+      sentAt: Date;
+      payDeadlineAt: Date;
+    },
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET status = 'esperando_pago', quote_amount_cents = $2, quote_price_cents = $3,
+              quote_currency = $4, quote_exchange_rate = $5, quote_total_bs_cents = $6,
+              quote_member_count = $7, payment_text = $8, payment_qr_key = $9,
+              payment_qr_mime = $10, payment_sent_at = $11, pay_deadline_at = $12
+        WHERE id = $1 AND status = 'abierta'`,
+      [
+        id,
+        data.quote.amountCents,
+        data.quote.priceCents,
+        data.quote.currency,
+        data.quote.exchangeRate,
+        data.quote.totalBsCents,
+        data.quote.memberCount,
+        data.paymentText,
+        data.qrKey,
+        data.qrMime,
+        data.sentAt,
+        data.payDeadlineAt,
+      ],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Prórroga única del plazo de pago (RF-010-28). */
+  async recordExtension(
+    q: Queryable,
+    id: string,
+    payDeadlineAt: Date,
+    now: Date,
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET pay_deadline_at = $2, extended_at = $3, version = version + 1
+        WHERE id = $1 AND status = 'esperando_pago' AND extended_at IS NULL`,
+      [id, payDeadlineAt, now],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** `esperando_pago` → `pago_informado` con el comprobante (RF-010-13). */
+  async recordProof(
+    q: Queryable,
+    id: string,
+    proof: {
+      key: string;
+      mime: string;
+      sizeBytes: number;
+      method: 'qr' | 'transferencia';
+      reference: string;
+      uploadedAt: Date;
+      decisionDeadlineAt: Date;
+    },
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET status = 'pago_informado', proof_key = $2, proof_mime = $3, proof_size_bytes = $4,
+              proof_method = $5, proof_reference = $6, proof_uploaded_at = $7,
+              decision_deadline_at = $8
+        WHERE id = $1 AND status = 'esperando_pago'`,
+      [
+        id,
+        proof.key,
+        proof.mime,
+        proof.sizeBytes,
+        proof.method,
+        proof.reference,
+        proof.uploadedAt,
+        proof.decisionDeadlineAt,
+      ],
     );
     return (result.rowCount ?? 0) > 0;
   }
