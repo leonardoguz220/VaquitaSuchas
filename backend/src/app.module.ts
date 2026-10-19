@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AdaptersModule } from './app-adapters/adapters.module.js';
 import { BillingModule } from './modules/billing/billing.module.js';
+import { JoinRequestsModule } from './modules/join-requests/join-requests.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module.js';
 import { TelegramModule } from './modules/telegram/telegram.module.js';
@@ -44,6 +45,7 @@ import { StorageModule } from './shared/storage/storage.module.js';
     AdaptersModule,
     SubscriptionsModule,
     BillingModule,
+    JoinRequestsModule,
     AuthModule,
     UsersModule,
   ],
