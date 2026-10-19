@@ -7,6 +7,7 @@ import { ChargeDetailView, type ChargeActionsContext } from './charge-detail';
 import { OwnerReviewActions } from './owner-review-actions';
 import type { ReviewNotice } from './owner-review-model';
 import { ReceiptUpload } from './receipt-upload';
+import { ReminderWhatsApp } from './reminder-whatsapp';
 
 export interface ChargeActionsExtras {
   onNotice: (notice: ReviewNotice | null) => void;
@@ -26,6 +27,8 @@ export function chargeActions(
         <ReceiptUpload key={charge.id} charge={charge} {...context} />
       )}
       {reviewing && <OwnerReviewActions charge={charge} {...context} {...extras} />}
+      {/* Solo el titular puede registrar un pago manual, y solo en cobros por cobrar (RF-005-16). */}
+      {charge.allowedActions.includes('manualPayment') && <ReminderWhatsApp chargeId={charge.id} />}
     </>
   );
 }

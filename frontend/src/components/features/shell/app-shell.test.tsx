@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppShell, GLOBAL_NOTICES_ID, MAIN_CONTENT_ID } from './app-shell';
 
+jest.mock('./session-bar', () => ({ SessionBar: () => null }));
+
 describe('AppShell (RF-000-16)', () => {
   it('RF-000-16: renderiza los hijos dentro del contenido principal', () => {
     render(
