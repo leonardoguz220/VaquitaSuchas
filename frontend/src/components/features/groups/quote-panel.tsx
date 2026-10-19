@@ -79,9 +79,14 @@ export function QuotePanel({ state, request, onRetry, needsExchangeRate }: Quote
               <Row label="Cupos" value={String(request.memberCount)} />
             </dl>
             <div className="flex flex-col gap-1 rounded-field bg-primary-soft p-4">
-              <span className="font-bold text-primary-hover">Cada miembro pagaría</span>
+              <span className="font-bold text-primary-hover">
+                Con el grupo lleno ({request.memberCount} personas), cada uno pagaría
+              </span>
               <span className="font-display text-3xl font-bold text-ink">
                 {formatBs(state.quote.baseShareCents)}
+              </span>
+              <span className="text-sm text-ink">
+                La cuota real se calcula con los miembros que haya en cada cobro.
               </span>
               {state.quote.remainderCents > 0 && (
                 <span className="text-sm text-ink">

@@ -171,7 +171,7 @@ describe('Paso 3 de /grupos/nuevo (T016, plan 001 §6)', () => {
     expect(mockedCreate).not.toHaveBeenCalled();
   });
 
-  it('CA-001-01: «Total en Bs» y «Cada miembro pagaría» salen de POST /groups/quote tal cual, sin calcular', async () => {
+  it('CA-001-01: «Total en Bs» y la cuota con el grupo lleno salen de POST /groups/quote tal cual, sin calcular', async () => {
     mockedQuote.mockResolvedValue({
       totalBsCents: 99999,
       baseShareCents: 1234,
@@ -188,6 +188,12 @@ describe('Paso 3 de /grupos/nuevo (T016, plan 001 §6)', () => {
     expect(within(panel).getByText('USD 14,66')).toBeVisible();
     expect(within(panel).getByText('6,96')).toBeVisible();
     expect(within(panel).getByText(/Tú asumes los Bs 0,07/)).toBeVisible();
+    expect(
+      within(panel).getByText('Con el grupo lleno (3 personas), cada uno pagaría'),
+    ).toBeVisible();
+    expect(
+      within(panel).getByText('La cuota real se calcula con los miembros que haya en cada cobro.'),
+    ).toBeVisible();
     expect(mockedQuote).toHaveBeenLastCalledWith(
       { priceCents: 1466, currency: 'USD', exchangeRate: '6.9600', memberCount: 3 },
       expect.anything(),
