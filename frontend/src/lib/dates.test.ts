@@ -1,4 +1,4 @@
-import { formatDateLaPaz, formatDateTimeLaPaz, lapazDayOf } from './dates';
+import { formatCalendarDayLaPaz, formatDateLaPaz, formatDateTimeLaPaz, lapazDayOf } from './dates';
 
 describe('formatDateTimeLaPaz (RF-000-17)', () => {
   it('CA-000-12 muestra las 02:00 UTC del día 1 como las 22:00 del día anterior en La Paz', () => {
@@ -72,5 +72,17 @@ describe('lapazDayOf', () => {
 
   it('CA-000-12 lanza RangeError ante una fecha inválida', () => {
     expect(() => lapazDayOf('mañana')).toThrow(RangeError);
+  });
+});
+
+describe('formatCalendarDayLaPaz (RF-001-19)', () => {
+  it('muestra el día que entrega la API sin correrlo por la zona horaria', () => {
+    expect(formatCalendarDayLaPaz('2026-11-15')).toBe('15 nov 2026');
+    expect(formatCalendarDayLaPaz('2027-01-01')).toBe('1 ene 2027');
+  });
+
+  it('rechaza un texto que no es YYYY-MM-DD', () => {
+    expect(() => formatCalendarDayLaPaz('15/11/2026')).toThrow(RangeError);
+    expect(() => formatCalendarDayLaPaz('2026-13-01')).toThrow(RangeError);
   });
 });

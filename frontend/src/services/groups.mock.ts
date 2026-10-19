@@ -7,6 +7,8 @@ import { ApiError } from './http';
 import type {
   CreateGroupRequest,
   GroupDetail,
+  GroupMember,
+  GroupRole,
   GroupsPage,
   GroupSummary,
   HostEligibility,
@@ -149,22 +151,325 @@ export const MOCK_GROUP: GroupDetail = {
   version: 1,
 };
 
-const MOCK_SUMMARY: GroupSummary = {
-  id: MOCK_GROUP_ID,
-  name: MOCK_GROUP.name,
-  serviceName: MOCK_GROUP.service.name,
-  logoUrl: MOCK_GROUP.service.logoUrl,
-  brandColor: MOCK_GROUP.service.brandColor,
-  role: 'titular',
+function summaryOf(
+  group: GroupDetail,
+  serviceName: string,
+  myShareIsReference: boolean,
+  nextCutDate: string,
+): GroupSummary {
+  return {
+    id: group.id,
+    name: group.name,
+    serviceName,
+    logoUrl: group.service.logoUrl,
+    brandColor: group.service.brandColor,
+    role: group.myRole,
+    status: group.status,
+    frozenReason: group.frozenReason,
+    memberCount: group.breakdown.memberCount,
+    totalSlots: group.totalSlots,
+    myShareCents: group.myShareCents,
+    myShareIsReference,
+    billingDay: group.billingDay,
+    nextCutDate,
+  };
+}
+
+/** QR de ejemplo en línea (el real es una URL firmada de Supabase Storage). */
+const MOCK_QR_URL =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7 7" shape-rendering="crispEdges">' +
+      '<rect width="7" height="7" fill="#fff"/>' +
+      '<path d="M0 0h3v3H0zM4 0h3v3H4zM0 4h3v3H0zM4 4h1v1H4zM6 4h1v3H6zM4 6h1v1H4z" fill="#17201c"/></svg>',
+  );
+
+function member(
+  idSuffix: string,
+  fullName: string,
+  role: GroupRole,
+  phone: string | null,
+  joinedAt: string,
+): GroupMember {
+  return { userId: `9c4e2f10-0000-4000-8000-${idSuffix}`, fullName, role, phone, joinedAt };
+}
+
+/** Titular con miembros y ventana abierta; montos en USD ya calculados por el «backend». */
+const PRIME_GROUP: GroupDetail = {
+  id: '5b0d7c3e-0000-4000-8000-000000000102',
+  name: 'Prime Video de la casa',
   status: 'activo',
   frozenReason: null,
-  memberCount: 1,
+  createdAt: '2026-06-17T15:00:00.000Z',
+  service: {
+    name: 'Prime Video',
+    planName: 'Estándar',
+    logoUrl: null,
+    brandColor: '#1A6FB0',
+    isCustom: false,
+  },
+  billingDay: 17,
   totalSlots: 4,
-  myShareCents: 2553,
-  myShareIsReference: true,
-  billingDay: 15,
-  nextCutDate: '2026-11-15',
+  priceCents: 899,
+  currency: 'USD',
+  exchangeRate: '6.9600',
+  breakdown: {
+    priceCents: 899,
+    currency: 'USD',
+    exchangeRate: '6.9600',
+    totalBsCents: 6257,
+    memberCount: 3,
+    baseShareCents: 2085,
+    ownerShareCents: 2087,
+    remainderCents: 2,
+  },
+  myShareCents: 2087,
+  myRole: 'titular',
+  entryWindow: {
+    isOpen: true,
+    opensAt: null,
+    closesAt: '2026-10-20T03:59:59.000Z',
+    acceptingMembers: true,
+  },
+  members: [
+    member(
+      '000000000201',
+      'Ana Quispe Mamani',
+      'titular',
+      '+59171234567',
+      '2026-06-17T15:00:00.000Z',
+    ),
+    member(
+      '000000000202',
+      'Carla Rojas Vda.',
+      'miembro',
+      '+59170223344',
+      '2026-07-17T18:20:00.000Z',
+    ),
+    member(
+      '000000000203',
+      'Diego Flores Paz',
+      'miembro',
+      '+59176655443',
+      '2026-08-18T13:05:00.000Z',
+    ),
+  ],
+  paymentInfo: {
+    text: 'BNB · Cuenta 4501-998877\nAna Quispe Mamani',
+    qrUrl: MOCK_QR_URL,
+    configured: true,
+  },
+  inviteCode: 'R3T6YV8B',
+  version: 4,
 };
+
+/** Miembro de un grupo en USD con ventana abierta y datos de pago completos. */
+const SPOTIFY_GROUP: GroupDetail = {
+  id: '5b0d7c3e-0000-4000-8000-000000000103',
+  name: 'Spotify depa',
+  status: 'activo',
+  frozenReason: null,
+  createdAt: '2026-03-18T12:00:00.000Z',
+  service: {
+    name: 'Spotify',
+    planName: 'Familiar',
+    logoUrl: null,
+    brandColor: '#14743A',
+    isCustom: false,
+  },
+  billingDay: 18,
+  totalSlots: 6,
+  priceCents: 1707,
+  currency: 'USD',
+  exchangeRate: '6.9600',
+  breakdown: {
+    priceCents: 1707,
+    currency: 'USD',
+    exchangeRate: '6.9600',
+    totalBsCents: 11881,
+    memberCount: 6,
+    baseShareCents: 1980,
+    ownerShareCents: 1981,
+    remainderCents: 1,
+  },
+  myShareCents: 1980,
+  myRole: 'miembro',
+  entryWindow: {
+    isOpen: true,
+    opensAt: null,
+    closesAt: '2026-10-21T03:59:59.000Z',
+    acceptingMembers: true,
+  },
+  members: [
+    member(
+      '000000000301',
+      'Marco Vargas Rojas',
+      'titular',
+      '+59176543210',
+      '2026-03-18T12:00:00.000Z',
+    ),
+    member(
+      '000000000201',
+      'Ana Quispe Mamani',
+      'miembro',
+      '+59171234567',
+      '2026-04-18T14:30:00.000Z',
+    ),
+    member('000000000302', 'Sofía Mamani', 'miembro', null, '2026-04-19T16:00:00.000Z'),
+    member('000000000303', 'Bruno Paz', 'miembro', null, '2026-05-18T20:10:00.000Z'),
+    member('000000000304', 'Lucía Torrez', 'miembro', null, '2026-07-20T01:45:00.000Z'),
+    member('000000000305', 'Iván Céspedes', 'miembro', null, '2026-09-18T22:00:00.000Z'),
+  ],
+  paymentInfo: {
+    text: 'BNB · Cuenta 4501-998877 · Marco Vargas Rojas',
+    qrUrl: MOCK_QR_URL,
+    configured: true,
+  },
+  version: 7,
+};
+
+/** Miembro de un grupo en Bs con la ventana cerrada y sin datos de pago. */
+const CANVA_GROUP: GroupDetail = {
+  id: '5b0d7c3e-0000-4000-8000-000000000104',
+  name: 'Canva del equipo',
+  status: 'activo',
+  frozenReason: null,
+  createdAt: '2026-05-05T13:00:00.000Z',
+  service: {
+    name: 'Canva Pro',
+    planName: null,
+    logoUrl: null,
+    brandColor: null,
+    isCustom: true,
+  },
+  billingDay: 5,
+  totalSlots: 5,
+  priceCents: 6000,
+  currency: 'BS',
+  exchangeRate: null,
+  breakdown: {
+    priceCents: 6000,
+    currency: 'BS',
+    exchangeRate: null,
+    totalBsCents: 6000,
+    memberCount: 4,
+    baseShareCents: 1500,
+    ownerShareCents: 1500,
+    remainderCents: 0,
+  },
+  myShareCents: 1500,
+  myRole: 'miembro',
+  entryWindow: {
+    isOpen: false,
+    opensAt: '2026-11-05T04:00:00.000Z',
+    closesAt: null,
+    acceptingMembers: true,
+  },
+  members: [
+    member('000000000401', 'Rocío Gutiérrez', 'titular', null, '2026-05-05T13:00:00.000Z'),
+    member('000000000201', 'Ana Quispe Mamani', 'miembro', null, '2026-05-06T15:00:00.000Z'),
+    member('000000000402', 'Pablo Choque', 'miembro', null, '2026-06-05T17:00:00.000Z'),
+    member('000000000403', 'Gabriela Ríos', 'miembro', null, '2026-08-06T19:30:00.000Z'),
+  ],
+  paymentInfo: NO_PAYMENT_INFO,
+  version: 2,
+};
+
+/** Grupo congelado porque banearon al titular: no recibe miembros. */
+const DISNEY_GROUP: GroupDetail = {
+  id: '5b0d7c3e-0000-4000-8000-000000000105',
+  name: 'Disney+ primos',
+  status: 'activo',
+  frozenReason: 'titular_baneado',
+  createdAt: '2026-02-12T12:00:00.000Z',
+  service: {
+    name: 'Disney+',
+    planName: 'Premium',
+    logoUrl: null,
+    brandColor: '#1D3A8A',
+    isCustom: false,
+  },
+  billingDay: 12,
+  totalSlots: 4,
+  priceCents: 8840,
+  currency: 'BS',
+  exchangeRate: null,
+  breakdown: {
+    priceCents: 8840,
+    currency: 'BS',
+    exchangeRate: null,
+    totalBsCents: 8840,
+    memberCount: 4,
+    baseShareCents: 2210,
+    ownerShareCents: 2210,
+    remainderCents: 0,
+  },
+  myShareCents: 2210,
+  myRole: 'miembro',
+  entryWindow: { isOpen: false, opensAt: null, closesAt: null, acceptingMembers: false },
+  members: [
+    member('000000000501', 'Jorge Salinas', 'titular', null, '2026-02-12T12:00:00.000Z'),
+    member('000000000201', 'Ana Quispe Mamani', 'miembro', null, '2026-03-12T14:00:00.000Z'),
+    member('000000000502', 'Mariela Cruz', 'miembro', null, '2026-03-13T15:00:00.000Z'),
+    member('000000000503', 'Tomás Arce', 'miembro', null, '2026-04-12T16:00:00.000Z'),
+  ],
+  paymentInfo: { text: 'Tigo Money 70011223 · Jorge Salinas', qrUrl: null, configured: true },
+  version: 9,
+};
+
+/** Grupo cerrado: queda en la lista con su historial. */
+const YOUTUBE_GROUP: GroupDetail = {
+  id: '5b0d7c3e-0000-4000-8000-000000000106',
+  name: 'YouTube de la U',
+  status: 'cerrado',
+  frozenReason: null,
+  createdAt: '2026-01-30T12:00:00.000Z',
+  service: {
+    name: 'YouTube Premium',
+    planName: 'Familiar',
+    logoUrl: null,
+    brandColor: '#5B5F66',
+    isCustom: false,
+  },
+  billingDay: 30,
+  totalSlots: 5,
+  priceCents: 2299,
+  currency: 'USD',
+  exchangeRate: '6.9600',
+  breakdown: {
+    priceCents: 2299,
+    currency: 'USD',
+    exchangeRate: '6.9600',
+    totalBsCents: 16001,
+    memberCount: 3,
+    baseShareCents: 5333,
+    ownerShareCents: 5335,
+    remainderCents: 2,
+  },
+  myShareCents: 5333,
+  myRole: 'miembro',
+  entryWindow: { isOpen: false, opensAt: null, closesAt: null, acceptingMembers: false },
+  members: [
+    member('000000000601', 'Valeria Méndez', 'titular', null, '2026-01-30T12:00:00.000Z'),
+    member('000000000201', 'Ana Quispe Mamani', 'miembro', null, '2026-02-28T15:00:00.000Z'),
+    member('000000000602', 'Ramiro Ticona', 'miembro', null, '2026-03-30T16:00:00.000Z'),
+  ],
+  paymentInfo: NO_PAYMENT_INFO,
+  version: 12,
+};
+
+/** Grupos del usuario simulado, con el resumen que entregaría `GET /groups`. */
+export const MOCK_GROUPS: ReadonlyArray<{ summary: GroupSummary; detail: GroupDetail }> = [
+  { detail: MOCK_GROUP, summary: summaryOf(MOCK_GROUP, 'Netflix', true, '2026-11-15') },
+  { detail: PRIME_GROUP, summary: summaryOf(PRIME_GROUP, 'Prime Video', true, '2026-11-17') },
+  { detail: SPOTIFY_GROUP, summary: summaryOf(SPOTIFY_GROUP, 'Spotify', false, '2026-11-18') },
+  { detail: CANVA_GROUP, summary: summaryOf(CANVA_GROUP, 'Canva Pro', false, '2026-11-05') },
+  { detail: DISNEY_GROUP, summary: summaryOf(DISNEY_GROUP, 'Disney+', false, '2026-11-12') },
+  {
+    detail: YOUTUBE_GROUP,
+    summary: summaryOf(YOUTUBE_GROUP, 'YouTube Premium', false, '2026-10-30'),
+  },
+];
 
 /** Simula las reglas de forma del contrato: `exchangeRate` obligatorio con USD y prohibido con BS. */
 export function createGroup(input: CreateGroupRequest): Promise<GroupDetail> {
@@ -209,17 +514,21 @@ export function createGroup(input: CreateGroupRequest): Promise<GroupDetail> {
 
 export function listGroups(params: ListGroupsParams, signal?: AbortSignal): Promise<GroupsPage> {
   return delay(() => {
-    const matches =
-      (!params.role || params.role === MOCK_SUMMARY.role) &&
-      (!params.status || params.status === MOCK_SUMMARY.status);
-    return { items: matches ? [MOCK_SUMMARY] : [], nextCursor: null };
+    const items = MOCK_GROUPS.map((group) => group.summary).filter(
+      (group) =>
+        (!params.role || params.role === group.role) &&
+        (!params.status || params.status === group.status),
+    );
+    return { items, nextCursor: null };
   }, signal);
 }
 
+/** `404` para un id que no está entre los grupos del usuario (CA-001-10). */
 export function getGroup(groupId: string, signal?: AbortSignal): Promise<GroupDetail> {
   return delay(() => {
-    if (groupId !== MOCK_GROUP_ID) throw new ApiError(404, 'NOT_FOUND', 'No encontrado.');
-    return MOCK_GROUP;
+    const found = MOCK_GROUPS.find((group) => group.detail.id === groupId);
+    if (!found) throw new ApiError(404, 'NOT_FOUND', 'No encontrado.');
+    return found.detail;
   }, signal);
 }
 
