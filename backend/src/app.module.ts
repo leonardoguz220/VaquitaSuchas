@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { HealthModule } from './modules/health/health.module.js';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module.js';
 import { TelegramModule } from './modules/telegram/telegram.module.js';
+import { AuthModule } from './modules/auth/auth.module.js';
+import { UsersModule } from './modules/users/users.module.js';
 import { ClockModule } from './shared/clock/clock.module.js';
 import { validateEnv } from './shared/config/env.validation.js';
 import { DbModule } from './shared/db/db.module.js';
@@ -35,6 +38,9 @@ import { StorageModule } from './shared/storage/storage.module.js';
     HealthModule,
     // Webhook del bot, deduplicación por update_id y simulador en modo dev (RF-000-22).
     TelegramModule,
+    SubscriptionsModule,
+    AuthModule,
+    UsersModule,
   ],
 })
 export class AppModule {}
