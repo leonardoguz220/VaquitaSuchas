@@ -68,7 +68,7 @@
 - [ ] T029 [P] [US4] [BE] `backend/test/reports.e2e-spec.ts`: CA-007-13 (exclusión con motivo, registrada y recalculada), `CHARGE_ALREADY_EXCLUDED`, `REPORT_ALREADY_SENT`, solo el titular del grupo excluye y solo el dueño reporta — Depende: T028 · Cubre: CA-007-13, RF-007-14
 - [ ] T030 [US4] [BE] `services/reports.service.ts`, `repositories/exclusions.repository.ts` y `controllers/reports.controller.ts` (`POST /charges/:id/reputation-report`, `POST /charges/:id/reputation-exclusion`, que recalcula con `recomputeUser` en la misma transacción) — Depende: T029, T009 · Cubre: RF-007-14, CA-007-13
 - [ ] T031 [BD] Completar `reputation.integrity.test.ts` con las pruebas de exclusiones, reportes e insignias (únicos) — Depende: T017, T028 · Cubre: RF-007-08, RF-007-14
-- [ ] T032 [P] [US4] [FE] En `/cobros/[id]` (spec 002): botón «Reportar calificación» para el dueño y «Excluir de reputación» con motivo para el titular, con mock — Depende: spec 002 T018 · Cubre: RF-007-14
+- [x] T032 [P] [US4] [FE] En `/cobros/[id]` (spec 002): botón «Reportar calificación» para el dueño y «Excluir de reputación» con motivo para el titular, con mock — Depende: spec 002 T018 · Cubre: RF-007-14
 - [ ] T033 [US4] [FE] Conectar el reporte y la exclusión con el backend — Depende: T030, T032 · Cubre: RF-007-14
 
 ## Fase 6: Cierre
@@ -108,3 +108,4 @@
 |---|---|---|---|
 | — | `ChargeFactsPort` depende de que 002 guarde `first_submitted_at` y el rechazo «inválido» en `charge_events.metadata` | Verificar con Leonardo al terminar spec 002 T017 | No |
 | 2026-10-19 | [NECESITA ACLARACIÓN] `ReputationDetail` no trae cuántos cobros faltan para dejar de ser «Nuevo» y el contrato no dice si `host.missing[]` son textos para mostrar o códigos | T015 explica «Nuevo» con el mínimo de 3 de RF-007-02 sin restar en el cliente y muestra `missing[]` tal como llega (como texto). Propuesta para Leonardo: documentar `missing[]` como textos en español o agregar `ratingMinConsideredCharges` | No (pendiente) |
+| 2026-10-19 | [NECESITA ACLARACIÓN] El `Charge` de la spec 002 no indica si el cobro ya fue reportado o excluido de la reputación ni trae estas acciones en `allowedActions` | T032 ofrece «Reportar calificación» a la persona del cobro (comparando con `GET /auth/me`) y «Excluir de reputación» a quien no lo es (solo el dueño y el titular ven el `Charge`), en cobros de `ciclo` `pagado` o `atrasado`; tras enviar o ante `CHARGE_ALREADY_EXCLUDED` y `REPORT_ALREADY_SENT` oculta el botón. Propuesta: sumar `reputationReport` y `reputationExclusion` a `allowedActions` y un campo `reputation: { excluded, reported }` | No (pendiente) |

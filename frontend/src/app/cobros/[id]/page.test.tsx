@@ -10,6 +10,7 @@ import {
   uploadReceipt,
   type Charge,
 } from '@/services/charges';
+import { getMe } from '@/services/auth';
 import { ApiError } from '@/services/http';
 import ChargePage, { metadata } from './page';
 
@@ -17,6 +18,7 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
   usePathname: () => '/cobros/c1',
 }));
+jest.mock('@/services/auth', () => ({ getMe: jest.fn(() => new Promise(() => {})) }));
 jest.mock('@/services/charges', () => ({
   ...jest.requireActual('@/services/charges'),
   getCharge: jest.fn(),
@@ -613,5 +615,43 @@ describe('/cobros/[id] (spec 002 T026): acciones del titular', () => {
     ).toBeVisible();
     expect(tab.close).toHaveBeenCalled();
     open.mockRestore();
+  });
+});
+
+describe('/cobros/[id] (spec 007 T032): reputación', () => {
+  const mockedMe = jest.mocked(getMe);
+
+  beforeEach(() => mockedMe.mockClear());
+
+  it('RF-007-14: en un cobro pagado de ciclo, el dueño ve «Reportar calificación»', async () => {
+    mockedMe.mockResolvedValueOnce({
+      id: 'u2',
+      fullName: 'Ana Quispe Mamani',
+      email: 'ana@vaquita.test',
+      ciMasked: '*****123',
+      phone: '+59176543210',
+      role: 'usuario',
+      status: 'activo',
+      lastLoginAt: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+    mockedGet.mockResolvedValue({
+      ...pendingCharge,
+      status: 'pagado',
+      paidAt: '2026-10-20T14:00:00.000Z',
+      paymentInfo: null,
+      allowedActions: [],
+    });
+    await renderPage();
+    const reputation = await screen.findByRole('region', { name: 'Reputación' });
+    expect(within(reputation).getByRole('button', { name: 'Reportar calificación' })).toBeVisible();
+  });
+
+  it('RF-007-14: en un cobro pendiente no ofrece acciones de reputación', async () => {
+    mockedGet.mockResolvedValue(pendingCharge);
+    await renderPage();
+    await screen.findByRole('heading', { level: 1, name: 'Cobro de Octubre 2026' });
+    expect(screen.queryByRole('region', { name: 'Reputación' })).toBeNull();
+    expect(mockedMe).not.toHaveBeenCalled();
   });
 });

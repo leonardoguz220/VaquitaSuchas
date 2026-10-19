@@ -41,3 +41,61 @@ export function formatStarsNumber(value: number): string {
 export function chargesText(count: number): string {
   return `${count} ${count === 1 ? 'cobro' : 'cobros'}`;
 }
+
+export type ReputationCorrectionKind = 'report' | 'exclusion';
+
+export interface CorrectionErrorOutcome {
+  message: string;
+  /** El error es del campo de texto (validación `400`). */
+  field: boolean;
+  /** Ya no tiene sentido volver a intentarlo: se oculta el botón. */
+  finished: boolean;
+}
+
+/**
+ * Error del reporte o de la exclusión de un cobro (RF-007-14), por `code` y estado HTTP
+ * (contrato 007): `422 CHARGE_ALREADY_EXCLUDED` y `REPORT_ALREADY_SENT`, `400`, `403` y `404`.
+ */
+export function correctionErrorOutcome(
+  kind: ReputationCorrectionKind,
+  error: ApiError,
+): CorrectionErrorOutcome {
+  if (error.code === 'CHARGE_ALREADY_EXCLUDED') {
+    return {
+      message: 'Este cobro ya está excluido de la reputación.',
+      field: false,
+      finished: true,
+    };
+  }
+  if (error.code === 'REPORT_ALREADY_SENT') {
+    return {
+      message: 'Ya reportaste este cobro. El titular lo revisará.',
+      field: false,
+      finished: true,
+    };
+  }
+  if (error.statusCode === 400) {
+    return { message: 'Escribe entre 10 y 300 caracteres.', field: true, finished: false };
+  }
+  if (error.statusCode === 403) {
+    return {
+      message:
+        kind === 'report'
+          ? 'Solo la persona a nombre de quien está el cobro puede reportarlo.'
+          : 'Solo el titular del grupo puede excluir un cobro de la reputación.',
+      field: false,
+      finished: true,
+    };
+  }
+  if (error.statusCode === 404) {
+    return { message: 'No encontramos este cobro.', field: false, finished: true };
+  }
+  if (error.statusCode === 422) {
+    return {
+      message: 'Este cobro no se puede corregir en la reputación.',
+      field: false,
+      finished: true,
+    };
+  }
+  return { message: reputationErrorMessage(error), field: false, finished: false };
+}

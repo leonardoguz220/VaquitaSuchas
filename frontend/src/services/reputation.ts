@@ -122,3 +122,32 @@ export interface GroupRanking {
 export function getGroupRanking(groupId: string): Promise<GroupRanking> {
   return apiRequest<GroupRanking>(`/api/groups/${encodeURIComponent(groupId)}/ranking`);
 }
+
+/** Largo del comentario del reporte y del motivo de la exclusión (contrato 007). */
+export const REPUTATION_REASON_MIN = 10;
+export const REPUTATION_REASON_MAX = 300;
+
+/**
+ * `POST /charges/:chargeId/reputation-report` (RF-007-14): el dueño del cobro lo reporta como mal
+ * calificado. `201`. Errores: `422` `CHARGE_ALREADY_EXCLUDED` o `REPORT_ALREADY_SENT`.
+ */
+export function reportChargeRating(chargeId: string, input: { comment: string }): Promise<void> {
+  return apiRequest<void>(`/api/charges/${encodeURIComponent(chargeId)}/reputation-report`, {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/**
+ * `POST /charges/:chargeId/reputation-exclusion` (RF-007-14, CA-007-13): el titular excluye el
+ * cobro con motivo; la calificación del dueño se recalcula en el servidor. `200`.
+ */
+export function excludeChargeFromReputation(
+  chargeId: string,
+  input: { reason: string },
+): Promise<void> {
+  return apiRequest<void>(`/api/charges/${encodeURIComponent(chargeId)}/reputation-exclusion`, {
+    method: 'POST',
+    body: input,
+  });
+}

@@ -8,6 +8,10 @@ import { formatDateTimeLaPaz, formatDeadlineLaPaz, formatPeriod } from '@/lib/da
 import { formatExchangeRate } from '@/lib/exchange-rate';
 import { formatBs, formatPrice } from '@/lib/money';
 import { CHARGES_PATH } from '@/lib/routes';
+import {
+  ChargeReputationActions,
+  chargeCountsForReputation,
+} from '@/components/features/reputation/charge-reputation-actions';
 import type { Charge, ChargeAction } from '@/services/charges';
 import { ChargeCountdown } from './charge-countdown';
 import { CHARGE_MESSAGES, chargeErrorMessage } from './charge-messages';
@@ -195,7 +199,8 @@ export interface ChargeDetailViewProps {
  * del último rechazo (CA-002-07) y línea de tiempo. `403` (cobro de otro miembro) y `404`
  * (ajeno, CA-002-23) muestran su aviso; el frontend no decide quién puede verlo. Con
  * `uploadReceipt` en `allowedActions` muestra la subida del comprobante (T022); con `confirm` o
- * `reject`, las acciones del titular (T026).
+ * `reject`, las acciones del titular (T026). En `pagado` o `atrasado` ofrece reportar o excluir
+ * el cobro de la reputación (spec 007 T032).
  */
 export function ChargeDetailView({ chargeId }: ChargeDetailViewProps) {
   const { status, data: charge, error, reload, refresh, replace } = useCharge(chargeId);
@@ -277,6 +282,7 @@ export function ChargeDetailView({ chargeId }: ChargeDetailViewProps) {
                 onStale={handleStale}
               />
             )}
+            {chargeCountsForReputation(charge) && <ChargeReputationActions charge={charge} />}
           </>
         }
       />
