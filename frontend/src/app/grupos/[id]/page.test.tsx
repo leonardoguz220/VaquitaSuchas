@@ -8,6 +8,11 @@ import { ApiError } from '@/services/http';
 import GroupPage from './page';
 
 jest.mock('@/services/groups', () => ({ getGroup: jest.fn() }));
+jest.mock('@/components/features/charges/group-charges-tab', () => ({
+  GroupChargesTab: (props: { groupId: string; isOwner: boolean; reviewQueue?: unknown }) => (
+    <p>{`Cobros de ${props.groupId} · titular: ${String(props.isOwner)}`}</p>
+  ),
+}));
 
 const replace = jest.fn();
 jest.mock('next/navigation', () => ({
@@ -168,6 +173,14 @@ describe('/grupos/[id] (T020, plan 001 §6)', () => {
     await user.keyboard('{Home}');
     expect(summary).toHaveFocus();
     expect(screen.getByRole('tabpanel')).toHaveAccessibleName('Resumen');
+  });
+
+  it('CA-002-17: la pestaña Cobros monta el resumen e historial del grupo según el rol', async () => {
+    const user = userEvent.setup();
+    render(<GroupDetailView groupId={memberGroup.id} />);
+    await user.click(await screen.findByRole('tab', { name: 'Cobros' }));
+    expect(screen.getByRole('tabpanel')).toHaveAccessibleName('Cobros');
+    expect(screen.getByText(`Cobros de ${memberGroup.id} · titular: false`)).toBeInTheDocument();
   });
 
   it('el panel del titular solo se monta para el titular', async () => {

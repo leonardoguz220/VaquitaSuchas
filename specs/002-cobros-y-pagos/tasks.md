@@ -91,7 +91,7 @@
 
 - [ ] T035 [P] [US5] [BE] `backend/test/billing.summary.e2e-spec.ts`: CA-002-17 (resumen sin comprobantes ajenos), CA-002-18 (historial con línea de tiempo), CA-002-20 (totales del titular: esperado, cobrado, pendiente, atrasado) — Depende: T011 · Cubre: CA-002-17, CA-002-18, CA-002-20, RNF-002-07
 - [ ] T036 [US5] [BE] `controllers/group-billing.controller.ts`: `GET /groups/:groupId/billing/summary?period=` (`PeriodSummary` más `availablePeriods`; `404` si el grupo no tiene ciclo en ese período) y `GET /groups/:groupId/charges` (historial paginado por `period`, `status`, `userId`; `ChargePublic` sin comprobantes ni referencias, `Charge` completo para el titular; los motivos no se exponen en el historial público) — Depende: T035, T017 · Cubre: RF-002-16, RF-002-17, RF-002-18, RNF-002-07, CA-002-17, CA-002-18, CA-002-20
-- [ ] T037 [P] [US5] [FE] Pestaña **Cobros** de `/grupos/[id]` con mock: selector de período, resumen del mes con estado y monto por miembro (y totales para el titular), historial paginado con línea de tiempo por cobro — Depende: spec 001 T020 · Cubre: RF-002-16, RF-002-17, RF-002-18
+- [x] T037 [P] [US5] [FE] Pestaña **Cobros** de `/grupos/[id]` con mock: selector de período, resumen del mes con estado y monto por miembro (y totales para el titular), historial paginado con línea de tiempo por cobro — Depende: spec 001 T020 · Cubre: RF-002-16, RF-002-17, RF-002-18
 - [ ] T038 [US5] [FE] Conectar la pestaña **Cobros** con `GET /groups/:id/billing/summary` y `GET /groups/:id/charges` — Depende: T036, T037 · Cubre: RF-002-16, RF-002-17
 
 ## Fase 9: Integración con otras specs, retención y cierre

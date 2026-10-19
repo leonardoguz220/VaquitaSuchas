@@ -8,6 +8,7 @@ import {
   uploadReceipt,
 } from './charges';
 import { MOCK_CHARGE_IDS, MOCK_RECEIPT_REFERENCES } from './charges.mock';
+import { MOCK_BILLING_GROUP_IDS } from './group-billing.mock';
 
 const SPOTIFY_GROUP_ID = '5b0d7c3e-0000-4000-8000-000000000103';
 
@@ -160,5 +161,33 @@ describe('services/charges con datos simulados (T018, contrato 002)', () => {
     const summary = await settle(getBillingSummary(SPOTIFY_GROUP_ID));
     expect(summary.availablePeriods).toContain(summary.period);
     await expectRejection(getBillingSummary('otro'), { statusCode: 404 });
+  });
+
+  it('CA-002-17: historial de 5 en 5 y totales solo para el titular, sin comprobantes', async () => {
+    const owner = MOCK_BILLING_GROUP_IDS.owner;
+    const first = await settle(getGroupCharges(owner, { limit: 5 }));
+    expect(first.items).toHaveLength(5);
+    const second = await settle(
+      getGroupCharges(owner, { limit: 5, cursor: first.nextCursor ?? '' }),
+    );
+    expect(second.nextCursor).toBeNull();
+    expect([...first.items, ...second.items].some((charge) => charge.origin === 'ingreso')).toBe(
+      true,
+    );
+
+    expect((await settle(getBillingSummary(owner))).ownerTotals).toBeDefined();
+    expect((await settle(getBillingSummary(owner, '2026-09'))).period).toBe('2026-09');
+
+    const member = await settle(getBillingSummary(MOCK_BILLING_GROUP_IDS.member));
+    expect(member).not.toHaveProperty('ownerTotals');
+    member.rows.forEach(({ charge }) => {
+      expect(charge).not.toHaveProperty('receipts');
+      expect(charge).not.toHaveProperty('currentReceipt');
+      charge.timeline.forEach((event) => expect(event).not.toHaveProperty('reason'));
+    });
+
+    await expectRejection(getBillingSummary(MOCK_BILLING_GROUP_IDS.noCycle), {
+      statusCode: 404,
+    });
   });
 });

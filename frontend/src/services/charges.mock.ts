@@ -4,6 +4,7 @@
  * se calcula nada. Filtrar por la query de `GET /me/charges` simula al servidor. Nombres,
  * montos y cuentas inventados.
  */
+import { billingSummary, groupChargesPage } from './group-billing.mock';
 import { ApiError } from './http';
 import type {
   BillingSummary,
@@ -569,50 +570,20 @@ export function rejectCharge(chargeId: string, _input: RejectChargeInput): Promi
   });
 }
 
+/** Historial del grupo (T037): datos en `group-billing.mock.ts`. */
 export function getGroupCharges(
   groupId: string,
   params: GroupChargesParams,
   signal?: AbortSignal,
 ): Promise<Page<ChargePublic | Charge>> {
-  return delay(() => {
-    const items = MY_CHARGES.filter(
-      (charge) =>
-        charge.groupId === groupId &&
-        (!params.period || charge.period === params.period) &&
-        (!params.status?.length || params.status.includes(charge.status)),
-    ).map(toCharge);
-    if (items.length === 0 && !MY_CHARGES.some((charge) => charge.groupId === groupId)) {
-      throw new ApiError(404, 'NOT_FOUND', 'No encontrado.');
-    }
-    return { items, nextCursor: null };
-  }, signal);
+  return delay(() => groupChargesPage(groupId, params), signal);
 }
 
-const SPOTIFY_SUMMARY: BillingSummary = {
-  period: '2026-10',
-  cycleType: 'regular',
-  cutDate: '2026-10-18',
-  dueAt: '2026-10-22T03:59:59.000Z',
-  totalBsCents: 11881,
-  memberCount: 6,
-  baseShareCents: 1980,
-  ownerShareCents: 1981,
-  rows: MY_CHARGES.filter(
-    (charge) => charge.groupId === SPOTIFY.id && charge.period === '2026-10',
-  ).map((charge) => ({ charge: toCharge(charge), isFormerMember: false })),
-  availablePeriods: ['2026-10', '2026-09'],
-};
-
-/** Solo el grupo de Spotify tiene ciclo simulado. */
+/** Resumen del período (T037): `404` si el grupo no tiene ciclo en ese período. */
 export function getBillingSummary(
   groupId: string,
   period: string | undefined,
   signal?: AbortSignal,
 ): Promise<BillingSummary> {
-  return delay(() => {
-    if (groupId !== SPOTIFY.id || (period && period !== SPOTIFY_SUMMARY.period)) {
-      throw new ApiError(404, 'NOT_FOUND', 'No encontrado.');
-    }
-    return SPOTIFY_SUMMARY;
-  }, signal);
+  return delay(() => billingSummary(groupId, period), signal);
 }

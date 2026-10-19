@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
+import { GroupChargesTab } from '@/components/features/charges/group-charges-tab';
 import { ServiceLogo } from '@/components/features/catalog/ServiceLogo';
 import { Badge, Button, Card } from '@/components/ui';
 import { useGroup } from '@/hooks/use-group';
@@ -15,12 +16,13 @@ import { GroupTabs, panelId, tabId, type GroupTab } from './group-tabs';
 const GROUPS_PATH = '/grupos';
 const TABS_PREFIX = 'grupo';
 
-/** Pestañas de T020. Cobros, Solicitudes y Ajustes se agregan aquí en sus tareas. */
-type GroupTabId = 'resumen' | 'miembros';
+/** Pestañas de T020 y Cobros (002 T037). Solicitudes y Ajustes se agregan en sus tareas. */
+type GroupTabId = 'resumen' | 'miembros' | 'cobros';
 
 const TABS: readonly GroupTab<GroupTabId>[] = [
   { id: 'resumen', label: 'Resumen' },
   { id: 'miembros', label: 'Miembros' },
+  { id: 'cobros', label: 'Cobros' },
 ];
 
 function DetailSkeleton() {
@@ -114,13 +116,15 @@ export interface GroupDetailViewProps {
    * de T025).
    */
   ownerPanel?: (group: GroupDetail, actions: OwnerPanelActions) => ReactNode;
+  /** Cola «Por revisar» del titular dentro de la pestaña Cobros (002 T026). */
+  reviewQueue?: (group: GroupDetail) => ReactNode;
 }
 
 /**
- * Pantalla `/grupos/[id]` (plan 001 §6): cabecera del grupo y pestañas Resumen y Miembros.
+ * Pantalla `/grupos/[id]` (plan 001 §6): cabecera del grupo y pestañas Resumen, Miembros y Cobros.
  * Un `404` de la API (grupo ajeno o inexistente) muestra «Grupo no encontrado» (CA-001-10).
  */
-export function GroupDetailView({ groupId, ownerPanel }: GroupDetailViewProps) {
+export function GroupDetailView({ groupId, ownerPanel, reviewQueue }: GroupDetailViewProps) {
   const { state, retry, update } = useGroup(groupId);
   const [tab, setTab] = useState<GroupTabId>('resumen');
 
@@ -164,6 +168,13 @@ export function GroupDetailView({ groupId, ownerPanel }: GroupDetailViewProps) {
           >
             {tab === 'resumen' && <GroupSummaryTab group={state.group} />}
             {tab === 'miembros' && <GroupMembersTab members={state.group.members} />}
+            {tab === 'cobros' && (
+              <GroupChargesTab
+                groupId={state.group.id}
+                isOwner={state.group.myRole === 'titular'}
+                reviewQueue={reviewQueue?.(state.group)}
+              />
+            )}
           </div>
         </>
       )}
