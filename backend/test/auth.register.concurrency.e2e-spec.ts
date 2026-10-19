@@ -1,10 +1,8 @@
 import { startAuthApp, type AuthTestApp } from './support/auth-app.js';
 
-// Spec 003 (US1). Se activa con T018: hasta que exista POST /auth/register, el bloque queda en skip.
+// Spec 003 (US1).
 // Requiere PostgreSQL (base temporal propia).
-const describeConcurrencia = describe.skip;
-
-describeConcurrencia('Registro concurrente (spec 003)', () => {
+describe('Registro concurrente (spec 003)', () => {
   let t: AuthTestApp;
   beforeAll(async () => {
     t = await startAuthApp();

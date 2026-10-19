@@ -103,8 +103,10 @@ export async function startAuthApp(): Promise<AuthTestApp> {
   let seq = 0;
   const register = (overrides: Record<string, unknown> = {}) => {
     seq += 1;
+    // Cada registro llega desde otra IP: el límite de 5 enlaces por hora por IP no mezcla casos.
     return http()
       .post('/auth/register')
+      .set('X-Forwarded-For', `10.1.${Math.floor(seq / 250)}.${seq % 250}`)
       .send({
         fullName: 'Ana Prueba',
         email: `ana${seq}@example.com`,
