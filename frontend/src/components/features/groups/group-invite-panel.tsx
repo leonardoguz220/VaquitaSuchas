@@ -7,6 +7,7 @@ import { useGroupInviteActions, type InviteActionResult } from '@/hooks/use-grou
 import type { GroupDetail } from '@/services/groups';
 import { INVITE_PANEL_MESSAGES, invitePanelErrorMessage } from './group-invite-errors';
 import { InviteCodeShare } from './invite-code-share';
+import { InviteModal } from './invite-modal';
 
 export const REGENERATE_EFFECT =
   'El código anterior dejará de funcionar de inmediato; quien lo tenga ya no podrá usarlo.';
@@ -35,7 +36,8 @@ export interface GroupInvitePanelProps {
 
 /**
  * Panel del titular en `/grupos/[id]` (T025; mockups `Grupo.dc.html` y `GrupoAjustes.dc.html`):
- * código de invitación con Copiar y Compartir (RF-001-06), «Regenerar código» con confirmación
+ * código de invitación con Copiar y Compartir (RF-001-06), **Invitar** por correo o WhatsApp
+ * (spec 005 T028), «Regenerar código» con confirmación
  * (RF-001-08) y el interruptor para recibir miembros (RF-001-09). Con el grupo cerrado o
  * congelado todo queda en solo lectura (CA-001-16).
  */
@@ -45,6 +47,7 @@ export function GroupInvitePanel({ group, onGroupChange }: GroupInvitePanelProps
     onGroupChange,
   });
   const [confirming, setConfirming] = useState(false);
+  const [inviting, setInviting] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const titleId = useId();
   const switchLabelId = useId();
@@ -90,6 +93,20 @@ export function GroupInvitePanel({ group, onGroupChange }: GroupInvitePanelProps
       ) : (
         <p className="text-muted">No pudimos mostrar el código de invitación.</p>
       )}
+
+      <Button
+        onClick={() => setInviting(true)}
+        disabled={locked}
+        className="w-full sm:w-auto sm:self-start"
+      >
+        Invitar por correo o WhatsApp
+      </Button>
+      <InviteModal
+        groupId={group.id}
+        groupName={group.name}
+        open={inviting}
+        onClose={() => setInviting(false)}
+      />
 
       <Button
         variant="secondary"

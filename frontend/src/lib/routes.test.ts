@@ -1,4 +1,8 @@
 import {
+  NOTIFICATION_SETTINGS_PATH,
+  NOTIFICATIONS_PATH,
+  safeInternalLink,
+  UNSUBSCRIBE_PATH,
   JOIN_PATH,
   REQUESTS_PATH,
   requestPath,
@@ -16,7 +20,13 @@ import {
 
 describe('routes (RF-000-15, RF-000-16)', () => {
   it('RF-000-15: la lista de rutas públicas es la del plan §6', () => {
-    expect(PUBLIC_ROUTES).toEqual(['/ingresar', '/registro', '/recuperar', '/estado']);
+    expect(PUBLIC_ROUTES).toEqual([
+      '/ingresar',
+      '/registro',
+      '/recuperar',
+      '/estado',
+      '/avisos/desactivar',
+    ]);
     expect(LOGIN_PATH).toBe('/ingresar');
   });
 
@@ -189,6 +199,53 @@ describe('rutas de solicitudes de ingreso (spec 010 T017)', () => {
   it('RF-010-01: sin sesión, /unirse?codigo= vuelve a sí mismo tras ingresar', () => {
     const login = buildLoginRedirect('/unirse', '?codigo=K7M2Q9XA');
     expect(login).toBe('/ingresar?next=%2Funirse%3Fcodigo%3DK7M2Q9XA');
+    const next = new URLSearchParams(login.split('?')[1]).get('next') ?? undefined;
+    expect(resolvePostLoginPath({ next })).toBe('/unirse?codigo=K7M2Q9XA');
+  });
+});
+
+describe('rutas de notificaciones (plan 005 §6)', () => {
+  it('RF-005-01: /notificaciones es protegida', () => {
+    expect(NOTIFICATIONS_PATH).toBe('/notificaciones');
+    expect(isPublicPath(NOTIFICATIONS_PATH)).toBe(false);
+  });
+
+  it('RF-005-01: safeInternalLink acepta rutas internas y descarta enlaces externos', () => {
+    expect(safeInternalLink('/cobros/c1')).toBe('/cobros/c1');
+    expect(safeInternalLink('/solicitudes/jr1?tab=chat')).toBe('/solicitudes/jr1?tab=chat');
+    for (const bad of [
+      null,
+      undefined,
+      '',
+      'https://evil.test',
+      '//evil.test',
+      '/\\evil',
+      'cobros',
+      '/a b',
+    ]) {
+      expect(safeInternalLink(bad)).toBeNull();
+    }
+  });
+});
+
+describe('rutas de ajustes de avisos (spec 005 T023)', () => {
+  it('RF-005-17: /ajustes/avisos es protegida', () => {
+    expect(NOTIFICATION_SETTINGS_PATH).toBe('/ajustes/avisos');
+    expect(isPublicPath(NOTIFICATION_SETTINGS_PATH)).toBe(false);
+  });
+
+  it('RF-005-18: /avisos/desactivar es pública (el enlace del correo se abre sin sesión)', () => {
+    expect(UNSUBSCRIBE_PATH).toBe('/avisos/desactivar');
+    expect(isPublicPath(UNSUBSCRIBE_PATH)).toBe(true);
+    expect(isPublicPath('/avisos')).toBe(false);
+    expect(safeNextPath('/avisos/desactivar?token=x')).toBeNull();
+  });
+});
+
+describe('enlace de invitación (spec 005 T028)', () => {
+  it('CA-005-15: sin sesión, /unirse?codigo= pasa por ingresar y vuelve con el código cargado', () => {
+    expect(isPublicPath('/unirse')).toBe(false);
+    const login = buildLoginRedirect('/unirse', '?codigo=K7M2Q9XA');
     const next = new URLSearchParams(login.split('?')[1]).get('next') ?? undefined;
     expect(resolvePostLoginPath({ next })).toBe('/unirse?codigo=K7M2Q9XA');
   });

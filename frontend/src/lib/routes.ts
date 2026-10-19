@@ -9,8 +9,17 @@ export const LOGIN_PATH = '/ingresar';
 /** Parámetro de consulta con la ruta a la que volver tras ingresar (spec 003 T029). */
 export const NEXT_PARAM = 'next';
 
-/** Rutas que se ven sin sesión; sus subrutas también son públicas. */
-export const PUBLIC_ROUTES = ['/ingresar', '/registro', '/recuperar', '/estado'] as const;
+/**
+ * Rutas que se ven sin sesión; sus subrutas también son públicas. `/avisos/desactivar` es la
+ * página del enlace para dejar de recibir un tipo de correo (plan 005 §6, RF-005-18).
+ */
+export const PUBLIC_ROUTES = [
+  '/ingresar',
+  '/registro',
+  '/recuperar',
+  '/estado',
+  '/avisos/desactivar',
+] as const;
 
 export type PublicRoute = (typeof PUBLIC_ROUTES)[number];
 
@@ -143,3 +152,23 @@ export function resolvePostLoginPath(searchParams: SearchParamsRecord = {}): str
   }
   return DEFAULT_AFTER_LOGIN_PATH;
 }
+
+/** Centro de notificaciones (plan 005 §6). Ruta protegida. */
+export const NOTIFICATIONS_PATH = '/notificaciones';
+
+/**
+ * Devuelve el `link` de una notificación si es una ruta interna de la app (empieza con una sola
+ * `/`, sin barras invertidas ni caracteres de control), o `null`. El backend ya lo restringe;
+ * esto evita abrir un enlace externo si llegara uno por error.
+ */
+export function safeInternalLink(link: string | null | undefined): string | null {
+  if (!link || !link.startsWith('/') || link.startsWith('//') || link.includes('\\')) return null;
+  if (/[\x00-\x20\x7f]/.test(link)) return null;
+  return link;
+}
+
+/** Ajustes de avisos por correo y Telegram (plan 005 §6). Ruta protegida. */
+export const NOTIFICATION_SETTINGS_PATH = '/ajustes/avisos';
+
+/** Página pública para dejar de recibir un tipo de correo (`?token=`, plan 005 §6). */
+export const UNSUBSCRIBE_PATH = '/avisos/desactivar';
