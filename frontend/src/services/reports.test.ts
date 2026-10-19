@@ -1,5 +1,12 @@
 import { apiRequest } from './http';
-import { getDashboard, getDashboardCharts, getGroupCollection, listDashboard } from './reports';
+import {
+  getCalendar,
+  getDashboard,
+  getDashboardCharts,
+  getGroupCollection,
+  getUpcomingEvents,
+  listDashboard,
+} from './reports';
 
 jest.mock('./http', () => ({
   ...jest.requireActual('./http'),
@@ -53,5 +60,23 @@ describe('services/reports (contrato 006): gráficos', () => {
     expect(mockedRequest).toHaveBeenLastCalledWith(
       '/api/me/dashboard/charts?month=2026-10&groupId=g1',
     );
+  });
+});
+
+describe('services/reports (contrato 006): calendario', () => {
+  it('RF-006-11: getCalendar hace GET /api/me/calendar con el mes', async () => {
+    mockedRequest.mockResolvedValue({ events: [] });
+    await getCalendar();
+    expect(mockedRequest).toHaveBeenLastCalledWith('/api/me/calendar');
+    await getCalendar('2027-02');
+    expect(mockedRequest).toHaveBeenLastCalledWith('/api/me/calendar?month=2027-02');
+  });
+
+  it('RF-006-11: getUpcomingEvents pide los próximos 30 días por defecto', async () => {
+    mockedRequest.mockResolvedValue({ events: [] });
+    await getUpcomingEvents();
+    expect(mockedRequest).toHaveBeenLastCalledWith('/api/me/calendar/upcoming?days=30');
+    await getUpcomingEvents(7);
+    expect(mockedRequest).toHaveBeenLastCalledWith('/api/me/calendar/upcoming?days=7');
   });
 });

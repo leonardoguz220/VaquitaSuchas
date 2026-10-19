@@ -2,6 +2,8 @@
 
 import { useCallback } from 'react';
 import {
+  getCalendar,
+  getUpcomingEvents,
   getDashboard,
   getDashboardCharts,
   getGroupCollection,
@@ -72,5 +74,17 @@ export function useDashboardCharts({ month, groupId }: DashboardFilters) {
       }),
     [month, groupId],
   );
+  return useApiResource(load);
+}
+
+/** Cortes y vencimientos del mes (`GET /me/calendar`, RF-006-11). `null`: el mes actual. */
+export function useCalendar(month: string | null) {
+  const load = useCallback(() => getCalendar(month ?? undefined), [month]);
+  return useApiResource(load);
+}
+
+/** Lista «Próximos 30 días» (`GET /me/calendar/upcoming?days=30`, RF-006-11). */
+export function useUpcomingEvents() {
+  const load = useCallback(() => getUpcomingEvents(30), []);
   return useApiResource(load);
 }

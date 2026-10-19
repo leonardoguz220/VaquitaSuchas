@@ -52,7 +52,7 @@
 
 - [ ] T020 [P] [US4] [BE] `backend/test/calendar.e2e-spec.ts`: CA-006-13 (día 31 en febrero), cortes y vencimientos de cobros abiertos, estimados con «estimado», rol y monto por evento, grupos cerrados solo en meses pasados, próximos 30 días — Depende: T007 · Cubre: CA-006-13, RF-006-11, RF-006-12
 - [ ] T021 [US4] [BE] `services/calendar.service.ts` (junta ciclos existentes del pasado y el presente con los cálculos del futuro y aplica `calendarEventsFor`) y `controllers/calendar.controller.ts` con `GET /me/calendar?month=` y `GET /me/calendar/upcoming?days=30` — Depende: T020, T005 · Cubre: RF-006-11, RF-006-12, CA-006-13
-- [ ] T022 [P] [US4] [FE] `/panel/calendario` con mock: cuadrícula del mes (celdas con eventos de corte y vencimiento en texto e icono), lista **Próximos 30 días**, rol y monto («estimado» cuando corresponde) — Depende: T012 · Cubre: RF-006-11, RF-006-12, RNF-006-05
+- [x] T022 [P] [US4] [FE] `/panel/calendario` con mock: cuadrícula del mes (celdas con eventos de corte y vencimiento en texto e icono), lista **Próximos 30 días**, rol y monto («estimado» cuando corresponde) — Depende: T012 · Cubre: RF-006-11, RF-006-12, RNF-006-05
 - [ ] T023 [US4] [FE] Conectar el calendario con `GET /me/calendar` y `…/upcoming` — Depende: T021, T022 · Cubre: RF-006-11
 
 ## Fase 5: US5 — Historial y exportación a CSV (parte C, Prioridad: P1)

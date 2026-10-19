@@ -7,7 +7,7 @@ import { useDashboard, type DashboardFilters } from '@/hooks/use-dashboard';
 import { useGroups } from '@/hooks/use-groups';
 import { formatPeriod } from '@/lib/dates';
 import { formatBs, formatSignedBs } from '@/lib/money';
-import { JOIN_PATH, NEW_GROUP_PATH } from '@/lib/routes';
+import { JOIN_PATH, NEW_GROUP_PATH, PANEL_CALENDAR_PATH } from '@/lib/routes';
 import type { DashboardSummary, SpendLine } from '@/services/reports';
 import { ChargeLinesSection } from './charge-lines-section';
 import { DashboardCharts } from './dashboard-charts';
@@ -18,6 +18,9 @@ import {
   dashboardErrorMessage,
   ROLE_LABEL,
 } from './dashboard-messages';
+
+/** Pantallas del panel que ya existen. */
+const PANEL_LINKS = [{ href: PANEL_CALENDAR_PATH, label: 'Calendario' }];
 
 function DashboardSkeleton() {
   return (
@@ -295,6 +298,13 @@ export function DashboardView() {
         </h1>
         <p className="text-muted">Tu gasto, tu ahorro y lo que debes, mes a mes.</p>
       </div>
+      <nav aria-label="Secciones del panel" className="flex flex-wrap gap-2">
+        {PANEL_LINKS.map((link) => (
+          <Button key={link.href} href={link.href} variant="secondary">
+            {link.label}
+          </Button>
+        ))}
+      </nav>
 
       {!noGroups && (
         <div className="grid gap-4 sm:grid-cols-2 lg:max-w-2xl">

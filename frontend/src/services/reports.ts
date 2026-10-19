@@ -200,3 +200,34 @@ export function getDashboardCharts(params: DashboardParams = {}): Promise<Dashbo
     `/api/me/dashboard/charts${query({ month: params.month, groupId: params.groupId })}`,
   );
 }
+
+/** Evento del calendario (RF-006-11, RF-006-12). `date` es `YYYY-MM-DD` de La Paz. */
+export interface CalendarEvent {
+  date: string;
+  kind: 'corte' | 'vencimiento';
+  groupId: string;
+  groupName: string;
+  serviceName: string;
+  role: ReportRole;
+  amountCents: number;
+  /** `true` si el cobro o el ciclo todavía no existe y el monto es una estimación del backend. */
+  estimated: boolean;
+  chargeId: string | null;
+  status: string | null;
+}
+
+export interface CalendarResponse {
+  /** `YYYY-MM` del mes pedido. */
+  month?: string;
+  events: CalendarEvent[];
+}
+
+/** `GET /me/calendar?month=` (RF-006-11; CA-006-13): cortes y vencimientos del mes. */
+export function getCalendar(month?: string): Promise<CalendarResponse> {
+  return apiRequest<CalendarResponse>(`/api/me/calendar${query({ month })}`);
+}
+
+/** `GET /me/calendar/upcoming?days=` (RF-006-11): próximos días, de 1 a 90. */
+export function getUpcomingEvents(days = 30): Promise<CalendarResponse> {
+  return apiRequest<CalendarResponse>(`/api/me/calendar/upcoming${query({ days })}`);
+}

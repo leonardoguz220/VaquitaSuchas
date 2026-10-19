@@ -1,4 +1,5 @@
 import {
+  PANEL_CALENDAR_PATH,
   PANEL_PATH,
   NOTIFICATION_SETTINGS_PATH,
   UNSUBSCRIBE_PATH,
@@ -280,5 +281,10 @@ describe('rutas del panel (plan 006 §6)', () => {
   it('RF-006-01: /panel es protegida', () => {
     expect(PANEL_PATH).toBe('/panel');
     expect(isPublicPath(PANEL_PATH)).toBe(false);
+  });
+
+  it('RF-006-11: /panel/calendario es protegida', () => {
+    expect(PANEL_CALENDAR_PATH).toBe('/panel/calendario');
+    expect(isPublicPath(PANEL_CALENDAR_PATH)).toBe(false);
   });
 });
