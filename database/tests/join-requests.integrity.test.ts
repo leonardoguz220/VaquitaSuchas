@@ -622,12 +622,15 @@ describe('join_requests: valores por defecto y estado inicial', () => {
     await rejectsWith(openRequest(ctx.group.id, await newUserId(), { source: 'otro' }), {
       code: CHECK_VIOLATION,
     });
-    // listing_id todavía no tiene FK (la agrega la spec 008): una publicación con id se acepta.
-    const id = await openRequest(ctx.group.id, await newUserId(), {
-      source: 'publicacion',
-      listing_id: listingId,
-    });
-    assert.equal((await requestState(id)).status, 'abierta');
+    // Desde 0082 (spec 008) listing_id tiene FK a listings: una publicación inexistente falla.
+    // La solicitud con una publicación válida la cubre listings.integrity.test.ts.
+    await rejectsWith(
+      openRequest(ctx.group.id, await newUserId(), {
+        source: 'publicacion',
+        listing_id: listingId,
+      }),
+      { code: FK_VIOLATION, constraint: 'join_requests_listing_id_fkey' },
+    );
   });
 
   test('RN-010-05: opened_at y open_deadline_at son obligatorios; un solicitante inexistente falla', async () => {
