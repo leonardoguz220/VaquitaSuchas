@@ -2,10 +2,14 @@
 
 import { useCallback } from 'react';
 import {
+  cancelCharge,
   confirmCharge,
   getCharge,
+  registerManualPayment,
   rejectCharge,
+  type CancelChargeInput,
   type Charge,
+  type ManualPaymentInput,
   type RejectChargeInput,
 } from '@/services/charges';
 import type { ApiError } from '@/services/http';
@@ -22,9 +26,10 @@ export interface UseOwnerReviewActionsOptions {
 }
 
 /**
- * `POST /charges/:chargeId/confirm` y `/reject` (RF-002-10, RF-002-11) con la `version` del
- * cobro en pantalla. Ante `409 STALE_STATE` vuelve a pedir el cobro. Devuelve `null` si ya había
- * un envío en curso o llegó un `401`.
+ * Acciones del titular sobre un cobro con la `version` que tiene en pantalla: confirmar y rechazar
+ * (RF-002-10, RF-002-11), pago en efectivo y cancelar (RF-002-12, RF-002-13). Ante
+ * `409 STALE_STATE` vuelve a pedir el cobro. Devuelve `null` si ya había un envío en curso o
+ * llegó un `401`.
  */
 export function useOwnerReviewActions({ charge, onChargeChange }: UseOwnerReviewActionsOptions) {
   const chargeId = charge.id;
@@ -38,8 +43,19 @@ export function useOwnerReviewActions({ charge, onChargeChange }: UseOwnerReview
     (input: Omit<RejectChargeInput, 'version'>) => rejectCharge(chargeId, { ...input, version }),
     [chargeId, version],
   );
+  const manualRequest = useCallback(
+    (input: Omit<ManualPaymentInput, 'version'>) =>
+      registerManualPayment(chargeId, { ...input, version }),
+    [chargeId, version],
+  );
+  const cancelRequest = useCallback(
+    (input: Omit<CancelChargeInput, 'version'>) => cancelCharge(chargeId, { ...input, version }),
+    [chargeId, version],
+  );
   const confirmSubmit = useApiSubmit<void, Charge>(confirmRequest);
   const rejectSubmit = useApiSubmit(rejectRequest);
+  const manualSubmit = useApiSubmit(manualRequest);
+  const cancelSubmit = useApiSubmit(cancelRequest);
 
   const settle = useCallback(
     async (result: ApiSubmitResult<Charge> | null): Promise<OwnerReviewResult> => {
@@ -63,16 +79,30 @@ export function useOwnerReviewActions({ charge, onChargeChange }: UseOwnerReview
 
   const { submit: sendConfirm } = confirmSubmit;
   const { submit: sendReject } = rejectSubmit;
+  const { submit: sendManual } = manualSubmit;
+  const { submit: sendCancel } = cancelSubmit;
   const confirm = useCallback(async () => settle(await sendConfirm()), [settle, sendConfirm]);
   const reject = useCallback(
     async (input: Omit<RejectChargeInput, 'version'>) => settle(await sendReject(input)),
     [settle, sendReject],
   );
+  const manualPayment = useCallback(
+    async (input: Omit<ManualPaymentInput, 'version'>) => settle(await sendManual(input)),
+    [settle, sendManual],
+  );
+  const cancel = useCallback(
+    async (input: Omit<CancelChargeInput, 'version'>) => settle(await sendCancel(input)),
+    [settle, sendCancel],
+  );
 
   return {
     confirm,
     reject,
+    manualPayment,
+    cancel,
     isConfirming: confirmSubmit.isSubmitting,
     isRejecting: rejectSubmit.isSubmitting,
+    isRegistering: manualSubmit.isSubmitting,
+    isCancelling: cancelSubmit.isSubmitting,
   };
 }
