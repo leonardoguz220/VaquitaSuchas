@@ -13,6 +13,7 @@ import {
   type FormEvent,
 } from 'react';
 import { Alert, Button, Field } from '@/components/ui';
+import { useCountdown } from '@/hooks/use-countdown';
 import { useLogin } from '@/hooks/use-login';
 import {
   EMPTY_LOGIN_VALUES,
@@ -24,7 +25,12 @@ import {
   type LoginFormValues,
 } from '@/lib/auth-validation';
 import type { LoginRequest } from '@/services/auth';
-import { mapLoginError, type LoginFormError } from './login-errors';
+import {
+  LOGIN_ERROR_MESSAGES,
+  formatWaitTime,
+  mapLoginError,
+  type LoginFormError,
+} from './login-errors';
 
 export interface LoginFormProps {
   /**
@@ -61,12 +67,21 @@ export function LoginForm({ redirectTo, forgotHref }: LoginFormProps) {
   const [serverErrors, setServerErrors] = useState<LoginFieldErrors>({});
   const [formError, setFormError] = useState<LoginFormError | null>(null);
   const [focusTarget, setFocusTarget] = useState<{ target: FocusTarget }>({ target: null });
+  /** Fin de la espera tras `RATE_LIMITED` (ahora + `retryAfterSeconds`); solo en memoria. */
+  const [cooldownUntil, setCooldownUntil] = useState<string | null>(null);
+  /** Única región `aria-live`: anuncia el inicio y el fin de la espera, no cada segundo. */
+  const [announcement, setAnnouncement] = useState('');
 
   const fieldRefs = useRef<Partial<Record<LoginField, HTMLInputElement | null>>>({});
   const formErrorRef = useRef<HTMLDivElement>(null);
 
   const onSuccess = useCallback(() => router.replace(redirectTo), [router, redirectTo]);
   const { status, submit, retry, isSubmitting } = useLogin({ onSuccess });
+
+  const onCooldownEnd = useCallback(() => setAnnouncement(LOGIN_ERROR_MESSAGES.rateLimitReady), []);
+  const remaining = useCountdown(cooldownUntil, onCooldownEnd);
+  const remainingSeconds = remaining ?? 0;
+  const cooling = remainingSeconds > 0;
 
   const clientErrors = useMemo(() => validateLoginForm(values), [values]);
   const shownErrors: LoginFieldErrors = {};
@@ -99,6 +114,11 @@ export function LoginForm({ redirectTo, forgotHref }: LoginFormProps) {
       return;
     }
     const view = mapLoginError(result.error);
+    const seconds = view.formError?.retryAfterSeconds;
+    if (view.formError?.kind === 'rateLimited' && seconds !== undefined) {
+      setCooldownUntil(new Date(Date.now() + seconds * 1000).toISOString());
+      setAnnouncement(view.formError.message);
+    }
     setServerErrors(view.fieldErrors);
     setFormError(view.formError);
     const firstField = firstLoginFieldWithError(view.fieldErrors);
@@ -107,11 +127,13 @@ export function LoginForm({ redirectTo, forgotHref }: LoginFormProps) {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isSubmitting || status === 'success') return;
+    if (isSubmitting || status === 'success' || cooling) return;
 
     setTouched({ email: true, password: true });
     setServerErrors({});
     setFormError(null);
+    setCooldownUntil(null);
+    setAnnouncement('');
 
     const firstInvalid = firstLoginFieldWithError(clientErrors);
     if (firstInvalid) {
@@ -135,20 +157,41 @@ export function LoginForm({ redirectTo, forgotHref }: LoginFormProps) {
       aria-busy={busy || undefined}
       className="flex flex-col gap-5"
     >
+      <p aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
+
       {formError && (
         <div ref={formErrorRef} tabIndex={-1} className="rounded-field focus:outline-none">
-          <Alert
-            variant="error"
-            action={
-              formError.kind === 'connection' ? (
-                <Button variant="secondary" onClick={onRetry} loading={isSubmitting}>
-                  Reintentar
-                </Button>
-              ) : undefined
-            }
-          >
-            {formError.message}
-          </Alert>
+          {formError.kind === 'rateLimited' ? (
+            // role="presentation" evita que el aviso (role="alert") anuncie cada segundo.
+            <Alert variant="error" role="presentation">
+              {cooling ? (
+                <>
+                  Hiciste demasiados intentos. Espera{' '}
+                  <span role="timer" aria-live="off" className="font-bold tabular-nums">
+                    {formatWaitTime(remainingSeconds)}
+                  </span>{' '}
+                  para volver a intentarlo.
+                </>
+              ) : (
+                LOGIN_ERROR_MESSAGES.rateLimitReady
+              )}
+            </Alert>
+          ) : (
+            <Alert
+              variant="error"
+              action={
+                formError.kind === 'connection' ? (
+                  <Button variant="secondary" onClick={onRetry} loading={isSubmitting}>
+                    Reintentar
+                  </Button>
+                ) : undefined
+              }
+            >
+              {formError.message}
+            </Alert>
+          )}
         </div>
       )}
 
@@ -195,7 +238,13 @@ export function LoginForm({ redirectTo, forgotHref }: LoginFormProps) {
         </div>
       </div>
 
-      <Button type="submit" loading={busy} fullWidth>
+      <Button
+        type="submit"
+        loading={busy}
+        disabled={cooling}
+        aria-disabled={cooling || undefined}
+        fullWidth
+      >
         Ingresar
       </Button>
     </form>

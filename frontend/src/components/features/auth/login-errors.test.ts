@@ -16,16 +16,41 @@ describe('mapLoginError (contrato 003, POST /auth/login)', () => {
   });
 
   it.each([
-    [300, 'Espera 5 minutos'],
-    [61, 'Espera 2 minutos'],
-    [30, 'Espera 1 minuto e'],
-  ])('RNF-003-04: RATE_LIMITED con %i s muestra "%s"', (seconds, text) => {
-    const view = mapLoginError(
-      new ApiError(429, 'RATE_LIMITED', 'x', { retryAfterSeconds: seconds }),
-    );
-    expect(view.formError?.kind).toBe('general');
-    expect(view.formError?.message).toContain(text);
-    expect(view.formError?.message).toMatch(/^Hiciste demasiados intentos\./);
+    [90, '01:30'],
+    [300, '05:00'],
+    [9, '00:09'],
+  ])(
+    'CA-003-06 / RNF-003-04: RATE_LIMITED con %i s muestra la espera "%s" en mm:ss',
+    (seconds, text) => {
+      const view = mapLoginError(
+        new ApiError(429, 'RATE_LIMITED', 'x', { retryAfterSeconds: seconds }),
+      );
+      expect(view.formError).toEqual({
+        kind: 'rateLimited',
+        message: `Hiciste demasiados intentos. Espera ${text} para volver a intentarlo.`,
+        retryAfterSeconds: seconds,
+      });
+    },
+  );
+
+  it.each([0, -5, Number.NaN, Number.POSITIVE_INFINITY, '90'])(
+    'CA-003-06: RATE_LIMITED con retryAfterSeconds inválido (%s) no da cuenta regresiva',
+    (value) => {
+      const view = mapLoginError(
+        new ApiError(429, 'RATE_LIMITED', 'x', { retryAfterSeconds: value as number }),
+      );
+      expect(view.formError).toEqual({
+        kind: 'general',
+        message: 'Hiciste demasiados intentos. Espera unos minutos e inténtalo de nuevo.',
+      });
+    },
+  );
+
+  it('CA-003-06: RATE_LIMITED con fracción de segundo redondea hacia arriba', () => {
+    expect(
+      mapLoginError(new ApiError(429, 'RATE_LIMITED', 'x', { retryAfterSeconds: 89.2 })).formError
+        ?.retryAfterSeconds,
+    ).toBe(90);
   });
 
   it('RNF-003-04: RATE_LIMITED sin retryAfterSeconds usa "unos minutos"', () => {
