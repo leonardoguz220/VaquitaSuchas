@@ -96,6 +96,16 @@ const toRecord = (row: ChargeRow): ChargeRecord => ({
   version: row.version,
 });
 
+export interface MyChargesFilter {
+  userId: string;
+  statuses: readonly ChargeStatus[];
+  period: string | null;
+  groupId: string | null;
+  /** Se piden `limit + 1` filas para saber si hay otra página. */
+  limit: number;
+  after: { dueAt: Date; id: string } | null;
+}
+
 /** Columnas que acompañan a un cambio de estado; las ausentes (`undefined`) no se tocan. */
 export interface ChargeStatusPatch {
   /** Se fija con la primera subida y no cambia después (RN-002-08). */
@@ -207,6 +217,37 @@ export class ChargesRepository {
         WHERE user_id = $1 AND (cardinality($2::text[]) = 0 OR status = ANY($2::text[]))
         ORDER BY due_at DESC, id`,
       [userId, [...statuses]],
+    );
+    return result.rows.map(toRecord);
+  }
+
+  /**
+   * "Mis cobros" (RF-002-15, CA-002-32): los de la persona, `due_at` descendente con desempate por
+   * `id`. De un grupo que ya dejó solo se ven los `atrasado` y `en_revision` (RN-002-11).
+   */
+  async listMine(q: Queryable, filter: MyChargesFilter): Promise<ChargeRecord[]> {
+    const result = await q.query<ChargeRow>(
+      `SELECT ${COLUMNS} FROM charges
+        WHERE user_id = $1
+          AND (cardinality($2::text[]) = 0 OR status = ANY($2::text[]))
+          AND ($3::text IS NULL OR period = $3)
+          AND ($4::uuid IS NULL OR group_id = $4)
+          AND (status IN ('atrasado', 'en_revision')
+               OR EXISTS (SELECT 1 FROM group_members gm
+                           WHERE gm.group_id = charges.group_id AND gm.user_id = charges.user_id
+                             AND gm.left_at IS NULL))
+          AND ($5::timestamptz IS NULL OR (due_at, id) < ($5::timestamptz, $6::uuid))
+        ORDER BY due_at DESC, id DESC
+        LIMIT $7`,
+      [
+        filter.userId,
+        [...filter.statuses],
+        filter.period,
+        filter.groupId,
+        filter.after?.dueAt ?? null,
+        filter.after?.id ?? null,
+        filter.limit,
+      ],
     );
     return result.rows.map(toRecord);
   }
