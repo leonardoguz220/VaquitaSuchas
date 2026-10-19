@@ -83,3 +83,20 @@ export function lapazDayOf(iso: string | Date): string {
   const { year, month, day } = toLaPazParts(iso);
   return `${year}-${pad2(month)}-${pad2(day)}`;
 }
+
+const CALENDAR_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * Un día calendario que la API ya entrega en La Paz (`YYYY-MM-DD`, por ejemplo `nextCutDate`):
+ * `formatCalendarDayLaPaz('2026-11-15')` → `15 nov 2026`. No convierte zonas: pasarlo por
+ * `new Date` lo leería como medianoche UTC y mostraría el día anterior.
+ * Lanza `RangeError` si el texto no tiene esa forma.
+ */
+export function formatCalendarDayLaPaz(day: string): string {
+  const match = CALENDAR_DAY.exec(day);
+  const month = match ? Number(match[2]) : 0;
+  if (!match || month < 1 || month > 12) {
+    throw new RangeError('Día inválido: se esperaba YYYY-MM-DD.');
+  }
+  return `${Number(match[3])} ${MONTHS[month - 1]} ${match[1]}`;
+}

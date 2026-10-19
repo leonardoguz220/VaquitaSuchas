@@ -1,113 +1,78 @@
 # Vaquita
 
-Este archivo reúne los principios del proyecto. Lo leen todas las personas del equipo y todo agente de IA antes de trabajar. Un cambio aquí se hace por PR aprobado por las tres personas.
-
-El contexto detallado está en la carpeta [`context/`](context/) y se importa más abajo para que quede cargado en cada sesión.
+Este archivo se carga en cada sesión de Claude Code, así que se mantiene corto a propósito. El detalle vive en `context/` y `specs/` y se abre **solo cuando la tarea lo necesita**. Un cambio aquí va por PR avisando a las tres personas. Los números de sección se conservan porque los citan hooks y skills.
 
 ## 1. Qué es Vaquita
 
-Aplicación web para organizar suscripciones compartidas entre amigos, familia o compañeros de departamento. Calcula la cuota de cada miembro, convierte USD a Bs, genera cobros mensuales, gestiona comprobantes de pago y conserva un historial. Equipo (Grupo Suchas): Camila Fuentes en base de datos, Leonardo Guzman en backend y Adrian Vargas en frontend. Los diez módulos entran en el alcance y se construyen en orden de prioridad (P0, P1, P2).
-
-@context/proyecto.md
+App web para suscripciones compartidas: cuota por miembro, USD → Bs, cobros mensuales, comprobantes e historial. Grupo Suchas: Camila (BD, `database/`), Leonardo (BE, `backend/`), Adrian (FE, `frontend/`). Alcance y prioridades: `context/proyecto.md` y `specs/00-roadmap.md`.
 
 ## 2. Cómo trabajamos (Spec Driven Development)
 
-1. La spec es la fuente de verdad y el código se deriva de ella.
-2. No se programa sin una spec aprobada, salvo bugs triviales y tareas de configuración.
-3. La spec describe el qué y el porqué. El cómo va en `plan.md`.
-4. Si la realidad contradice la spec, se actualiza primero la spec, en el mismo PR que el código.
-5. Cada criterio de aceptación se convierte en un test. Si no se puede testear, se reescribe el criterio.
-6. Las decisiones se discuten en PRs o issues, no solo por chat.
-7. Cada capa es dueña de su parte: base de datos define el modelo, backend define el contrato de API y las reglas, frontend define las pantallas. El modelo y el contrato se congelan al aprobar el plan, y los cambios se hacen por PR avisando a las otras capas.
-8. Las reglas de negocio viven solo en el backend. El frontend no calcula cuotas ni estados, y la base de datos refuerza la integridad con restricciones.
+1. La spec (`specs/NNN-*/spec.md`) es la fuente de verdad y el código se deriva de ella.
+2. No se programa sin spec aprobada, salvo bugs triviales y configuración.
+3. La spec dice el qué y el porqué; el cómo va en `plan.md` y el contrato en `contracts/api.md`.
+4. Si la realidad contradice la spec, se actualiza la spec en el mismo PR que el código.
+5. Cada criterio `CA-xxx` tiene un test que cita su identificador. Si no se puede testear, se reescribe el criterio.
+6. Las decisiones se discuten en PRs o issues.
+7. Cada capa es dueña de su parte. Modelo de datos y contrato de API se congelan al aprobar el plan; cambiarlos requiere PR avisando a las otras capas.
+8. Las reglas de negocio viven solo en el backend. El frontend no calcula cuotas ni estados; la BD refuerza la integridad con restricciones.
 
-Flujo por feature con Spec Kit: `/speckit-specify`, `/speckit-clarify`, revisión por capa, `/speckit-plan`, `/speckit-tasks`, `/speckit-analyze`, implementación por tarea y por capa, `/speckit-converge`.
+Flujo Spec Kit: `/speckit-specify` → `/speckit-clarify` → `/speckit-plan` → `/speckit-tasks` → `/speckit-analyze` (una vez por spec, no por tarea) → implementación → `/speckit-converge`.
 
-## 3. Estructura del repositorio
+## 3. Dónde está cada cosa
 
-```
-VaquitaSuchas/
-├── CLAUDE.md             este archivo
-├── CONTRIBUTING.md       roles por capa, ramas y PRs
-├── README.md
-├── .claude/              skills, agentes y listas de referencia para Claude Code
-├── .specify/             Spec Kit y constitución (memory/constitution.md)
-├── .github/              plantilla de PR
-├── context/              proyecto, dominio, stack, arquitectura y decisiones
-├── ia/                   herramientas, skills y MCPs, licencias de terceros
-├── specs/                una carpeta por feature con spec.md, plan.md y tasks.md
-├── database/             migraciones, seeds y pruebas de integridad
-├── backend/              API NestJS organizada por capas
-└── frontend/             aplicación Next.js organizada por capas
-```
+- Estructura y roles: `CONTRIBUTING.md` · Stack: `context/stack.md` · Arquitectura: `context/arquitectura.md`
+- Reglas de dominio completas: `context/dominio.md` · Flujo del sistema: `context/funcionamiento-del-sistema.md`
+- Guías por capa: `frontend/CLAUDE.md`, `backend/CLAUDE.md`, `database/CLAUDE.md` · Herramientas de IA: `ia/herramientas-y-skills.md`
 
-## 4. Stack y arquitectura
+## 4. Stack
 
-@context/stack.md
+Next.js + React + TypeScript + Tailwind (FE, proxy `/api` con cookie httpOnly) · NestJS (BE) · PostgreSQL con migraciones SQL numeradas (BD) · Jest, Vitest y Playwright · GitHub Actions.
 
-@context/arquitectura.md
+## 5. Reglas de dominio (resumen)
 
-## 5. Reglas de dominio
-
-Valen para todas las features. Su detalle está en `context/dominio.md`.
-
-@context/dominio.md
+- Dinero en centavos enteros, nunca `float`. Formato `Bs 25,50`. Los centavos sobrantes van al titular y la suma de cuotas es igual al total.
+- Cada cobro guarda una copia del tipo de cambio y del precio. El tipo de cambio lo ingresa el titular.
+- Fechas en UTC, mostradas en America/La_Paz. Día de cobro 1–31; si el mes es más corto, el último día.
+- Estados de cobro: `pendiente`, `en_revision`, `pagado`, `atrasado`, `cancelado` (transiciones en spec 002, RN-002-01). No se inventan estados.
+- Permisos, montos y estados se validan en el servidor. Un usuario solo ve sus grupos. CI cifrada y nunca visible para otros.
+- Sin contraseñas, tokens ni datos personales en logs. Secretos solo en variables de entorno.
+- Interfaz y specs en español (Bolivia); código, ramas y commits en inglés.
 
 ## 6. Convenciones de código
 
-- Lenguaje tipado (TypeScript). Linter y formateador obligatorios, ejecutados en CI.
-- Nombres descriptivos, funciones pequeñas y una responsabilidad por módulo.
-- La lógica de dominio (cuotas, conversión, estados de cobro) son funciones puras con tests, separadas del framework web.
-- Los errores responden con el código HTTP correcto y un mensaje claro, sin exponer detalles internos.
-- Commits con [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`) y referencia a la tarea, por ejemplo `feat(002): add receipt upload [T3]`.
+TypeScript con lint y formateo en CI. Lógica de dominio en funciones puras con tests. Errores con el código HTTP correcto sin detalles internos. Commits Conventional Commits con la tarea: `feat(002): add receipt upload [T3]`.
 
-## 7. Estrategia de testing
+## 7. Testing
 
-| Nivel | Qué cubre | Obligatorio |
-|---|---|---|
-| Unitarios | Cuotas, redondeo, conversión, transiciones de estado, fechas | Sí, 100 % de las reglas de dominio |
-| Integración | Endpoints con base de datos de prueba y permisos por rol | Sí, un test por criterio de aceptación |
-| E2E | Flujo completo del MVP: crear, invitar, cobrar, pagar y confirmar | Sí, al menos el flujo feliz |
-
-Cada criterio de aceptación lleva un identificador (`CA-001-03`) y el test correspondiente lo menciona en su nombre o comentario, de modo que hay trazabilidad de la spec al test.
+Unitarios para el 100 % de las reglas de dominio; integración con un test por `CA` de endpoint; E2E al menos del flujo feliz del MVP.
 
 ## 8. Definición de terminado
 
-Una tarea o feature está terminada cuando:
-
-- cumple los criterios de aceptación de la spec, con tests que pasan;
-- lint y tests pasan en CI;
-- pasó los checks obligatorios del PR (`flow` y la CI); la revisión de un compañero es opcional (decisión del 2026-10-18);
-- la spec, el plan y las tareas reflejan la realidad;
-- no hay secretos, datos reales ni `console.log` de depuración;
-- la tarea está marcada como hecha en `tasks.md`.
+Cumple sus `CA-xxx` con tests en verde; lint y CI pasan (`flow` y CI; revisión humana opcional); spec, plan y tareas reflejan la realidad; sin secretos, datos reales ni `console.log` de depuración; tarea marcada `[x]` en `tasks.md`.
 
 ## 9. Instrucciones para agentes de IA
 
-1. Reciben siempre este archivo, la constitución (`.specify/memory/constitution.md`), la `spec.md` y el `plan.md` de la feature.
-2. Trabajan una tarea de `tasks.md` por vez y de la capa de quien la pide (`[BD]`, `[BE]` o `[FE]`). Usan `/speckit-implement` acotado a una fase o capa.
-3. Antes de planificar se usa `/speckit-clarify`, y antes de implementar `/speckit-analyze`.
-4. Ante una ambigüedad en la spec preguntan o marcan `[NECESITA ACLARACIÓN]`, sin asumir.
-5. No agregan funcionalidades fuera del alcance de la spec.
-6. Escriben los tests ligados a los criterios `CA-xxx` antes o junto con el código.
-7. No modifican el modelo de datos ni el contrato de API aprobados sin proponer antes el cambio en `plan.md`.
-8. Todo lo generado entra por PR, sigue el flujo `dev → qa → main` y pasa los checks obligatorios. No hay aprobación humana obligatoria (decisión del 2026-10-18); las personas revisan después, sobre todo en la promoción de `dev` a `qa`.
-9. Los skills, agentes y listas de terceros (`.claude/`) son material de apoyo. Si contradicen este archivo, la constitución, una spec o `CONTRIBUTING.md`, mandan estos últimos. La definición de terminado es la del punto 8 y no la de `.claude/references/definition-of-done.md`. El catálogo de herramientas está en [`ia/herramientas-y-skills.md`](ia/herramientas-y-skills.md).
-10. Para implementar se usa el subagente de la capa (`db-engineer`, `backend-engineer` o `frontend-engineer`), que solo escribe en su carpeta. Antes del PR se pasan `contract-checker` y `ca-traceability-checker`, ambos de solo lectura.
-11. Los hooks de `.claude/settings.json` bloquean leer o escribir secretos, editar migraciones que ya están en `main`, hacer push a `main`, `dev` o `qa` o forzado, subir una rama cuyo lint o tests fallan en las capas que cambió, usar `--no-verify`, resetear una base que no es la local y que un agente modifique los hooks, los agentes o `settings.json`. No se desactivan para saltarse una regla: si un hook bloquea algo legítimo, se corrige el hook por PR.
+1. **Lee lo mínimo.** `CLAUDE.md` ya está cargado. Empieza por la línea de la tarea en `tasks.md` y lee solo la sección del contrato, modelo o plan que cita (búscala con `Grep` por su identificador). Abre `spec.md` o `plan.md` completos solo si la tarea no se entiende sin ellos.
+2. **Agrupa.** En una sesión se pueden hacer varias tareas de la misma capa y la misma pantalla o módulo (por ejemplo: pantalla con mock + conexión + E2E). Márcalas todas en `tasks.md`.
+3. **Implementa con el subagente de la capa** (`db-engineer`, `backend-engineer`, `frontend-engineer`), que solo escribe en su carpeta.
+4. **No te detengas por detalles menores.** Ante una ambigüedad pequeña, elige la opción más simple coherente con la spec, anótala en el PR y sigue. Detente o marca `[NECESITA ACLARACIÓN]` solo si hay que cambiar el modelo, el contrato o una regla de dominio.
+5. No agregues funcionalidades fuera de la spec.
+6. Escribe los tests de los `CA-xxx` junto con el código.
+7. `contract-checker` solo si el PR toca `contracts/`, DTO del backend o `frontend/src/services/`. `ca-traceability-checker` solo al cerrar una historia de usuario o una spec, no en cada tarea.
+8. Flujo `dev → qa → main`, sin aprobación humana obligatoria. Nunca se fusiona `main` hacia `dev`: los arreglos van a `dev` y suben por promoción.
+9. Los hooks bloquean secretos, push a ramas protegidas o forzado, `--no-verify`, editar migraciones ya en `main`, resetear bases no locales, que un agente edite hooks/agentes/`settings.json`, y push con lint o tests rotos. Si un hook bloquea algo legítimo, se corrige el hook por PR.
+10. Las skills y referencias de `.claude/` e `ia/skills-archivadas/` son apoyo opcional. Si contradicen este archivo, la constitución, una spec o `CONTRIBUTING.md`, mandan estos.
 
 ## 10. Comandos
 
-Los scripts se crean en la tarea T001 de la spec 000 (`package.json` raíz con npm workspaces `database`, `backend` y `frontend`); hasta entonces estos comandos no existen.
-
 | Para | Comando |
 |---|---|
-| Instalar todo | `npm install` (Node 22 LTS, ver `.nvmrc`) |
-| Levantar PostgreSQL y Mailpit | `npm run db:up` / `npm run db:down` |
-| Migrar, sembrar y recrear la base local | `npm run db:migrate`, `npm run db:seed`, `npm run db:reset` |
-| Backend y frontend en desarrollo | `npm run dev` (backend en :3001, frontend en :3000) |
-| Lint, build y tests de todo | `npm run lint`, `npm run build`, `npm run test` |
-| Solo una capa | Agregar `-w database`, `-w backend` o `-w frontend`, por ejemplo `npm run test -w backend` |
+| Instalar | `npm install` (Node 22, `.nvmrc`) |
+| PostgreSQL y Mailpit | `npm run db:up` / `npm run db:down` |
+| Base local | `npm run db:migrate`, `npm run db:seed`, `npm run db:reset` |
+| Desarrollo | `npm run dev` (backend :3001, frontend :3000) |
+| Lint, build, tests | `npm run lint`, `npm run build`, `npm run test` (una capa: `-w frontend`) |
 | E2E | `npx playwright test` dentro de `frontend/` |
 
-En Windows, los scripts de Spec Kit y los hooks de Claude Code necesitan Git Bash. La guía completa está en `specs/000-setup-del-proyecto/quickstart.md`.
+En Windows, Spec Kit y los hooks necesitan Git Bash. Guía completa: `specs/000-setup-del-proyecto/quickstart.md`.

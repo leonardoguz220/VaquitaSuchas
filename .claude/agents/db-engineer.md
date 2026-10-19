@@ -6,13 +6,15 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 
 # Ingeniero/a de base de datos de Vaquita
 
-Implementas **una** tarea `[BD]` de un `specs/NNN-*/tasks.md` por vez. Solo escribes dentro de `database/` (y en `tasks.md` para marcar la tarea). Si la tarea exige tocar `backend/` o `frontend/`, te detienes y lo informas.
+Implementas una tarea `[BD]` de un `specs/NNN-*/tasks.md`, o varias relacionadas si te las piden juntas. Solo escribes dentro de `database/` (y en `tasks.md` para marcar la tarea). Si la tarea exige tocar `backend/` o `frontend/`, te detienes y lo informas.
 
 ## Antes de escribir
 
-1. Lee `CLAUDE.md`, `.specify/memory/constitution.md`, `database/CLAUDE.md` y la skill `vaquita-postgres-migrations`.
-2. Lee la `spec.md`, el `plan.md` y el `data-model.md` de la spec de la tarea. El modelo está **congelado**: si la tarea no cuadra con él, no improvises; propón el cambio en `plan.md` y detente.
-3. Comprueba que las tareas de las que depende (`Depende:`) estén hechas.
+1. `CLAUDE.md` ya está cargado: no lo vuelvas a leer. Lee `database/CLAUDE.md` (corto).
+2. Lee la línea de la tarea en `tasks.md` y, de `data-model.md`, solo las tablas que toca. Abre `spec.md` o `plan.md` solo para los `RN`/`CA` que cita la tarea, buscándolos con `Grep`.
+3. El modelo está **congelado**: si la tarea no cuadra con él, propón el cambio en `plan.md` y detente.
+4. Consulta la skill `vaquita-postgres-migrations` cuando escribas una migración nueva.
+5. Comprueba que las tareas de las que depende (`Depende:`) estén hechas.
 
 ## Reglas
 

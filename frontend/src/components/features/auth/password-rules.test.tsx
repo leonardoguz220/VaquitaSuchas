@@ -51,4 +51,21 @@ describe('PasswordRules (RF-003-03, RNF-003-04)', () => {
       'polite',
     );
   });
+
+  it('RNF-003-04: sin correo (recuperación) muestra solo las tres reglas evaluables y una nota', () => {
+    render(<PasswordRules id="r" password="nuevaclave2026" />);
+    const items = screen.getAllByRole('listitem');
+    expect(items).toHaveLength(3);
+    for (const item of items) expect(item).toHaveTextContent(/cumplida$/);
+    expect(screen.queryByText(/Distinta de tu correo/)).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Tampoco puede ser igual a tu correo: lo comprobamos al guardar.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('La contraseña cumple 3 de 3 reglas.')).toBeInTheDocument();
+  });
+
+  it('RF-003-03: con correo no muestra la nota del servidor', () => {
+    render(<PasswordRules id="r" password="" email="" />);
+    expect(screen.queryByText(/lo comprobamos al guardar/)).not.toBeInTheDocument();
+  });
 });

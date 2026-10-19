@@ -20,7 +20,7 @@ jobs:
   enable:
     name: Activar auto-merge
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 40
     # Solo PR de ramas del propio repositorio y que no estén en borrador.
     if: github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
     steps:
@@ -29,6 +29,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           BASE: ${{ github.base_ref }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          REPO: ${{ github.repository }}
         run: |
           if [ "$BASE" = "dev" ]; then METHOD="--squash"; else METHOD="--merge"; fi
-          gh pr merge --auto "$METHOD" "$PR_URL"
+          if gh pr merge --auto "$METHOD" "$PR_URL"; then exit 0; fi
+          # GitHub no deja activar auto-merge si los checks obligatorios ya pasaron
+          # ("clean" o "unstable status"). En ese caso se esperan los demás workflows
+          # del commit (CI, flow...) y se fusiona solo si ninguno falló.
+          for i in $(seq 1 70); do
+            sleep 30
+            RUNS=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=50" \
+              --jq '[.workflow_runs[] | select(.name != "Auto merge")]')
+            PENDING=$(echo "$RUNS" | jq '[.[] | select(.status != "completed")] | length')
+            FAILED=$(echo "$RUNS" | jq '[.[] | select(.status == "completed" and (.conclusion | IN("success","skipped","neutral") | not))] | length')
+            if [ "$FAILED" -gt 0 ]; then echo "Hay workflows fallidos; no fusiono."; exit 1; fi
+            if [ "$PENDING" -eq 0 ]; then gh pr merge "$METHOD" "$PR_URL"; exit $?; fi
+          done
+          echo "Los checks no terminaron a tiempo."; exit 1

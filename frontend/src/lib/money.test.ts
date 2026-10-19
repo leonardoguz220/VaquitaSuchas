@@ -1,4 +1,4 @@
-import { formatBs, formatUsd, parse, parseBsToCents } from './money';
+import { formatAmountInput, formatBs, formatUsd, parse, parseBsToCents } from './money';
 
 describe('formatBs (RF-000-17)', () => {
   it('CA-000-11 formatea 250050 centavos como Bs 2.500,50', () => {
@@ -106,5 +106,13 @@ describe('parseBsToCents', () => {
 
   it('RF-000-17 exporta parse como alias de parseBsToCents (plan §6)', () => {
     expect(parse).toBe(parseBsToCents);
+  });
+});
+
+describe('formatAmountInput (RF-001-05)', () => {
+  it('propone el precio sin prefijo y en un formato que parseBsToCents vuelve a leer', () => {
+    expect(formatAmountInput(1466)).toBe('14,66');
+    expect(formatAmountInput(146600)).toBe('1.466,00');
+    expect(parseBsToCents(formatAmountInput(146600))).toBe(146600);
   });
 });

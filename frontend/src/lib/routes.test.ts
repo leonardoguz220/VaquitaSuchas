@@ -7,6 +7,8 @@ import {
   buildLoginRedirect,
   isPublicPath,
   isTelegramDevMode,
+  resolvePostLoginPath,
+  safeNextPath,
 } from './routes';
 
 describe('routes (RF-000-15, RF-000-16)', () => {
@@ -98,5 +100,72 @@ describe('buildAuthLink (plan 003 §6)', () => {
 
   it('RF-003-01: con valores repetidos toma solo el primero', () => {
     expect(buildAuthLink('/ingresar', { codigo: ['A1', 'B2'] })).toBe('/ingresar?codigo=A1');
+  });
+});
+
+describe('safeNextPath (spec 003 T029, redirección abierta)', () => {
+  it.each(['/grupos', '/grupos/1?tab=cobros', '/unirse?codigo=AB12CD34', '/', '/a/b#c'])(
+    'RF-003-08: acepta la ruta interna %s',
+    (path) => {
+      expect(safeNextPath(path)).toBe(path);
+    },
+  );
+
+  it.each([
+    '//evil.com',
+    '/\\evil.com',
+    '\\\\evil.com',
+    '/grupos\\..\\..\\evil.com',
+    'https://evil.com',
+    'http://evil.com/grupos',
+    'javascript:alert(1)',
+    '%2F%2Fevil.com',
+    '/\t/evil.com',
+    '/\n/evil.com',
+    ' /grupos',
+    'grupos',
+    '',
+  ])('RF-003-08: rechaza el destino inseguro %j', (value) => {
+    expect(safeNextPath(value)).toBeNull();
+  });
+
+  it.each(['/api/auth/me', '/api', '/ingresar', '/registro/verificar', '/recuperar?x=1'])(
+    'RF-003-08: rechaza volver al proxy /api o a una pantalla pública: %s',
+    (value) => {
+      expect(safeNextPath(value)).toBeNull();
+    },
+  );
+
+  it('RF-003-08: sin valor devuelve null y con varios usa el primero', () => {
+    expect(safeNextPath(undefined)).toBeNull();
+    expect(safeNextPath(['/grupos', '//evil.com'])).toBe('/grupos');
+    expect(safeNextPath(['//evil.com', '/grupos'])).toBeNull();
+  });
+});
+
+describe('resolvePostLoginPath (spec 003 T029)', () => {
+  it('RF-003-08: con next seguro vuelve a esa ruta, aunque venga codigo', () => {
+    expect(resolvePostLoginPath({ next: '/grupos/1', codigo: 'AB12CD34' })).toBe('/grupos/1');
+  });
+
+  it('RF-003-08: con next inseguro lo ignora y va a la raíz', () => {
+    expect(resolvePostLoginPath({ next: '//evil.com' })).toBe('/');
+    expect(resolvePostLoginPath({ next: 'https://evil.com' })).toBe('/');
+  });
+
+  it('RF-003-08: con codigo y sin next va a /unirse?codigo= (plan 010 §6)', () => {
+    expect(resolvePostLoginPath({ codigo: 'AB12CD34' })).toBe('/unirse?codigo=AB12CD34');
+    expect(resolvePostLoginPath({ codigo: 'A&B' })).toBe('/unirse?codigo=A%26B');
+  });
+
+  it('RF-003-08: con next inseguro y codigo va a /unirse', () => {
+    expect(resolvePostLoginPath({ next: '//evil.com', codigo: 'AB12CD34' })).toBe(
+      '/unirse?codigo=AB12CD34',
+    );
+  });
+
+  it('RF-003-08: sin parámetros va a la raíz, que redirige según la sesión', () => {
+    expect(resolvePostLoginPath()).toBe('/');
+    expect(resolvePostLoginPath({ codigo: '  ' })).toBe('/');
   });
 });

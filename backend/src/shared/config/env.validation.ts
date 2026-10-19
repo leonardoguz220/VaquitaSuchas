@@ -12,6 +12,7 @@ import {
   validateSync,
   type ValidationError,
 } from 'class-validator';
+import { FRONTEND_ORIGIN_MESSAGE, FRONTEND_ORIGIN_PATTERN } from '../http/frontend-origin.js';
 
 // Validación de las variables de entorno al arrancar (RF-000-08, CA-000-05).
 // Los mensajes nombran las variables pero nunca imprimen sus valores: pueden ser secretos.
@@ -20,6 +21,7 @@ const NODE_ENVS = ['development', 'test', 'production'] as const;
 const MAIL_MODES = ['dev', 'prod'] as const;
 const TELEGRAM_MODES = ['dev', 'prod'] as const;
 const STORAGE_DRIVERS = ['local', 'supabase'] as const;
+const MAIL_PROVIDERS = ['resend', 'brevo'] as const;
 
 const MIN_PORT = 1;
 const MAX_PORT = 65535;
@@ -49,12 +51,17 @@ function oneOf(values: readonly string[]): string {
 }
 
 const isMailProd = (env: EnvVars): boolean => env.MAIL_MODE === 'prod';
+// Resend es el proveedor por omisión: solo MAIL_PROVIDER=brevo cambia la clave que se exige.
+const isResend = (env: EnvVars): boolean => isMailProd(env) && env.MAIL_PROVIDER !== 'brevo';
+const isBrevo = (env: EnvVars): boolean => isMailProd(env) && env.MAIL_PROVIDER === 'brevo';
 const isTelegramProd = (env: EnvVars): boolean => env.TELEGRAM_MODE === 'prod';
 const isSupabase = (env: EnvVars): boolean => env.STORAGE_DRIVER === 'supabase';
 
 /** Qué modo vuelve obligatoria cada variable condicional, para el mensaje de «falta». */
 const REQUIRED_WHEN: Readonly<Record<string, string>> = {
-  RESEND_API_KEY: 'MAIL_MODE=prod',
+  RESEND_API_KEY: 'MAIL_MODE=prod y MAIL_PROVIDER=resend',
+  BREVO_API_KEY: 'MAIL_MODE=prod y MAIL_PROVIDER=brevo',
+  MAIL_FROM: 'MAIL_MODE=prod',
   TELEGRAM_BOT_TOKEN: 'TELEGRAM_MODE=prod',
   TELEGRAM_WEBHOOK_SECRET: 'TELEGRAM_MODE=prod',
   SUPABASE_URL: 'STORAGE_DRIVER=supabase',
@@ -112,12 +119,44 @@ export class EnvVars {
   @IsIn(STORAGE_DRIVERS, { message: oneOf(STORAGE_DRIVERS) })
   STORAGE_DRIVER!: string;
 
+  // --- Opcional: origen del frontend permitido por CORS (RF-000-10) ---
+  // Sin ella CORS queda cerrado del todo: el navegador no llama al backend, lo hace el proxy /api.
+  @Transform(blankToUndefined)
+  @ValidateIf((env: EnvVars) => env.FRONTEND_ORIGIN !== undefined)
+  @Matches(FRONTEND_ORIGIN_PATTERN, { message: FRONTEND_ORIGIN_MESSAGE })
+  FRONTEND_ORIGIN?: string;
+
+  // --- Opcionales del correo (RF-000-12): Mailpit en dev y proveedor en prod ---
+  @Transform(portToNumber)
+  @ValidateIf((env: EnvVars) => env.SMTP_PORT !== undefined)
+  @IsInt({ message: 'debe ser un número entero' })
+  @Min(MIN_PORT, { message: `debe estar entre ${MIN_PORT} y ${MAX_PORT}` })
+  @Max(MAX_PORT, { message: `debe estar entre ${MIN_PORT} y ${MAX_PORT}` })
+  SMTP_PORT?: number;
+
+  @Transform(blankToUndefined)
+  @ValidateIf((env: EnvVars) => env.MAIL_PROVIDER !== undefined)
+  @IsIn(MAIL_PROVIDERS, { message: oneOf(MAIL_PROVIDERS) })
+  MAIL_PROVIDER?: string;
+
   // --- Solo MAIL_MODE=prod ---
+  @Transform(blankToUndefined)
+  @ValidateIf(isResend)
+  @IsString()
+  @IsNotEmpty()
+  RESEND_API_KEY?: string;
+
+  @Transform(blankToUndefined)
+  @ValidateIf(isBrevo)
+  @IsString()
+  @IsNotEmpty()
+  BREVO_API_KEY?: string;
+
   @Transform(blankToUndefined)
   @ValidateIf(isMailProd)
   @IsString()
   @IsNotEmpty()
-  RESEND_API_KEY?: string;
+  MAIL_FROM?: string;
 
   // --- Solo TELEGRAM_MODE=prod ---
   @Transform(blankToUndefined)
