@@ -52,9 +52,9 @@ Detalle en [`data-model.md`](data-model.md): `users`, `phone_verification_tokens
 
 Seed: ningún usuario. El administrador de desarrollo lo crea `npm run seed:admin -w backend` (§5).
 
-### Propuesta de cambio al modelo (pendiente de aprobación de las tres capas, 2026-10-18)
+### Cambio al modelo: secreto de registro (aprobado 2026-10-18, PR #31; opción recomendada elegida)
 
-> Detectado por `/speckit-analyze` antes de implementar T003 (hallazgo A1, CRITICAL). Mientras no se apruebe, T003 y T020 quedan detenidas. `data-model.md` no se toca hasta que este PR se apruebe.
+> Detectado por `/speckit-analyze` antes de implementar T003 (hallazgo A1, CRITICAL). Se eligió la **opción recomendada** y ya está en `data-model.md` §1 y §4 y en las tareas T001, T002, T003 y T020. La alternativa mínima queda descartada.
 
 **Problema.** `data-model.md` §1 define en `phone_verification_tokens` el `CHECK (purpose <> 'registro' OR registration_secret_hash IS NOT NULL)`. El §5 de este plan (sondeo) y T020 marcan el secreto como canjeado **poniendo `registration_secret_hash = NULL`** en esa misma fila. La base rechazaría ese `UPDATE` (23514), y el sondeo nunca entregaría la sesión: CA-003-01 y CA-003-27 no se podrían cumplir.
 
@@ -66,7 +66,7 @@ Seed: ningún usuario. El administrador de desarrollo lo crea `npm run seed:admi
 
 | Cambio | Detalle |
 |---|---|
-| `users.registration_secret_hash text NULL UNIQUE` | SHA-256 del secreto de sondeo. Solo existe mientras `verified_at IS NULL` o mientras la sesión no se canjeó. |
+| `users.registration_secret_hash text NULL UNIQUE` | SHA-256 del secreto de sondeo. Se guarda al registrar y no se borra; deja de servir al vencer o al canjearse (`registration_secret_redeemed_at`). |
 | `users.registration_secret_expires_at timestamptz NULL` | creación + 24 h (`contracts/api.md`: `401` si venció). |
 | `users.registration_secret_redeemed_at timestamptz NULL` | Se marca al entregar el `sessionToken` una sola vez (CA-003-27). Después de eso el sondeo responde `401`. |
 | `CHECK ((registration_secret_hash IS NULL) = (registration_secret_expires_at IS NULL))` | Hash y vigencia van juntos. |
@@ -77,7 +77,9 @@ El sondeo, en una transacción, haría: buscar el usuario por el hash del secret
 
 **Alternativa mínima.** Dejar el modelo de tokens como está, agregar `phone_verification_tokens.secret_redeemed_at timestamptz NULL`, cambiar el plan y T020 para marcar esa columna en lugar de borrar el hash, y copiar el hash al token nuevo en `POST /auth/register/link` (sin `UNIQUE` en el hash, con un índice parcial `WHERE used_at IS NULL`). Cambia menos, pero duplica el secreto en cada token.
 
-**Si se aprueba:** actualizar `data-model.md` §1 y §4, las tareas T001 (pruebas nuevas: vigencia del secreto y un solo canje), T002 o T003 y T020, y avisar a frontend (el contrato no cambia).
+**Propuesta pendiente (2026-10-18, revisión de cierre del PR #42):** `phone_verification_tokens.outcome` tiene un solo valor `rechazado_duplicado`, pero `GET /auth/register/status` distingue `PHONE_ALREADY_REGISTERED` y `TELEGRAM_ALREADY_REGISTERED` (`contracts/api.md`), y `rechazado_contacto_ajeno` no tiene `code`. Opciones: (a) separar el outcome en `rechazado_celular_duplicado` y `rechazado_telegram_duplicado` (migración nueva del rango 0014–0019) y agregar un `code` para el contacto ajeno, o (b) unificar el código del contrato. Lo decide backend (dueño del contrato) con BD; hasta entonces el modelo no cambia.
+
+**Al aprobarse (hecho):** actualizar `data-model.md` §1 y §4, las tareas T001 (pruebas nuevas: vigencia del secreto y un solo canje), T002 o T003 y T020, y avisar a frontend (el contrato no cambia).
 
 ## 4. Contratos de API — _Leonardo (Backend)_
 
@@ -134,7 +136,7 @@ backend/src/modules/
 - Cualquier otro mensaje: el bot responde con una ayuda corta; nunca ejecuta acciones.
 - La deduplicación por `update_id` y la validación del secreto del webhook ya las hace la spec 000.
 
-**Sondeo (`GET /auth/register/status`)**: busca el token vigente más reciente del usuario por el hash del secreto. Si el usuario quedó verificado y el secreto no se había canjeado → emite el `sessionToken` (sin cambiar `session_version`), marca el secreto como canjeado (guardando `registration_secret_hash = NULL`) y lo devuelve **una sola vez**.
+**Sondeo (`GET /auth/register/status`)**: busca la cuenta por `users.registration_secret_hash` (vigente según `registration_secret_expires_at` y sin `registration_secret_redeemed_at`). Si el usuario quedó verificado → emite el `sessionToken` (sin cambiar `session_version`), marca `registration_secret_redeemed_at` (el hash no se borra) y lo devuelve **una sola vez**; si no, informa el estado del token más reciente de esa cuenta.
 
 **Sesión**: `SessionService.issue(user)` firma el JWT (`sub`, `sv`, `iat`, `exp`). `AuthGuard` verifica firma, `exp`, que el usuario exista, esté `activo`, `verified_at` no sea nulo y `sv` coincida; si no → `401 UNAUTHENTICATED`. `logout`, cambio de contraseña, restablecimiento y baneo/suspensión (spec 009) incrementan `session_version` en una sola sentencia `UPDATE … RETURNING`.
 

@@ -12,6 +12,7 @@ import {
   validateSync,
   type ValidationError,
 } from 'class-validator';
+import { FRONTEND_ORIGIN_MESSAGE, FRONTEND_ORIGIN_PATTERN } from '../http/frontend-origin.js';
 
 // Validación de las variables de entorno al arrancar (RF-000-08, CA-000-05).
 // Los mensajes nombran las variables pero nunca imprimen sus valores: pueden ser secretos.
@@ -111,6 +112,13 @@ export class EnvVars {
   @Transform(blankToUndefined)
   @IsIn(STORAGE_DRIVERS, { message: oneOf(STORAGE_DRIVERS) })
   STORAGE_DRIVER!: string;
+
+  // --- Opcional: origen del frontend permitido por CORS (RF-000-10) ---
+  // Sin ella CORS queda cerrado del todo: el navegador no llama al backend, lo hace el proxy /api.
+  @Transform(blankToUndefined)
+  @ValidateIf((env: EnvVars) => env.FRONTEND_ORIGIN !== undefined)
+  @Matches(FRONTEND_ORIGIN_PATTERN, { message: FRONTEND_ORIGIN_MESSAGE })
+  FRONTEND_ORIGIN?: string;
 
   // --- Solo MAIL_MODE=prod ---
   @Transform(blankToUndefined)
