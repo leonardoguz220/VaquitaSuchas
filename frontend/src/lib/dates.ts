@@ -163,3 +163,30 @@ export function formatRemaining(totalSeconds: number): string {
   if (parts.length === 1) return parts[0];
   return `${parts.slice(0, -1).join(', ')} y ${parts[parts.length - 1]}`;
 }
+
+/**
+ * Plazo corto de una solicitud de ingreso (plan 010 §6): `Faltan 3 días y 4 h`, `Faltan 5 h
+ * 20 min`, `Faltan 12 min`. Solo da formato a los segundos que entrega la cuenta regresiva.
+ */
+export function formatTimeLeft(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  if (total < 60) return 'Falta menos de 1 minuto';
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor((total % 86400) / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  if (days > 0) {
+    const daysText = `${days} ${days === 1 ? 'día' : 'días'}`;
+    return hours > 0 ? `Faltan ${daysText} y ${hours} h` : `Faltan ${daysText}`;
+  }
+  if (hours > 0) return `Faltan ${hours} h ${minutes} min`;
+  return `Faltan ${minutes} min`;
+}
+
+/** Reloj de un plazo de minutos (plan 010 §6): `12:34`, o `1:02:05` si pasa de una hora. */
+export function formatClock(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const rest = total % 60;
+  return hours > 0 ? `${hours}:${pad2(minutes)}:${pad2(rest)}` : `${pad2(minutes)}:${pad2(rest)}`;
+}

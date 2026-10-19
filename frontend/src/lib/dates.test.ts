@@ -3,7 +3,9 @@ import {
   formatDateLaPaz,
   formatDateTimeLaPaz,
   formatPeriod,
+  formatClock,
   formatRemaining,
+  formatTimeLeft,
   lapazDayOf,
   recentPeriods,
 } from './dates';
@@ -120,5 +122,26 @@ describe('formatRemaining (RF-002-09)', () => {
     expect(formatRemaining(3 * 86400 + 5 * 3600)).toBe('3 días y 5 horas');
     expect(formatRemaining(120)).toBe('2 minutos');
     expect(formatRemaining(30)).toBe('menos de 1 minuto');
+  });
+});
+
+describe('formatTimeLeft (spec 010)', () => {
+  it('RNF-010-06: da formato a los segundos que faltan, sin calcular el vencimiento', () => {
+    expect(formatTimeLeft(3 * 86400 + 4 * 3600 + 59)).toBe('Faltan 3 días y 4 h');
+    expect(formatTimeLeft(86400)).toBe('Faltan 1 día');
+    expect(formatTimeLeft(5 * 3600 + 20 * 60 + 10)).toBe('Faltan 5 h 20 min');
+    expect(formatTimeLeft(12 * 60)).toBe('Faltan 12 min');
+    expect(formatTimeLeft(59)).toBe('Falta menos de 1 minuto');
+    expect(formatTimeLeft(-5)).toBe('Falta menos de 1 minuto');
+  });
+});
+
+describe('formatClock (spec 010)', () => {
+  it('RNF-010-06: muestra mm:ss para los plazos de minutos y h:mm:ss si pasa de una hora', () => {
+    expect(formatClock(754)).toBe('12:34');
+    expect(formatClock(15 * 60)).toBe('15:00');
+    expect(formatClock(5)).toBe('00:05');
+    expect(formatClock(3725)).toBe('1:02:05');
+    expect(formatClock(-3)).toBe('00:00');
   });
 });

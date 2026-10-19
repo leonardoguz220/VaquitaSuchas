@@ -1,4 +1,7 @@
 import {
+  JOIN_PATH,
+  REQUESTS_PATH,
+  requestPath,
   DEV_TELEGRAM_PATH,
   LOGIN_PATH,
   PUBLIC_ROUTES,
@@ -167,5 +170,26 @@ describe('resolvePostLoginPath (spec 003 T029)', () => {
   it('RF-003-08: sin parámetros va a la raíz, que redirige según la sesión', () => {
     expect(resolvePostLoginPath()).toBe('/');
     expect(resolvePostLoginPath({ codigo: '  ' })).toBe('/');
+  });
+});
+
+describe('rutas de solicitudes de ingreso (spec 010 T017)', () => {
+  it('RF-010-01: /unirse, /solicitudes y el detalle exigen sesión', () => {
+    expect(JOIN_PATH).toBe('/unirse');
+    expect(REQUESTS_PATH).toBe('/solicitudes');
+    expect(isPublicPath('/unirse')).toBe(false);
+    expect(isPublicPath('/solicitudes')).toBe(false);
+    expect(isPublicPath('/solicitudes/jr1')).toBe(false);
+  });
+
+  it('RF-010-26: requestPath codifica el id', () => {
+    expect(requestPath('jr/1')).toBe('/solicitudes/jr%2F1');
+  });
+
+  it('RF-010-01: sin sesión, /unirse?codigo= vuelve a sí mismo tras ingresar', () => {
+    const login = buildLoginRedirect('/unirse', '?codigo=K7M2Q9XA');
+    expect(login).toBe('/ingresar?next=%2Funirse%3Fcodigo%3DK7M2Q9XA');
+    const next = new URLSearchParams(login.split('?')[1]).get('next') ?? undefined;
+    expect(resolvePostLoginPath({ next })).toBe('/unirse?codigo=K7M2Q9XA');
   });
 });

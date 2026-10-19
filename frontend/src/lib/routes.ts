@@ -88,6 +88,14 @@ export const RECOVER_PATH = '/recuperar';
  */
 export const JOIN_PATH = '/unirse';
 
+/** "Mis solicitudes" de ingreso (plan 010 §6). Ruta protegida. */
+export const REQUESTS_PATH = '/solicitudes';
+
+/** Detalle de una solicitud de ingreso, con su chat (plan 010 §6). Ruta protegida. */
+export function requestPath(requestId: string): string {
+  return `${REQUESTS_PATH}/${encodeURIComponent(requestId)}`;
+}
+
 /** Destino tras ingresar cuando no hay otro: la raíz redirige según la sesión (RF-000-16). */
 export const DEFAULT_AFTER_LOGIN_PATH = '/';
 
