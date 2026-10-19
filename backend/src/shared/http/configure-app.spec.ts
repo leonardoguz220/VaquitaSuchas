@@ -6,11 +6,38 @@ import { configureApp } from './configure-app.js';
 
 const ORIGIN = 'https://vaquita.example';
 
+/**
+ * Distingue helmet de cualquier otro middleware por lo que hace, no por descarte: lo ejecuta con una
+ * respuesta falsa y comprueba que fija la CSP. Un middleware ajeno queda como 'unknown' y rompe el
+ * orden esperado.
+ */
+function classify(middleware: unknown): string {
+  if (middleware === requestIdMiddleware) return 'requestId';
+  if (typeof middleware !== 'function') return 'unknown';
+
+  const headers: string[] = [];
+  const response = {
+    setHeader: (name: string) => headers.push(name.toLowerCase()),
+    removeHeader: () => undefined,
+    getHeader: () => undefined,
+  };
+  try {
+    (middleware as (req: unknown, res: unknown, next: () => void) => void)(
+      { url: '/', headers: {} },
+      response,
+      () => undefined,
+    );
+  } catch {
+    return 'unknown';
+  }
+  return headers.includes('content-security-policy') ? 'helmet' : 'unknown';
+}
+
 /** App falsa que anota en qué orden se registra cada pieza; no arranca Nest ni abre puertos. */
 function fakeApp(calls: string[]): INestApplication {
   const app = {
     use: jest.fn((middleware: unknown) => {
-      calls.push(middleware === requestIdMiddleware ? 'requestId' : 'helmet');
+      calls.push(classify(middleware));
     }),
     enableCors: jest.fn(() => {
       calls.push('cors');
@@ -76,6 +103,14 @@ describe('configureApp (RF-000-10, CA-000-07)', () => {
       configureApp(fakeApp(calls), { nodeEnv: 'production', version: '0.1.0' });
 
       expect(calls).toEqual(['requestId', 'helmet']);
+    });
+
+    it('RF-000-10: el clasificador distingue helmet de otro middleware (el orden fallaría con uno ajeno)', () => {
+      const other = (_req: unknown, _res: unknown, next: () => void): void => next();
+
+      expect(classify(other)).toBe('unknown');
+      expect(classify(requestIdMiddleware)).toBe('requestId');
+      expect(classify('no es una función')).toBe('unknown');
     });
   });
 

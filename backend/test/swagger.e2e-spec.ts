@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Pool } from 'pg';
@@ -26,6 +27,12 @@ const TEST_ENV: Record<string, string> = {
 const FRONTEND_ORIGIN = 'https://vaquita.example';
 const EVIL_ORIGIN = 'https://evil.example';
 const VERSION = '0.1.0';
+
+interface ParameterObject {
+  readonly name: string;
+  readonly in: string;
+  readonly required?: boolean;
+}
 
 interface BootOptions {
   readonly nodeEnv: string;
@@ -102,6 +109,24 @@ describe('Swagger con NODE_ENV=test', () => {
       scheme: 'bearer',
     });
     expect(doc.servers ?? []).toEqual([]);
+  });
+
+  it('RF-000-10 y RF-000-14: POST /internal/jobs/tick declara en Swagger 200, 400, 401 y 429 y el parámetro job', async () => {
+    const res = await request(app.getHttpServer()).get('/api/docs-json');
+    const doc = JSON.parse(res.text) as {
+      paths: Record<
+        string,
+        Record<string, { responses?: Record<string, unknown>; parameters?: ParameterObject[] }>
+      >;
+    };
+    const tick = doc.paths['/internal/jobs/tick']?.post;
+
+    expect(Object.keys(tick?.responses ?? {})).toEqual(
+      expect.arrayContaining(['200', '400', '401', '429']),
+    );
+    const jobParams = (tick?.parameters ?? []).filter((p) => p.name === 'job');
+    expect(jobParams).toHaveLength(1);
+    expect(jobParams[0]).toMatchObject({ in: 'query', required: false });
   });
 
   it('CA-000-07 y RF-000-10: la documentación no expone secretos, valores de entorno ni URLs internas', async () => {
@@ -374,5 +399,122 @@ describe('CORS con FRONTEND_ORIGIN (RF-000-10)', () => {
 
       expect(res.headers['access-control-allow-origin']).not.toBe('*');
     }
+  });
+});
+
+// --- Entorno real: la cadena completa que recorre main.ts, sin pasar `nodeEnv` a mano ---
+// ConfigModule.forRoot lee process.env al evaluar app.module.ts, así que aquí se fija el entorno de
+// verdad, se limpia el registro de módulos y TODO se importa de nuevo (como en app.module.spec.ts:
+// con un registro limpio, @nestjs/testing y el módulo raíz deben salir de la misma copia). Estos
+// bloques van al final porque tras `resetModules` los imports estáticos de arriba ya no coinciden
+// con los módulos recién cargados.
+
+const ORIGINAL_ENV = { ...process.env };
+
+async function bootstrapFromRealEnv(env: {
+  readonly NODE_ENV: string;
+  readonly FRONTEND_ORIGIN?: string;
+}): Promise<INestApplication> {
+  Object.assign(process.env, TEST_ENV, { NODE_ENV: env.NODE_ENV });
+  if (env.FRONTEND_ORIGIN === undefined) delete process.env['FRONTEND_ORIGIN'];
+  else process.env['FRONTEND_ORIGIN'] = env.FRONTEND_ORIGIN;
+
+  jest.resetModules();
+  const { Test: FreshTest } = await import('@nestjs/testing');
+  const { ConfigService } = await import('@nestjs/config');
+  const { AppModule } = await import('../src/app.module.js');
+  const { PG_POOL: FRESH_PG_POOL } = await import('../src/shared/db/pg-pool.js');
+  const { configureApp: freshConfigureApp } = await import('../src/shared/http/configure-app.js');
+  const { resolveHttpOptions } = await import('../src/shared/http/resolve-http-options.js');
+
+  const pool = new Pool({ connectionString: TEST_ENV.DATABASE_URL });
+  pool.on('error', () => undefined);
+  const moduleRef = await FreshTest.createTestingModule({ imports: [AppModule] })
+    .overrideProvider(FRESH_PG_POOL)
+    .useValue(pool)
+    .compile();
+  const app = moduleRef.createNestApplication();
+  // Igual que main.ts: las opciones salen del ConfigService del propio AppModule.
+  freshConfigureApp(app, resolveHttpOptions(app.get(ConfigService), VERSION));
+  await app.init();
+  return app;
+}
+
+describe('Entorno real NODE_ENV=production (CA-000-07, RF-000-10)', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    app = await bootstrapFromRealEnv({ NODE_ENV: 'production' });
+  }, 30_000);
+
+  afterAll(async () => {
+    await app?.close();
+    process.env = { ...ORIGINAL_ENV };
+  }, 15_000);
+
+  it.each([['/api/docs'], ['/api/docs-json'], ['/api/docs/swagger-ui-init.js']])(
+    'CA-000-07 y RF-000-10: con NODE_ENV=production en el entorno, GET %s responde 404',
+    async (path) => {
+      const res = await request(app.getHttpServer()).get(path);
+
+      expect(res.status).toBe(404);
+      expect(res.body.code).toBe('NOT_FOUND');
+      expect(res.text).not.toMatch(/swagger/i);
+    },
+  );
+
+  it('CA-000-07: con el entorno de producción real, la API sigue respondiendo', async () => {
+    const res = await request(app.getHttpServer()).post('/internal/jobs/tick');
+
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('Entorno real NODE_ENV=test (CA-000-07, RF-000-10)', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    app = await bootstrapFromRealEnv({ NODE_ENV: 'test' });
+  }, 30_000);
+
+  afterAll(async () => {
+    await app?.close();
+    process.env = { ...ORIGINAL_ENV };
+  }, 15_000);
+
+  it('CA-000-07 y RF-000-10: con NODE_ENV=test en el entorno, GET /api/docs responde 200', async () => {
+    const res = await request(app.getHttpServer()).get('/api/docs');
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('swagger-ui');
+  });
+
+  it('RF-000-10: sin FRONTEND_ORIGIN en el entorno, CORS queda cerrado', async () => {
+    const res = await request(app.getHttpServer()).get('/health').set('Origin', FRONTEND_ORIGIN);
+
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+});
+
+describe('Entorno real con FRONTEND_ORIGIN (RF-000-10)', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    app = await bootstrapFromRealEnv({ NODE_ENV: 'production', FRONTEND_ORIGIN });
+  }, 30_000);
+
+  afterAll(async () => {
+    await app?.close();
+    process.env = { ...ORIGINAL_ENV };
+  }, 15_000);
+
+  it('RF-000-10: con FRONTEND_ORIGIN en el entorno, solo ese origen recibe Access-Control-Allow-Origin', async () => {
+    const allowed = await request(app.getHttpServer())
+      .get('/health')
+      .set('Origin', FRONTEND_ORIGIN);
+    const evil = await request(app.getHttpServer()).get('/health').set('Origin', EVIL_ORIGIN);
+
+    expect(allowed.headers['access-control-allow-origin']).toBe(FRONTEND_ORIGIN);
+    expect(evil.headers['access-control-allow-origin']).toBeUndefined();
   });
 });
