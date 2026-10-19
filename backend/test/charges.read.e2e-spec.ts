@@ -5,7 +5,7 @@ import {
 } from '../src/modules/billing/ports/charge-facts.port.js';
 import { DbService } from '../src/shared/db/db.service.js';
 import { BillingHarness, type TestGroup } from './support/billing-harness.js';
-import { uploadReceipt } from './support/receipt-files.js';
+import { pngBytes, uploadReceipt } from './support/receipt-files.js';
 
 // Lectura de cobros (spec 002, US1, T017) contra PostgreSQL real: "Mis cobros", detalle, acciones
 // permitidas, datos de pago y los hechos que lee la reputación.
@@ -20,6 +20,15 @@ describe('Lectura de cobros', () => {
     request(harness.app.getHttpServer())
       .get(url)
       .set('Authorization', `Bearer ${harness.token(userId)}`);
+
+  /** El titular sube el QR del grupo por el endpoint real (spec 001, RF-001-20). */
+  const uploadGroupQr = async (target: TestGroup): Promise<void> => {
+    await request(harness.app.getHttpServer())
+      .put(`/groups/${target.id}/payment-info`)
+      .set('Authorization', `Bearer ${harness.token(target.ownerId)}`)
+      .attach('qr', pngBytes(), { filename: 'qr.png' })
+      .expect(200);
+  };
 
   beforeAll(async () => {
     await harness.start();
@@ -162,15 +171,7 @@ describe('Lectura de cobros', () => {
   });
 
   it('RF-002-09: el dueño recibe los datos de pago con el QR firmado mientras el cobro admite pago', async () => {
-    harness.storage.files.set('payment-qr/test.png', {
-      body: new Uint8Array([1]),
-      contentType: 'image/png',
-    });
-    await harness.pool.query(
-      `UPDATE groups SET payment_qr_key = 'payment-qr/test.png', payment_qr_mime = 'image/png'
-        WHERE id = $1`,
-      [group.id],
-    );
+    await uploadGroupQr(group);
     const chargeId = await harness.insertCharge(group, payer);
 
     const detail = await get(payer, `/charges/${chargeId}`).expect(200);
@@ -194,15 +195,7 @@ describe('Lectura de cobros', () => {
   });
 
   it('RF-002-09: si el almacén falla al firmar el QR, el detalle responde igual sin él', async () => {
-    harness.storage.files.set('payment-qr/test.png', {
-      body: new Uint8Array([1]),
-      contentType: 'image/png',
-    });
-    await harness.pool.query(
-      `UPDATE groups SET payment_qr_key = 'payment-qr/test.png', payment_qr_mime = 'image/png'
-        WHERE id = $1`,
-      [group.id],
-    );
+    await uploadGroupQr(group);
     harness.storage.failSignedUrl = true;
     const chargeId = await harness.insertCharge(group, payer);
     try {

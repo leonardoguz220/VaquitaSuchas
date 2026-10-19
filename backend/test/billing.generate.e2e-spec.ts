@@ -318,6 +318,21 @@ describe('Generación automática de cobros contra PostgreSQL real', () => {
     }
   });
 
+  it('CA-001-21: el titular no recibe ningún cobro y su cuota queda solo como referencia', async () => {
+    const group = await createGroup({
+      createdAt: '2026-09-02T16:00:00Z',
+      billingDay: 15,
+      members: 2,
+    });
+
+    await runGenerate();
+
+    const rows = await charges(group.id);
+    expect(rows.map((r) => r.user_id)).not.toContain(group.ownerId);
+    const [cycle] = await cycles(group.id);
+    expect(cycle?.owner_share_cents).toBe('3335');
+  });
+
   it('CA-002-01: publica ChargeGenerated por cada cobro dentro de la transacción', async () => {
     const group = await createGroup({
       createdAt: '2026-09-02T16:00:00Z',
