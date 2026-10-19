@@ -7,11 +7,18 @@ import {
   Param,
   Patch,
   Post,
+  Put,
+  Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiCreatedResponse,
   ApiConflictResponse,
   ApiForbiddenResponse,
@@ -28,10 +35,16 @@ import { GroupMemberGuard } from './group-member.guard.js';
 import { GroupOwnerGuard } from './group-owner.guard.js';
 import {
   CreateGroupDto,
+  ListGroupsQueryDto,
   QuoteGroupDto,
   TransferOwnershipDto,
   UpdateGroupDto,
+  UpdatePaymentInfoDto,
+  type UploadedQrFile,
 } from './groups.dto.js';
+import { MAX_PAYMENT_QR_BYTES } from '../domain/payment-qr.js';
+import { GroupViewService, type GroupPage } from '../services/group-view.service.js';
+import { PaymentInfoService, type PaymentInfoView } from '../services/payment-info.service.js';
 import { GroupsService, type HostEligibilityView } from '../services/groups.service.js';
 import { MembershipService } from '../services/membership.service.js';
 import type { GroupDetail } from '../domain/group-detail.js';
@@ -85,6 +98,77 @@ export class GroupsController {
       totalSlots: body.totalSlots,
       paymentInfoText: body.paymentInfoText ?? null,
     });
+  }
+}
+
+/** Lectura de grupos (spec 001, US3): lista y detalle de los grupos de quien consulta. */
+@ApiTags('groups')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'UNAUTHENTICATED: sin sesión válida.' })
+@UseGuards(AuthGuard)
+@Controller('groups')
+export class GroupViewController {
+  constructor(private readonly views: GroupViewService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Mis suscripciones: solo los grupos del usuario (RF-001-19)' })
+  list(
+    @Req() request: AuthenticatedRequest,
+    @Query() query: ListGroupsQueryDto,
+  ): Promise<GroupPage> {
+    return this.views.list(requireUserId(request), query);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Detalle del grupo con cuota, miembros y datos de pago (RF-001-13)' })
+  @ApiNotFoundResponse({ description: 'NOT_FOUND: el grupo no existe o no eres miembro activo.' })
+  detail(
+    @Req() request: AuthenticatedRequest,
+    @Param('id', uuidParam()) groupId: string,
+  ): Promise<GroupDetail> {
+    return this.views.detail(requireUserId(request), groupId);
+  }
+}
+
+/** Datos de pago del grupo (spec 001, RF-001-20). Solo el titular. */
+@ApiTags('groups')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'UNAUTHENTICATED: sin sesión válida.' })
+@ApiNotFoundResponse({ description: 'NOT_FOUND: el grupo no existe o no eres miembro activo.' })
+@ApiForbiddenResponse({ description: 'FORBIDDEN: no eres el titular.' })
+@UseGuards(AuthGuard, GroupOwnerGuard)
+@Controller('groups/:id/payment-info')
+export class PaymentInfoController {
+  constructor(private readonly paymentInfo: PaymentInfoService) {}
+
+  @Put()
+  // Los guardias corren antes que el interceptor: a quien no es titular no se le lee el archivo.
+  // El límite de multer corta la lectura en 2 MB (413); el servicio revisa también el tipo real.
+  @UseInterceptors(FileInterceptor('qr', { limits: { fileSize: MAX_PAYMENT_QR_BYTES, files: 1 } }))
+  @ApiOperation({ summary: 'Configurar texto y QR de pago del grupo (RF-001-20)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', maxLength: 500 },
+        qr: { type: 'string', format: 'binary', description: 'JPG o PNG, máximo 2 MB.' },
+        removeQr: { type: 'boolean' },
+      },
+    },
+  })
+  @ApiUnprocessableEntityResponse({ description: 'GROUP_CLOSED o GROUP_FROZEN.' })
+  async update(
+    @Param('id') groupId: string,
+    @Body() body: UpdatePaymentInfoDto,
+    @UploadedFile() qr: UploadedQrFile | undefined,
+  ): Promise<{ paymentInfo: PaymentInfoView }> {
+    const paymentInfo = await this.paymentInfo.update(groupId, {
+      text: body.text,
+      qrBytes: qr?.buffer,
+      removeQr: body.removeQr ?? false,
+    });
+    return { paymentInfo };
   }
 }
 

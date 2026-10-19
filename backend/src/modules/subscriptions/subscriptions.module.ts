@@ -7,14 +7,18 @@ import { GroupOwnerGuard } from './controllers/group-owner.guard.js';
 import {
   GroupAdminController,
   GroupsController,
+  GroupViewController,
   LeaveController,
   MembersController,
+  PaymentInfoController,
 } from './controllers/groups.controller.js';
 import { GroupsRepository } from './repositories/groups.repository.js';
 import { MembersRepository } from './repositories/members.repository.js';
 import { TxEventBus } from '../../shared/events/tx-event-bus.js';
 import type { UserBanned, UserUnbanned } from '../../shared/events/user-events.js';
 import { GroupsService } from './services/groups.service.js';
+import { GroupViewService } from './services/group-view.service.js';
+import { PaymentInfoService } from './services/payment-info.service.js';
 import { InviteAttemptsRepository } from './repositories/invite-attempts.repository.js';
 import { InviteCodeService } from './services/invite-code.service.js';
 import { MembershipService } from './services/membership.service.js';
@@ -25,12 +29,21 @@ import { UserEventsHandler } from './services/user-events.handler.js';
 // en AppModule) y otras specs.
 @Module({
   imports: [AuthModule, CatalogModule, AdaptersModule],
-  controllers: [GroupsController, GroupAdminController, MembersController, LeaveController],
+  controllers: [
+    GroupsController,
+    GroupViewController,
+    PaymentInfoController,
+    GroupAdminController,
+    MembersController,
+    LeaveController,
+  ],
   providers: [
     GroupsRepository,
     MembersRepository,
     InviteAttemptsRepository,
     GroupsService,
+    GroupViewService,
+    PaymentInfoService,
     MembershipService,
     InviteCodeService,
     UserEventsHandler,
@@ -41,6 +54,7 @@ import { UserEventsHandler } from './services/user-events.handler.js';
     GroupsRepository,
     MembersRepository,
     GroupsService,
+    PaymentInfoService,
     MembershipService,
     InviteCodeService,
     GroupMemberGuard,

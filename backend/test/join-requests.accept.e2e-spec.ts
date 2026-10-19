@@ -11,14 +11,16 @@ import { ChargesService } from '../src/modules/billing/services/charges.service.
 import { MembershipService } from '../src/modules/subscriptions/services/membership.service.js';
 import { JoinRequestsModule } from '../src/modules/join-requests/join-requests.module.js';
 import { RequestsRepository } from '../src/modules/join-requests/repositories/requests.repository.js';
-import { GroupsService } from '../src/modules/subscriptions/services/groups.service.js';
-import { DbService } from '../src/shared/db/db.service.js';
 import { JobRunner } from '../src/shared/jobs/job-runner.js';
 import { BillingHarness, NOW, type TestGroup } from './support/billing-harness.js';
 import { insertOwnedGroup } from './support/groups-fixtures.js';
 import { seedRequest, setClock } from './support/join-requests-fixtures.js';
 
 const PROOF_KEY = 'proofs/test.png';
+
+interface GroupMembers {
+  members: { userId: string; phone: string | null }[];
+}
 
 // Aceptación de solicitudes (spec 010 US4, T028/T029): confirmar, efectivo y la secuencia
 // atómica de research R2, contra PostgreSQL real con el almacén en memoria.
@@ -201,6 +203,11 @@ describe('Aceptación de solicitudes de ingreso', () => {
     });
 
     it('CA-010-13: el titular y el nuevo miembro se ven el celular mutuamente', async () => {
+      // Antes de ser aceptado, el solicitante no es miembro: no ve el grupo ni su celular (RN-003-03).
+      await request(harness.app.getHttpServer())
+        .get(`/groups/${group.id}`)
+        .set('Authorization', `Bearer ${harness.token(applicant)}`)
+        .expect(404);
       await confirm(group.ownerId).expect(200);
       const hostPhone = (
         await harness.pool.query<{ phone_e164: string }>(
@@ -215,16 +222,19 @@ describe('Aceptación de solicitudes de ingreso', () => {
         )
       ).rows[0]?.phone_e164;
 
-      // `GET /groups/:id` es de la spec 001 (T019, pendiente): se consulta su servicio de detalle.
-      const groups = harness.app.get(GroupsService, { strict: false });
-      const db = harness.app.get(DbService, { strict: false });
-      const asHost = await db.withTransaction((tx) => groups.detail(tx, group.id, group.ownerId));
-      const asApplicant = await db.withTransaction((tx) => groups.detail(tx, group.id, applicant));
+      // Por HTTP, con `GET /groups/:id` (spec 001, T019).
+      const detailOf = async (userId: string): Promise<GroupMembers> =>
+        (
+          await request(harness.app.getHttpServer())
+            .get(`/groups/${group.id}`)
+            .set('Authorization', `Bearer ${harness.token(userId)}`)
+            .expect(200)
+        ).body as GroupMembers;
+      const asHost = await detailOf(group.ownerId);
+      const asApplicant = await detailOf(applicant);
 
-      const phoneIn = (
-        detail: { members: { userId: string; phone: string | null }[] },
-        id: string,
-      ) => detail.members.find((m) => m.userId === id)?.phone;
+      const phoneIn = (detail: GroupMembers, id: string): string | null | undefined =>
+        detail.members.find((m) => m.userId === id)?.phone;
       expect(phoneIn(asHost, applicant)).toBe(applicantPhone);
       expect(phoneIn(asApplicant, group.ownerId)).toBe(hostPhone);
       expect(hostPhone).toBeTruthy();

@@ -111,4 +111,14 @@ describe('buildGroupDetail', () => {
     });
     expect(detail.paymentInfo).toEqual({ text: null, qrUrl: null, configured: false });
   });
+
+  it('CA-001-23: con un QR guardado sin URL firmada sigue configurado, y con URL lo muestra', () => {
+    const base = { group, members: [owner], viewerRole: 'miembro' as const, now };
+    expect(
+      buildGroupDetail({ ...base, paymentQrUrl: null, hasPaymentQr: true }).paymentInfo,
+    ).toEqual({ text: null, qrUrl: null, configured: true });
+    expect(
+      buildGroupDetail({ ...base, paymentQrUrl: 'https://x.test/qr?ttl=600' }).paymentInfo,
+    ).toEqual({ text: null, qrUrl: 'https://x.test/qr?ttl=600', configured: true });
+  });
 });
