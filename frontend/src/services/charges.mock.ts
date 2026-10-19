@@ -1,8 +1,9 @@
 /**
- * Datos simulados de la spec 002 mientras el backend no está conectado (T018; se quita en T019).
+ * Datos simulados de la spec 002 para los endpoints que aún no tienen backend (subida, confirmar,
+ * rechazar, historial del grupo y resumen). `listMyCharges` y `getCharge` ya se conectan en
+ * `charges.ts` (T019); aquí quedan solo como servidor simulado de `charges.test.ts`.
  * Los montos, estados y `allowedActions` ya vienen resueltos, como los entregaría la API: aquí no
- * se calcula nada. Filtrar por la query de `GET /me/charges` simula al servidor. Nombres,
- * montos y cuentas inventados.
+ * se calcula nada. Nombres, montos y cuentas inventados.
  */
 import { billingSummary, groupChargesPage, ownerGroupCharge } from './group-billing.mock';
 import { ApiError } from './http';

@@ -1,10 +1,12 @@
 /**
  * Cliente de cobros y pagos (`specs/002-cobros-y-pagos/contracts/api.md`). Reúne los tipos de
  * toda la spec 002 para que los reutilicen T022 (subida), T026 (confirmar y rechazar) y T037
- * (historial y resumen del grupo). Por ahora cada función responde con datos simulados de
- * `charges.mock.ts` (T018); al conectar el backend (T019) solo cambia el cuerpo por `apiRequest`.
+ * (historial y resumen del grupo). `listMyCharges`, `getCharge`, `uploadReceipt` y
+ * `getReceiptFile` llaman al backend (T019 y T023); el resto responde con datos simulados de
+ * `charges.mock.ts` hasta que su endpoint exista.
  */
 import * as mock from './charges.mock';
+import { apiRequest } from './http';
 import type { GroupCurrency, PaymentInfo } from './groups';
 
 export type ChargeStatus = 'pendiente' | 'en_revision' | 'pagado' | 'atrasado' | 'cancelado';
@@ -46,8 +48,9 @@ export interface ChargePublicEvent {
 export interface ChargeEvent extends ChargePublicEvent {
   id: string;
   fromStatus: ChargeStatus | null;
-  toStatus: ChargeStatus;
+  toStatus: ChargeStatus | null;
   reason: string | null;
+  metadata?: Record<string, unknown>;
 }
 
 export interface Receipt {
@@ -202,24 +205,61 @@ export type ChargesErrorCode =
   | 'GROUP_FROZEN'
   | 'INVALID_TRANSITION'
   | 'FILE_TOO_LARGE'
-  | 'UNSUPPORTED_FILE_TYPE';
+  | 'UNSUPPORTED_FILE_TYPE'
+  | 'STALE_STATE'
+  | 'SERVICE_UNAVAILABLE';
+
+/**
+ * Query de `GET /me/charges`: `status` se repite por cada estado (`?status=a&status=b`) y los
+ * demás filtros solo van si vienen. Sin parámetros no hay `?`.
+ */
+export function buildListMyChargesQuery(params: ListMyChargesParams): string {
+  const query = new URLSearchParams();
+  params.status?.forEach((status) => query.append('status', status));
+  if (params.period) query.set('period', params.period);
+  if (params.groupId) query.set('groupId', params.groupId);
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.cursor) query.set('cursor', params.cursor);
+  const text = query.toString();
+  return text ? `?${text}` : '';
+}
 
 /** `GET /me/charges` (RF-002-15): incluye cobros de grupos dejados si están `atrasado` o `en_revision`. */
 export function listMyCharges(
   params: ListMyChargesParams = {},
   options: ChargesRequestOptions = {},
 ): Promise<Page<MyCharge>> {
-  return mock.listMyCharges(params, options.signal);
+  return apiRequest<Page<MyCharge>>(`/api/me/charges${buildListMyChargesQuery(params)}`, {
+    signal: options.signal,
+  });
 }
 
 /** `GET /charges/:chargeId`: `403` a otro miembro del grupo, `404` a quien no pertenece. */
 export function getCharge(chargeId: string, options: ChargesRequestOptions = {}): Promise<Charge> {
-  return mock.getCharge(chargeId, options.signal);
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}`, {
+    signal: options.signal,
+  });
+}
+
+/**
+ * Arma el `multipart/form-data` del comprobante: `file`, `method`, `reference` y `version` (solo
+ * si viene). Campos y nombres según `receipts.controller.ts`.
+ */
+export function buildReceiptFormData(input: UploadReceiptInput): FormData {
+  const form = new FormData();
+  form.append('file', input.file);
+  form.append('method', input.method);
+  form.append('reference', input.reference);
+  if (input.version !== undefined) form.append('version', String(input.version));
+  return form;
 }
 
 /** `POST /charges/:chargeId/receipts` (RF-002-06 a 08), `multipart/form-data`. */
 export function uploadReceipt(chargeId: string, input: UploadReceiptInput): Promise<Charge> {
-  return mock.uploadReceipt(chargeId, input);
+  return apiRequest<Charge>(`/api/charges/${encodeURIComponent(chargeId)}/receipts`, {
+    method: 'POST',
+    body: buildReceiptFormData(input),
+  });
 }
 
 /** `GET /charges/:chargeId/receipts/:receiptId/file`: URL firmada; `410 FILE_DELETED`. */
@@ -228,7 +268,10 @@ export function getReceiptFile(
   receiptId: string,
   options: ChargesRequestOptions = {},
 ): Promise<ReceiptFile> {
-  return mock.getReceiptFile(chargeId, receiptId, options.signal);
+  return apiRequest<ReceiptFile>(
+    `/api/charges/${encodeURIComponent(chargeId)}/receipts/${encodeURIComponent(receiptId)}/file`,
+    { signal: options.signal },
+  );
 }
 
 /** `POST /charges/:chargeId/confirm` (RF-002-10): solo el titular. */

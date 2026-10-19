@@ -46,6 +46,29 @@ describe('services/http (contrato 000 A.2 y C)', () => {
     });
   });
 
+  it('RF-002-06: un FormData se envía tal cual, sin JSON.stringify ni Content-Type fijado', async () => {
+    fetchMock.mockResolvedValue(fakeResponse(201, '{"ok":true}'));
+    const form = new FormData();
+    form.append('method', 'qr');
+
+    const result = await apiRequest<{ ok: boolean }>('/api/charges/c1/receipts', {
+      method: 'POST',
+      body: form,
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledWith('/api/charges/c1/receipts', {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      body: form,
+      credentials: 'same-origin',
+      cache: 'no-store',
+    });
+    const init = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(init.body).toBe(form);
+    expect(init.headers).not.toHaveProperty('Content-Type');
+  });
+
   it('RF-000-11: una respuesta sin cuerpo (204) devuelve undefined', async () => {
     fetchMock.mockResolvedValue(fakeResponse(204, ''));
     await expect(apiRequest('/api/auth/logout', { method: 'POST' })).resolves.toBeUndefined();
