@@ -4,6 +4,7 @@ import type { JobRunsRepository } from '../../../shared/jobs/job-runs.repository
 import type { JobContext, ScheduledJob } from '../../../shared/jobs/scheduled-job.js';
 import type { GroupsRepository } from '../../subscriptions/repositories/groups.repository.js';
 import type { BillingCyclesService } from '../services/billing-cycles.service.js';
+import type { OverdueService } from '../services/overdue.service.js';
 import type { RetentionService } from '../services/retention.service.js';
 
 /**
@@ -83,5 +84,21 @@ export class BillingRetentionJob implements ScheduledJob {
       throw new Error(`billing.retention no pudo borrar ${failed} archivo(s).`);
     }
     return deleted;
+  }
+}
+
+/**
+ * `billing.overdue` (spec 002, RF-002-14, research R2): en cada tick marca `atrasado` los cobros
+ * `pendiente` vencidos de grupos activos y no congelados y retira a su dueño por mora. Es
+ * idempotente: decide por el estado de la base, no por el reloj. Devuelve cuántos cobros marcó.
+ */
+export class BillingOverdueJob implements ScheduledJob {
+  readonly name = 'billing.overdue';
+  readonly intervalSeconds = 0;
+
+  constructor(private readonly overdue: OverdueService) {}
+
+  run(ctx: JobContext): Promise<number> {
+    return this.overdue.sweep(ctx.now);
   }
 }

@@ -365,6 +365,38 @@ export class ChargesRepository {
     return result.rows.map(toRecord);
   }
 
+  /**
+   * ¿Hay cobros `pendiente` vencidos en un grupo activo y no congelado? Consulta barata por
+   * `charges_overdue_idx` que decide si hace falta abrir el barrido (research R2, R5): un grupo
+   * cerrado o congelado nunca cuenta.
+   */
+  async existsOverdueInActiveGroup(q: Queryable, now: Date, groupId: string): Promise<boolean> {
+    const result = await q.query(
+      `SELECT 1 FROM charges c JOIN groups g ON g.id = c.group_id
+        WHERE c.group_id = $2 AND c.status = 'pendiente' AND c.due_at <= $1
+          AND g.status = 'activo' AND g.frozen_at IS NULL
+        LIMIT 1`,
+      [now, groupId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Grupos activos y no congelados con cobros `pendiente` vencidos, opcionalmente de una persona. */
+  async listOverdueGroupIds(
+    q: Queryable,
+    now: Date,
+    userId: string | null = null,
+  ): Promise<string[]> {
+    const result = await q.query<{ group_id: string }>(
+      `SELECT DISTINCT c.group_id FROM charges c JOIN groups g ON g.id = c.group_id
+        WHERE c.status = 'pendiente' AND c.due_at <= $1 AND ($2::uuid IS NULL OR c.user_id = $2)
+          AND g.status = 'activo' AND g.frozen_at IS NULL
+        ORDER BY c.group_id`,
+      [now, userId],
+    );
+    return result.rows.map((row) => row.group_id);
+  }
+
   /** ¿La persona tiene algún cobro `atrasado` (deuda, spec 010)? */
   async hasOverdue(q: Queryable, userId: string): Promise<boolean> {
     const result = await q.query(

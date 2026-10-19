@@ -4,7 +4,11 @@ import { AuthModule } from '../auth/auth.module.js';
 import { CatalogModule } from '../catalog/catalog.module.js';
 import { GroupMemberGuard } from './controllers/group-member.guard.js';
 import { GroupOwnerGuard } from './controllers/group-owner.guard.js';
-import { GroupsController, MembersController } from './controllers/groups.controller.js';
+import {
+  GroupsController,
+  LeaveController,
+  MembersController,
+} from './controllers/groups.controller.js';
 import { GroupsRepository } from './repositories/groups.repository.js';
 import { MembersRepository } from './repositories/members.repository.js';
 import { GroupsService } from './services/groups.service.js';
@@ -15,7 +19,7 @@ import { MembershipService } from './services/membership.service.js';
 // en AppModule) y otras specs.
 @Module({
   imports: [AuthModule, CatalogModule, AdaptersModule],
-  controllers: [GroupsController, MembersController],
+  controllers: [GroupsController, MembersController, LeaveController],
   providers: [
     GroupsRepository,
     MembersRepository,

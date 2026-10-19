@@ -11,7 +11,7 @@ import { ChargesController } from './controllers/charges.controller.js';
 import { GroupBillingController } from './controllers/group-billing.controller.js';
 import { ReceiptsController } from './controllers/receipts.controller.js';
 import { CHARGE_FACTS_PORT } from './ports/charge-facts.port.js';
-import { BillingGenerateJob, BillingRetentionJob } from './jobs/billing-jobs.js';
+import { BillingGenerateJob, BillingOverdueJob, BillingRetentionJob } from './jobs/billing-jobs.js';
 import { ChargeFactsRepository } from './repositories/charge-facts.repository.js';
 import { ChargeReadRepository } from './repositories/charge-read.repository.js';
 import { ChargesRepository } from './repositories/charges.repository.js';
@@ -24,6 +24,7 @@ import { BillingReadService } from './services/billing-read.service.js';
 import { ChargesService } from './services/charges.service.js';
 import { ChargeAccessService } from './services/charge-access.service.js';
 import { GroupBillingService } from './services/group-billing.service.js';
+import { OverdueService } from './services/overdue.service.js';
 import { PaymentReferenceService } from './services/payment-reference.service.js';
 import { ReceiptsService } from './services/receipts.service.js';
 import { RetentionService } from './services/retention.service.js';
@@ -48,12 +49,14 @@ import { RetentionService } from './services/retention.service.js';
     ReceiptsService,
     ChargesService,
     GroupBillingService,
+    OverdueService,
     RetentionService,
   ],
   exports: [
     BillingCyclesService,
     BillingReadService,
     ChargesService,
+    OverdueService,
     PaymentReferenceService,
     CHARGE_FACTS_PORT,
   ],
@@ -67,6 +70,7 @@ export class BillingModule implements OnModuleInit {
     private readonly runs: JobRunsRepository,
     private readonly db: DbService,
     private readonly retention: RetentionService,
+    private readonly overdue: OverdueService,
   ) {}
 
   onModuleInit(): void {
@@ -80,6 +84,7 @@ export class BillingModule implements OnModuleInit {
       this.cycles.onMemberRemoved(tx, event),
     );
     this.registry.register(new BillingGenerateJob(this.groups, this.cycles, this.runs, this.db));
+    this.registry.register(new BillingOverdueJob(this.overdue));
     this.registry.register(new BillingRetentionJob(this.retention));
   }
 }
