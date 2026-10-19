@@ -82,7 +82,7 @@
 
 - [x] T032 [P] [US6] [BE] `backend/test/groups.update.e2e-spec.ts`: cambio de precio, moneda o tipo de cambio no altera cobros ni solicitudes (llevan su copia), bajar `total_slots` bajo los miembros → `SLOTS_BELOW_MEMBERS` con el mínimo, cambio de `billing_day` rige desde el siguiente corte posterior a hoy, `409 STALE_STATE` con `version` vieja, grupo cerrado o congelado rechaza — Depende: T014 · Cubre: RF-001-14, RN-001-03, CA-001-16
 - [x] T033 [US6] [BE] `GroupsService.update` y `PATCH /groups/:id` (bloqueo de la fila con `version`; rechaza si está `cerrado` o congelado; `SLOTS_BELOW_MEMBERS`; `billing_day` desde el siguiente corte; cupos ≤ máximo del plan) — Depende: T032 · Cubre: RF-001-14, RF-001-09, RN-001-03, RN-001-13
-- [ ] T034 [US6] [FE] Pestaña **Ajustes** del titular: formulario de edición con explicación previa del cambio de día de cobro, manejo de `409 STALE_STATE` (recarga y aviso) y `SLOTS_BELOW_MEMBERS` — Depende: T029, T033 · Cubre: RF-001-14
+- [x] T034 [US6] [FE] Pestaña **Ajustes** del titular: formulario de edición con explicación previa del cambio de día de cobro, manejo de `409 STALE_STATE` (recarga y aviso) y `SLOTS_BELOW_MEMBERS` — Depende: T029, T033 · Cubre: RF-001-14
 
 ## Fase 8: US7 — Transferir la titularidad o cerrar el grupo (Prioridad: P0)
 
