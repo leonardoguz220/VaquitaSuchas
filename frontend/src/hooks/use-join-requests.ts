@@ -3,10 +3,16 @@
 import { useCallback } from 'react';
 import {
   ACTIVE_JOIN_STATUSES,
+  extendJoinRequest,
   FINAL_JOIN_STATUSES,
+  getJoinRequest,
+  getPaymentQr,
   listJoinRequests,
   openJoinRequest,
+  sendPaymentData,
+  type SendPaymentDataRequest,
 } from '@/services/join-requests';
+import { useApiResource } from './use-api-resource';
 import { useApiSubmit } from './use-api-submit';
 import { usePaginatedResource } from './use-paginated-resource';
 
@@ -37,4 +43,40 @@ export function useMyJoinRequests(scope: MyRequestsScope) {
 /** Abrir una solicitud con el código de invitación (`POST /join-requests`, RF-010-01). */
 export function useOpenJoinRequest() {
   return useApiSubmit(openJoinRequest);
+}
+
+/**
+ * Detalle de una solicitud (`GET /join-requests/:id`). `403` (miembro que no participa) y `404`
+ * (ajeno, CA-010-20) llegan en `error`.
+ */
+export function useJoinRequest(requestId: string) {
+  const load = useCallback(() => getJoinRequest(requestId), [requestId]);
+  return useApiResource(load);
+}
+
+/** Enviar los datos de pago como titular (`POST /join-requests/:id/payment-data`, RF-010-11). */
+export function useSendPaymentData(requestId: string) {
+  const request = useCallback(
+    (input: SendPaymentDataRequest) => sendPaymentData(requestId, input),
+    [requestId],
+  );
+  return useApiSubmit(request);
+}
+
+/** Prorrogar el plazo de pago una vez (`POST /join-requests/:id/extend`, RF-010-28). */
+export function useExtendJoinRequest(requestId: string) {
+  const request = useCallback(
+    (input: { version?: number }) => extendJoinRequest(requestId, input),
+    [requestId],
+  );
+  return useApiSubmit(request);
+}
+
+/**
+ * URL firmada del QR de pago de la solicitud (`GET …/payment-qr`). Con `enabled = false` no la
+ * pide (la solicitud no tiene QR). `410 FILE_DELETED` llega en `error`.
+ */
+export function usePaymentQr(requestId: string, enabled: boolean) {
+  const load = useCallback(() => getPaymentQr(requestId), [requestId]);
+  return useApiResource(enabled ? load : null);
 }

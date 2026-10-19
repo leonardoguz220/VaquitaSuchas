@@ -2,6 +2,7 @@
  * Datos simulados que respetan el contrato 010 (`contracts/api.md`), solo para las pruebas.
  * Nombres, montos y fechas son inventados.
  */
+import type { UserSelf } from '../auth';
 import type { JoinRequest } from '../join-requests';
 
 /** Hora del servidor en las respuestas simuladas: 18 oct 2026, 14:41 en La Paz. */
@@ -126,3 +127,37 @@ export const acceptedRequest: JoinRequest = {
 export function joinRequest(overrides: Partial<JoinRequest> = {}): JoinRequest {
   return { ...openRequest, ...overrides };
 }
+
+function self(id: string, fullName: string, email: string): UserSelf {
+  return {
+    id,
+    fullName,
+    email,
+    ciMasked: '*****123',
+    phone: '+59171234567',
+    role: 'usuario',
+    status: 'activo',
+    lastLoginAt: '2026-10-18T13:00:00.000Z',
+    createdAt: '2026-09-01T14:00:00.000Z',
+  };
+}
+
+/** Ana, la solicitante (`GET /auth/me`). */
+export const applicantSelf: UserSelf = self('u2', 'Ana Quispe Mamani', 'ana.quispe@example.com');
+
+/** Rodrigo, el titular del grupo (`GET /auth/me`). */
+export const hostSelf: UserSelf = self('u5', 'Rodrigo Salazar Paz', 'rodrigo.salazar@example.com');
+
+/** La solicitud abierta vista por el titular: puede enviar los datos de pago o rechazar. */
+export const hostOpenRequest: JoinRequest = {
+  ...openRequest,
+  applicant: { ...openRequest.applicant, stars: null, level: 'Nuevo' },
+  allowedActions: ['sendPaymentData', 'reject', 'sendMessage'],
+};
+
+/** La solicitud esperando el pago vista por el titular: puede prorrogar, efectivo o rechazar. */
+export const hostAwaitingRequest: JoinRequest = {
+  ...awaitingPaymentRequest,
+  unreadCount: 0,
+  allowedActions: ['extend', 'cashPayment', 'reject', 'sendMessage'],
+};

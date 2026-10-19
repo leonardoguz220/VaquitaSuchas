@@ -223,3 +223,72 @@ export function openJoinRequest(code: string): Promise<JoinRequest> {
 export function listJoinRequests(params: ListJoinRequestsParams = {}): Promise<JoinRequestsPage> {
   return apiRequest<JoinRequestsPage>(`/api/join-requests${listQuery(params)}`);
 }
+
+/**
+ * `GET /join-requests/:id`: la solicitud con su línea de tiempo completa (RF-010-27). Lanza
+ * `ApiError` `403` (miembro que no participa) o `404` (ajeno), CA-010-20.
+ */
+export function getJoinRequest(requestId: string): Promise<JoinRequest> {
+  return apiRequest<JoinRequest>(`/api/join-requests/${encodeURIComponent(requestId)}`);
+}
+
+export interface SendPaymentDataRequest {
+  /** Hasta 500 caracteres; opcional. */
+  text?: string;
+  /** JPG o PNG, hasta 2 MB; opcional. */
+  qr?: File;
+  version?: number;
+}
+
+/**
+ * `POST /join-requests/:id/payment-data` (RF-010-11, RF-010-12), solo titular, con
+ * `multipart/form-data`. Sin `text` ni `qr` el backend usa los datos de pago del grupo. Devuelve
+ * la solicitud en `esperando_pago` con `quote` y el plazo de 15 minutos. Lanza `ApiError` `409
+ * INVALID_TRANSITION` / `STALE_STATE` y `422` (`ENTRY_WINDOW_CLOSED`, `NO_SLOTS_AVAILABLE`,
+ * `PAYMENT_INFO_MISSING`, `GROUP_FROZEN`).
+ */
+export function sendPaymentData(
+  requestId: string,
+  input: SendPaymentDataRequest = {},
+): Promise<JoinRequest> {
+  const form = new FormData();
+  if (input.text !== undefined) form.append('text', input.text);
+  if (input.qr) form.append('qr', input.qr);
+  if (input.version !== undefined) form.append('version', String(input.version));
+  return apiRequest<JoinRequest>(
+    `/api/join-requests/${encodeURIComponent(requestId)}/payment-data`,
+    { method: 'POST', formData: form },
+  );
+}
+
+/**
+ * `POST /join-requests/:id/extend` (RF-010-28), solo titular: 15 minutos más, una sola vez.
+ * Lanza `ApiError` `422 ALREADY_EXTENDED` o `409 INVALID_TRANSITION`.
+ * [NECESITA ACLARACIÓN] el contrato no lista cuerpo; se manda `{ version? }` como en las demás.
+ */
+export function extendJoinRequest(
+  requestId: string,
+  input: { version?: number } = {},
+): Promise<JoinRequest> {
+  return apiRequest<JoinRequest>(`/api/join-requests/${encodeURIComponent(requestId)}/extend`, {
+    method: 'POST',
+    body: input,
+  });
+}
+
+/** URL firmada de 10 minutos como máximo (`{ url, expiresAt, mime }`). */
+export interface SignedFileLink {
+  url: string;
+  expiresAt: string;
+  mime: string;
+}
+
+/**
+ * `GET /join-requests/:id/payment-qr`: el QR de pago copiado a la solicitud. Lanza `ApiError`
+ * `410 FILE_DELETED` tras la retención.
+ */
+export function getPaymentQr(requestId: string): Promise<SignedFileLink> {
+  return apiRequest<SignedFileLink>(
+    `/api/join-requests/${encodeURIComponent(requestId)}/payment-qr`,
+  );
+}

@@ -93,9 +93,9 @@ export function finalReasonText(reason: string | null): string | null {
   return reason ? (FINAL_REASON_LABEL[reason] ?? null) : null;
 }
 
-/** «★ 4,5 · Muy bueno» o «Sin calificación» (spec 007; `stars: null`). */
+/** «★ 4,5 · Muy bueno», solo el nivel («Nuevo») o «Sin calificación» (spec 007; `stars: null`). */
 export function ratingText(person: Pick<JoinRequestPerson, 'stars' | 'level'>): string {
-  if (person.stars === null) return 'Sin calificación';
+  if (person.stars === null) return person.level ?? 'Sin calificación';
   return person.level
     ? `★ ${formatDecimal(person.stars)} · ${person.level}`
     : `★ ${formatDecimal(person.stars)}`;
@@ -180,3 +180,80 @@ export const HOW_IT_WORKS = [
   'Tienes 15 minutos para pagar y subir el comprobante con su referencia.',
   'El titular confirma en hasta 60 minutos y ya eres miembro.',
 ] as const;
+
+/** Textos del detalle de una solicitud (plan 010 §6). */
+export const REQUEST_MESSAGES = {
+  stale: 'La solicitud cambió mientras la veías. Cargamos los datos actualizados.',
+  changed: 'La solicitud ya no admite esta acción. Cargamos los datos actualizados.',
+  hostOnly: 'Solo el titular del grupo puede hacer esto.',
+  applicantOnly: 'Solo quien abrió la solicitud puede hacer esto.',
+  windowEnded: 'La ventana de ingreso terminó: ya no puedes enviar datos de pago.',
+  noSlotsForPayment: 'No hay un cupo disponible: la solicitud sigue abierta.',
+  paymentInfoMissing:
+    'El grupo no tiene datos de pago configurados. Elige «Otros datos» y escríbelos o sube un QR.',
+  customPaymentEmpty: 'Escribe los datos de pago o sube un QR.',
+  paymentTextMax: 'Los datos de pago pueden tener hasta 500 caracteres.',
+  qrType: 'El QR debe ser una imagen JPG o PNG.',
+  qrSize: 'El QR pesa más de 2 MB. Elige uno más liviano.',
+  alreadyExtended: 'Ya prorrogaste el plazo una vez: no se puede prorrogar de nuevo.',
+  paymentDataSent: 'Enviaste los datos de pago. La cuota quedó fijada y el cupo reservado.',
+  extended: 'Prorrogaste el plazo de pago 15 minutos.',
+  copied: 'Copiado.',
+  copyFailed: 'No pudimos copiar. Selecciona el texto y cópialo a mano.',
+  qrDeleted: 'El QR ya no está disponible.',
+  qrFailed: 'No pudimos cargar el QR de pago.',
+  reviewForm: 'Revisa los datos e inténtalo de nuevo.',
+} as const;
+
+/** Qué hacer con un error de una acción sobre la solicitud. */
+export interface ActionErrorOutcome {
+  message: string;
+  /** `true` si hay que volver a pedir la solicitud (cambió en el servidor). */
+  refresh: boolean;
+  /** Campo del formulario al que se refiere, si aplica. */
+  field?: 'qr' | 'file' | 'reference' | 'reason' | 'text';
+}
+
+/** Elige el mensaje por `code` y estado HTTP, nunca por `message` (contrato 000 A.2). */
+export function actionErrorOutcome(error: ApiError): ActionErrorOutcome {
+  const plain = (message: string): ActionErrorOutcome => ({ message, refresh: false });
+  switch (joinErrorCode(error)) {
+    case 'STALE_STATE':
+      return { message: REQUEST_MESSAGES.stale, refresh: true };
+    case 'INVALID_TRANSITION':
+      return { message: REQUEST_MESSAGES.changed, refresh: true };
+    case 'ENTRY_WINDOW_CLOSED':
+      return { message: REQUEST_MESSAGES.windowEnded, refresh: true };
+    case 'NO_SLOTS_AVAILABLE':
+      return plain(REQUEST_MESSAGES.noSlotsForPayment);
+    case 'PAYMENT_INFO_MISSING':
+      return plain(REQUEST_MESSAGES.paymentInfoMissing);
+    case 'ALREADY_EXTENDED':
+      return { message: REQUEST_MESSAGES.alreadyExtended, refresh: true };
+    case 'GROUP_FROZEN':
+      return plain(JOIN_MESSAGES.groupFrozen);
+    case 'ACCOUNT_RESTRICTED':
+      return plain(JOIN_MESSAGES.accountRestricted);
+    case 'VALIDATION_ERROR':
+      return plain(REQUEST_MESSAGES.reviewForm);
+  }
+  if (error.statusCode === 403) return plain(REQUEST_MESSAGES.hostOnly);
+  return plain(joinErrorMessage(error));
+}
+
+/** Texto de cada evento de la línea de tiempo (RF-010-27). */
+export const JOIN_EVENT_LABEL: Record<string, string> = {
+  abierta: 'Solicitud abierta',
+  datos_pago_enviados: 'Datos de pago enviados',
+  plazo_prorrogado: 'Plazo prorrogado',
+  comprobante_subido: 'Comprobante subido',
+  confirmada: 'Ingreso confirmado',
+  efectivo_registrado: 'Pago en efectivo registrado',
+  rechazada: 'Solicitud rechazada',
+  cancelada: 'Solicitud cancelada',
+  expirada: 'Solicitud expirada',
+  recordatorio_enviado: 'Recordatorio enviado al titular',
+  reclamo_abierto: 'Reclamo abierto',
+  reclamo_respondido: 'Reclamo respondido',
+  reclamo_resuelto: 'Reclamo resuelto',
+};
