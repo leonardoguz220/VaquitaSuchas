@@ -62,3 +62,11 @@ export function parseBsToCents(text: string): number | null {
 
 /** Alias con el nombre del plan §6 (`lib/money.ts`: `formatBs`, `parse`). */
 export const parse = parseBsToCents;
+
+/**
+ * Monto en centavos como texto editable, sin prefijo: `formatAmountInput(146600)` → `1.466,00`.
+ * Sirve para proponer el precio del plan en un campo que luego lee `parseBsToCents`.
+ */
+export function formatAmountInput(cents: number): string {
+  return formatBs(cents).slice('Bs '.length);
+}

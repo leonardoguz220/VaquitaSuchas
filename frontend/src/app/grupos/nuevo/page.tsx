@@ -4,9 +4,9 @@ import { NewGroupWizard } from '@/components/features/groups/new-group-wizard';
 export const metadata: Metadata = { title: 'Crear suscripción' };
 
 /**
- * `/grupos/nuevo` (plan 001 §6; mockup `NuevoGrupoServicio.dc.html`). Ruta protegida: sin la
- * cookie de sesión `proxy.ts` redirige a `/ingresar`, y un `401` de la API hace lo mismo desde
- * los hooks. Pasos 1 y 2 de la spec 004 (T011); el paso 3 es la spec 001 (T016).
+ * `/grupos/nuevo` (plan 001 §6; mockups `NuevoGrupoServicio.dc.html` y `NuevoGrupo.dc.html`).
+ * Ruta protegida: sin la cookie de sesión `proxy.ts` redirige a `/ingresar`, y un `401` de la
+ * API hace lo mismo desde los hooks. Pasos 1 y 2 de la spec 004 (T011); el 3 de la 001 (T016).
  */
 export default function NewGroupPage() {
   return (
