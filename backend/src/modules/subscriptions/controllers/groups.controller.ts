@@ -43,6 +43,7 @@ import {
   UpdateGroupDto,
 } from './groups.dto.js';
 import { GroupsService, type HostEligibilityView } from '../services/groups.service.js';
+import { InviteCodeService } from '../services/invite-code.service.js';
 import { GroupViewService } from '../services/group-view.service.js';
 import { MAX_QR_BYTES } from '../domain/payment-info.js';
 import { PaymentInfoService, type PaymentInfoView } from '../services/payment-info.service.js';
@@ -278,5 +279,25 @@ export class PaymentInfoController {
       ...(qr && { qrBytes: qr.buffer }),
       ...(body.removeQr !== undefined && { removeQr: body.removeQr }),
     });
+  }
+}
+
+/** Regenerar el código de invitación (spec 001, US2, RF-001-08). Solo el titular. */
+@ApiTags('groups')
+@ApiBearerAuth()
+@ApiUnauthorizedResponse({ description: 'UNAUTHENTICATED: sin sesión válida.' })
+@ApiNotFoundResponse({ description: 'NOT_FOUND: el grupo no existe o no eres miembro activo.' })
+@ApiForbiddenResponse({ description: 'FORBIDDEN: no eres el titular.' })
+@UseGuards(AuthGuard, GroupOwnerGuard)
+@Controller('groups/:id/invite-code')
+export class InviteCodeController {
+  constructor(private readonly invites: InviteCodeService) {}
+
+  @Post('regenerate')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Regenerar el código; el anterior deja de servir (RF-001-08)' })
+  @ApiUnprocessableEntityResponse({ description: 'GROUP_CLOSED o GROUP_FROZEN.' })
+  regenerate(@Param('id') groupId: string): Promise<{ inviteCode: string }> {
+    return this.invites.regenerate(groupId);
   }
 }

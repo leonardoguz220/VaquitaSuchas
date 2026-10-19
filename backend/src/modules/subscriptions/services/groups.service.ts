@@ -1,7 +1,6 @@
-import { randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { Clock } from '../../../shared/clock/clock.js';
-import { DbService, type DbTransaction, type Queryable } from '../../../shared/db/db.service.js';
+import { DbService, type DbTransaction } from '../../../shared/db/db.service.js';
 import { DomainError } from '../../../shared/errors/domain-error.js';
 import { DEFAULT_MESSAGES, ErrorCode } from '../../../shared/errors/error-codes.js';
 import type { GroupCreated } from '../../../shared/events/group-events.js';
@@ -17,7 +16,6 @@ import {
   type GroupRule,
 } from '../domain/group-rules.js';
 import { applyGroupPatch, type GroupPatch } from '../domain/group-edit.js';
-import { generateInviteCode } from '../domain/invite-code.js';
 import type { Currency } from '../domain/money.js';
 import {
   HOST_ELIGIBILITY_PORT,
@@ -27,9 +25,8 @@ import {
 import { GroupsRepository, type GroupRow } from '../repositories/groups.repository.js';
 import { MembersRepository } from '../repositories/members.repository.js';
 import { assertGroupWritable, fieldsError } from './group-errors.js';
+import { InviteCodeService } from './invite-code.service.js';
 import { PaymentInfoService } from './payment-info.service.js';
-
-export const INVITE_CODE_ATTEMPTS = 5;
 
 export interface CreateGroupInput {
   catalogPlanSlug: string | null;
@@ -84,6 +81,7 @@ export class GroupsService {
     private readonly members: MembersRepository,
     private readonly catalog: CatalogService,
     private readonly paymentInfo: PaymentInfoService,
+    private readonly invites: InviteCodeService,
     @Inject(HOST_ELIGIBILITY_PORT) private readonly eligibility: HostEligibilityPort,
   ) {}
 
@@ -173,7 +171,7 @@ export class GroupsService {
         planCopy ? planCopy.plan.maxSlots : null,
       );
 
-      const inviteCode = await this.freshInviteCode(tx);
+      const inviteCode = await this.invites.generateUnique(tx);
       const individual = planCopy?.plan.individualPriceCents ?? null;
       const group = await this.groups.insert(tx, {
         ownerId: userId,
@@ -290,19 +288,6 @@ export class GroupsService {
         'El precio o los cupos están fuera de los límites permitidos.',
       );
     }
-  }
-
-  /** Código único: hasta 5 intentos ante una colisión (RF-001-06). */
-  private async freshInviteCode(q: Queryable): Promise<string> {
-    for (let attempt = 0; attempt < INVITE_CODE_ATTEMPTS; attempt++) {
-      const code = generateInviteCode((size) => randomBytes(size));
-      if (!(await this.groups.findByInviteCode(q, code))) return code;
-    }
-    throw new DomainError(
-      ErrorCode.SERVICE_UNAVAILABLE,
-      503,
-      'No pudimos generar el código de invitación. Intenta de nuevo.',
-    );
   }
 
   /** `GroupDetail` para quien consulta; la URL del QR se firma al consultar. */
