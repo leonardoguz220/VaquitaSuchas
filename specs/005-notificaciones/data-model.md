@@ -67,7 +67,7 @@ notification_deliveries
 - next_attempt_at: timestamptz (NOT NULL)
 - sent_at: timestamptz (NULL)
 - last_error: text (NULL)                          sin datos personales; CHECK char_length <= 200
-- skip_reason: text (NULL)                         'preferencia_desactivada' | 'usuario_suspendido' | 'telegram_bloqueado' | 'correo_rebotado' | 'aviso_cancelado'
+- skip_reason: text (NULL)                         'preferencia_desactivada' | 'usuario_suspendido' | 'telegram_bloqueado' | 'correo_rebotado' | 'aviso_cancelado' (sin CHECK IN: los valores los fija el backend; la base solo exige que exista cuando status = 'skipped')
 CHECK ((status = 'skipped') = (skip_reason IS NOT NULL))
 - created_at, updated_at
 UNIQUE (notification_id, channel)
@@ -117,6 +117,7 @@ El límite de 10 invitaciones por hora por titular usa `rate_limit_events` (spec
 | Dos notificaciones con la misma `dedupe_key` fallan | RNF-005-01, CA-005-10 |
 | Un envío por canal y notificación; `skipped` sin motivo falla | RF-005-17 |
 | Editar el contenido de una notificación falla; marcar `read_at` pasa | integridad |
-| Un envío `sent` no vuelve a `pending`; 5 intentos fallan | RF-005-20 |
+| Un envío `sent`, `failed` o `skipped` no vuelve a `pending` | RNF-005-01 |
+| 5 intentos fallan | RF-005-20 |
 | `link` que no empiece con `/` falla (evita enlaces externos) | RNF-005-02 |
 | Una fila de preferencias por usuario | RF-005-17 |
