@@ -89,6 +89,9 @@ describe('Generación automática de cobros contra PostgreSQL real', () => {
     DATABASE_URL: process.env.DATABASE_URL,
     JOBS_INPROCESS: process.env.JOBS_INPROCESS,
     JWT_SECRET: process.env.JWT_SECRET,
+    FINGERPRINT_KEY: process.env.FINGERPRINT_KEY,
+    CI_ENCRYPTION_KEY: process.env.CI_ENCRYPTION_KEY,
+    TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
   };
   let inspect: Pool;
   let moduleRef: TestingModule;
@@ -120,10 +123,14 @@ describe('Generación automática de cobros contra PostgreSQL real', () => {
     process.env.JOBS_INPROCESS = 'false';
     // BillingModule monta controladores con AuthGuard (lee JWT_SECRET) y usa FileStorage.
     process.env.JWT_SECRET = 'secreto-e2e-de-al-menos-treinta-y-dos-caracteres';
+    // AuthModule (spec 003) arrastra identidad y el webhook de Telegram.
+    process.env.FINGERPRINT_KEY = 'fingerprint-test-key';
+    process.env.CI_ENCRYPTION_KEY = 'ab'.repeat(32);
+    process.env.TELEGRAM_WEBHOOK_SECRET = 'webhook-secret-de-prueba';
   }, 60_000);
 
   afterAll(async () => {
-    for (const key of ['DATABASE_URL', 'JOBS_INPROCESS', 'JWT_SECRET'] as const) {
+    for (const key of Object.keys(originalEnv) as (keyof typeof originalEnv)[]) {
       if (originalEnv[key] === undefined) delete process.env[key];
       else process.env[key] = originalEnv[key];
     }

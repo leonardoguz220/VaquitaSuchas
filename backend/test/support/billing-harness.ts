@@ -138,6 +138,10 @@ export class BillingHarness {
     DATABASE_URL: process.env.DATABASE_URL,
     JOBS_INPROCESS: process.env.JOBS_INPROCESS,
     JWT_SECRET: process.env.JWT_SECRET,
+    FINGERPRINT_KEY: process.env.FINGERPRINT_KEY,
+    CI_ENCRYPTION_KEY: process.env.CI_ENCRYPTION_KEY,
+    TELEGRAM_MODE: process.env.TELEGRAM_MODE,
+    TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
   };
   private userSeq = 0;
   private groupSeq = 0;
@@ -162,6 +166,11 @@ export class BillingHarness {
     process.env.DATABASE_URL = databaseUrl;
     process.env.JOBS_INPROCESS = 'false';
     process.env.JWT_SECRET = JWT_SECRET;
+    // AuthModule (registro, spec 003) arrastra identidad y el bot de Telegram en modo dev.
+    process.env.FINGERPRINT_KEY = 'fingerprint-test-key';
+    process.env.CI_ENCRYPTION_KEY = 'ab'.repeat(32);
+    process.env.TELEGRAM_MODE = 'dev';
+    process.env.TELEGRAM_WEBHOOK_SECRET = 'webhook-secret-de-prueba';
 
     this.moduleRef = await Test.createTestingModule({
       imports: [
@@ -185,7 +194,7 @@ export class BillingHarness {
 
   async stop(): Promise<void> {
     await this.app?.close();
-    for (const key of ['DATABASE_URL', 'JOBS_INPROCESS', 'JWT_SECRET'] as const) {
+    for (const key of Object.keys(this.originalEnv) as (keyof typeof this.originalEnv)[]) {
       if (this.originalEnv[key] === undefined) delete process.env[key];
       else process.env[key] = this.originalEnv[key];
     }
