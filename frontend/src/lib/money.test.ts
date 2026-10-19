@@ -1,4 +1,4 @@
-import { formatBs, formatUsd, parse, parseBsToCents } from './money';
+import { formatBs, formatPrice, formatUsd, parse, parseBsToCents } from './money';
 
 describe('formatBs (RF-000-17)', () => {
   it('CA-000-11 formatea 250050 centavos como Bs 2.500,50', () => {
@@ -54,6 +54,13 @@ describe('formatUsd', () => {
   it('RF-000-17 rechaza montos en dólares no enteros o negativos', () => {
     expect(() => formatUsd(17.99)).toThrow(RangeError);
     expect(() => formatUsd(-1)).toThrow(RangeError);
+  });
+});
+
+describe('formatPrice (spec 004)', () => {
+  it('RF-004-05: da formato al precio en su propia moneda, sin convertirla', () => {
+    expect(formatPrice(1466, 'USD')).toBe('USD 14,66');
+    expect(formatPrice(2550, 'BS')).toBe('Bs 25,50');
   });
 });
 

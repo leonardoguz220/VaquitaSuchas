@@ -36,6 +36,17 @@ export function formatUsd(cents: number): string {
   return formatCents('USD', cents);
 }
 
+/** Moneda de un precio que entrega la API (catálogo y suscripciones). */
+export type PriceCurrency = 'USD' | 'BS';
+
+/**
+ * Da formato a un precio en su propia moneda, sin convertirla: `formatPrice(1466, 'USD')` →
+ * `USD 14,66` y `formatPrice(2550, 'BS')` → `Bs 25,50`. La conversión la hace el backend.
+ */
+export function formatPrice(cents: number, currency: PriceCurrency): string {
+  return currency === 'USD' ? formatUsd(cents) : formatBs(cents);
+}
+
 // Parte entera: sin separadores, o con punto de miles en grupos exactos de tres.
 // Parte decimal opcional: coma seguida de uno o dos dígitos.
 const BS_INPUT = /^(?:bs\s*)?(\d+|\d{1,3}(?:\.\d{3})+)(?:,(\d{1,2}))?$/i;
