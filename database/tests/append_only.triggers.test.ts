@@ -1,10 +1,12 @@
 // RF-000-07 (data-model.md §1 "Tablas de solo anexado" y §4 `append_only.triggers`): las tablas de
 // solo anexado llevan el disparador forbid_update_delete() y rechazan UPDATE y DELETE con
-// 'append-only table' (restrict_violation, 23001). Hoy la única es rate_limit_events.
+// 'append-only table' (restrict_violation, 23001). Hoy son rate_limit_events (spec 000) y
+// charge_events (spec 002, RNF-002-04).
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import pg from 'pg';
 import { migrate } from '../src/migrate.ts';
 import { createTempDatabase, queryRows, type TempDatabase } from './helpers/temp-db.ts';
 
@@ -97,7 +99,7 @@ test('RF-000-07: toda tabla con forbid_update_delete lo tiene BEFORE UPDATE OR D
   // 009), se suma aquí y en la prueba de comportamiento de abajo.
   assert.deepEqual(
     triggers.map((t) => t.table_name),
-    ['rate_limit_events'],
+    ['charge_events', 'rate_limit_events'],
   );
 
   for (const { table_name, tgtype, tgenabled } of triggers) {
@@ -108,6 +110,31 @@ test('RF-000-07: toda tabla con forbid_update_delete lo tiene BEFORE UPDATE OR D
     assert.ok(has(TRIGGER_DELETE), `${table_name}: el disparador debe cubrir DELETE`);
     assert.notEqual(tgenabled, 'D', `${table_name}: el disparador no debe estar desactivado`);
   }
+});
+
+// charge_events necesita un cobro, un ciclo y un grupo. Para esta prueba basta una fila: se inserta
+// con session_replication_role = replica SOLO en esta transacción, lo que omite las FK al insertar.
+// El UPDATE y el DELETE de la prueba siguiente corren con el rol normal: el disparador de solo
+// anexado se verifica igual. Las FK y CHECK de charge_events los cubre billing.integrity.test.ts.
+test('RNF-002-04: se inserta una fila en charge_events para la prueba de solo anexado', async () => {
+  const client = new pg.Client({ connectionString: db.connectionString });
+  await client.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query("SET LOCAL session_replication_role = 'replica'");
+    await client.query(
+      `INSERT INTO charge_events (charge_id, group_id, type, actor_kind)
+       VALUES (gen_random_uuid(), gen_random_uuid(), 'generado', 'sistema')`,
+    );
+    await client.query('COMMIT');
+  } finally {
+    await client.end();
+  }
+  const [{ count }] = (await queryRows<{ count: string }>(
+    db.connectionString,
+    'SELECT count(*) AS count FROM charge_events',
+  )) as [{ count: string }];
+  assert.equal(Number(count), 1);
 });
 
 // Los disparadores FOR EACH ROW solo se disparan si hay filas: esta prueba usa las que dejan las
