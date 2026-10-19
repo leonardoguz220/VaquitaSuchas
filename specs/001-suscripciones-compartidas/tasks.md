@@ -73,7 +73,7 @@
 **Prueba independiente:** `POST /groups/:id/leave` con cobros abiertos devuelve `HAS_OPEN_CHARGES`.
 
 - [x] T030 [US5] [BE] `MembershipService.leave` y `POST /groups/:id/leave`: `canLeave` (titular no, RN-001-08; con cobros `pendiente`, `en_revision` o `atrasado` no, vía `OpenChargesPort`), fila con `left_at` y `left_reason = 'abandono'`, publica `MemberRemoved` — Depende: T027, T026 · Cubre: RF-001-16, RN-001-08, CA-001-14, CA-001-15
-- [ ] T031 [US5] [FE] Botón **Abandonar** (miembro) con modal y el mensaje de `HAS_OPEN_CHARGES` con los cobros pendientes — Depende: T029, T030 · Cubre: RF-001-16
+- [x] T031 [US5] [FE] Botón **Abandonar** (miembro) con modal y el mensaje de `HAS_OPEN_CHARGES` con los cobros pendientes — Depende: T029, T030 · Cubre: RF-001-16
 
 ## Fase 7: US6 — Actualizar precio o tipo de cambio (Prioridad: P0)
 

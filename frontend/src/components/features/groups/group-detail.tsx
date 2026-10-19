@@ -13,6 +13,7 @@ import { GroupLoadError } from './group-load-error';
 import { groupStatusTags } from './group-labels';
 import { GroupMembersTab } from './group-members-tab';
 import { GroupSettingsTab } from './group-settings-tab';
+import { LeaveGroupPanel } from './leave-group-panel';
 import { GroupSummaryTab } from './group-summary-tab';
 import { GroupTabs, panelId, tabId, type GroupTab } from './group-tabs';
 
@@ -260,6 +261,9 @@ export function GroupDetailView({
               <GroupSettingsTab group={state.group} onGroupChange={update} />
             )}
           </div>
+          {state.group.myRole === 'miembro' &&
+            state.group.status === 'activo' &&
+            state.group.frozenReason === null && <LeaveGroupPanel group={state.group} />}
         </>
       )}
     </div>
