@@ -1,9 +1,17 @@
 import {
+  EMPTY_LOGIN_VALUES,
   EMPTY_REGISTER_VALUES,
+  EMPTY_RESET_PASSWORD_VALUES,
+  LOGIN_MESSAGES,
   REGISTER_MESSAGES,
   evaluatePasswordRules,
   firstFieldWithError,
+  firstLoginFieldWithError,
+  firstResetPasswordFieldWithError,
+  validateForgotPasswordForm,
+  validateLoginForm,
   validateRegisterForm,
+  validateResetPasswordForm,
   type RegisterFormValues,
 } from './auth-validation';
 
@@ -106,5 +114,79 @@ describe('lib/auth-validation (ayuda de UX del registro)', () => {
   it('RNF-003-04: el primer campo con error sigue el orden de la pantalla', () => {
     expect(firstFieldWithError({ acceptDataPolicy: 'x', ci: 'y' })).toBe('ci');
     expect(firstFieldWithError({})).toBeUndefined();
+  });
+});
+
+describe('lib/auth-validation (ayuda de UX del ingreso, T029)', () => {
+  it('RNF-003-04: correo y contraseña presentes no tienen errores', () => {
+    expect(validateLoginForm({ email: ' ana.quispe@gmail.com ', password: 'x' })).toEqual({});
+  });
+
+  it('RNF-003-04: vacío pide el correo y la contraseña', () => {
+    expect(validateLoginForm(EMPTY_LOGIN_VALUES)).toEqual({
+      email: LOGIN_MESSAGES.emailRequired,
+      password: LOGIN_MESSAGES.passwordRequired,
+    });
+  });
+
+  it('RNF-003-04: correo con forma inválida', () => {
+    expect(validateLoginForm({ email: 'ana@', password: 'x' }).email).toBe(
+      LOGIN_MESSAGES.emailInvalid,
+    );
+  });
+
+  it('RNF-003-02: no aplica las reglas de la contraseña nueva (lo decide el servidor)', () => {
+    expect(validateLoginForm({ email: 'ana@gmail.com', password: '123' })).toEqual({});
+  });
+
+  it('RNF-003-04: el primer campo con error sigue el orden de la pantalla', () => {
+    expect(firstLoginFieldWithError({ password: 'x', email: 'y' })).toBe('email');
+    expect(firstLoginFieldWithError({ password: 'x' })).toBe('password');
+    expect(firstLoginFieldWithError({})).toBeUndefined();
+  });
+});
+
+describe('lib/auth-validation (ayuda de UX de la recuperación, T035)', () => {
+  it('RNF-003-04: sin correo conocido solo se evalúan las tres reglas posibles', () => {
+    const rules = evaluatePasswordRules('nuevaclave2026');
+    expect(rules.map((rule) => rule.id)).toEqual(['minLength', 'letter', 'number']);
+    expect(rules.every((rule) => rule.met)).toBe(true);
+  });
+
+  it('RNF-003-04: /recuperar valida la forma del correo', () => {
+    expect(validateForgotPasswordForm({ email: '' })).toEqual({
+      email: LOGIN_MESSAGES.emailRequired,
+    });
+    expect(validateForgotPasswordForm({ email: 'ana@' })).toEqual({
+      email: LOGIN_MESSAGES.emailInvalid,
+    });
+    expect(validateForgotPasswordForm({ email: ' ana.quispe@gmail.com ' })).toEqual({});
+  });
+
+  it('RNF-003-04: una contraseña nueva válida y confirmada no tiene errores', () => {
+    expect(
+      validateResetPasswordForm({
+        newPassword: 'nuevaclave2026',
+        newPasswordConfirmation: 'nuevaclave2026',
+      }),
+    ).toEqual({});
+  });
+
+  it('RNF-003-04: vacío pide la contraseña con reglas y la confirmación', () => {
+    const errors = validateResetPasswordForm(EMPTY_RESET_PASSWORD_VALUES);
+    expect(errors).toEqual({
+      newPassword: REGISTER_MESSAGES.passwordRules,
+      newPasswordConfirmation: REGISTER_MESSAGES.confirmationRequired,
+    });
+    expect(firstResetPasswordFieldWithError(errors)).toBe('newPassword');
+  });
+
+  it('RNF-003-04: la confirmación distinta es un error en la confirmación', () => {
+    const errors = validateResetPasswordForm({
+      newPassword: 'nuevaclave2026',
+      newPasswordConfirmation: 'nuevaclave2025',
+    });
+    expect(errors).toEqual({ newPasswordConfirmation: REGISTER_MESSAGES.passwordMismatch });
+    expect(firstResetPasswordFieldWithError(errors)).toBe('newPasswordConfirmation');
   });
 });
