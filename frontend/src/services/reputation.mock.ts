@@ -3,10 +3,11 @@
  * la racha y la habilitación ya vienen calculados, como los entregaría la API: aquí no se calcula
  * nada del dominio. Nombres, montos y fechas son inventados.
  */
+import { ApiError } from './http';
 import type {
   BadgesResponse,
-  ExcludeChargeReputationRequest,
   GroupRanking,
+  ExcludeChargeReputationRequest,
   RecentCharge,
   ReportChargeReputationRequest,
   ReputationDetail,
@@ -214,6 +215,12 @@ export const MOCK_BADGES = {
   empty: { earned: [], pending: [] } satisfies BadgesResponse,
 } as const;
 
+/** Grupo «Prime Video de la casa» (de `groups.mock.ts`): tres posiciones y dos «Nuevo» (CA-007-10, 11). */
+export const MOCK_RANKING_GROUP_ID = '5b0d7c3e-0000-4000-8000-000000000102';
+
+/** Grupo «sin miembros rankeables»: todos son «Nuevo» y ninguno tiene posición (CA-007-11). */
+export const MOCK_UNRANKED_GROUP_ID = '5b0d7c3e-0000-4000-8000-000000000103';
+
 const RANKING: GroupRanking = {
   items: [
     {
@@ -228,13 +235,39 @@ const RANKING: GroupRanking = {
       rating: { level: 'Bueno', stars: 4.5, starsLabel: '4,5 de 5' },
       streak: 3,
     },
+    {
+      position: 3,
+      user: { userId: '9c4e2f10-0000-4000-8000-000000000401', fullName: 'Bruno Paz Condori' },
+      rating: { level: 'Regular', stars: 3.5, starsLabel: '3,5 de 5' },
+      streak: 1,
+    },
   ],
   unranked: [
     {
       user: { userId: '9c4e2f10-0000-4000-8000-000000000801', fullName: 'Lucía Mendoza Ríos' },
       rating: { level: 'Nuevo', stars: null, starsLabel: null },
     },
+    {
+      user: { userId: '9c4e2f10-0000-4000-8000-000000000802', fullName: 'Iván Céspedes Llanos' },
+      rating: { level: 'Nuevo', stars: null, starsLabel: null },
+    },
   ],
+};
+
+const UNRANKED_ONLY: GroupRanking = {
+  items: [],
+  unranked: [
+    {
+      user: { userId: '9c4e2f10-0000-4000-8000-000000000803', fullName: 'Sara Ticona Flores' },
+      rating: { level: 'Nuevo', stars: null, starsLabel: null },
+    },
+  ],
+};
+
+/** Ranking por grupo; un id ajeno o inexistente responde `404` (CA-007-10, 11). */
+const RANKING_BY_GROUP: Record<string, GroupRanking> = {
+  [MOCK_RANKING_GROUP_ID]: RANKING,
+  [MOCK_UNRANKED_GROUP_ID]: UNRANKED_ONLY,
 };
 
 /** `GET /users/me/reputation`: el simulador responde como un titular habilitado (CA-007-02). */
@@ -247,9 +280,13 @@ export function getMyBadges(options: ReputationRequestOptions = {}) {
   return delay(() => copy(MOCK_BADGES.withBadges), options.signal);
 }
 
-/** `GET /groups/:groupId/ranking` (P2). */
-export function getGroupRanking(_groupId: string, options: ReputationRequestOptions = {}) {
-  return delay(() => copy(RANKING), options.signal);
+/** `GET /groups/:groupId/ranking` (P2): el orden de `items` es el que entrega el servidor. */
+export function getGroupRanking(groupId: string, options: ReputationRequestOptions = {}) {
+  return delay(() => {
+    const ranking = RANKING_BY_GROUP[groupId];
+    if (!ranking) throw new ApiError(404, 'NOT_FOUND', 'No encontrado.');
+    return copy(ranking);
+  }, options.signal);
 }
 
 /** `POST /charges/:chargeId/reputation-report` (P2): responde 201 sin cuerpo. */
