@@ -87,6 +87,12 @@ function Legend({ items }: { items: Array<{ label: string; swatch: ReactNode }> 
 const centsLabel = (value: unknown) => formatBs(Number(value));
 const signedCentsLabel = (value: unknown) => formatSignedBs(Number(value));
 
+/**
+ * Alto mínimo de cada barra en px: sin él, Recharts no dibuja la barra de valor 0 ni su etiqueta
+ * y el gráfico mostraría un valor menos que su tabla (CA-006-12).
+ */
+const MIN_BAR_SIZE = 2;
+
 /** Gasto de los últimos 12 meses: total comprometido (sólido) y pagado (rayado). RF-006-07. */
 export function MonthlySpendChart({ data }: { data: DashboardCharts['monthly'] }) {
   const ids = usePatternIds();
@@ -111,7 +117,13 @@ export function MonthlySpendChart({ data }: { data: DashboardCharts['monthly'] }
               tick={AXIS_TICK}
             />
             <YAxis hide />
-            <Bar dataKey="totalCents" name="Gasto" fill={COLOR.primary} isAnimationActive={false}>
+            <Bar
+              minPointSize={MIN_BAR_SIZE}
+              dataKey="totalCents"
+              name="Gasto"
+              fill={COLOR.primary}
+              isAnimationActive={false}
+            >
               <LabelList
                 dataKey="totalCents"
                 position="top"
@@ -169,7 +181,13 @@ export function ServiceSpendChart({ data }: { data: DashboardCharts['byService']
         >
           <XAxis type="number" hide />
           <YAxis type="category" dataKey="serviceName" width={112} interval={0} tick={AXIS_TICK} />
-          <Bar dataKey="costCents" name="Gasto" fill={COLOR.primary} isAnimationActive={false}>
+          <Bar
+            minPointSize={MIN_BAR_SIZE}
+            dataKey="costCents"
+            name="Gasto"
+            fill={COLOR.primary}
+            isAnimationActive={false}
+          >
             <LabelList
               dataKey="costCents"
               position="right"
@@ -211,7 +229,12 @@ export function SavingsChart({ data }: { data: DashboardCharts['savings'] }) {
             />
             <YAxis hide />
             <ReferenceLine y={0} stroke={COLOR.ink} />
-            <Bar dataKey="cumulativeCents" name="Ahorro acumulado" isAnimationActive={false}>
+            <Bar
+              minPointSize={MIN_BAR_SIZE}
+              dataKey="cumulativeCents"
+              name="Ahorro acumulado"
+              isAnimationActive={false}
+            >
               {rows.map((item) => (
                 <Cell
                   key={item.period}
