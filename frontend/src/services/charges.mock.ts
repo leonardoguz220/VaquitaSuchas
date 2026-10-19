@@ -453,26 +453,86 @@ function requireAction(charge: MyCharge, action: Charge['allowedActions'][number
   }
 }
 
-/** Respuesta fija «ya en revisión»; T022 la reemplaza si necesita más casos. */
+/** Referencias fijas que simulan errores del servidor en `uploadReceipt` (T022). */
+export const MOCK_RECEIPT_REFERENCES = {
+  /** `409 REFERENCE_ALREADY_USED`. */
+  alreadyUsed: 'TRX-USADA',
+  /** `503 SERVICE_UNAVAILABLE` (falla del almacén). */
+  storageDown: 'TRX-SIN-ALMACEN',
+} as const;
+
+const RECEIPT_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+const RECEIPT_MAX_BYTES = 5 * 1024 * 1024;
+
+function checkUpload(charge: MyCharge, input: UploadReceiptInput) {
+  const reference = input.reference.trim();
+  if (reference.length < 1 || reference.length > 100 || !input.method) {
+    throw new ApiError(400, 'VALIDATION_ERROR', 'Datos inválidos.', {
+      fields: [{ field: 'reference', message: 'Entre 1 y 100 caracteres.' }],
+    });
+  }
+  if (input.file.size > RECEIPT_MAX_BYTES) {
+    throw new ApiError(413, 'FILE_TOO_LARGE', 'El archivo supera 5 MB.');
+  }
+  if (!RECEIPT_TYPES.includes(input.file.type)) {
+    throw new ApiError(415, 'UNSUPPORTED_FILE_TYPE', 'Tipo de archivo no permitido.');
+  }
+  requireAction(charge, 'uploadReceipt');
+  if (input.version !== undefined && input.version !== charge.version) {
+    throw new ApiError(409, 'STALE_STATE', 'El cobro cambió.');
+  }
+  if (reference === MOCK_RECEIPT_REFERENCES.alreadyUsed) {
+    throw new ApiError(409, 'REFERENCE_ALREADY_USED', 'Esa referencia ya fue usada en este grupo.');
+  }
+  if (reference === MOCK_RECEIPT_REFERENCES.storageDown) {
+    throw new ApiError(503, 'SERVICE_UNAVAILABLE', 'No se pudo guardar el archivo.');
+  }
+}
+
+/**
+ * `201` con el cobro en `en_revision`, el comprobante vigente y un evento nuevo. Si ya estaba en
+ * revisión, el comprobante anterior pasa a `reemplazado` (RF-002-08). No guarda el cambio: cada
+ * `getCharge` vuelve al dato inicial.
+ */
 export function uploadReceipt(chargeId: string, input: UploadReceiptInput): Promise<Charge> {
   return delay(() => {
     const charge = find(chargeId);
-    requireAction(charge, 'uploadReceipt');
+    checkUpload(charge, input);
+    const current = toCharge(charge);
+    const replacing = charge.status === 'en_revision' && charge.currentReceipt !== null;
+    const uploadedAt = '2026-10-19T15:00:00.000Z';
+    const previous: Receipt[] =
+      replacing && charge.currentReceipt
+        ? [{ ...charge.currentReceipt, status: 'reemplazado' }]
+        : [];
     return {
-      ...toCharge(charge),
+      ...current,
       status: 'en_revision',
+      firstSubmittedAt: charge.firstSubmittedAt ?? uploadedAt,
       version: charge.version + 1,
       currentReceipt: {
         id: uuid('000000000899'),
-        uploadedAt: '2026-10-19T15:00:00.000Z',
+        uploadedAt,
         uploadedBy: ME,
         method: input.method,
-        reference: input.reference,
+        reference: input.reference.trim(),
         mime: input.file.type,
         sizeBytes: input.file.size,
         status: 'vigente',
         fileAvailable: true,
       },
+      receipts: [...previous, ...current.receipts],
+      timeline: [
+        ...charge.timeline,
+        event(
+          '0099',
+          replacing ? 'comprobante_reemplazado' : 'comprobante_subido',
+          ME,
+          charge.status,
+          'en_revision',
+          uploadedAt,
+        ),
+      ],
     };
   });
 }

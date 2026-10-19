@@ -7,7 +7,7 @@ import {
   listMyCharges,
   uploadReceipt,
 } from './charges';
-import { MOCK_CHARGE_IDS } from './charges.mock';
+import { MOCK_CHARGE_IDS, MOCK_RECEIPT_REFERENCES } from './charges.mock';
 
 const SPOTIFY_GROUP_ID = '5b0d7c3e-0000-4000-8000-000000000103';
 
@@ -94,6 +94,55 @@ describe('services/charges con datos simulados (T018, contrato 002)', () => {
     );
     await expectRejection(confirmCharge(MOCK_CHARGE_IDS.inReviewNoPaymentInfo), {
       code: 'INVALID_TRANSITION',
+    });
+  });
+
+  it('T022: la subida simulada agrega el evento, reemplaza en revisión y responde los errores fijos', async () => {
+    const file = new File(['x'], 'c.jpg', { type: 'image/jpeg' });
+    const uploaded = await settle(
+      uploadReceipt(MOCK_CHARGE_IDS.pendingRejected, {
+        file,
+        method: 'transferencia',
+        reference: 'TRX-9',
+        version: 3,
+      }),
+    );
+    expect(uploaded.timeline.at(-1)).toMatchObject({
+      type: 'comprobante_subido',
+      toStatus: 'en_revision',
+    });
+
+    const replaced = await settle(
+      uploadReceipt(MOCK_CHARGE_IDS.inReviewNoPaymentInfo, { file, method: 'qr', reference: 'Q' }),
+    );
+    expect(replaced.timeline.at(-1)?.type).toBe('comprobante_reemplazado');
+    expect(replaced.receipts[0]).toMatchObject({ reference: 'TRX-88213', status: 'reemplazado' });
+
+    const id = MOCK_CHARGE_IDS.pendingRejected;
+    const base = { file, method: 'qr' as const };
+    await expectRejection(
+      uploadReceipt(id, { ...base, reference: MOCK_RECEIPT_REFERENCES.alreadyUsed }),
+      {
+        statusCode: 409,
+        code: 'REFERENCE_ALREADY_USED',
+      },
+    );
+    await expectRejection(
+      uploadReceipt(id, { ...base, reference: MOCK_RECEIPT_REFERENCES.storageDown }),
+      {
+        statusCode: 503,
+        code: 'SERVICE_UNAVAILABLE',
+      },
+    );
+    await expectRejection(uploadReceipt(id, { ...base, reference: 'A', version: 1 }), {
+      code: 'STALE_STATE',
+    });
+    await expectRejection(uploadReceipt(id, { ...base, reference: ' ' }), {
+      code: 'VALIDATION_ERROR',
+    });
+    const exe = new File(['x'], 'v.exe', { type: 'application/x-msdownload' });
+    await expectRejection(uploadReceipt(id, { file: exe, method: 'qr', reference: 'A' }), {
+      code: 'UNSUPPORTED_FILE_TYPE',
     });
   });
 
