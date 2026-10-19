@@ -8,6 +8,7 @@ import {
   revokeHostEnablement,
   setAdminUserRole,
   suspendAdminUser,
+  transferGroupOwnership,
   type AdminUsersPage,
 } from './admin';
 import { MOCK_ADMIN_USER_IDS, MOCK_CURRENT_ADMIN_ID, resetMockState } from './admin.mock';
@@ -146,5 +147,13 @@ describe('services/admin.ts (spec 009)', () => {
   it('CA-009-28: habilitar sin motivo válido falla antes de cambiar nada', async () => {
     const error = await failureOf(grantHostEnablement(MOCK_ADMIN_USER_IDS.ana, ''));
     expect(error.statusCode).toBe(400);
+  });
+
+  it('CA-009-35: transferir la titularidad exige motivo y une a una persona existente', async () => {
+    const error = await failureOf(transferGroupOwnership('g-1', MOCK_ADMIN_USER_IDS.ana, 'corto'));
+    expect(error.statusCode).toBe(400);
+    await run(transferGroupOwnership('g-1', MOCK_ADMIN_USER_IDS.ana, REASON));
+    const missing = await failureOf(transferGroupOwnership('g-1', 'u-no-existe', REASON));
+    expect(missing.statusCode).toBe(404);
   });
 });

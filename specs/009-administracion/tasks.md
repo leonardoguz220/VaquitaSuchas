@@ -50,7 +50,7 @@
 
 - [ ] T019 [P] [US3] [BE] `backend/test/admin.hosts.e2e-spec.ts` (CA-009-28: la habilitación manual permite crear; revocar con motivo) y `admin.transfer.e2e-spec.ts` (CA-009-35: transferir solo con titular `suspendido`) — Depende: T011 · Cubre: CA-009-28, CA-009-35, RF-009-21, RF-009-24
 - [ ] T020 [US3] [BE] `services/host-enablement.service.ts`, `controllers/admin-hosts.controller.ts` (`GET /admin/host-enablements?active=true`, `POST /admin/users/:userId/host-enablement` para habilitar y revocar con motivo y auditoría), `POST /admin/groups/:groupId/transfer-ownership` (usa `MembershipService.transferOwnership`, spec 001 T036), el adaptador `app-adapters/host-eligibility.adapter.ts` que compone la habilitación vigente con `ReputationQueryPort.checkHostRating` y el CLI `backend/src/cli/host-enable.ts` — Depende: T019, spec 001 T013, spec 007 T010 · Cubre: RF-009-21, RF-009-24, RF-007-17, CA-009-28, CA-009-35
-- [ ] T021 [P] [US3] [FE] `/admin/titulares` (habilitaciones vigentes, alta y baja con motivo) y acción **Transferir titularidad** en la ficha del grupo, con mock, conectado al terminar T020 — Depende: T017 · Cubre: RF-009-21, RF-009-24
+- [x] T021 [P] [US3] [FE] `/admin/titulares` (habilitaciones vigentes, alta y baja con motivo) y acción **Transferir titularidad** en la ficha del grupo, con mock, conectado al terminar T020 — Depende: T017 · Cubre: RF-009-21, RF-009-24
 
 ## Fase 5: US4 — Reclamos de ingreso (núcleo MVP)
 

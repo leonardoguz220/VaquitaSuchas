@@ -134,6 +134,8 @@ export interface GroupDetailViewProps {
   listingTab?: (group: GroupDetail) => ReactNode;
   /** Insignia «El grupo publicó cupos» que ven los miembros (008 T011). */
   memberBadge?: (group: GroupDetail) => ReactNode;
+  /** Acciones de administración sobre el grupo; cada panel decide si lo muestra (spec 009 T021). */
+  adminPanel?: (group: GroupDetail) => ReactNode;
 }
 
 /**
@@ -146,6 +148,7 @@ export function GroupDetailView({
   reviewQueue,
   listingTab,
   memberBadge,
+  adminPanel,
 }: GroupDetailViewProps) {
   const { state, retry, update } = useGroup(groupId);
   const [tab, setTab] = useState<GroupTabId>('resumen');
@@ -175,6 +178,7 @@ export function GroupDetailView({
           <GroupHeader group={state.group} />
           {state.group.myRole === 'titular' && ownerPanel?.(state.group, { onGroupChange: update })}
           {state.group.myRole !== 'titular' && memberBadge?.(state.group)}
+          {adminPanel?.(state.group)}
           <GroupTabs
             idPrefix={TABS_PREFIX}
             label="Secciones del grupo"
