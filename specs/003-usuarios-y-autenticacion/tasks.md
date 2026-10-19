@@ -95,7 +95,7 @@
 
 ## Fase 7: Seguridad, privacidad y cierre
 
-- [ ] T041 [BE] Prueba de privacidad de logs: un registro con contraseña, CI, celular y tokens no deja esos valores en la salida del log; revisar que no exista `GET /users/:id` (nadie ve el perfil de otro) y que la visibilidad de nombres y celulares entre miembros quede para la spec 001 (`UserPublic`) — Depende: T038 · Cubre: RNF-003-05, RF-003-16, RN-003-04, RN-003-05
+- [x] T041 [BE] Prueba de privacidad de logs: un registro con contraseña, CI, celular y tokens no deja esos valores en la salida del log; revisar que no exista `GET /users/:id` (nadie ve el perfil de otro) y que la visibilidad de nombres y celulares entre miembros quede para la spec 001 (`UserPublic`) — Depende: T038 · Cubre: RNF-003-05, RF-003-16, RN-003-04, RN-003-05
 - [ ] T042 [BE] Medir el tiempo de `argon2id` en staging (19 MiB / 2 iteraciones / 1 hilo) y el tiempo de `POST /auth/login` (RNF-003-06); registrar el resultado en `research.md` de la spec 000 (R5) — Depende: T028, spec 000 T053 · Cubre: RNF-003-01, RNF-003-06
 - [ ] T043 [FE] Ajustes de accesibilidad de las pantallas de `features/auth/` (etiquetas asociadas, errores con `aria-live`, QR con alternativa en texto) y revisión móvil primero — Depende: T040 · Cubre: RNF-003-04
 - [ ] T044 [BD] Revisar con Camila que `users` no reciba columnas de otras specs (preferencias en `notification_preferences` `0071`; baneos en `bans` `0090`) y que la FK `banned_identities.ban_ref → bans` la agregue la spec 009 — Depende: T005 · Cubre: RF-003-19
