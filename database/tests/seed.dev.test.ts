@@ -112,7 +112,9 @@ test('RF-001-01: cada miembro entra por una solicitud aceptada con su cobro de i
   );
   assert.equal(rows[0]?.problems, 0);
   const [titular] = await run<{ n: number }>(
-    `SELECT count(*)::int AS n FROM group_members WHERE role = 'titular' AND join_source = 'creacion'`,
+    `SELECT count(*)::int AS n FROM group_members m JOIN groups g ON g.id = m.group_id
+     WHERE m.role = 'titular' AND m.join_source = 'creacion'
+       AND g.invite_code IN ('DEVGRPAA', 'DEVGRPBB')`,
   );
   assert.equal(titular?.n, 2);
 });
@@ -157,4 +159,54 @@ test('RF-002-01: el ciclo regular de DEVGRPAA tiene un cobro pendiente, uno en r
      WHERE g.invite_code = 'DEVGRPAA' AND bc.cycle_type = 'inicial'`,
   );
   assert.equal(initial?.finalized, true);
+});
+
+test('RF-010-02: hay una solicitud en cada estado activo con chat y una rechazada con un reclamo abierto', async () => {
+  const rows = await run<{
+    code: string;
+    email: string;
+    status: string;
+    messages: number;
+    disputes: number;
+  }>(
+    `SELECT g.invite_code AS code, u.email, r.status,
+            (SELECT count(*)::int FROM join_messages m WHERE m.request_id = r.id) AS messages,
+            (SELECT count(*)::int FROM join_disputes d
+              WHERE d.request_id = r.id AND d.status = 'abierto') AS disputes
+     FROM join_requests r
+     JOIN groups g ON g.id = r.group_id
+     JOIN users u ON u.id = r.applicant_id
+     WHERE r.status <> 'aceptada'
+     ORDER BY g.invite_code, u.email`,
+  );
+  assert.deepEqual(rows, [
+    {
+      code: 'DEVGRPBB',
+      email: 'miembro2@dev.vaquita',
+      status: 'abierta',
+      messages: 2,
+      disputes: 0,
+    },
+    {
+      code: 'DEVGRPBB',
+      email: 'miembro3@dev.vaquita',
+      status: 'esperando_pago',
+      messages: 2,
+      disputes: 0,
+    },
+    {
+      code: 'DEVGRPCC',
+      email: 'miembro2@dev.vaquita',
+      status: 'pago_informado',
+      messages: 2,
+      disputes: 0,
+    },
+    {
+      code: 'DEVGRPCC',
+      email: 'miembro3@dev.vaquita',
+      status: 'rechazada',
+      messages: 2,
+      disputes: 1,
+    },
+  ]);
 });
