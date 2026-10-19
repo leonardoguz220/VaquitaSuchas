@@ -90,8 +90,7 @@ test('RF-001-01: con los usuarios de desarrollo se siembran dos grupos y la segu
 
   const groups = await run<{ name: string; owner: string; members: number }>(
     `SELECT g.name, u.email AS owner,
-            (SELECT count(*)::int FROM group_members m
-              WHERE m.group_id = g.id AND m.left_at IS NULL) AS members
+            (SELECT count(*)::int FROM group_members m WHERE m.group_id = g.id) AS members
      FROM groups g JOIN users u ON u.id = g.owner_id
      WHERE g.invite_code IN ('DEVGRPAA', 'DEVGRPBB')
      ORDER BY g.invite_code`,
@@ -118,14 +117,44 @@ test('RF-001-01: cada miembro entra por una solicitud aceptada con su cobro de i
   assert.equal(titular?.n, 2);
 });
 
-test('RN-001-10: el ciclo inicial de cada grupo cuenta a los miembros activos y suma el total', async () => {
+// Nadie sale durante el ciclo inicial: cuenta todas las estadías (el seed de 0040 retira a
+// miembro3 por mora en el ciclo regular siguiente).
+test('RN-001-10: el ciclo inicial de cada grupo cuenta a sus miembros y suma el total', async () => {
   const rows = await run<{ ok: boolean }>(
     `SELECT bc.member_count = (SELECT count(*) FROM group_members m
-                               WHERE m.group_id = bc.group_id AND m.left_at IS NULL)
+                               WHERE m.group_id = bc.group_id)
             AND bc.total_bs_cents = g.total_bs_cents AS ok
      FROM billing_cycles bc JOIN groups g ON g.id = bc.group_id
      WHERE bc.cycle_type = 'inicial' AND g.invite_code IN ('DEVGRPAA', 'DEVGRPBB')`,
   );
   assert.equal(rows.length, 2);
   for (const row of rows) assert.equal(row.ok, true);
+});
+
+test('RF-002-01: el ciclo regular de DEVGRPAA tiene un cobro pendiente, uno en revisión con comprobante y uno atrasado con el miembro retirado por mora', async () => {
+  const rows = await run<{ email: string; status: string; receipts: number; left_reason: string }>(
+    `SELECT u.email, c.status,
+            (SELECT count(*)::int FROM receipts r
+              WHERE r.charge_id = c.id AND r.status = 'vigente') AS receipts,
+            (SELECT m.left_reason FROM group_members m
+              WHERE m.group_id = c.group_id AND m.user_id = c.user_id
+              ORDER BY m.joined_at DESC LIMIT 1) AS left_reason
+     FROM charges c
+     JOIN billing_cycles bc ON bc.id = c.cycle_id
+     JOIN groups g ON g.id = c.group_id
+     JOIN users u ON u.id = c.user_id
+     WHERE g.invite_code = 'DEVGRPAA' AND bc.cycle_type = 'regular'
+     ORDER BY u.email`,
+  );
+  assert.deepEqual(rows, [
+    { email: 'miembro1@dev.vaquita', status: 'pendiente', receipts: 0, left_reason: null },
+    { email: 'miembro2@dev.vaquita', status: 'en_revision', receipts: 1, left_reason: null },
+    { email: 'miembro3@dev.vaquita', status: 'atrasado', receipts: 0, left_reason: 'mora' },
+  ]);
+  const [initial] = await run<{ finalized: boolean }>(
+    `SELECT bc.finalized_at IS NOT NULL AS finalized
+     FROM billing_cycles bc JOIN groups g ON g.id = bc.group_id
+     WHERE g.invite_code = 'DEVGRPAA' AND bc.cycle_type = 'inicial'`,
+  );
+  assert.equal(initial?.finalized, true);
 });
