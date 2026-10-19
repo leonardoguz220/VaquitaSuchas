@@ -6,6 +6,9 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Client, Pool } from 'pg';
 import request from 'supertest';
+import { PasswordHasher } from '../../src/modules/auth/services/password-hasher.js';
+import { IdentityService } from '../../src/modules/users/services/identity.service.js';
+import { Clock } from '../../src/shared/clock/clock.js';
 import { requestIdMiddleware } from '../../src/shared/logging/request-id.middleware.js';
 
 // App completa con base temporal propia y Telegram simulado (modo dev) para las e2e de la spec 003.
@@ -53,6 +56,12 @@ async function withAdminClient<T>(fn: (client: Client) => Promise<T>): Promise<T
   }
 }
 
+export interface TestUser {
+  id: string;
+  email: string;
+  password: string;
+}
+
 export interface AuthTestApp {
   app: INestApplication;
   db: Pool;
@@ -66,6 +75,14 @@ export interface AuthTestApp {
     phoneNumber: string;
     contactUserId?: number;
   }) => Promise<void>;
+  /** Inserta una cuenta directamente (por omisión activa y verificada). */
+  createUser: (opts?: {
+    email?: string;
+    password?: string;
+    status?: 'activo' | 'suspendido' | 'baneado';
+  }) => Promise<TestUser>;
+  /** Sin `ip`, cada llamada llega desde una IP distinta (el límite por IP no mezcla casos). */
+  login: (email: string, password: string, ip?: string) => request.Test;
   close: () => Promise<void>;
 }
 
@@ -73,7 +90,7 @@ export function tokenFromUrl(telegramUrl: string): string {
   return new URL(telegramUrl).searchParams.get('start') ?? '';
 }
 
-export async function startAuthApp(): Promise<AuthTestApp> {
+export async function startAuthApp(options: { clock?: Clock } = {}): Promise<AuthTestApp> {
   const databaseName = `vaquita_a_${randomBytes(6).toString('hex')}`;
   const originalEnv = { ...process.env };
   try {
@@ -94,12 +111,16 @@ export async function startAuthApp(): Promise<AuthTestApp> {
   }
   Object.assign(process.env, TEST_ENV, { DATABASE_URL: urlForDatabase(databaseName) });
   const { AppModule } = await import('../../src/app.module.js');
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+  const builder = Test.createTestingModule({ imports: [AppModule] });
+  if (options.clock) builder.overrideProvider(Clock).useValue(options.clock);
+  const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication();
   app.use(requestIdMiddleware);
   await app.init();
 
   const http = () => request(app.getHttpServer());
+  const identity = app.get(IdentityService);
+  const hasher = app.get(PasswordHasher);
   let seq = 0;
   const register = (overrides: Record<string, unknown> = {}) => {
     seq += 1;
@@ -135,11 +156,44 @@ export async function startAuthApp(): Promise<AuthTestApp> {
         contactUserId: opts.contactUserId ?? opts.telegramUserId,
       });
   };
+  let userSeq = 0;
+  const createUser: AuthTestApp['createUser'] = async (opts = {}) => {
+    userSeq += 1;
+    const email = opts.email ?? `usuario${userSeq}@example.com`;
+    const password = opts.password ?? 'clave-segura-123';
+    const ci = String(2000000 + userSeq);
+    const inserted = await db.query<{ id: string }>(
+      `INSERT INTO users (full_name, email, email_fingerprint, password_hash, ci_encrypted,
+         ci_fingerprint, phone_e164, telegram_user_id, verified_at, status,
+         data_policy_accepted_at, data_policy_version)
+       VALUES ('Usuaria Prueba', $1, $2, $3, $4, $5, $6, $7, now(), $8, now(), 'v1')
+       RETURNING id`,
+      [
+        email,
+        identity.emailFingerprint(email),
+        await hasher.hash(password),
+        identity.encryptCi(ci),
+        identity.fingerprint('ci', ci),
+        `+5916${String(1000000 + userSeq)}`,
+        5000 + userSeq,
+        opts.status ?? 'activo',
+      ],
+    );
+    return { id: inserted.rows[0]!.id, email, password };
+  };
+  let loginSeq = 0;
+  const login = (email: string, password: string, ip?: string) => {
+    loginSeq += 1;
+    return http()
+      .post('/auth/login')
+      .set('X-Forwarded-For', ip ?? `10.2.${Math.floor(loginSeq / 250)}.${loginSeq % 250}`)
+      .send({ email, password });
+  };
   const close = async () => {
     await app.close();
     process.env = { ...originalEnv };
     await db.end();
     await withAdminClient((c) => c.query(`DROP DATABASE IF EXISTS "${databaseName}" WITH (FORCE)`));
   };
-  return { app, db, http, register, verifyWithTelegram, close };
+  return { app, db, http, register, verifyWithTelegram, createUser, login, close };
 }

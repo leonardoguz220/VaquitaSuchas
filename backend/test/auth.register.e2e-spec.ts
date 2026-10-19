@@ -1,6 +1,6 @@
 import { startAuthApp, tokenFromUrl, type AuthTestApp } from './support/auth-app.js';
 
-// Spec 003 (US1). CA-003-01 queda en skip hasta T020 (GET /auth/register/status).
+// Spec 003 (US1).
 // Requiere PostgreSQL (base temporal propia).
 describe('Registro de cuentas (spec 003)', () => {
   let t: AuthTestApp;
@@ -11,7 +11,7 @@ describe('Registro de cuentas (spec 003)', () => {
     await t?.close();
   }, 30_000);
 
-  it.skip('CA-003-01: registro + simulación de Telegram + sondeo → sesión, password_hash en argon2id', async () => {
+  it('CA-003-01: registro + simulación de Telegram + sondeo → sesión, password_hash en argon2id', async () => {
     const res = await t.register({ email: 'uno@example.com', ci: '1234567' });
     expect(res.status).toBe(201);
     expect(res.body.registrationSecret).toEqual(expect.any(String));

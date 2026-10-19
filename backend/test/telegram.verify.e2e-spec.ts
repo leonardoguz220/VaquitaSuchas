@@ -1,10 +1,8 @@
 import { startAuthApp, tokenFromUrl, type AuthTestApp } from './support/auth-app.js';
 
-// Spec 003 (US1). Se activa con T020 (GET /auth/register/status); el manejador (T019) ya existe.
+// Spec 003 (US1).
 // Requiere PostgreSQL (base temporal propia).
-const describeVerificacion = describe.skip;
-
-describeVerificacion('Verificación del celular con Telegram (spec 003)', () => {
+describe('Verificación del celular con Telegram (spec 003)', () => {
   let t: AuthTestApp;
   beforeAll(async () => {
     t = await startAuthApp();
