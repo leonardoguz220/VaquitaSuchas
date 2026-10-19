@@ -67,8 +67,12 @@ export interface AuditLogPage {
 
 /** Filtros de `GET /admin/audit-log`. Las fechas van como `AAAA-MM-DD` (a confirmar con backend). */
 export interface ListAuditLogParams {
+  /** Administrador que hizo la acción (contrato 009: `adminId`). La pantalla aún no lo ofrece. */
+  adminId?: string;
   action?: AuditAction;
   targetType?: AuditTargetType;
+  /** Objeto sobre el que actuó la acción (contrato 009: `targetId`). */
+  targetId?: string;
   from?: string;
   to?: string;
   limit?: number;
