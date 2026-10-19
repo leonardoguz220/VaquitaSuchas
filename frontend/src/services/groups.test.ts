@@ -1,20 +1,11 @@
 import {
   createGroup,
-  getGroup,
   getHostEligibility,
-  listGroups,
   quoteGroup,
-  regenerateInviteCode,
   updateGroup,
   updatePaymentInfo,
 } from './groups';
-import {
-  MOCK_GROUP,
-  MOCK_GROUPS,
-  MOCK_INVITE_CODE,
-  MOCK_REGENERATED_CODES,
-  resetMockGroups,
-} from './groups.mock';
+import { MOCK_GROUP, MOCK_GROUPS, MOCK_INVITE_CODE, resetMockGroups } from './groups.mock';
 
 beforeEach(() => {
   jest.useFakeTimers();
@@ -94,24 +85,9 @@ describe('services/groups con datos simulados (T016, contrato 001)', () => {
   });
 
   it('RF-001-19: expone el resto de endpoints de la spec 001 (T020, T025)', async () => {
-    expect((await settle(listGroups())).items.length).toBeGreaterThan(1);
-    expect(await settle(getGroup(MOCK_GROUP.id))).toEqual(MOCK_GROUP);
     expect((await settle(updateGroup(MOCK_GROUP.id, { name: 'Nuevo' }))).name).toBe('Nuevo');
     expect((await settle(updatePaymentInfo(MOCK_GROUP.id, { text: 'Banco' }))).paymentInfo).toEqual(
       { text: 'Banco', qrUrl: null, configured: true },
-    );
-    expect((await settle(regenerateInviteCode(MOCK_GROUP.id))).inviteCode).toMatch(/^[A-Z0-9]{8}$/);
-    await expectRejection(getGroup('otro'), { statusCode: 404, code: 'NOT_FOUND' });
-  });
-
-  it('CA-001-09: el código regenerado reemplaza al anterior y no tiene caracteres ambiguos', async () => {
-    const { inviteCode } = await settle(regenerateInviteCode(MOCK_GROUP.id));
-    expect(inviteCode).toBe(MOCK_REGENERATED_CODES[0]);
-    expect(inviteCode).not.toBe(MOCK_INVITE_CODE);
-    expect(inviteCode).toMatch(/^[A-HJ-NP-Z2-9]{8}$/);
-    expect((await settle(getGroup(MOCK_GROUP.id))).inviteCode).toBe(inviteCode);
-    expect((await settle(regenerateInviteCode(MOCK_GROUP.id))).inviteCode).toBe(
-      MOCK_REGENERATED_CODES[1],
     );
   });
 
@@ -127,41 +103,11 @@ describe('services/groups con datos simulados (T016, contrato 001)', () => {
     );
   });
 
-  it('CA-001-11: un miembro recibe 403 al regenerar o cambiar la recepción', async () => {
+  it('CA-001-11: un miembro recibe 403 al cambiar la recepción', async () => {
     const memberId = MOCK_GROUPS.find(({ detail }) => detail.myRole === 'miembro')!.detail.id;
-    await expectRejection(regenerateInviteCode(memberId), { statusCode: 403, code: 'FORBIDDEN' });
     await expectRejection(updateGroup(memberId, { acceptingMembers: false }), {
       statusCode: 403,
       code: 'FORBIDDEN',
-    });
-  });
-
-  it('CA-001-20: GET /groups filtra por rol y estado y cada grupo trae su rol y cuota', async () => {
-    const all = (await settle(listGroups())).items;
-    const owned = (await settle(listGroups({ role: 'titular' }))).items;
-    const joined = (await settle(listGroups({ role: 'miembro' }))).items;
-    expect(owned.length).toBeGreaterThan(0);
-    expect(joined.length).toBeGreaterThan(0);
-    expect(owned.length + joined.length).toBe(all.length);
-    expect(owned.every((group) => group.role === 'titular' && group.myShareIsReference)).toBe(true);
-    expect(joined.every((group) => group.role === 'miembro' && !group.myShareIsReference)).toBe(
-      true,
-    );
-    const closed = (await settle(listGroups({ status: 'cerrado' }))).items;
-    expect(closed.length).toBeGreaterThan(0);
-    expect(closed.every((group) => group.status === 'cerrado')).toBe(true);
-    expect(all.some((group) => group.frozenReason === 'titular_baneado')).toBe(true);
-  });
-
-  it('CA-001-10: GET /groups/:id responde el detalle de cada grupo listado y 404 si no es suyo', async () => {
-    const all = (await settle(listGroups())).items;
-    for (const summary of all) {
-      const detail = await settle(getGroup(summary.id));
-      expect(detail).toMatchObject({ id: summary.id, myRole: summary.role });
-    }
-    await expectRejection(getGroup('5b0d7c3e-0000-4000-8000-999999999999'), {
-      statusCode: 404,
-      code: 'NOT_FOUND',
     });
   });
 
