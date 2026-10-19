@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Logo } from '@/components/features/brand/logo';
 import { cx } from '@/components/ui/cx';
-import { GROUPS_PATH } from '@/lib/routes';
+import { CHARGES_PATH, GROUPS_PATH } from '@/lib/routes';
 
 /** Pantalla "Mi perfil" (spec 003). */
 const PROFILE_PATH = '/perfil';
@@ -15,9 +15,10 @@ interface NavItem {
   label: string;
 }
 
-/** Solo las pantallas que ya existen; las demás (cobros, solicitudes, cupos) llegan con sus specs. */
+/** Solo las pantallas que ya existen; las demás (solicitudes, cupos) llegan con sus specs. */
 const NAV_ITEMS: NavItem[] = [
   { href: GROUPS_PATH, label: 'Mis suscripciones' },
+  { href: CHARGES_PATH, label: 'Mis cobros' },
   { href: PROFILE_PATH, label: 'Mi perfil' },
 ];
 

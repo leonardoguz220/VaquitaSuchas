@@ -23,6 +23,17 @@ describe('AppHeader (plan 001 §6)', () => {
     );
   });
 
+  it('RF-002-15: "Mis cobros" lleva a /cobros y se marca en el detalle de un cobro', () => {
+    mockedPathname.mockReturnValue('/cobros/c1');
+    render(<AppHeader />);
+    const link = screen.getByRole('link', { name: 'Mis cobros' });
+    expect(link).toHaveAttribute('href', '/cobros');
+    expect(link).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Mis suscripciones' })).not.toHaveAttribute(
+      'aria-current',
+    );
+  });
+
   it('RF-001-19: AppPage pone la cabecera y el contenido', () => {
     mockedPathname.mockReturnValue('/perfil');
     render(

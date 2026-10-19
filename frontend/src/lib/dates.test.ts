@@ -1,4 +1,12 @@
-import { formatCalendarDate, formatDateLaPaz, formatDateTimeLaPaz, lapazDayOf } from './dates';
+import {
+  formatCalendarDate,
+  formatDateLaPaz,
+  formatDateTimeLaPaz,
+  formatDeadlineLaPaz,
+  formatPeriod,
+  formatTimeLeft,
+  lapazDayOf,
+} from './dates';
 
 describe('formatDateTimeLaPaz (RF-000-17)', () => {
   it('CA-000-12 muestra las 02:00 UTC del día 1 como las 22:00 del día anterior en La Paz', () => {
@@ -85,5 +93,39 @@ describe('formatCalendarDate', () => {
     for (const value of ['2026-02-30', '2026-13-01', '01/11/2026', '']) {
       expect(() => formatCalendarDate(value)).toThrow(RangeError);
     }
+  });
+});
+
+describe('formatPeriod (spec 002)', () => {
+  it('RF-002-15: muestra el período YYYY-MM con el nombre del mes', () => {
+    expect(formatPeriod('2026-10')).toBe('Octubre 2026');
+    expect(formatPeriod('2027-01')).toBe('Enero 2027');
+  });
+
+  it('lanza RangeError con un período inválido', () => {
+    for (const value of ['2026-13', '2026-1', 'octubre', '']) {
+      expect(() => formatPeriod(value)).toThrow(RangeError);
+    }
+  });
+});
+
+describe('formatDeadlineLaPaz (spec 002)', () => {
+  it('RF-002-03: el instante exclusivo 00:00 del día 22 se muestra como 21, 23:59 en La Paz', () => {
+    expect(formatDeadlineLaPaz('2026-10-22T04:00:00.000Z')).toBe('21 oct 2026, 23:59');
+  });
+
+  it('RF-002-03: un vencimiento por emisión tardía conserva su minuto', () => {
+    expect(formatDeadlineLaPaz('2026-10-25T14:42:30.000Z')).toBe('25 oct 2026, 10:42');
+  });
+});
+
+describe('formatTimeLeft (spec 002)', () => {
+  it('RF-002-09: da formato a los segundos que faltan, sin calcular el vencimiento', () => {
+    expect(formatTimeLeft(3 * 86400 + 4 * 3600 + 59)).toBe('Faltan 3 días y 4 h');
+    expect(formatTimeLeft(86400)).toBe('Faltan 1 día');
+    expect(formatTimeLeft(5 * 3600 + 20 * 60 + 10)).toBe('Faltan 5 h 20 min');
+    expect(formatTimeLeft(12 * 60)).toBe('Faltan 12 min');
+    expect(formatTimeLeft(59)).toBe('Falta menos de 1 minuto');
+    expect(formatTimeLeft(-5)).toBe('Falta menos de 1 minuto');
   });
 });

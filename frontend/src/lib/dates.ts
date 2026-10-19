@@ -107,3 +107,63 @@ export function formatCalendarDate(day: string): string {
   }
   return dateText({ year, month, day: date, hour: 0, minute: 0 });
 }
+
+const MONTH_NAMES = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+];
+
+const PERIOD = /^(\d{4})-(0[1-9]|1[0-2])$/;
+
+/**
+ * Período de cobro `YYYY-MM` que entrega la API (spec 002): `formatPeriod('2026-10')` →
+ * `Octubre 2026`. Lanza `RangeError` si el texto no es un período válido.
+ */
+export function formatPeriod(period: string): string {
+  const match = PERIOD.exec(period);
+  if (!match) throw new RangeError('Período inválido: se esperaba YYYY-MM.');
+  return `${MONTH_NAMES[Number(match[2]) - 1]} ${match[1]}`;
+}
+
+/**
+ * Último minuto de un plazo que la API entrega como instante **exclusivo** (por ejemplo `dueAt`
+ * de un cobro, spec 002: vence justo antes de ese momento). `formatDeadlineLaPaz` con las 00:00
+ * del 22 oct en La Paz → `21 oct 2026, 23:59`. No calcula el vencimiento: solo lo muestra.
+ */
+export function formatDeadlineLaPaz(exclusiveIso: string): string {
+  return formatDateTimeLaPaz(new Date(toDate(exclusiveIso).getTime() - 1));
+}
+
+const MINUTE = 60;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+const plural = (value: number, one: string, many: string) => `${value} ${value === 1 ? one : many}`;
+
+/**
+ * Tiempo que falta, a partir de los segundos que da `useCountdown`: `Faltan 3 días y 4 h`,
+ * `Faltan 5 h 20 min`, `Faltan 12 min` o `Falta menos de 1 minuto`. Solo da formato.
+ */
+export function formatTimeLeft(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  if (total < MINUTE) return 'Falta menos de 1 minuto';
+  const days = Math.floor(total / DAY);
+  const hours = Math.floor((total % DAY) / HOUR);
+  const minutes = Math.floor((total % HOUR) / MINUTE);
+  if (days > 0) {
+    const daysText = plural(days, 'día', 'días');
+    return hours > 0 ? `Faltan ${daysText} y ${hours} h` : `Faltan ${daysText}`;
+  }
+  if (hours > 0) return `Faltan ${hours} h ${minutes} min`;
+  return `Faltan ${minutes} min`;
+}

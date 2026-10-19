@@ -1,4 +1,6 @@
 import {
+  CHARGES_PATH,
+  chargePath,
   DEV_TELEGRAM_PATH,
   GROUPS_PATH,
   NEW_GROUP_PATH,
@@ -187,5 +189,16 @@ describe('rutas de grupos (plan 001 §6)', () => {
 
   it('RF-001-06: buildJoinPath arma /unirse?codigo=… con el código de invitación', () => {
     expect(buildJoinPath('K7M2Q9PX')).toBe('/unirse?codigo=K7M2Q9PX');
+  });
+});
+
+describe('rutas de cobros (plan 002 §6)', () => {
+  it('RF-002-15: /cobros y /cobros/[id] son rutas protegidas', () => {
+    expect(CHARGES_PATH).toBe('/cobros');
+    expect(chargePath('c1')).toBe('/cobros/c1');
+    expect(chargePath('a/b')).toBe('/cobros/a%2Fb');
+    for (const path of [CHARGES_PATH, chargePath('c1')]) {
+      expect(isPublicPath(path)).toBe(false);
+    }
   });
 });

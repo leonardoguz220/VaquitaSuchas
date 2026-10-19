@@ -99,6 +99,14 @@ export function groupPath(groupId: string): string {
   return `${GROUPS_PATH}/${encodeURIComponent(groupId)}`;
 }
 
+/** "Mis cobros" (plan 002 §6). Ruta protegida. */
+export const CHARGES_PATH = '/cobros';
+
+/** Detalle de un cobro (plan 002 §6). Ruta protegida. */
+export function chargePath(chargeId: string): string {
+  return `${CHARGES_PATH}/${encodeURIComponent(chargeId)}`;
+}
+
 /** Enlace a "Unirme con un código" con el código ya puesto (`/unirse?codigo=…`, plan 010 §6). */
 export function buildJoinPath(inviteCode: string): string {
   return `${JOIN_PATH}?${new URLSearchParams({ [INVITE_CODE_PARAM]: inviteCode }).toString()}`;
