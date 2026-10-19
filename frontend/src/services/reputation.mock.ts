@@ -289,12 +289,33 @@ export function getGroupRanking(groupId: string, options: ReputationRequestOptio
   }, options.signal);
 }
 
+/**
+ * Cobros con errores fijos del reporte (`422 BUSINESS_RULE` según el contrato; el `code` concreto
+ * es el que la interfaz usa). `alreadyExcluded`: el cobro ya está excluido de la reputación.
+ * `reportAlreadySent`: esta persona ya envió un reporte para el cobro.
+ */
+export const MOCK_REPUTATION_CHARGE_IDS = {
+  alreadyExcluded: 'c0000000-0000-4000-8000-0000000000f1',
+  reportAlreadySent: 'c0000000-0000-4000-8000-0000000000f2',
+} as const;
+
 /** `POST /charges/:chargeId/reputation-report` (P2): responde 201 sin cuerpo. */
 export function reportChargeReputation(
-  _chargeId: string,
+  chargeId: string,
   _input: ReportChargeReputationRequest,
 ): Promise<void> {
-  return delay(() => undefined);
+  return delay(() => {
+    if (chargeId === MOCK_REPUTATION_CHARGE_IDS.alreadyExcluded) {
+      throw new ApiError(
+        422,
+        'CHARGE_ALREADY_EXCLUDED',
+        'El cobro ya está excluido de la reputación.',
+      );
+    }
+    if (chargeId === MOCK_REPUTATION_CHARGE_IDS.reportAlreadySent) {
+      throw new ApiError(422, 'REPORT_ALREADY_SENT', 'Ya enviaste un reporte para este cobro.');
+    }
+  });
 }
 
 /** `POST /charges/:chargeId/reputation-exclusion` (P2): responde 200 sin cuerpo. */
