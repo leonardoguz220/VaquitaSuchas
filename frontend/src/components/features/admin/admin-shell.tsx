@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { cx } from '@/components/ui/cx';
 import {
+  ADMIN_AUDIT_PATH,
   ADMIN_CATALOG_PATH,
   ADMIN_DISPUTES_PATH,
   ADMIN_HOSTS_PATH,
@@ -22,6 +23,7 @@ const SECTIONS = [
   { href: ADMIN_DISPUTES_PATH, label: 'Reclamos' },
   { href: ADMIN_CATALOG_PATH, label: 'Catálogo' },
   { href: ADMIN_MODERATION_PATH, label: 'Moderación' },
+  { href: ADMIN_AUDIT_PATH, label: 'Auditoría' },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
