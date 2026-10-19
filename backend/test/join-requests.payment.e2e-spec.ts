@@ -22,6 +22,7 @@ describe('Pago de ingreso de solicitudes', () => {
   const http = (): ReturnType<typeof request> => request(harness.app.getHttpServer());
   const get = (userId: string, url: string): request.Test => auth(http().get(url), userId);
   const post = (userId: string, url: string): request.Test => auth(http().post(url), userId);
+  const put = (userId: string, url: string): request.Test => auth(http().put(url), userId);
 
   const sendPaymentData = (
     userId: string,
@@ -190,20 +191,29 @@ describe('Pago de ingreso de solicitudes', () => {
     });
 
     it('RF-010-11 y plan: sin datos propios copia el QR del grupo; una copia propia no depende del grupo', async () => {
-      const groupQr = `groups/${group.id}/qr.png`;
-      harness.storage.files.set(groupQr, { body: pngBytes(), contentType: 'image/png' });
-      await harness.pool.query(
-        `UPDATE groups SET payment_qr_key = $2, payment_qr_mime = 'image/png' WHERE id = $1`,
-        [group.id, groupQr],
-      );
+      // El titular sube el QR del grupo por el endpoint real (spec 001, RF-001-20).
+      await put(group.ownerId, `/groups/${group.id}/payment-info`)
+        .attach('qr', pngBytes(), { filename: 'qr-del-grupo.png' })
+        .expect(200);
+      const groupQr = (
+        await harness.pool.query<{ payment_qr_key: string }>(
+          'SELECT payment_qr_key FROM groups WHERE id = $1',
+          [group.id],
+        )
+      ).rows[0]?.payment_qr_key as string;
+      expect(groupQr).toMatch(new RegExp(`^groups/${group.id}/qr/[0-9a-f-]{36}\\.png$`));
 
       const response = await sendPaymentData(group.ownerId, requestId).expect(200);
 
       expect(response.body.paymentInfo.qrAvailable).toBe(true);
       const copy = (await row(requestId)).payment_qr_key as string;
       expect(copy).not.toBe(groupQr);
-      // Si el grupo cambia o borra su QR, la solicitud conserva el suyo.
-      harness.storage.files.delete(groupQr);
+      // Si el grupo borra su QR por el endpoint, la solicitud conserva el suyo.
+      await put(group.ownerId, `/groups/${group.id}/payment-info`)
+        .field('removeQr', 'true')
+        .expect(200);
+      expect(harness.storage.files.has(groupQr)).toBe(false);
+      expect(harness.storage.files.has(copy)).toBe(true);
       const qr = await get(applicant, `/join-requests/${requestId}/payment-qr`).expect(200);
       expect(qr.body.mime).toBe('image/png');
       expect(qr.body.url).toContain(copy);
