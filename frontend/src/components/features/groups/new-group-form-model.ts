@@ -37,6 +37,7 @@ export const FORM_MESSAGES = {
   nameRequired: 'Escribe un nombre para el grupo.',
   priceInvalid: 'Escribe el precio con coma decimal, por ejemplo 14,66.',
   exchangeRateRequired: 'Con un precio en USD el tipo de cambio es obligatorio, por ejemplo 6,96.',
+  billingDayRange: 'El día de cobro va del 1 al 31.',
   slotsRange: (max: number) => `Los cupos van de ${MIN_SLOTS} a ${max}, contándote.`,
   paymentTextTooLong: `Los datos de pago pueden tener hasta ${PAYMENT_TEXT_MAX} caracteres.`,
   qrType: 'El QR debe ser una imagen JPG o PNG.',

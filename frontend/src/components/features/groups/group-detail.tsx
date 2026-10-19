@@ -12,19 +12,29 @@ import type { GroupDetail } from '@/services/groups';
 import { GroupLoadError } from './group-load-error';
 import { groupStatusTags } from './group-labels';
 import { GroupMembersTab } from './group-members-tab';
+import { GroupSettingsTab } from './group-settings-tab';
+import { LeaveGroupPanel } from './leave-group-panel';
 import { GroupSummaryTab } from './group-summary-tab';
 import { GroupTabs, panelId, tabId, type GroupTab } from './group-tabs';
 
 const GROUPS_PATH = '/grupos';
 const SEARCH_PATH = '/cupos';
 const TABS_PREFIX = 'grupo';
+const OWNER_TAB_IDS: readonly GroupTabId[] = ['solicitudes', 'cobranza', 'publicar', 'ajustes'];
 
 /**
  * Pestañas de T020, Cobros (002 T037), Ranking (007 T026), Cobranza del titular (006 T014) y
- * Solicitudes del titular (010 T018). Ajustes se agrega en su tarea.
+ * Solicitudes del titular (010 T018). Ajustes (T029: recepción de miembros).
  */
 type GroupTabId =
-  'resumen' | 'miembros' | 'cobros' | 'ranking' | 'cobranza' | 'solicitudes' | 'publicar';
+  | 'resumen'
+  | 'miembros'
+  | 'cobros'
+  | 'ranking'
+  | 'cobranza'
+  | 'solicitudes'
+  | 'publicar'
+  | 'ajustes';
 
 const TABS: readonly GroupTab<GroupTabId>[] = [
   { id: 'resumen', label: 'Resumen' },
@@ -38,6 +48,7 @@ const OWNER_TABS: readonly GroupTab<GroupTabId>[] = [
   { id: 'solicitudes', label: 'Solicitudes' },
   { id: 'cobranza', label: 'Cobranza' },
   { id: 'publicar', label: 'Publicar cupos' },
+  { id: 'ajustes', label: 'Ajustes' },
 ];
 
 function DetailSkeleton() {
@@ -187,7 +198,10 @@ export function GroupDetailView({
   adminPanel,
 }: GroupDetailViewProps) {
   const { state, retry, update } = useGroup(groupId);
-  const [tab, setTab] = useState<GroupTabId>('resumen');
+  const [selectedTab, setTab] = useState<GroupTabId>('resumen');
+  const myRole = state.status === 'success' ? state.group.myRole : null;
+  // Si el titular transfiere el grupo, sus pestañas desaparecen: se muestra Resumen.
+  const tab = myRole === 'miembro' && OWNER_TAB_IDS.includes(selectedTab) ? 'resumen' : selectedTab;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-10">
@@ -231,7 +245,7 @@ export function GroupDetailView({
             className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink"
           >
             {tab === 'resumen' && <GroupSummaryTab group={state.group} />}
-            {tab === 'miembros' && <GroupMembersTab members={state.group.members} />}
+            {tab === 'miembros' && <GroupMembersTab group={state.group} onGroupChange={update} />}
             {tab === 'cobros' && (
               <GroupChargesTab
                 groupId={state.group.id}
@@ -247,7 +261,13 @@ export function GroupDetailView({
               state.group.myRole === 'titular' &&
               requestsTab?.(state.group)}
             {tab === 'publicar' && state.group.myRole === 'titular' && listingTab?.(state.group)}
+            {tab === 'ajustes' && state.group.myRole === 'titular' && (
+              <GroupSettingsTab group={state.group} onGroupChange={update} />
+            )}
           </div>
+          {state.group.myRole === 'miembro' &&
+            state.group.status === 'activo' &&
+            state.group.frozenReason === null && <LeaveGroupPanel group={state.group} />}
         </>
       )}
     </div>
