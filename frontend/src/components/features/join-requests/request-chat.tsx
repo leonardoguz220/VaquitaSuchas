@@ -236,6 +236,7 @@ export function RequestChat({ request, meId, onStale }: RequestChatProps) {
           <ol
             ref={listRef}
             role="log"
+            tabIndex={0}
             aria-live="polite"
             aria-label={`Mensajes con ${otherFirst}`}
             className="flex max-h-[60vh] flex-1 flex-col gap-3 overflow-y-auto py-2"
