@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsIn,
@@ -166,4 +166,46 @@ export class TransferOwnershipDto {
   @ApiProperty({ format: 'uuid' })
   @IsUUID()
   toUserId!: string;
+}
+
+/** Query de `GET /groups` (contracts/api.md). */
+export class ListGroupsQueryDto {
+  @ApiPropertyOptional({ enum: ['titular', 'miembro'] })
+  @IsOptional()
+  @IsIn(['titular', 'miembro'])
+  role?: 'titular' | 'miembro';
+
+  @ApiPropertyOptional({ enum: ['activo', 'cerrado'], default: 'activo' })
+  @IsOptional()
+  @IsIn(['activo', 'cerrado'])
+  status?: 'activo' | 'cerrado';
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+}
+
+/** Campos de texto de `PUT /groups/:id/payment-info` (multipart; el QR llega como archivo). */
+export class PaymentInfoDto {
+  @ApiPropertyOptional({ maxLength: 500, description: 'Vacío borra el texto.' })
+  @IsOptional()
+  @IsString()
+  text?: string;
+
+  @ApiPropertyOptional({ description: '`true` borra la imagen del QR.' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    value === 'true' ? true : value === 'false' ? false : value,
+  )
+  @IsBoolean()
+  removeQr?: boolean;
 }
