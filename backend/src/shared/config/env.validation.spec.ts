@@ -28,6 +28,7 @@ function prodEnv(): RawEnv {
     TELEGRAM_MODE: 'prod',
     STORAGE_DRIVER: 'supabase',
     RESEND_API_KEY: 'resend-test-key',
+    MAIL_FROM: 'Vaquita <no-reply@vaquita.test>',
     TELEGRAM_BOT_TOKEN: 'telegram-test-token',
     TELEGRAM_WEBHOOK_SECRET: 'telegram-test-secret',
     SUPABASE_URL: 'https://example.supabase.co',
@@ -134,6 +135,37 @@ describe('validateEnv', () => {
       expect(message).not.toContain('SUPABASE_URL');
     });
 
+    it('RF-000-12: MAIL_MODE=prod exige también el remitente MAIL_FROM', () => {
+      const message = errorMessageOf(without(prodEnv(), 'MAIL_FROM'));
+
+      expect(message).toContain('MAIL_FROM');
+      expect(message).not.toContain('RESEND_API_KEY');
+    });
+
+    it('RF-000-12: MAIL_PROVIDER=brevo exige BREVO_API_KEY en lugar de RESEND_API_KEY', () => {
+      const brevo = { ...without(prodEnv(), 'RESEND_API_KEY'), MAIL_PROVIDER: 'brevo' };
+
+      const message = errorMessageOf(brevo);
+
+      expect(message).toContain('BREVO_API_KEY');
+      expect(message).not.toContain('RESEND_API_KEY');
+      expect(() => validateEnv({ ...brevo, BREVO_API_KEY: 'brevo-test-key' })).not.toThrow();
+    });
+
+    it('RF-000-12: MAIL_PROVIDER solo admite resend o brevo', () => {
+      const message = errorMessageOf({ ...prodEnv(), MAIL_PROVIDER: 'sendgrid' });
+
+      expect(message).toContain('MAIL_PROVIDER');
+      expect(message).toContain('resend, brevo');
+      expect(message).not.toContain('sendgrid');
+    });
+
+    it('RF-000-12: SMTP_PORT, si se define, debe ser un puerto válido', () => {
+      expect(() => validateEnv({ ...devEnv(), SMTP_PORT: '1025' })).not.toThrow();
+      expect(errorMessageOf({ ...devEnv(), SMTP_PORT: '99999' })).toContain('SMTP_PORT');
+      expect(errorMessageOf({ ...devEnv(), SMTP_PORT: 'abc' })).toContain('SMTP_PORT');
+    });
+
     it('TELEGRAM_MODE=prod exige TELEGRAM_BOT_TOKEN y TELEGRAM_WEBHOOK_SECRET', () => {
       const message = errorMessageOf({ ...devEnv(), TELEGRAM_MODE: 'prod' });
 
@@ -154,6 +186,7 @@ describe('validateEnv', () => {
     it('con los tres servicios en prod nombra todas las credenciales faltantes a la vez', () => {
       const credentials = [
         'RESEND_API_KEY',
+        'MAIL_FROM',
         'TELEGRAM_BOT_TOKEN',
         'TELEGRAM_WEBHOOK_SECRET',
         'SUPABASE_URL',

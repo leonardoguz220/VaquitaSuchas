@@ -9,6 +9,7 @@ import { EventsModule } from './shared/events/events.module.js';
 import { JobsHttpModule } from './shared/jobs/jobs-http.module.js';
 import { JobsModule } from './shared/jobs/jobs.module.js';
 import { LoggingModule } from './shared/logging/logging.module.js';
+import { MailModule } from './shared/mail/mail.module.js';
 
 @Module({
   imports: [
@@ -19,6 +20,8 @@ import { LoggingModule } from './shared/logging/logging.module.js';
     ClockModule,
     DbModule,
     EventsModule,
+    // Puerto MailService: SMTP a Mailpit en `dev`, API HTTPS del proveedor en `prod` (RF-000-12).
+    MailModule.forRoot(),
     // Tareas programadas: registro, runner y cron interno opcional (RF-000-14).
     JobsModule,
     // POST /internal/jobs/tick con X-Jobs-Token y límite de 1 llamada por segundo (RF-000-14).
