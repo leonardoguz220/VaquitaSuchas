@@ -46,6 +46,12 @@ Módulo `billing` con tres responsabilidades: **generar** cobros por ciclo (idem
 
 Detalle en [`data-model.md`](data-model.md): `billing_cycles` (0040), `charges` (0041), `receipts` y `payment_references` (0042), disparadores de integridad (0043) y `charge_events` de solo anexado (0044). Pruebas de integridad en `database/tests/billing.integrity.test.ts`. Seed de desarrollo: un ciclo con cobros en los cuatro estados no finales para probar la interfaz.
 
+### Ajustes al modelo aprobados el 2026-10-19 (`/speckit-analyze`)
+
+H1 (CHECK de estados en `charge_events`), H2 (estado inicial según el origen), H3 (copia del cobro igual a la del ciclo), H4 (la base es `floor` y el resto lo asume el titular), M1 (cobros finales de solo lectura y `first_submitted_at` inmutable), M2 (`period` y `due_date` atados a `cut_date`) y M3 (el seed pasa a T047). Detalle en `data-model.md` §1 y §4.
+
+Para el backend: `ensureCurrentCycle` calcula el siguiente corte a partir del último `cut_date` del grupo (spec 001, PR #43 M5); la generación copia en cada cobro la copia del ciclo con `amount_cents = base_share_cents`; el cobro de ingreso se inserta ya `pagado` con `settlement = 'ingreso'`; un cobro `pagado` o `cancelado` ya no se actualiza.
+
 ## 4. Contratos de API — _Leonardo (Backend)_
 
 Detalle en [`contracts/api.md`](contracts/api.md): `GET /me/charges`, `GET /charges/:id`, `POST /charges/:id/receipts`, `GET /charges/:id/receipts/:rid/file`, `POST /charges/:id/{confirm,reject,manual-payment,cancel}`, `GET /groups/:id/charges`, `GET /groups/:id/billing/summary`.
