@@ -83,3 +83,27 @@ export function lapazDayOf(iso: string | Date): string {
   const { year, month, day } = toLaPazParts(iso);
   return `${year}-${pad2(month)}-${pad2(day)}`;
 }
+
+const CALENDAR_DAY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * Fecha de calendario que la API ya entrega en La Paz (`YYYY-MM-DD`, por ejemplo `nextCutDate`
+ * de la spec 001), sin convertir de zona: `formatCalendarDate('2026-11-01')` → `1 nov 2026`.
+ * Lanza `RangeError` si el texto no es una fecha válida.
+ */
+export function formatCalendarDate(day: string): string {
+  const match = CALENDAR_DAY.exec(day);
+  const year = Number(match?.[1]);
+  const month = Number(match?.[2]);
+  const date = Number(match?.[3]);
+  const probe = new Date(Date.UTC(year, month - 1, date));
+  if (
+    !match ||
+    probe.getUTCFullYear() !== year ||
+    probe.getUTCMonth() !== month - 1 ||
+    probe.getUTCDate() !== date
+  ) {
+    throw new RangeError('Fecha inválida: se esperaba YYYY-MM-DD.');
+  }
+  return dateText({ year, month, day: date, hour: 0, minute: 0 });
+}

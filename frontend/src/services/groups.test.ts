@@ -1,6 +1,8 @@
 import {
   createGroup,
+  getGroup,
   getHostEligibility,
+  listGroups,
   quoteGroup,
   updatePaymentInfo,
   type CreateGroupRequest,
@@ -86,5 +88,29 @@ describe('services/groups (contrato 001): crear', () => {
     const form = mockedRequest.mock.calls[0][1]?.formData as FormData;
     expect(Array.from(form.keys())).toEqual(['removeQr']);
     expect(form.get('removeQr')).toBe('true');
+  });
+});
+
+describe('services/groups (contrato 001): ver', () => {
+  it('RF-001-19: listGroups hace GET /api/groups y pasa role, status, limit y cursor', async () => {
+    const page = { items: [], nextCursor: null };
+    mockedRequest.mockResolvedValue(page);
+    await expect(listGroups()).resolves.toBe(page);
+    expect(mockedRequest).toHaveBeenCalledWith('/api/groups');
+
+    await listGroups({ role: 'titular', status: 'cerrado', limit: 100, cursor: 'c1' });
+    expect(mockedRequest).toHaveBeenLastCalledWith(
+      '/api/groups?role=titular&status=cerrado&limit=100&cursor=c1',
+    );
+  });
+
+  it('RF-001-13: getGroup hace GET /api/groups/:id y propaga el 404', async () => {
+    mockedRequest.mockResolvedValue({ id: 'g1' });
+    await getGroup('g1');
+    expect(mockedRequest).toHaveBeenCalledWith('/api/groups/g1');
+
+    const error = new ApiError(404, 'NOT_FOUND', 'x');
+    mockedRequest.mockRejectedValue(error);
+    await expect(getGroup('ajeno')).rejects.toBe(error);
   });
 });

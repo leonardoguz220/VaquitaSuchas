@@ -8,6 +8,13 @@ export function canCreateGroups(eligibility: HostEligibility): boolean {
   return eligibility.eligible && eligibility.canCreateMore;
 }
 
+/** Título del panel según lo que falta. */
+export function hostEligibilityTitle(eligibility: HostEligibility): string {
+  return eligibility.eligible
+    ? 'Ya tienes el máximo de grupos como titular'
+    : 'Todavía no puedes crear suscripciones';
+}
+
 function currentStatus(current: HostEligibility['current']): string {
   if (current.stars === null || current.consideredCharges === 0) {
     return 'Todavía no tienes cobros considerados para tu calificación.';
@@ -17,41 +24,45 @@ function currentStatus(current: HostEligibility['current']): string {
 }
 
 /**
- * Panel que explica por qué no se puede crear una suscripción (RF-001-21, RN-001-14, plan 001
- * §6): qué calificación falta según `GET /users/me/host-eligibility`, o que ya tiene el máximo de
- * grupos activos como titular. Solo muestra los datos de la API; no decide nada.
+ * Explicación de qué falta para crear una suscripción (RF-001-21, RN-001-14): la calificación
+ * que pide `GET /users/me/host-eligibility` o el máximo de grupos activos como titular. Solo
+ * muestra los datos de la API; no decide nada.
  */
-export function HostEligibilityPanel({ eligibility }: { eligibility: HostEligibility }) {
+export function HostEligibilityExplanation({ eligibility }: { eligibility: HostEligibility }) {
   const { requirement } = eligibility;
-  const notEligible = !eligibility.eligible;
+  if (eligibility.eligible) {
+    return (
+      <p>
+        Tienes {eligibility.activeGroups} de {eligibility.maxActiveGroups} grupos activos como
+        titular. Para crear otro, cierra o transfiere uno de los que ya tienes.
+      </p>
+    );
+  }
+  return (
+    <>
+      <p>
+        Para ser titular necesitas una calificación de{' '}
+        <strong>{formatDecimal(requirement.minStars)} estrellas o más</strong> con al menos{' '}
+        <strong>{requirement.minConsideredCharges} cobros considerados</strong> en los últimos{' '}
+        {requirement.windowMonths} meses, o que un administrador te habilite.
+      </p>
+      <p className="text-muted">{currentStatus(eligibility.current)}</p>
+      <p className="text-muted">
+        Mientras tanto puedes entrar a otros grupos como miembro y pagar a tiempo para subir tu
+        calificación.
+      </p>
+    </>
+  );
+}
 
+/** Panel de `/grupos/nuevo` cuando no se puede crear una suscripción (plan 001 §6). */
+export function HostEligibilityPanel({ eligibility }: { eligibility: HostEligibility }) {
   return (
     <Card as="section" aria-labelledby="host-eligibility-title" className="flex flex-col gap-4">
       <h2 id="host-eligibility-title" className="font-display text-xl font-bold">
-        {notEligible
-          ? 'Todavía no puedes crear suscripciones'
-          : 'Ya tienes el máximo de grupos como titular'}
+        {hostEligibilityTitle(eligibility)}
       </h2>
-      {notEligible ? (
-        <>
-          <p>
-            Para ser titular necesitas una calificación de{' '}
-            <strong>{formatDecimal(requirement.minStars)} estrellas o más</strong> con al menos{' '}
-            <strong>{requirement.minConsideredCharges} cobros considerados</strong> en los últimos{' '}
-            {requirement.windowMonths} meses, o que un administrador te habilite.
-          </p>
-          <p className="text-muted">{currentStatus(eligibility.current)}</p>
-          <p className="text-muted">
-            Mientras tanto puedes entrar a otros grupos como miembro y pagar a tiempo para subir tu
-            calificación.
-          </p>
-        </>
-      ) : (
-        <p>
-          Tienes {eligibility.activeGroups} de {eligibility.maxActiveGroups} grupos activos como
-          titular. Para crear otro, cierra o transfiere uno de los que ya tienes.
-        </p>
-      )}
+      <HostEligibilityExplanation eligibility={eligibility} />
       <Button href={GROUPS_PATH} variant="secondary" className="w-full sm:w-auto sm:self-start">
         Volver a mis suscripciones
       </Button>

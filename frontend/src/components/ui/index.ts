@@ -13,3 +13,4 @@ export { Field, type FieldProps } from './field';
 export { Modal, type ModalProps } from './modal';
 export { Select, type SelectProps } from './select';
 export { Textarea, type TextareaProps } from './textarea';
+export { Tabs, type TabItem, type TabsProps } from './tabs';

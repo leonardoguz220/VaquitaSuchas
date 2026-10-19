@@ -107,6 +107,38 @@ export interface GroupDetail {
   version: number;
 }
 
+/** Página de `GET /groups` (contrato 000 A: `limit` de 1 a 100 y `cursor` opaco). */
+export interface GroupsPage {
+  items: GroupSummary[];
+  nextCursor: string | null;
+}
+
+export interface ListGroupsParams {
+  role?: GroupRole;
+  status?: GroupStatus;
+  limit?: number;
+  cursor?: string;
+}
+
+/** `GET /groups` (RF-001-19): solo los grupos de la persona con sesión (CA-001-20). */
+export function listGroups(params: ListGroupsParams = {}): Promise<GroupsPage> {
+  const query = new URLSearchParams();
+  if (params.role) query.set('role', params.role);
+  if (params.status) query.set('status', params.status);
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.cursor) query.set('cursor', params.cursor);
+  const search = query.toString();
+  return apiRequest<GroupsPage>(`/api/groups${search ? `?${search}` : ''}`);
+}
+
+/**
+ * `GET /groups/:groupId` (RF-001-12, RF-001-13). Lanza `ApiError` `404 NOT_FOUND` si el grupo
+ * no existe o la persona no es miembro activo (RNF-001-01).
+ */
+export function getGroup(groupId: string): Promise<GroupDetail> {
+  return apiRequest<GroupDetail>(`/api/groups/${encodeURIComponent(groupId)}`);
+}
+
 /** Respuesta 200 de `GET /users/me/host-eligibility` (RF-001-21). */
 export interface HostEligibility {
   eligible: boolean;
