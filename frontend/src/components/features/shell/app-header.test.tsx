@@ -42,6 +42,15 @@ describe('AppHeader (plan 001 §6)', () => {
     expect(link).toHaveAttribute('aria-current', 'page');
   });
 
+  it('RF-005-02: la cabecera incluye la campana de notificaciones', () => {
+    mockedPathname.mockReturnValue('/grupos');
+    render(<AppHeader />);
+    expect(screen.getByRole('button', { name: /^Notificaciones/ })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
+
   it('RF-001-19: AppPage pone la cabecera y el contenido', () => {
     mockedPathname.mockReturnValue('/perfil');
     render(

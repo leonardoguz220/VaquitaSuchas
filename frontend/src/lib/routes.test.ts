@@ -1,4 +1,6 @@
 import {
+  NOTIFICATIONS_PATH,
+  safeInternalLink,
   CHARGES_PATH,
   chargePath,
   JOIN_PATH,
@@ -224,5 +226,29 @@ describe('rutas de solicitudes de ingreso (spec 010 T017)', () => {
     expect(login).toBe('/ingresar?next=%2Funirse%3Fcodigo%3DK7M2Q9XA');
     const next = new URLSearchParams(login.split('?')[1]).get('next') ?? undefined;
     expect(resolvePostLoginPath({ next })).toBe('/unirse?codigo=K7M2Q9XA');
+  });
+});
+
+describe('rutas de notificaciones (plan 005 §6)', () => {
+  it('RF-005-01: /notificaciones es protegida', () => {
+    expect(NOTIFICATIONS_PATH).toBe('/notificaciones');
+    expect(isPublicPath(NOTIFICATIONS_PATH)).toBe(false);
+  });
+
+  it('RF-005-01: safeInternalLink acepta rutas internas y descarta enlaces externos', () => {
+    expect(safeInternalLink('/cobros/c1')).toBe('/cobros/c1');
+    expect(safeInternalLink('/solicitudes/jr1?tab=chat')).toBe('/solicitudes/jr1?tab=chat');
+    for (const bad of [
+      null,
+      undefined,
+      '',
+      'https://evil.test',
+      '//evil.test',
+      '/\\evil',
+      'cobros',
+      '/a b',
+    ]) {
+      expect(safeInternalLink(bad)).toBeNull();
+    }
   });
 });

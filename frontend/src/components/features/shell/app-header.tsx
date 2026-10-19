@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { Logo } from '@/components/features/brand/logo';
+import { NotificationBell } from '@/components/features/notifications/notification-bell';
 import { cx } from '@/components/ui/cx';
 import { CHARGES_PATH, GROUPS_PATH, REQUESTS_PATH } from '@/lib/routes';
 
@@ -30,7 +31,8 @@ function isCurrent(pathname: string, href: string): boolean {
 /**
  * Cabecera de las pantallas con sesión (mockup `Grupos.dc.html`): logo que lleva a "Mis
  * suscripciones" y navegación principal con la sección actual marcada con `aria-current` y con
- * fondo y peso de letra (no solo el color). En el celular los enlaces pasan a la línea de abajo.
+ * fondo y peso de letra (no solo el color), y la campana de notificaciones (spec 005 T012). En el
+ * celular el logo y la campana quedan arriba y los enlaces pasan a la línea de abajo.
  */
 export function AppHeader() {
   const pathname = usePathname() ?? '';
@@ -44,7 +46,13 @@ export function AppHeader() {
         >
           <Logo />
         </Link>
-        <nav aria-label="Principal" className="-mx-1 flex flex-1 gap-1 overflow-x-auto">
+        <div className="ml-auto sm:order-last sm:ml-0">
+          <NotificationBell />
+        </div>
+        <nav
+          aria-label="Principal"
+          className="-mx-1 order-last flex w-full gap-1 overflow-x-auto sm:order-none sm:w-auto sm:flex-1"
+        >
           {NAV_ITEMS.map((item) => {
             const current = isCurrent(pathname, item.href);
             return (

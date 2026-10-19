@@ -167,3 +167,17 @@ export function resolvePostLoginPath(searchParams: SearchParamsRecord = {}): str
   }
   return DEFAULT_AFTER_LOGIN_PATH;
 }
+
+/** Centro de notificaciones (plan 005 §6). Ruta protegida. */
+export const NOTIFICATIONS_PATH = '/notificaciones';
+
+/**
+ * Devuelve el `link` de una notificación si es una ruta interna de la app (empieza con una sola
+ * `/`, sin barras invertidas ni caracteres de control), o `null`. El backend ya lo restringe;
+ * esto evita abrir un enlace externo si llegara uno por error.
+ */
+export function safeInternalLink(link: string | null | undefined): string | null {
+  if (!link || !link.startsWith('/') || link.startsWith('//') || link.includes('\\')) return null;
+  if (/[\x00-\x20\x7f]/.test(link)) return null;
+  return link;
+}
