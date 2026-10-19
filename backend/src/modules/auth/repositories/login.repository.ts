@@ -21,6 +21,15 @@ export class LoginRepository {
     return result.rows[0] ?? null;
   }
 
+  async findById(q: Queryable, id: string): Promise<(LoginRow & { email: string }) | null> {
+    const result = await q.query<LoginRow & { email: string }>(
+      `SELECT id, email, password_hash, status, verified_at, session_version
+         FROM users WHERE id = $1`,
+      [id],
+    );
+    return result.rows[0] ?? null;
+  }
+
   async touchLastLogin(q: Queryable, userId: string, now: Date): Promise<void> {
     await q.query('UPDATE users SET last_login_at = $2 WHERE id = $1', [userId, now]);
   }
@@ -30,11 +39,13 @@ export class LoginRepository {
     await q.query('UPDATE users SET session_version = session_version + 1 WHERE id = $1', [userId]);
   }
 
-  /** Cambia el hash e invalida las sesiones abiertas (RF-003-12). */
-  async replacePassword(q: Queryable, userId: string, passwordHash: string): Promise<void> {
-    await q.query(
-      `UPDATE users SET password_hash = $2, session_version = session_version + 1 WHERE id = $1`,
+  /** Cambia el hash e invalida las sesiones abiertas (RF-003-12); devuelve la versión nueva. */
+  async replacePassword(q: Queryable, userId: string, passwordHash: string): Promise<number> {
+    const result = await q.query<{ session_version: number }>(
+      `UPDATE users SET password_hash = $2, session_version = session_version + 1 WHERE id = $1
+       RETURNING session_version`,
       [userId, passwordHash],
     );
+    return result.rows[0]!.session_version;
   }
 }

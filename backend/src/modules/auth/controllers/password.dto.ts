@@ -24,3 +24,20 @@ export class ResetPasswordDto {
   @MaxLength(200, { message: 'PASSWORD_MISMATCH' })
   newPasswordConfirmation!: string;
 }
+
+export class ChangePasswordDto {
+  @ApiProperty()
+  @IsString()
+  @MaxLength(200)
+  currentPassword!: string;
+
+  @ApiProperty({ minLength: 10 })
+  @IsString({ message: 'WEAK_PASSWORD' })
+  @MaxLength(200, { message: 'WEAK_PASSWORD' })
+  newPassword!: string;
+
+  @ApiProperty()
+  @IsString({ message: 'PASSWORD_MISMATCH' })
+  @MaxLength(200, { message: 'PASSWORD_MISMATCH' })
+  newPasswordConfirmation!: string;
+}

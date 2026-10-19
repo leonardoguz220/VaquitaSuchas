@@ -117,8 +117,7 @@ describe('Recuperación de contraseña (spec 003)', () => {
     expect((await reset(token)).status).toBe(204);
   });
 
-  // Se activa con T038 (POST /auth/password/change).
-  it.skip('CA-003-16: el cambio autenticado cierra las otras sesiones y avisa por correo', async () => {
+  it('CA-003-16: el cambio autenticado cierra las otras sesiones y avisa por correo', async () => {
     const user = await t.createUser({ email: uniqueEmail() });
     const other = await sessionOf(user.email, user.password);
     const current = await sessionOf(user.email, user.password);
@@ -137,5 +136,30 @@ describe('Recuperación de contraseña (spec 003)', () => {
     expect(old.status).toBe(401);
     const [notice] = await waitForMessagesTo(user.email, 1);
     expect(notice?.Subject).toContain('cambió');
+  });
+  it('CA-003-16: el token nuevo sirve, la contraseña anterior ya no y la actual errada da 422', async () => {
+    const user = await t.createUser({ email: uniqueEmail() });
+    const auth = `Bearer ${await sessionOf(user.email, user.password)}`;
+    const change = (currentPassword: string, newPassword = 'nueva-clave-456') =>
+      t
+        .http()
+        .post('/auth/password/change')
+        .set('Authorization', auth)
+        .send({ currentPassword, newPassword, newPasswordConfirmation: newPassword });
+    const wrong = await change('no-es-la-actual-1');
+    expect(wrong.status).toBe(422);
+    expect(wrong.body.code).toBe('CURRENT_PASSWORD_WRONG');
+    const weak = await change(user.password, 'corta1');
+    expect(weak.status).toBe(400);
+    expect(weak.body.details.fields.newPassword).toContain('WEAK_PASSWORD');
+    const ok = await change(user.password);
+    expect(ok.status).toBe(200);
+    const fresh = await t
+      .http()
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${ok.body.sessionToken as string}`);
+    expect(fresh.status).toBe(200);
+    expect((await t.login(user.email, user.password)).status).toBe(401);
+    expect((await t.login(user.email, 'nueva-clave-456')).status).toBe(200);
   });
 });
