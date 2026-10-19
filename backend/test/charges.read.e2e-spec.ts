@@ -39,7 +39,7 @@ describe('Lectura de cobros', () => {
   it('RF-002-15: "Mis cobros" lista los del usuario con dueAt descendente y datos del grupo', async () => {
     const older = await harness.insertCharge(group, payer, {
       period: '2026-09',
-      dueAt: '2026-09-19T04:00:00.000Z',
+      dueAt: '2026-10-17T04:00:00.000Z',
     });
     const newer = await harness.insertCharge(group, payer);
 
@@ -86,11 +86,17 @@ describe('Lectura de cobros', () => {
 
   it('RF-002-15: pagina con cursor sin repetir ni saltar cobros', async () => {
     const ids: string[] = [];
-    for (const period of ['2026-10', '2026-09', '2026-08']) {
+    // Los tres vencen después de NOW (2026-10-16): un cobro vencido lo barrería el sistema (R2).
+    const periods: [string, string][] = [
+      ['2026-10', '2026-10-19'],
+      ['2026-09', '2026-10-18'],
+      ['2026-08', '2026-10-17'],
+    ];
+    for (const [period, dueDay] of periods) {
       ids.push(
         await harness.insertCharge(group, payer, {
           period,
-          dueAt: `${period}-19T04:00:00.000Z`,
+          dueAt: `${dueDay}T04:00:00.000Z`,
         }),
       );
     }
@@ -125,7 +131,7 @@ describe('Lectura de cobros', () => {
     });
     const pending = await harness.insertCharge(group, other, {
       period: '2026-08',
-      dueAt: '2026-08-19T04:00:00.000Z',
+      dueAt: '2026-10-17T04:00:00.000Z',
     });
     await harness.leaveGroup(group.id, other, 'mora');
 
@@ -148,7 +154,7 @@ describe('Lectura de cobros', () => {
   it('CA-002-32: una persona que sigue en el grupo ve todos sus estados', async () => {
     await harness.insertCharge(group, payer, {
       period: '2026-08',
-      dueAt: '2026-08-19T04:00:00.000Z',
+      dueAt: '2026-10-17T04:00:00.000Z',
     });
     const list = await get(payer, '/me/charges').expect(200);
     expect(list.body.items).toHaveLength(1);
