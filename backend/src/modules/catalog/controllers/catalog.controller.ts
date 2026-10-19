@@ -1,5 +1,6 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -10,11 +11,12 @@ import {
 import { AuthGuard } from '../../../shared/guards/auth.guard.js';
 import {
   CatalogService,
+  type CatalogPage,
   type CatalogPlanView,
   type CatalogServiceView,
 } from '../services/catalog.service.js';
 import type { Category } from '../domain/categories.js';
-import { ServiceSlugParams } from './catalog.dto.js';
+import { ListServicesQuery, ServiceSlugParams } from './catalog.dto.js';
 
 @ApiTags('catalog')
 @UseGuards(AuthGuard)
@@ -22,6 +24,15 @@ import { ServiceSlugParams } from './catalog.dto.js';
 @Controller('catalog')
 export class CatalogController {
   constructor(private readonly catalog: CatalogService) {}
+
+  @Get('services')
+  @ApiOperation({ summary: 'Lista servicios ofrecidos con filtro y búsqueda (RF-004-04)' })
+  @ApiOkResponse({ description: '{ items: CatalogService[], nextCursor }' })
+  @ApiBadRequestResponse({ description: 'VALIDATION_ERROR: categoría, q, limit o cursor.' })
+  @ApiUnauthorizedResponse({ description: 'UNAUTHENTICATED.' })
+  listServices(@Query() query: ListServicesQuery): Promise<CatalogPage> {
+    return this.catalog.listServices(query);
+  }
 
   @Get('services/:slug')
   @ApiOperation({ summary: 'Detalle de un servicio con sus planes activos (RF-004-05)' })

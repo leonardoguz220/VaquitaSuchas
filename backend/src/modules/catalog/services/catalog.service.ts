@@ -3,6 +3,7 @@ import { DbService } from '../../../shared/db/db.service.js';
 import { DomainError } from '../../../shared/errors/domain-error.js';
 import { DEFAULT_MESSAGES, ErrorCode } from '../../../shared/errors/error-codes.js';
 import { decodeServiceCursor, encodeServiceCursor } from '../domain/catalog-cursor.js';
+import { escapeLike, normalizeSearchTerm } from '../domain/catalog-search.js';
 import { CATEGORIES, categoryLabel, type Category } from '../domain/categories.js';
 import {
   CatalogRepository,
@@ -144,6 +145,7 @@ export class CatalogService {
   /** Servicios ofrecidos, alfabéticos, con paginación por cursor (CA-004-01). Un cursor inválido lanza 400. */
   async listServices(options: {
     category?: Category | null;
+    q?: string | null;
     limit?: number;
     cursor?: string | null;
   }): Promise<CatalogPage> {
@@ -157,8 +159,10 @@ export class CatalogService {
         fields: { cursor: ['INVALID_CURSOR'] },
       });
     }
+    const key = options.q ? normalizeSearchTerm(options.q) : '';
     const rows = await this.catalog.listServices(this.db, {
       category: options.category ?? null,
+      likePattern: key ? `%${escapeLike(key)}%` : null,
       limit: limit + 1,
       cursor,
     });
