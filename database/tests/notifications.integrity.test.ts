@@ -209,13 +209,15 @@ test('integridad: notifications_immutable_content impide editar cada columna de 
     dedupe_key: dedupeKey(),
     user_id: otherUserId,
     created_at: new Date('2026-01-01T00:00:00Z'),
+    id: randomUUID(),
   };
   for (const [column, value] of Object.entries(changes)) {
     const { id } = await newNotification();
     const before = await snapshot(id);
     await assert.rejects(
       run(`UPDATE notifications SET ${column} = $1 WHERE id = $2`, [value, id]),
-      `editar ${column} debería fallar`,
+      (error: unknown) => (error as { code?: string }).code === '23001',
+      `editar ${column} debería fallar con restrict_violation`,
     );
     assert.deepEqual(await snapshot(id), before, `${column} no debería cambiar`);
   }
@@ -227,14 +229,15 @@ test('integridad: pasar link, entity_type o entity_id a NULL también falla', as
     const before = await snapshot(id);
     await assert.rejects(
       run(`UPDATE notifications SET ${column} = NULL WHERE id = $1`, [id]),
-      `vaciar ${column} debería fallar`,
+      (error: unknown) => (error as { code?: string }).code === '23001',
+      `vaciar ${column} debería fallar con restrict_violation`,
     );
     assert.deepEqual(await snapshot(id), before, `${column} no debería cambiar`);
   }
 });
 
 test('RF-005-02: marcar read_at pasa y actualiza updated_at', async () => {
-  const { id } = await newNotification();
+  const { id } = await newNotification({ updated_at: new Date('2020-01-01T00:00:00Z') });
   const [beforeRow] = await run<{ updated_at: Date }>(
     'SELECT updated_at FROM notifications WHERE id = $1',
     [id],
@@ -246,10 +249,10 @@ test('RF-005-02: marcar read_at pasa y actualiza updated_at', async () => {
     [id],
   );
   assert.equal(row?.read_at?.toISOString(), readAt.toISOString());
-  assert.ok(beforeRow && row && row.updated_at >= beforeRow.updated_at);
+  assert.ok(beforeRow && row && row.updated_at > beforeRow.updated_at);
 });
 
-test('RF-005-01: volver read_at a NULL (marcar no leída) pasa', async () => {
+test('integridad: el disparador no impide volver read_at a NULL (el contrato no lo expone)', async () => {
   const { id } = await newNotification({ read_at: new Date() });
   await run('UPDATE notifications SET read_at = NULL WHERE id = $1', [id]);
   const [row] = await run<{ read_at: Date | null }>(
