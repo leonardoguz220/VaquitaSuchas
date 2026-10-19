@@ -39,3 +39,13 @@ export function toLaPazParts(date: Date): LaPazParts {
     weekday: local.getUTCDay(),
   };
 }
+
+/** Cantidad de días del mes (`month` de 1 a 12), con años bisiestos. */
+export function daysInMonth(year: number, month: number): number {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+/** Instante en que empieza el día `day` de La Paz (00:00 La Paz = 04:00 UTC). Acepta días fuera de rango: se desbordan al mes siguiente. */
+export function startOfLaPazDay(year: number, month: number, day: number): Date {
+  return new Date(Date.UTC(year, month - 1, day, -LA_PAZ_UTC_OFFSET_HOURS));
+}
