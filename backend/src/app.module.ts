@@ -6,6 +6,7 @@ import { validateEnv } from './shared/config/env.validation.js';
 import { DbModule } from './shared/db/db.module.js';
 import { ErrorsModule } from './shared/errors/errors.module.js';
 import { EventsModule } from './shared/events/events.module.js';
+import { JobsHttpModule } from './shared/jobs/jobs-http.module.js';
 import { JobsModule } from './shared/jobs/jobs.module.js';
 import { LoggingModule } from './shared/logging/logging.module.js';
 
@@ -20,6 +21,8 @@ import { LoggingModule } from './shared/logging/logging.module.js';
     EventsModule,
     // Tareas programadas: registro, runner y cron interno opcional (RF-000-14).
     JobsModule,
+    // POST /internal/jobs/tick con X-Jobs-Token y límite de 1 llamada por segundo (RF-000-14).
+    JobsHttpModule,
     // Filtro global de errores y ValidationPipe (RF-000-11).
     ErrorsModule,
     HealthModule,
