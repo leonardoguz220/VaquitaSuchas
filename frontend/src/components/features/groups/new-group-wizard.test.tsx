@@ -122,7 +122,7 @@ describe('Asistente /grupos/nuevo con habilitación y código (T016)', () => {
     });
     const items = within(dialog).getAllByRole('listitem');
     expect(items[0]).toHaveTextContent('Estrellas de puntualidad');
-    expect(items[0]).toHaveTextContent('Tienes: 4,0 (Bueno)');
+    expect(items[0]).toHaveTextContent('Tienes: 4,0 de 5Bueno');
     expect(items[0]).toHaveTextContent('Se pide: 4,5 o más');
     expect(items[1]).toHaveTextContent('últimos 12 meses');
     expect(items[1]).toHaveTextContent('Tienes: 3');
