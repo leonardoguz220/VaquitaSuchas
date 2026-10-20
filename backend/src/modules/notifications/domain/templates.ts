@@ -64,7 +64,7 @@ interface Parts {
   link: string | null;
 }
 
-const MONTHS = [
+export const MONTHS = [
   'enero',
   'febrero',
   'marzo',
