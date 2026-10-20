@@ -96,7 +96,7 @@ export function NotificationBell() {
         type="button"
         aria-label={bellLabel(count)}
         aria-expanded={open}
-        aria-controls={panelId}
+        aria-controls={open ? panelId : undefined}
         onClick={toggle}
         className={cx(
           'relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-field text-ink',
