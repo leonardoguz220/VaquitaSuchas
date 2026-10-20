@@ -30,8 +30,12 @@ test.describe('recuperación de contraseña', () => {
     page,
   }) => {
     await page.goto('/recuperar/token-que-no-existe-000000');
-    await page.getByRole('textbox', { name: 'Nueva contraseña', exact: true }).fill('ClaveNueva2026');
-    await page.getByRole('textbox', { name: 'Confirma la contraseña', exact: true }).fill('ClaveNueva2026');
+    await page
+      .getByRole('textbox', { name: 'Nueva contraseña', exact: true })
+      .fill('ClaveNueva2026');
+    await page
+      .getByRole('textbox', { name: 'Confirma la contraseña', exact: true })
+      .fill('ClaveNueva2026');
     await page.getByRole('button', { name: 'Guardar contraseña' }).click();
 
     await expect(page.getByText(EXPIRED_MESSAGE)).toBeVisible();

@@ -36,7 +36,9 @@ test.describe('registro con el bot simulado', () => {
     await expect(page).toHaveURL(/\/registro\/verificar/);
     const telegramLink = page.getByRole('link', { name: 'Abrir Telegram' });
     await expect(telegramLink).toBeVisible();
-    const token = new URL((await telegramLink.getAttribute('href')) ?? '').searchParams.get('start');
+    const token = new URL((await telegramLink.getAttribute('href')) ?? '').searchParams.get(
+      'start',
+    );
     expect(token, 'el enlace de Telegram debe llevar start=<token>').toBeTruthy();
 
     const bot = await context.newPage();
