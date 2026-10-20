@@ -622,6 +622,25 @@ describe('/solicitudes/[id] (spec 010 T030): decisiones del titular y cancelaci�
     expect(screen.queryByRole('group', { name: 'Acciones de la solicitud' })).toBeNull();
   });
 
+  it('RN-008-03: una solicitud desde publicación se marca y pide confirmar con la cuota nueva', async () => {
+    const fromListing = {
+      ...hostReportedRequest,
+      source: 'publicacion' as const,
+      estimatedShareCents: 2150,
+    };
+    as('titular', fromListing);
+    mockedConfirm.mockResolvedValue(accepted(fromListing, 'confirmada'));
+    const actor = await renderPage();
+    expect(await screen.findByText('Desde publicación')).toBeVisible();
+    await actor.click(await screen.findByRole('button', { name: 'Confirmar ingreso' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Confirmar ingreso' });
+    expect(dialog).toHaveTextContent('cambia la cuota de todos los miembros');
+    expect(within(dialog).getByText(/Bs 21,50/)).toBeVisible();
+    expect(mockedConfirm).not.toHaveBeenCalled();
+    await actor.click(within(dialog).getByRole('button', { name: 'Confirmar ingreso' }));
+    expect(mockedConfirm).toHaveBeenCalledWith('jr1', { version: 3 });
+  });
+
   it('CA-010-15: si al confirmar ya expiró por falta de respuesta, avisa y recarga', async () => {
     as('titular', hostReportedRequest);
     mockedConfirm.mockRejectedValue(new ApiError(409, 'INVALID_TRANSITION', 'x'));

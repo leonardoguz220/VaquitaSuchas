@@ -1,11 +1,10 @@
 /**
  * Publicación de cupos del titular (`specs/008-cupos-libres/contracts/api.md`, sección de
- * `/groups/:groupId/listing`). Por ahora cada función responde con datos simulados de
- * `group-listing.mock.ts`; al conectar el backend solo cambia el cuerpo de estas funciones por
- * `apiRequest` al proxy `/api`. Las cuotas y los estados llegan calculados: aquí no se calcula
- * ninguna regla del dominio.
+ * `/groups/:groupId/listing`). Cada función llama al backend por el proxy `/api`; los datos
+ * simulados de `group-listing.mock.ts` solo los usan los tests. Las cuotas y los estados llegan
+ * calculados: aquí no se calcula ninguna regla del dominio.
  */
-import * as mock from './group-listing.mock';
+import { apiRequest } from './http';
 import type { ListingView } from './listings';
 
 export type OwnerListingStatus = 'activa' | 'oculta' | 'expirada' | 'retirada' | 'cerrada';
@@ -56,12 +55,17 @@ export interface ListingRequestOptions {
   signal?: AbortSignal;
 }
 
+/** Ruta de la publicación del grupo, por el proxy `/api`. */
+function listingPath(groupId: string): string {
+  return `/api/groups/${encodeURIComponent(groupId)}/listing`;
+}
+
 /** `GET /groups/:groupId/listing` para el titular: la más reciente o `null` si nunca publicó. */
 export function getOwnerListing(
   groupId: string,
   options: ListingRequestOptions = {},
 ): Promise<OwnerListing | null> {
-  return mock.getOwnerListing(groupId, options.signal);
+  return apiRequest<OwnerListing | null>(listingPath(groupId), { signal: options.signal });
 }
 
 /** `GET /groups/:groupId/listing` para un miembro: si el grupo tiene publicación activa. */
@@ -69,7 +73,7 @@ export function getGroupListingSummary(
   groupId: string,
   options: ListingRequestOptions = {},
 ): Promise<GroupListingSummary> {
-  return mock.getGroupListingSummary(groupId, options.signal);
+  return apiRequest<GroupListingSummary>(listingPath(groupId), { signal: options.signal });
 }
 
 /** `POST /groups/:groupId/listing` (RF-008-01): publica en `activa` por 30 días. */
@@ -77,7 +81,7 @@ export function createOwnerListing(
   groupId: string,
   input: ListingFormInput,
 ): Promise<OwnerListing> {
-  return mock.createOwnerListing(groupId, input);
+  return apiRequest<OwnerListing>(listingPath(groupId), { method: 'POST', body: input });
 }
 
 /** `PATCH /groups/:groupId/listing` (RF-008-06): edita una `activa` u `oculta`. */
@@ -85,15 +89,15 @@ export function updateOwnerListing(
   groupId: string,
   input: UpdateListingInput,
 ): Promise<OwnerListing> {
-  return mock.updateOwnerListing(groupId, input);
+  return apiRequest<OwnerListing>(listingPath(groupId), { method: 'PATCH', body: input });
 }
 
 /** `POST /groups/:groupId/listing/renew` (RF-008-05): vuelve a 30 días desde ahora. */
 export function renewOwnerListing(groupId: string): Promise<OwnerListing> {
-  return mock.renewOwnerListing(groupId);
+  return apiRequest<OwnerListing>(`${listingPath(groupId)}/renew`, { method: 'POST' });
 }
 
 /** `DELETE /groups/:groupId/listing` (RF-008-06): pasa la publicación a `retirada`. */
 export function retireOwnerListing(groupId: string): Promise<void> {
-  return mock.retireOwnerListing(groupId);
+  return apiRequest<void>(listingPath(groupId), { method: 'DELETE' });
 }

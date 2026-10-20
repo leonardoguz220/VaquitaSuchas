@@ -2,12 +2,12 @@
  * Cliente de los endpoints de cupos libres (spec 008, `contracts/api.md`, búsqueda y detalle). Una
  * función por endpoint y tipos del contrato. El frontend muestra `estimatedShareCents`,
  * `slotsOffered`, `owner.level` y `entryWindow` tal como llegan: no calcula cuotas, niveles ni
- * estados de la ventana. Por ahora las funciones responden con datos simulados de
- * `listings.mock.ts`; al conectar el backend solo cambia el cuerpo por `apiRequest`.
+ * estados de la ventana. Las funciones llaman al backend por el proxy `/api`; los datos simulados
+ * de `listings.mock.ts` solo los usan los tests.
  */
 import type { CatalogCategory } from './catalog';
+import { apiRequest } from './http';
 import type { JoinRequest } from './join-requests';
-import * as mock from './listings.mock';
 import type { RatingLevel } from './reputation';
 
 /** Orden del contrato: por cuota, por fecha de publicación o por puntualidad del titular. */
@@ -145,7 +145,10 @@ export function listListings(
   params: ListListingsParams = {},
   options: ListingRequestOptions = {},
 ): Promise<ListingsPage> {
-  return mock.listListings(buildListingsQuery(params), options);
+  const query = buildListingsQuery(params).toString();
+  return apiRequest<ListingsPage>(query ? `/api/listings?${query}` : '/api/listings', {
+    signal: options.signal,
+  });
 }
 
 /**
@@ -156,7 +159,9 @@ export function getListing(
   listingId: string,
   options: ListingRequestOptions = {},
 ): Promise<ListingView> {
-  return mock.getListing(listingId, options);
+  return apiRequest<ListingView>(`/api/listings/${encodeURIComponent(listingId)}`, {
+    signal: options.signal,
+  });
 }
 
 /**
@@ -164,28 +169,34 @@ export function getListing(
  * el mensaje opcional. Lanza `ApiError` `400 VALIDATION_ERROR` (mensaje de más de 200),
  * `404 LISTING_NOT_FOUND`, `403 ACCOUNT_RESTRICTED` o `422 BUSINESS_RULE` con `details.code`
  * (`ENTRY_WINDOW_CLOSED`, `ACTIVE_REQUEST_EXISTS`, `TOO_MANY_ACTIVE_REQUESTS`,
- * `OPEN_CHARGES_IN_GROUP`, `NO_SLOTS_AVAILABLE`). Con la API conectada, el cuerpo será
- * `apiRequest(listingRequestPath(id), { method: 'POST', body: { message } })`.
+ * `OPEN_CHARGES_IN_GROUP`, `NO_SLOTS_AVAILABLE`).
  */
 export function requestListingSeat(
   listingId: string,
   input: ListingSeatInput,
   options: ListingRequestOptions = {},
 ): Promise<ListingSeatRequest> {
-  return mock.requestListingSeat(listingId, input, options);
+  return apiRequest<ListingSeatRequest>(listingRequestPath(listingId), {
+    method: 'POST',
+    body: input,
+    signal: options.signal,
+  });
 }
 
 /**
  * `POST /listings/:id/reports` (RF-008-17): reporta una publicación. Responde `204`, sin cuerpo.
  * Lanza `ApiError` `409 ALREADY_REPORTED` si el usuario ya la reportó, `404 LISTING_NOT_FOUND`,
  * `422 BUSINESS_RULE` (`CANNOT_REPORT_OWN_LISTING`), `429 RATE_LIMITED` (10 por día),
- * `403 ACCOUNT_RESTRICTED` o `400 VALIDATION_ERROR` (comentario de más de 300). Con la API
- * conectada, el cuerpo será `apiRequest(listingReportPath(id), { method: 'POST', body: input })`.
+ * `403 ACCOUNT_RESTRICTED` o `400 VALIDATION_ERROR` (comentario de más de 300).
  */
 export function reportListing(
   listingId: string,
   input: ListingReportInput,
   options: ListingRequestOptions = {},
 ): Promise<void> {
-  return mock.reportListing(listingId, input, options);
+  return apiRequest<void>(listingReportPath(listingId), {
+    method: 'POST',
+    body: input,
+    signal: options.signal,
+  });
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { ServiceLogo } from '@/components/features/catalog/ServiceLogo';
+import { Badge } from '@/components/ui';
 import { formatBs } from '@/lib/money';
 import type { DeadlineKind, JoinRequest } from '@/services/join-requests';
 import { ratingText } from './join-messages';
@@ -76,6 +77,7 @@ export function RequestHeader({ request, viewer, onDeadline }: RequestHeaderProp
           </h1>
           <div className="flex flex-wrap items-center gap-2">
             <JoinStatusBadge status={phase.status} />
+            {request.source === 'publicacion' && <Badge variant="info">Desde publicación</Badge>}
             <span className="text-[15px] text-muted">
               {viewer === 'titular' ? group.name : service}
             </span>
