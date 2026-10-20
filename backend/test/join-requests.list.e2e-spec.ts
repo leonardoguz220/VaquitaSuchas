@@ -57,7 +57,7 @@ describe('Listas y resumen de solicitudes de ingreso', () => {
       userId: a,
       fullName: 'Ana',
       stars: null,
-      level: null,
+      level: 'Nuevo',
     });
     // 5 cupos, 2 miembros y una reserva (esperando_pago vigente): quedan 2 (RN-010-02).
     expect(queue.body.slots).toEqual({ total: 5, members: 2, reserved: 1, available: 2 });

@@ -22,6 +22,10 @@ import {
 import { disputeEvidenceKeyOf } from '../domain/request-files.js';
 import { AUDIT_PORT, type AuditPort } from '../ports/audit.port.js';
 import { BAN_PORT, type BanPort } from '../ports/ban.port.js';
+import {
+  decodeDisputeQueueCursor,
+  encodeDisputeQueueCursor,
+} from '../domain/dispute-queue-cursor.js';
 import { DisputesRepository, type DisputeRecord } from '../repositories/disputes.repository.js';
 import { RequestEventsRepository } from '../repositories/events.repository.js';
 import { MessagesRepository } from '../repositories/messages.repository.js';
@@ -49,6 +53,23 @@ interface SignedImage {
   expiresAt: string;
   mime: string;
 }
+
+/** Fila de la cola de administración (RF-009-20): no incluye chat ni comprobante. */
+export interface AdminDisputeRow {
+  id: string;
+  requestId: string;
+  kind: DisputeRecord['kind'];
+  status: DisputeRecord['status'];
+  openedBy: { userId: string; fullName: string };
+  accused: { userId: string; fullName: string };
+  openedAt: string;
+  respondedAt: string | null;
+  hasResponse: boolean;
+  resolvedAt: string | null;
+}
+
+export const DISPUTE_QUEUE_DEFAULT_LIMIT = 20;
+export const DISPUTE_QUEUE_MAX_LIMIT = 100;
 
 /** Evidencia completa para el administrador (RF-010-23). */
 export interface DisputeEvidence {
@@ -300,6 +321,49 @@ export class DisputesService {
     await this.requestsService.access(this.db, requestId, userId);
     const rows = await this.disputes.listByRequest(this.db, requestId);
     return { items: await this.views(this.db, rows) };
+  }
+
+  /** `GET /admin/disputes` (RF-009-20): cola con los abiertos primero; sin evidencia. */
+  async listQueue(query: {
+    status?: DisputeRecord['status'];
+    limit?: number;
+    cursor?: string;
+  }): Promise<{ items: AdminDisputeRow[]; nextCursor: string | null }> {
+    const limit = Math.min(
+      Math.max(query.limit ?? DISPUTE_QUEUE_DEFAULT_LIMIT, 1),
+      DISPUTE_QUEUE_MAX_LIMIT,
+    );
+    const after = query.cursor === undefined ? null : decodeDisputeQueueCursor(query.cursor);
+    if (query.cursor !== undefined && after === null) throw validation('cursor', 'INVALID_CURSOR');
+    const rows = await this.disputes.listQueue(this.db, {
+      status: query.status ?? null,
+      limit: limit + 1,
+      after,
+    });
+    const page = rows.slice(0, limit);
+    const last = page[page.length - 1];
+    return {
+      items: page.map((r) => ({
+        id: r.id,
+        requestId: r.requestId,
+        kind: r.kind,
+        status: r.status,
+        openedBy: r.openedBy,
+        accused: r.accused,
+        openedAt: r.openedAt.toISOString(),
+        respondedAt: r.respondedAt?.toISOString() ?? null,
+        hasResponse: r.respondedAt !== null,
+        resolvedAt: r.resolvedAt?.toISOString() ?? null,
+      })),
+      nextCursor:
+        rows.length > limit && last
+          ? encodeDisputeQueueCursor({
+              rank: last.status === 'abierto' ? 0 : 1,
+              openedAt: last.openedAtText,
+              id: last.id,
+            })
+          : null,
+    };
   }
 
   /**

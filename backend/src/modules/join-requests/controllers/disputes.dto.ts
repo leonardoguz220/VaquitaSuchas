@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export type { UploadedRequestFile } from './join-requests.dto.js';
 
@@ -31,4 +32,25 @@ export class ResolveDisputeDto {
   @IsOptional()
   @IsString()
   reason?: string;
+}
+
+/** Query de `GET /admin/disputes` (RF-009-20). */
+export class ListDisputeQueueQueryDto {
+  @ApiPropertyOptional({ enum: ['abierto', 'resuelto'] })
+  @IsOptional()
+  @IsIn(['abierto', 'resuelto'])
+  status?: 'abierto' | 'resuelto';
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  cursor?: string;
 }

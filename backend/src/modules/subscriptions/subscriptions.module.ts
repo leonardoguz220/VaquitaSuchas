@@ -2,6 +2,7 @@ import { Module, type OnModuleInit } from '@nestjs/common';
 import { AdaptersModule } from '../../app-adapters/adapters.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { CatalogModule } from '../catalog/catalog.module.js';
+import { AdminGroupsController } from './controllers/admin-groups.controller.js';
 import { GroupMemberGuard } from './controllers/group-member.guard.js';
 import { GroupOwnerGuard } from './controllers/group-owner.guard.js';
 import {
@@ -31,6 +32,7 @@ import { UserEventsHandler } from './services/user-events.handler.js';
 @Module({
   imports: [AuthModule, CatalogModule, AdaptersModule],
   controllers: [
+    AdminGroupsController,
     GroupsController,
     GroupViewController,
     GroupAdminController,

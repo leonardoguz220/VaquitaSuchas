@@ -120,6 +120,14 @@ export class GroupsRepository {
     return result.rows[0] ?? null;
   }
 
+  /** Estado de la cuenta de una persona (`activo`, `suspendido`, `baneado`); `null` si no existe. */
+  async userStatus(q: Queryable, userId: string): Promise<string | null> {
+    const result = await q.query<{ status: string }>('SELECT status FROM users WHERE id = $1', [
+      userId,
+    ]);
+    return result.rows[0]?.status ?? null;
+  }
+
   /** Ids de los grupos activos y no congelados: los únicos que generan cobros (spec 002, R5). */
   async listActiveUnfrozenIds(q: Queryable): Promise<string[]> {
     const result = await q.query<{ id: string }>(

@@ -1,19 +1,26 @@
 import { Injectable } from '@nestjs/common';
+import { Clock } from '../shared/clock/clock.js';
 import type { Queryable } from '../shared/db/db.service.js';
 import {
   HOST_REQUIREMENT,
   type HostEligibility,
   type HostEligibilityPort,
 } from '../modules/subscriptions/ports/host-eligibility.port.js';
+import { ReputationQueryService } from '../modules/reputation/services/reputation-query.service.js';
 
 /**
- * Adaptador de `HostEligibilityPort` (spec 001 T013). Hoy compone solo la habilitación manual
- * vigente (`host_enablements`, spec 009). La vía por calificación (spec 007, ≥ 4,5 estrellas con
- * ≥ 6 cobros considerados) responde «no habilitado» hasta que exista la reputación; entonces se
- * consulta aquí `ReputationQueryPort.checkHostRating` (spec 009 T020).
+ * Adaptador de `HostEligibilityPort` (spec 001 T013): compone la habilitación manual vigente
+ * (`host_enablements`, spec 009, RF-007-17) con la vía por calificación (spec 007, RF-007-15:
+ * 4,5 estrellas y 6 cobros considerados, calculada en el momento). La manual manda y no se
+ * pierde al bajar la calificación.
  */
 @Injectable()
 export class HostEligibilityAdapter implements HostEligibilityPort {
+  constructor(
+    private readonly clock: Clock,
+    private readonly ratings: ReputationQueryService,
+  ) {}
+
   async check(q: Queryable, userId: string): Promise<HostEligibility> {
     const result = await q.query<{ enabled: boolean }>(
       `SELECT EXISTS (
@@ -22,11 +29,17 @@ export class HostEligibilityAdapter implements HostEligibilityPort {
       [userId],
     );
     const manual = result.rows[0]?.enabled === true;
+    const rating = await this.ratings.checkHostRating(q, userId, this.clock.now());
+    const source = manual ? 'manual' : rating.ok ? 'calificacion' : null;
     return {
-      eligible: manual,
-      source: manual ? 'manual' : null,
+      eligible: source !== null,
+      source,
       requirement: HOST_REQUIREMENT,
-      current: { stars: null, consideredCharges: 0, level: null },
+      current: {
+        stars: rating.stars,
+        consideredCharges: rating.consideredCount,
+        level: rating.level,
+      },
     };
   }
 }
