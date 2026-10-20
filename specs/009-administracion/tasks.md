@@ -72,7 +72,7 @@
 - [x] T026 [P] [US5] [BE] `domain/catalog-validation.ts` (`validateCatalogRows`: `slug` único, cupos 2–20, montos positivos, errores por fila) y `csv-parse.ts` con `catalog-validation.spec.ts` — Depende: T007 · Cubre: RF-009-06, RF-009-07, CA-009-03
 - [x] T027 [P] [US5] [BE] `backend/test/admin.catalog.e2e-spec.ts` (CA-009-02 crear servicio y plan, CA-009-03 `slug` repetido, CA-009-04 cambiar precio no afecta suscripciones, CA-009-05 plan desactivado no se ofrece) y `admin.catalog-import.e2e-spec.ts` (CA-009-06 fila inválida) — Depende: T011, spec 004 T007 · Cubre: CA-009-02, CA-009-03, CA-009-04, CA-009-05, CA-009-06
 - [x] T028 [US5] [BE] `services/catalog-admin.service.ts` y `controllers/admin-catalog.controller.ts` (`POST/PATCH /admin/catalog/services`, `…/plans`, `activate|deactivate`; reemplazan el stub de la spec 004) y `services/catalog-import.service.ts` (`POST /admin/catalog/import/preview` con token de 15 minutos en memoria y `POST …/apply` en una transacción) — Depende: T026, T027 · Cubre: RF-009-04, RF-009-05, RF-009-06, RF-009-07, CA-009-02 a 06, RN-009-05
-- [ ] T029 [P] [US5] [FE] `/admin/catalogo` (servicios y planes: crear, editar con el aviso de que no cambia suscripciones existentes, activar y desactivar; importación con vista previa y errores por fila) con mock, conectado al terminar T028 — Depende: T017 · Cubre: RF-009-04, RF-009-06
+- [x] T029 [P] [US5] [FE] `/admin/catalogo` (servicios y planes: crear, editar con el aviso de que no cambia suscripciones existentes, activar y desactivar; importación con vista previa y errores por fila) con mock, conectado al terminar T028 — Depende: T017 · Cubre: RF-009-04, RF-009-06
 
 ## Fase 7: US6 — Moderación de cupos (Prioridad: P2)
 

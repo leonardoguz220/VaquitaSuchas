@@ -3,16 +3,21 @@
  * en memoria para que cada cambio se vea en la pantalla. Las validaciones (slug único, cupos de 2 a
  * 20, montos positivos) imitan lo que respondería el servidor. Nombres y precios inventados.
  */
+import type {
+  AdminCatalogPlan,
+  AdminCatalogService,
+  CatalogImportApplied,
+  CatalogImportFormat,
+  CatalogImportPreview,
+  PlanInput,
+  PlanSaveResult,
+  ServiceInput,
+} from './admin-catalog';
 import {
   CATALOG_EDIT_WARNING,
   CATALOG_MAX_SLOTS,
   CATALOG_MIN_SLOTS,
-  type AdminCatalogPlan,
-  type AdminCatalogService,
-  type PlanInput,
-  type PlanSaveResult,
-  type ServiceInput,
-} from './admin-catalog';
+} from './admin-catalog.constants';
 import { ApiError } from './http';
 
 const LATENCY_MS = 350;
@@ -300,5 +305,42 @@ export function setPlanActive(id: string, active: boolean): Promise<AdminCatalog
     const { plan } = findPlan(id);
     plan.active = active;
     return clone(plan);
+  });
+}
+
+const DEMO_TOKEN = 'token-demo-catalogo';
+
+/** Vista previa simulada: un archivo con la palabra «invalida» trae un error por fila (CA-009-06). */
+export function previewImport(
+  format: CatalogImportFormat,
+  content: string,
+): Promise<CatalogImportPreview> {
+  return delay(() => {
+    if (content.includes('invalida')) {
+      return {
+        token: null,
+        changes: [{ row: 1, kind: 'plan' as const, slug: 'hbo-basico', action: 'crear' as const }],
+        errors: [{ row: 1, field: 'priceCents', message: 'El precio debe ser un monto positivo.' }],
+      };
+    }
+    return {
+      token: DEMO_TOKEN,
+      changes: [{ row: 1, kind: 'servicio' as const, slug: 'hbo', action: 'crear' as const }],
+      errors: [],
+    };
+  });
+}
+
+/** Aplicación simulada: solo acepta el token que entrega la vista previa válida. */
+export function applyImport(token: string): Promise<CatalogImportApplied> {
+  return delay(() => {
+    if (token !== DEMO_TOKEN) {
+      throw new ApiError(
+        422,
+        'IMPORT_TOKEN_INVALID',
+        'La vista previa ya no es válida. Súbela de nuevo.',
+      );
+    }
+    return { created: 1, updated: 0 };
   });
 }
