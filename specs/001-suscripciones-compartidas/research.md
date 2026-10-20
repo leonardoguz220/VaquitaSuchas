@@ -23,6 +23,8 @@ Esta investigación fija cuatro definiciones que la spec deja implícitas y que 
 
 **Consecuencia para el modelo.** El ciclo inicial guarda los mismos campos que uno regular. Mientras no llegue el siguiente ciclo, su `member_count` y sus cuotas de referencia se recalculan con cada ingreso o salida (columna `finalized_at` nula); al crearse el ciclo siguiente se fija. Los ciclos regulares son inmutables desde su creación.
 
+**Estado (2026-10-20):** implementado; `cycle_type = 'inicial'` es el único con `finalized_at` nulo (migración 0040).
+
 **Alternativas descartadas.** No tener ciclo inicial (rompe la afirmación de la spec 006 y deja sin período a los cobros de ingreso). Considerar que el primer período empieza en el primer corte regular (obliga a cobrar el ingreso del grupo nuevo en un período que no ha empezado).
 
 ## R2. Vencimiento y plazo de atraso
@@ -32,6 +34,8 @@ Esta investigación fija cuatro definiciones que la spec deja implícitas y que 
 **Definición.** `due_date = cut_date + 3 días` (fecha de calendario en La Paz). El cobro vence al terminar ese día: `due_at` = inicio del día `due_date + 1` en La Paz (instante exclusivo). Un cobro está atrasado cuando `now >= due_at`. Un corte el día 15 deja los días 15, 16, 17 y 18 para pagar (el 18 hasta las 23:59:59).
 
 **Excepción por emisión tardía (aprobada 2026-10-18, ver spec 002 `research.md` R1).** `due_at` de un cobro es el mayor entre el instante anterior y `issued_at + 3 días`; así una caída del servicio no retira a nadie. Con ticks de 5 minutos coincide con la fórmula normal.
+
+**Estado (2026-10-20):** implementado en `backend/src/modules/billing/domain/due-date.ts` (`dueAtFor`), incluida la excepción por emisión tardía.
 
 **Distinto de la ventana de ingreso** (RF-001-22): la ventana dura los días 1 a 3 desde el corte y termina el día 17 a las 23:59:59, es decir, **un día antes** de que venza el cobro. La spec lo dice así y se respeta.
 

@@ -48,7 +48,7 @@ Módulo `reports` que **solo lee**. La base de datos expone dos vistas (`v_user_
 
 ## 3. Modelo de datos — _Camila (BD)_
 
-Detalle en [`data-model.md`](data-model.md): sin tablas nuevas; vistas `v_user_cost_lines` y `v_group_collection` (0100), índices (0101) y rol de lectura (0102). Cambio pedido a la spec 002: `billing_cycles.owner_id`. Pruebas en `database/tests/reports.integrity.test.ts`.
+Detalle en [`data-model.md`](data-model.md): sin tablas nuevas; vistas `v_user_cost_lines` y `v_group_collection` (0100), índices (0101); el rol de lectura (0102) no se creó. Cambio pedido a la spec 002: `billing_cycles.owner_id`. Pruebas en `database/tests/reports.integrity.test.ts`.
 
 ## 4. Contratos de API — _Leonardo (Backend)_
 
@@ -170,3 +170,12 @@ Pruebas de reglas: RN-006-01 → `dashboard.spend.e2e-spec.ts` (cobro pagado en 
 | RNF-006-01 a RNF-006-06 | §2, §5, §7, §8 |
 | RN-006-01 a RN-006-07 | §2, `data-model.md`, §8 |
 | CA-006-01 a CA-006-22 | §8 |
+
+## 11. Convergencia (2026-10-20)
+
+Contraste del plan con lo implementado (`/speckit-converge`). Los detalles de contrato están en `contracts/api.md`.
+
+- **Excepción de lectura de vistas (§2 decisión 1):** vigente; `reports.repository.ts` solo consulta `v_user_cost_lines`, `v_group_collection` y agregados. La revisión de planes de consulta (T029) no pidió el rol de lectura: la migración opcional `0102_reports_role.sql` **no se creó** (solo existen `0100` y `0101`).
+- **Paginación y validaciones:** `limit` 20 por omisión y máximo 50, `cursor` inválido y `days` fuera de 1–90 devuelven `400`; el detalle está en las aclaraciones de `contracts/api.md`.
+- **CSV de grupo:** `vaquita-historial-grupo-AAAA-MM-DD.csv`. **Rendimiento (RNF-006-01):** `backend/test/dashboard.perf.e2e-spec.ts`.
+- **Pendiente en otro PR:** `groupId` ajeno → `404` en el historial, `CHARGE_ALREADY_EXCLUDED`/`REPORT_ALREADY_SENT`/`EXPORT_TOO_LARGE` en `code`, y `Cache-Control` también en errores; el contrato ya describe ese comportamiento.

@@ -158,3 +158,4 @@ Compartir una suscripción es un acto de confianza: el titular adelanta el diner
 | 2026-10-17 | La calificación básica se adelanta al MVP y se agrega la habilitación para ser titular y la exclusión de los cobros de ingreso (RF-007-15 a RF-007-17, RN-007-09, CA-007-20 a CA-007-23) | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: umbral de 4,5 estrellas con 6 cobros, rechazo como «comprobante inválido» (RF-007-12), miembro retirado por mora, CA-007-24 y 25; se aceptan las propuestas de la sección 11 | Equipo |
 | 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |
+| 2026-10-20 | Convergencia: nivel `Nuevo`, `recent` sin cobros de ingreso, reglas de insignias y respuestas de reporte y exclusión | Equipo (`/speckit-converge`) |

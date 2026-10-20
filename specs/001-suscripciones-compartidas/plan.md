@@ -238,3 +238,13 @@ Pruebas de reglas: RN-001-01 y RN-001-05 → `groups.integrity.test.ts`; RN-001-
 | RNF-001-01 a RNF-001-05 | §7 (404, intentos), §3 (centavos), §6 (3 pasos), rendimiento: índices de §3 de `data-model.md` y prueba de 50 grupos en `groups.list.e2e-spec.ts` |
 | RN-001-01 a RN-001-14 | §8 (pruebas de reglas) |
 | CA-001-01 a CA-001-30 | §8 |
+
+## 11. Convergencia (2026-10-20)
+
+Contraste del plan con lo implementado (`/speckit-converge`). Los detalles de contrato están en `contracts/api.md`.
+
+- **Ciclo inicial (research R1):** implementado. `billing_cycles.cycle_type = 'inicial'` es el único tipo que admite `finalized_at` nulo (restricción en `0040_billing_cycles.sql`); los ciclos regulares nacen finalizados.
+- **Vencimiento (research R2):** implementado en `backend/src/modules/billing/domain/due-date.ts` (`dueAtFor(corte, now)`), con la excepción por emisión tardía.
+- **Límite de titular:** `MAX_ACTIVE_OWNED_GROUPS = 5` en `subscriptions/domain/group-rules.ts` (RN-001-14).
+- **T041 (seed del titular habilitado):** lo cubre `database/seeds/0090_admin_dev.sql`, que toma al administrador activo más antiguo; el administrador debe existir antes de `db:seed` (ver `specs/000-setup-del-proyecto/quickstart.md`).
+- Sin trabajo pendiente: todas las tareas de la spec están en `[x]`.

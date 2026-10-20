@@ -99,7 +99,7 @@
 - [x] T039 [BE] Revisión de seguridad: tabla de acciones por rol (titular, miembro, ajeno `404`), el código solo en la respuesta del titular, textos libres como texto plano, QR con nombre generado y sin ruta pública; regla de lint de dependencias (`eslint-plugin-boundaries` o `import/no-cycle`) en CI para evitar ciclos entre módulos — Depende: T036, spec 000 T041 · Cubre: RNF-001-01, RNF-001-02, RNF-001-03
 - [x] T040 [FE] Accesibilidad y diseño móvil primero del asistente y del detalle: desglose como lista vertical, pestañas con desplazamiento horizontal, confirmaciones destructivas con modal accesible — Depende: T037 · Cubre: RNF-001-04, RNF-001-05
 - [x] T041 [BD] Verificar que el seed de desarrollo crea un titular habilitado (habilitación manual) para que el equipo cree grupos desde el primer día, y documentar el comando — Depende: T005, spec 003 T022, spec 009 T003 (`host_enablements`, PR #43 C3) · Cubre: RF-001-21
-- [ ] T042 [BD] Ejecutar `/speckit-converge`: actualizar `spec.md`, `plan.md` y `research.md` (R1 ciclo inicial, R2 vencimiento) con lo implementado y marcar las tareas hechas — Depende: T040, T041 · Cubre: —
+- [x] T042 [BD] Ejecutar `/speckit-converge`: actualizar `spec.md`, `plan.md` y `research.md` (R1 ciclo inicial, R2 vencimiento) con lo implementado y marcar las tareas hechas — Depende: T040, T041 · Cubre: —
 
 ## Dependencias y orden de ejecución
 

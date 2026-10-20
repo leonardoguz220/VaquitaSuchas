@@ -162,9 +162,9 @@ El titular **no** recibe avisos de cobro como miembro (RN-005-03). Los avisos de
 | CA-005-12 (correo de seguridad siempre se envía) | Integración | BE | `notifications.delivery.e2e-spec.ts` (spec 003 usa `MailService` directo) |
 | CA-005-13 (enlace de desactivación funcional) | Unitario + integración | BE | `unsubscribe-token.spec.ts`; `notifications.preferences.e2e-spec.ts` |
 | CA-005-14 (invitación por correo) | Integración | BE | `notifications.invitations.e2e-spec.ts` |
-| CA-005-15 (invitado sin sesión llega con el código) | E2E | FE | `frontend/e2e/invite-link.spec.ts` |
+| CA-005-15 (invitado sin sesión llega con el código) | E2E | FE | `frontend/src/components/features/groups/invite-modal.test.tsx` y `frontend/src/lib/routes.test.ts` |
 | CA-005-16 (límite de 10 invitaciones por hora) | Integración | BE | `notifications.invitations.e2e-spec.ts` |
-| CA-005-17 (WhatsApp: enlace `wa.me`, sin envío del servidor) | Unitario + E2E | BE, FE | `share-text.spec.ts`; `frontend/e2e/whatsapp.spec.ts` |
+| CA-005-17 (WhatsApp: enlace `wa.me`, sin envío del servidor) | Unitario + E2E | BE, FE | `share-text.spec.ts`; `frontend/src/lib/whatsapp.test.ts` y `backend/test/notifications.share.e2e-spec.ts` |
 | CA-005-18 (WhatsApp al celular del miembro) | Integración | BE | `notifications.share.e2e-spec.ts` |
 | CA-005-19 (proveedor de correo caído: la operación se completa) | Integración | BE | `notifications.delivery.e2e-spec.ts` |
 | CA-005-20 (3 fallas → `failed`, aviso visible) | Unitario + integración | BE | `retry.spec.ts`; `notifications.delivery.e2e-spec.ts` |
@@ -213,3 +213,13 @@ Pruebas de reglas: RN-005-01 y RN-005-02 → `notifications.schedule.e2e-spec.ts
 | RNF-005-01 a RNF-005-07 | §2, §5, §6, §7 |
 | RN-005-01 a RN-005-06 | §8 (pruebas de reglas) |
 | CA-005-01 a CA-005-34 | §8 |
+
+## 11. Convergencia (2026-10-20)
+
+Contraste del plan con lo implementado (`/speckit-converge`). Los detalles de contrato están en `contracts/api.md`.
+
+- **Catálogo de avisos:** 29 tipos en `notifications/domain/catalog.ts`, incluido `publicacion_transferida` (P2).
+- **Pendiente de decisión del equipo:** el evento `JoinRequestCancelled` (spec 010) no tiene tipo de aviso en el catálogo y hoy no genera notificación. No se inventó un tipo; hay que decidir si se agrega uno (PR que cambie el catálogo y avise a las otras capas) o si la cancelación no avisa.
+- **Preferencias:** `PUT /notification-preferences` acepta cuerpos parciales.
+- **Invitaciones:** la ruta usa `:id` y el enlace del correo se arma con `FRONTEND_ORIGIN` (el borrador decía `:groupId` y `{APP_URL}`).
+- **Pruebas:** los E2E de navegador `invite-link.spec.ts` y `whatsapp.spec.ts` del plan se cubrieron con pruebas de componente y de utilidades (`invite-modal.test.tsx`, `routes.test.ts`, `whatsapp.test.ts`) y con `backend/test/notifications.share.e2e-spec.ts`; la tabla de trazabilidad (§8) ya cita esos archivos.

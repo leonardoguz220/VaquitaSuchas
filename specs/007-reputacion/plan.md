@@ -167,3 +167,14 @@ Pruebas de reglas: RN-007-01 → `score.spec.ts`; RN-007-02 y RN-007-06 → `pun
 | RNF-007-01 a RNF-007-06 | §5, §6, §7 |
 | RN-007-01 a RN-007-09 | §8 (pruebas de reglas) |
 | CA-007-01 a CA-007-25 | §8 |
+
+## 11. Convergencia (2026-10-20)
+
+Contraste del plan con lo implementado (`/speckit-converge`). Los detalles de contrato están en `contracts/api.md`.
+
+- **Sin calificación:** el nivel es `Nuevo` con `stars: null` cuando hay menos de 3 cobros considerados (`score.ts`, `MIN_CONSIDERED_FOR_RATING`).
+- **Umbral de titular:** 9 medias estrellas (4,5) con al menos 6 cobros considerados (`host-threshold.ts`), como dice §2.
+- **`recent`:** solo cobros de ciclo `pagado` o `atrasado`; omite los de origen `ingreso`.
+- **Insignias:** se otorgan en cada recálculo y en la conciliación diaria; «Grupo completo» quedó fuera del catálogo y «Sin atrasos 6 meses» exige al menos 3 cobros en 6 meses y ninguno tardío.
+- **Reportes:** `201 { chargeId }` al reportar y `200 { chargeId, excluded: true }` al excluir.
+- **Pendiente en otro PR:** `CHARGE_ALREADY_EXCLUDED` y `REPORT_ALREADY_SENT` en `code` (hoy en `details.code`); el contrato ya describe `code`.

@@ -153,3 +153,4 @@ Muchos grupos tienen lugares vacíos: un plan familiar de 6 personas con 4 ocupa
 | 2026-10-17 | Las solicitudes pasan a ser las de la spec 010 (chat, pago previo y confirmación); cambian RF-008-10 a RF-008-15, RNF-008-03, RN-008-01 y CA-008-10 a CA-008-15 | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: ventana de ingreso en la publicación y en la solicitud (RF-008-03, 10, 15), cancelación de otras solicitudes al mismo servicio (RN-008-05, CA-008-23 y 24); se aceptan las propuestas de la sección 11 | Equipo |
 | 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |
+| 2026-10-20 | Convergencia: puertos con la spec 010, prioridad de `cannotRequestReason` y visibilidad de `GET /listings/:id` | Equipo (`/speckit-converge`) |

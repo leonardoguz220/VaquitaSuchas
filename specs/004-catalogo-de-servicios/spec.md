@@ -111,3 +111,4 @@ Al crear una suscripción compartida, el titular no debería escribir a mano el 
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: se aceptan las propuestas de la sección 11 | Equipo |
 | 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |
+| 2026-10-20 | Convergencia: la escritura del catálogo la implementó la spec 009 (`:id` UUID, `slug` inmutable); plan §11 | Equipo (`/speckit-converge`) |

@@ -148,3 +148,4 @@ Quien comparte varias suscripciones pierde de vista cuánto gasta al mes, cuánt
 | 2026-10-17 | Primer borrador | Equipo |
 | 2026-10-17 | Ronda 2 de decisiones: se aceptan las propuestas de la sección 11 | Equipo |
 | 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |
+| 2026-10-20 | Convergencia: excepción de lectura de vistas sin rol `0102`; límites de paginación, nombre del CSV de grupo y archivo de rendimiento | Equipo (`/speckit-converge`) |

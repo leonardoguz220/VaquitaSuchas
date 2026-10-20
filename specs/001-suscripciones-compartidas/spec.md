@@ -188,3 +188,4 @@ Esta spec define cómo se **crea una suscripción compartida**, cómo se **invit
 | 2026-10-17 | Ronda 2 de decisiones: ventana de ingreso (RF-001-22), retiro por falta de pago (RF-001-23), límite de 5 grupos como titular (RN-001-14), umbral para ser titular, destinatario de la transferencia habilitado (RF-001-17), CA-001-26 a 30 | Equipo |
 | 2026-10-18 | Se confirma que la ventana de ingreso se cuenta desde el corte de cada grupo | Equipo |
 | 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |
+| 2026-10-20 | Convergencia: ciclo inicial, vencimiento y seed del titular habilitado coinciden con lo implementado; `research.md` R1 y R2 marcados como implementados (plan §11) | Equipo (`/speckit-converge`) |

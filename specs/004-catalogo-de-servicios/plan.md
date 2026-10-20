@@ -126,3 +126,11 @@ Pruebas de reglas: RN-004-01 (el precio es solo sugerencia) → spec 001 (el tit
 | RNF-004-01 a RNF-004-04 | §2 (rendimiento), §6 (usabilidad), §3 (transacción, archivo versionado) |
 | RN-004-01 a RN-004-06 | §8 (pruebas de reglas) |
 | CA-004-01 a CA-004-12 | §8 |
+
+## 11. Convergencia (2026-10-20)
+
+Contraste del plan con lo implementado (`/speckit-converge`). Los detalles de contrato están en `contracts/api.md`.
+
+- **Lectura pública:** `GET /catalog/services`, `GET /catalog/services/:slug` y `GET /catalog/categories` (módulo `catalog`).
+- **Escritura:** el controlador transitorio `403`/`501` de esta spec no llegó a existir en `catalog`: la spec 009 implementó la administración del catálogo en `backend/src/modules/admin` (`/admin/catalog/services` y `/plans` con `:id` UUID, `activate`/`deactivate` e importación con vista previa). Las rutas con `:slug` de la nota de escritura quedan reemplazadas por las de `specs/009-administracion/contracts/api.md`; el `slug` es inmutable.
+- Sin trabajo pendiente: todas las tareas de la spec están en `[x]`.

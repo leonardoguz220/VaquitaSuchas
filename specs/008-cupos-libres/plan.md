@@ -145,7 +145,7 @@ backend/src/modules/listings/
 | CA-008-23 (ventana cerrada/abierta en la publicación) | Unitario + integración | BE | `entry-window-label.spec.ts`; `listings.view.e2e-spec.ts` |
 | CA-008-24 (aceptado → otras abiertas al mismo servicio canceladas) | Integración | BE | `listings.requests.e2e-spec.ts` (variante de RN-010-05) |
 
-Pruebas de reglas: RN-008-02 → `estimated-share.spec.ts`; RN-008-03 → E2E del modal de confirmación (`frontend/e2e/listing-confirm-warning.spec.ts`); RN-008-04 → `offered-slots.spec.ts`; RN-008-06 → `listings.requests.e2e-spec.ts` (solicitante «En riesgo» puede solicitar); RN-008-07 → `plain-text.spec.ts`. Rendimiento RNF-008-02: `listings.search.perf-spec.ts` con 5.000 publicaciones. Los CA que dependen de 010 se escriben como variantes con `source = 'publicacion'` y reutilizan sus ayudantes de prueba.
+Pruebas de reglas: RN-008-02 → `estimated-share.spec.ts`; RN-008-03 → E2E del modal de confirmación (`frontend/e2e/listing-confirm.spec.ts`); RN-008-04 → `offered-slots.spec.ts`; RN-008-06 → `listings.requests.e2e-spec.ts` (solicitante «En riesgo» puede solicitar); RN-008-07 → `plain-text.spec.ts`. Rendimiento RNF-008-02: `listings.search.perf-spec.ts` con 5.000 publicaciones. Los CA que dependen de 010 se escriben como variantes con `source = 'publicacion'` y reutilizan sus ayudantes de prueba.
 
 ## 9. Riesgos y mitigaciones
 
@@ -169,3 +169,13 @@ Pruebas de reglas: RN-008-02 → `estimated-share.spec.ts`; RN-008-03 → E2E de
 | RNF-008-01 a RNF-008-06 | §2, §5, §7, §8 |
 | RN-008-01 a RN-008-07 | §5 funciones puras, §8 (pruebas de reglas) |
 | CA-008-01 a CA-008-24 | §8 |
+
+## 11. Convergencia (2026-10-20)
+
+Contraste del plan con lo implementado (`/speckit-converge`). Los detalles de contrato están en `contracts/api.md`.
+
+- **Puertos con la spec 010:** `ListingQuotaPort` lo define `join-requests/ports/listing-quota.port.ts` y lo implementa `backend/src/app-adapters/listing-quota.adapter.ts`; `JoinRequestsService.rejectOpenForListing` lo usa `listings` al cerrar u ocultar una publicación; `JoinRequestAccepted` lleva `listingId` opcional.
+- **Decisiones del plan:** `slotsOffered` se valida de 1 a 19 (y contra los libres); `cannotRequestReason` informa una sola causa con la prioridad restringida → ventana → sin cupos → cobros → solicitud activa → demasiadas; `GET /listings/:id` devuelve `404` para titular suspendido o baneado, grupo congelado o que no recibe miembros.
+- **Moderación (spec 009):** `delete` deja la publicación `cerrada` con `end_reason = 'moderacion'`; `restore` solo desde `oculta`.
+- **Pruebas:** el E2E de RN-008-03 es `frontend/e2e/listing-confirm.spec.ts`.
+- Sin trabajo pendiente: todas las tareas de la spec están en `[x]`.

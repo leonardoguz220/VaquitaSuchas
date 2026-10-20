@@ -76,7 +76,7 @@
 - [x] T034 [BE] Revisión de seguridad: fechas solo del servidor, la calificación de una persona nunca depende de datos de otra, sin `GET /users/:id/reputation` abierto, ranking sin montos y suspendidos conservan su calificación sin aparecer en búsquedas nuevas — Depende: T025, T030 · Cubre: RNF-007-04, RNF-007-05, RN-007-08
 - [x] T035 [BD] Revisar con Camila los planes de consulta de `getRatings` por lote, `ChargeFactsPort` (12 meses) y la conciliación diaria con datos del seed — Depende: T013 · Cubre: RNF-007-03
 - [x] T036 [FE] Accesibilidad de estrellas, niveles e insignias (texto, icono y valor numérico) — Depende: T022, T027 · Cubre: RNF-007-06
-- [ ] T037 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado y marcar las tareas hechas — Depende: T033, T034, T035, T036 · Cubre: —
+- [x] T037 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado y marcar las tareas hechas — Depende: T033, T034, T035, T036 · Cubre: —
 
 ## Dependencias y orden de ejecución
 

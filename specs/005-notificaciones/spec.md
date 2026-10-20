@@ -182,3 +182,4 @@ Nadie puede ver las notificaciones de otra persona.
 | 2026-10-17 | Ronda 2 de decisiones: el atraso pasa a retiro del grupo y se eliminan los recordatorios repetidos (RF-005-07, 09, 13, RN-005-06), el celular siempre existe (RF-005-16), canal opcional de Telegram en P1 (RF-005-26 a 28, CA-005-30 a 34); se aceptan las propuestas de la sección 11 | Equipo |
 | 2026-10-18 | La cuenta de Telegram se vincula en el registro por la verificación del celular (RF-005-26 a 28, CA-005-30, 31 y 33) | Equipo |
 | 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |
+| 2026-10-20 | Convergencia: catálogo de 29 avisos con `publicacion_transferida`; `JoinRequestCancelled` sin tipo (pendiente del equipo); preferencias parciales; ruta `:id` y `FRONTEND_ORIGIN` | Equipo (`/speckit-converge`) |
