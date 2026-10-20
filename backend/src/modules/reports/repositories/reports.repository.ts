@@ -109,6 +109,31 @@ export interface CalendarChargeRow {
   dueAt: Date;
 }
 
+export interface HistoryRow {
+  chargeId: string;
+  period: string;
+  groupId: string;
+  groupName: string;
+  serviceName: string;
+  memberName: string;
+  amountCents: number;
+  status: string;
+  origin: 'ciclo' | 'ingreso';
+  dueAt: Date;
+  paidAt: Date | null;
+}
+
+export interface HistoryFilter {
+  /** Historial propio: `userId` es la persona; del grupo: filtro opcional por miembro. */
+  userId: string | null;
+  /** Historial del grupo (titular); `null` en el historial propio. */
+  groupId: string | null;
+  /** Filtro opcional por suscripción en el historial propio. */
+  groupFilter: string | null;
+  period: string | null;
+  statuses: readonly string[];
+}
+
 export interface ListChargesQuery {
   kind: ChargeListKind;
   userId: string;
@@ -551,6 +576,86 @@ export class ReportsRepository {
       amountCents: num(r.owner_share_cents),
       status: null,
       dueAt: new Date(`${r.due_date}T00:00:00Z`),
+    }));
+  }
+
+  private historyWhere(filter: HistoryFilter): { sql: string; params: unknown[] } {
+    const params: unknown[] = [];
+    const add = (value: unknown): string => {
+      params.push(value);
+      return `$${params.length}`;
+    };
+    const conditions: string[] = [];
+    if (filter.userId !== null) conditions.push(`c.user_id = ${add(filter.userId)}`);
+    if (filter.groupId !== null) conditions.push(`c.group_id = ${add(filter.groupId)}`);
+    if (filter.groupFilter !== null) conditions.push(`c.group_id = ${add(filter.groupFilter)}`);
+    if (filter.period !== null) conditions.push(`c.period = ${add(filter.period)}`);
+    if (filter.statuses.length > 0) {
+      conditions.push(`c.status = ANY(${add([...filter.statuses])}::text[])`);
+    }
+    return { sql: conditions.length > 0 ? conditions.join(' AND ') : 'TRUE', params };
+  }
+
+  /** Cantidad de filas del historial (para el límite de exportación). */
+  async countHistory(q: Queryable, filter: HistoryFilter): Promise<number> {
+    const where = this.historyWhere(filter);
+    const result = await q.query<{ total: string }>(
+      `SELECT count(*)::text AS total FROM charges c WHERE ${where.sql}`,
+      where.params,
+    );
+    return num(result.rows[0]?.total ?? 0);
+  }
+
+  /** Página del historial por período descendente (también `cancelado`, RN-006-07). */
+  async historyPage(
+    q: Queryable,
+    filter: HistoryFilter,
+    after: { period: string; id: string } | null,
+    limit: number,
+  ): Promise<HistoryRow[]> {
+    const where = this.historyWhere(filter);
+    const params = [...where.params];
+    let cursorSql = '';
+    if (after) {
+      params.push(after.period, after.id);
+      cursorSql = ` AND (c.period, c.id) < ($${params.length - 1}::text, $${params.length}::uuid)`;
+    }
+    params.push(limit);
+    const result = await q.query<{
+      id: string;
+      period: string;
+      group_id: string;
+      name: string;
+      service_name_snapshot: string;
+      full_name: string;
+      amount_cents: string;
+      status: string;
+      origin: 'ciclo' | 'ingreso';
+      due_at: Date;
+      paid_at: Date | null;
+    }>(
+      `SELECT c.id, c.period, c.group_id, g.name, g.service_name_snapshot, u.full_name,
+              c.amount_cents, c.status, c.origin, c.due_at, c.paid_at
+         FROM charges c
+         JOIN groups g ON g.id = c.group_id
+         JOIN users u ON u.id = c.user_id
+        WHERE ${where.sql}${cursorSql}
+        ORDER BY c.period DESC, c.id DESC
+        LIMIT $${params.length}`,
+      params,
+    );
+    return result.rows.map((r) => ({
+      chargeId: r.id,
+      period: r.period,
+      groupId: r.group_id,
+      groupName: r.name,
+      serviceName: r.service_name_snapshot,
+      memberName: r.full_name,
+      amountCents: num(r.amount_cents),
+      status: r.status,
+      origin: r.origin,
+      dueAt: r.due_at,
+      paidAt: r.paid_at,
     }));
   }
 }
