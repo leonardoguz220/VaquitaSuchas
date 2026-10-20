@@ -3,6 +3,8 @@
 # - hacia dev: squash (una tarea, un commit).
 # - hacia qa y main: merge commit, para que dev, qa y main no se desfasen entre sí
 #   (con squash, cada promoción genera conflictos en la siguiente).
+# - Excepción: las ramas que empiezan con `manual/` no se fusionan solas (p. ej. una reparación de
+#   historial que necesita merge commit en dev). Se fusionan a mano con el método que corresponda.
 # Requiere "Allow auto-merge" en Settings > General y, en los reglamentos de qa y main,
 # permitir el método Merge y no exigir historial lineal.
 name: Auto merge
@@ -21,8 +23,8 @@ jobs:
     name: Activar auto-merge
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    # Solo PR de ramas del propio repositorio y que no estén en borrador.
-    if: github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
+    # Solo PR de ramas del propio repositorio, que no estén en borrador y que no sean `manual/*`.
+    if: github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft && !startsWith(github.head_ref, 'manual/')
     steps:
       - name: Activar auto-merge
         env:
