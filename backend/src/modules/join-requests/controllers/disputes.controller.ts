@@ -5,6 +5,7 @@ import {
   HttpCode,
   Param,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -29,11 +30,13 @@ import { requireUserId, uuidParam } from '../../../shared/http/request-user.js';
 import { MAX_CHAT_IMAGE_BYTES } from '../domain/chat-rules.js';
 import {
   DisputesService,
+  type AdminDisputeRow,
   type DisputeEvidence,
   type DisputeResult,
   type DisputeView,
 } from '../services/disputes.service.js';
 import {
+  ListDisputeQueueQueryDto,
   OpenDisputeDto,
   ResolveDisputeDto,
   RespondDisputeDto,
@@ -112,6 +115,14 @@ export class DisputesController {
 @Controller('admin/disputes')
 export class AdminDisputesController {
   constructor(private readonly disputes: DisputesService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Cola de reclamos, los abiertos primero; sin evidencia (RF-009-20)' })
+  queue(
+    @Query() query: ListDisputeQueueQueryDto,
+  ): Promise<{ items: AdminDisputeRow[]; nextCursor: string | null }> {
+    return this.disputes.listQueue(query);
+  }
 
   @Get(':disputeId/evidence')
   @ApiOperation({ summary: 'Evidencia de un reclamo abierto; queda en la auditoría (CA-010-29)' })

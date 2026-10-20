@@ -10,6 +10,7 @@ import type {
   MemberRemovedReason,
   OwnerChanged,
 } from '../../../shared/events/group-events.js';
+import { AUDIT_PORT, type AuditPort } from '../../join-requests/ports/audit.port.js';
 import { TxEventBus } from '../../../shared/events/tx-event-bus.js';
 import type { GroupDetail } from '../domain/group-detail.js';
 import { canLeave, canReceiveOwnership } from '../domain/group-rules.js';
@@ -52,6 +53,7 @@ export class MembershipService {
     @Inject(OWNERSHIP_BLOCKERS_PORT) private readonly blockers: OwnershipBlockersPort,
     private readonly clock: Clock,
     private readonly groupsService: GroupsService,
+    @Inject(AUDIT_PORT) private readonly audit: AuditPort,
   ) {}
 
   /**
@@ -196,63 +198,108 @@ export class MembershipService {
       if (group.owner_id !== currentOwnerId) {
         throw new DomainError(ErrorCode.FORBIDDEN, 403, DEFAULT_MESSAGES.FORBIDDEN);
       }
-      if (toUserId === currentOwnerId) {
-        throw new DomainError(
-          ErrorCode.BUSINESS_RULE,
-          422,
-          'Elige a otro miembro del grupo como nuevo titular.',
-          { rule: 'RF-001-17' },
-        );
-      }
-      await this.assertNoBlockers(tx, groupId);
-
-      // Serializa las altas y transferencias del destinatario antes de contar sus grupos.
-      await this.groups.lockOwner(tx, toUserId);
-      const target = await this.members.findActive(tx, groupId, toUserId);
-      const eligibility = target ? await this.eligibility.check(tx, toUserId) : null;
-      const broken = canReceiveOwnership({
-        isActiveMember: target !== null,
-        isHostEligible: eligibility?.eligible ?? false,
-        activeOwnedGroups: await this.groups.countActiveOwned(tx, toUserId),
-      });
-      if (broken.includes('not_active_member')) {
-        throw new DomainError(
-          ErrorCode.BUSINESS_RULE,
-          422,
-          'La persona elegida no es miembro activo del grupo.',
-          { rule: 'RF-001-17' },
-        );
-      }
-      if (broken.includes('not_host_eligible')) {
-        throw new DomainError(
-          'NOT_HOST_ELIGIBLE',
-          422,
-          'La persona elegida aún no está habilitada para ser titular.',
-          { rule: 'RF-001-21', ...eligibility },
-        );
-      }
-      if (broken.includes('too_many_active_groups')) {
-        throw new DomainError(
-          'TOO_MANY_ACTIVE_GROUPS',
-          422,
-          'La persona elegida ya tiene el máximo de grupos activos como titular.',
-          { rule: 'RN-001-14' },
-        );
-      }
-
-      // Primero baja al titular actual: el índice único permite un solo titular activo.
-      await this.members.updateRole(tx, groupId, currentOwnerId, 'miembro');
-      await this.members.updateRole(tx, groupId, toUserId, 'titular');
-      await this.groups.setOwner(tx, groupId, toUserId);
-      const event: OwnerChanged = {
-        type: 'groups.owner-changed',
-        groupId,
-        previousOwnerId: currentOwnerId,
-        newOwnerId: toUserId,
-      };
-      await this.bus.publish(tx, event);
+      await this.reassignOwner(tx, groupId, currentOwnerId, toUserId);
       return this.groupsService.detail(tx, groupId, currentOwnerId);
     });
+  }
+
+  /**
+   * Transferencia por un administrador (RF-009-24, CA-009-35): solo con el titular `suspendido`.
+   * Mismas reglas del destinatario que la transferencia del titular; la auditoría se escribe en la
+   * misma transacción.
+   */
+  async transferByAdmin(
+    adminId: string,
+    groupId: string,
+    toUserId: string,
+    reason: string,
+  ): Promise<{ groupId: string; fromUserId: string; toUserId: string }> {
+    return this.db.withTransaction(async (tx) => {
+      const group = await this.requireWritableGroup(tx, groupId);
+      const ownerStatus = await this.groups.userStatus(tx, group.owner_id);
+      if (ownerStatus !== 'suspendido') {
+        throw new DomainError(
+          ErrorCode.BUSINESS_RULE,
+          422,
+          'Solo se puede transferir la titularidad si el titular está suspendido.',
+          { rule: 'RF-009-24' },
+        );
+      }
+      await this.reassignOwner(tx, groupId, group.owner_id, toUserId);
+      await this.audit.record(tx, {
+        actorId: adminId,
+        action: 'titularidad_transferir',
+        targetType: 'group',
+        targetId: groupId,
+        reason,
+        metadata: { groupId, fromUserId: group.owner_id, toUserId },
+      });
+      return { groupId, fromUserId: group.owner_id, toUserId };
+    });
+  }
+
+  /** Validaciones y cambio de titular compartidos por el titular y por administración (RF-001-17, RF-009-24). */
+  private async reassignOwner(
+    tx: DbTransaction,
+    groupId: string,
+    currentOwnerId: string,
+    toUserId: string,
+  ): Promise<void> {
+    if (toUserId === currentOwnerId) {
+      throw new DomainError(
+        ErrorCode.BUSINESS_RULE,
+        422,
+        'Elige a otro miembro del grupo como nuevo titular.',
+        { rule: 'RF-001-17' },
+      );
+    }
+    await this.assertNoBlockers(tx, groupId);
+
+    // Serializa las altas y transferencias del destinatario antes de contar sus grupos.
+    await this.groups.lockOwner(tx, toUserId);
+    const target = await this.members.findActive(tx, groupId, toUserId);
+    const eligibility = target ? await this.eligibility.check(tx, toUserId) : null;
+    const broken = canReceiveOwnership({
+      isActiveMember: target !== null,
+      isHostEligible: eligibility?.eligible ?? false,
+      activeOwnedGroups: await this.groups.countActiveOwned(tx, toUserId),
+    });
+    if (broken.includes('not_active_member')) {
+      throw new DomainError(
+        ErrorCode.BUSINESS_RULE,
+        422,
+        'La persona elegida no es miembro activo del grupo.',
+        { rule: 'RF-001-17' },
+      );
+    }
+    if (broken.includes('not_host_eligible')) {
+      throw new DomainError(
+        'NOT_HOST_ELIGIBLE',
+        422,
+        'La persona elegida aún no está habilitada para ser titular.',
+        { rule: 'RF-001-21', ...eligibility },
+      );
+    }
+    if (broken.includes('too_many_active_groups')) {
+      throw new DomainError(
+        'TOO_MANY_ACTIVE_GROUPS',
+        422,
+        'La persona elegida ya tiene el máximo de grupos activos como titular.',
+        { rule: 'RN-001-14' },
+      );
+    }
+
+    // Primero baja al titular actual: el índice único permite un solo titular activo.
+    await this.members.updateRole(tx, groupId, currentOwnerId, 'miembro');
+    await this.members.updateRole(tx, groupId, toUserId, 'titular');
+    await this.groups.setOwner(tx, groupId, toUserId);
+    const event: OwnerChanged = {
+      type: 'groups.owner-changed',
+      groupId,
+      previousOwnerId: currentOwnerId,
+      newOwnerId: toUserId,
+    };
+    await this.bus.publish(tx, event);
   }
 
   /**
