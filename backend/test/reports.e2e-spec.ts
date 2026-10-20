@@ -77,8 +77,8 @@ describe('Reputación: reportes y exclusiones', () => {
       comment: 'Reporte tardío del cobro',
     }).expect(422);
 
-    expect(JSON.stringify(again.body)).toContain('CHARGE_ALREADY_EXCLUDED');
-    expect(JSON.stringify(report.body)).toContain('CHARGE_ALREADY_EXCLUDED');
+    expect(again.body.code).toBe('CHARGE_ALREADY_EXCLUDED');
+    expect(report.body.code).toBe('CHARGE_ALREADY_EXCLUDED');
   });
 
   it('REPORT_ALREADY_SENT: la misma persona no reporta dos veces el mismo cobro', async () => {
@@ -91,7 +91,7 @@ describe('Reputación: reportes y exclusiones', () => {
       comment: 'Insisto, pagué a tiempo',
     }).expect(422);
 
-    expect(JSON.stringify(second.body)).toContain('REPORT_ALREADY_SENT');
+    expect(second.body.code).toBe('REPORT_ALREADY_SENT');
   });
 
   it('solo el titular excluye y solo el dueño reporta', async () => {

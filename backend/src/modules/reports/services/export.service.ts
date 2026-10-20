@@ -68,11 +68,17 @@ export class ExportService {
     return Number(this.config.get('EXPORT_MAX_ROWS') ?? EXPORT_MAX_ROWS);
   }
 
-  /** Historial propio. */
-  exportOwn(
+  /** Historial propio; un `groupId` ajeno responde `404` (CA-006-18). */
+  async exportOwn(
     userId: string,
     options: { period?: string | null; groupId?: string | null; statuses?: readonly string[] },
   ): Promise<CsvExport> {
+    if (options.groupId) {
+      const groupIds = await this.membership.groupIdsOf(this.db, userId);
+      if (!groupIds.includes(options.groupId)) {
+        throw new DomainError(ErrorCode.NOT_FOUND, 404, DEFAULT_MESSAGES.NOT_FOUND);
+      }
+    }
     return this.prepare(userId, 'vaquita-historial', OWN_COLUMNS, {
       userId,
       groupId: null,
@@ -129,10 +135,10 @@ export class ExportService {
     const max = this.maxRows();
     if ((await this.reports.countHistory(this.db, filter)) > max) {
       throw new DomainError(
-        ErrorCode.BUSINESS_RULE,
+        'EXPORT_TOO_LARGE',
         422,
         'La exportación es demasiado grande. Filtra por período.',
-        { code: 'EXPORT_TOO_LARGE', maxRows: max },
+        { maxRows: max },
       );
     }
     await this.limits.record(this.db, EXPORT_BUCKET, keyHash, now);

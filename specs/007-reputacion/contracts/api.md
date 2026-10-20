@@ -40,7 +40,7 @@ ReputationDetail extends Rating {  // solo la propia persona (RF-007-04)
 - **Response 200:** `{ earned: [{ code, name, description, earnedAt }], pending: [{ code, name, description, condition, progress: { current, target } }] }`.
 
 ### `POST /charges/:chargeId/reputation-report` (RF-007-14) — P2
-- **Auth:** dueño del cobro. **Request:** `{ comment }` (10–300). **Response 201.** **Errores:** `422 BUSINESS_RULE` (`CHARGE_ALREADY_EXCLUDED`, `REPORT_ALREADY_SENT`).
+- **Auth:** dueño del cobro. **Request:** `{ comment }` (10–300). **Response 201.** **Errores:** `422 CHARGE_ALREADY_EXCLUDED`, `422 REPORT_ALREADY_SENT`.
 
 ### `POST /charges/:chargeId/reputation-exclusion` (RF-007-14; CA-007-13) — P2
 - **Auth:** titular del grupo. **Request:** `{ reason }` (10–300). **Response 200.** Queda registrado quién y cuándo. La calificación del dueño se recalcula en la misma operación.

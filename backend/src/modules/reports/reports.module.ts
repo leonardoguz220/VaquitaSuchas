@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
+import type { NextFunction, Request, Response } from 'express';
 import { AuthModule } from '../auth/auth.module.js';
 import { CalendarController } from './controllers/calendar.controller.js';
 import { CollectionController } from './controllers/collection.controller.js';
@@ -14,6 +15,12 @@ import { ChartsService } from './services/charts.service.js';
 import { ExportService } from './services/export.service.js';
 import { HistoryService } from './services/history.service.js';
 import { DashboardService } from './services/dashboard.service.js';
+
+/** RNF-006-02: también las respuestas de error (400–429) llevan `no-store`; el middleware corre antes que los guards. */
+function noStore(_request: Request, response: Response, next: NextFunction): void {
+  response.setHeader('Cache-Control', 'private, no-store');
+  next();
+}
 
 // DbService y Clock llegan de módulos globales. Solo lee: no hay tablas ni escrituras (spec 006).
 @Module({
@@ -38,4 +45,16 @@ import { DashboardService } from './services/dashboard.service.js';
   ],
   exports: [DashboardService, ReportsRepository],
 })
-export class ReportsModule {}
+export class ReportsModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer
+      .apply(noStore)
+      .forRoutes(
+        DashboardController,
+        CollectionController,
+        CalendarController,
+        HistoryController,
+        ExportController,
+      );
+  }
+}

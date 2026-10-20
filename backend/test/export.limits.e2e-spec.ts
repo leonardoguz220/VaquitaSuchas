@@ -31,7 +31,7 @@ describe('Exportación: límite de filas', () => {
         .set('Authorization', `Bearer ${harness.token(member)}`);
 
     const tooLarge = await get('/me/history/export.csv').expect(422);
-    expect(JSON.stringify(tooLarge.body)).toContain('EXPORT_TOO_LARGE');
+    expect(tooLarge.body.code).toBe('EXPORT_TOO_LARGE');
     // Filtrando por período entra en el límite.
     await get('/me/history/export.csv?period=2026-09').expect(200);
   });
