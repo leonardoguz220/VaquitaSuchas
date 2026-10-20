@@ -182,6 +182,7 @@ describe('POST /internal/jobs/tick contra PostgreSQL real', () => {
         { job: 'join_requests.retention', status: 'ok', processed: 0 },
         { job: 'notifications.schedule', status: 'ok', processed: 0 },
         { job: 'notifications.deliver', status: 'ok', processed: 0 },
+        { job: 'notifications.purge', status: 'ok', processed: 0 },
         { job: 'reputation.reconcile', status: 'ok', processed: 0 },
       ],
     });
@@ -311,6 +312,7 @@ describe('POST /internal/jobs/tick contra PostgreSQL real', () => {
         { job: 'join_requests.retention', status: 'ok', processed: 0 },
         { job: 'notifications.schedule', status: 'ok', processed: 0 },
         { job: 'notifications.deliver', status: 'ok', processed: 0 },
+        { job: 'notifications.purge', status: 'ok', processed: 0 },
         { job: 'reputation.reconcile', status: 'ok', processed: 0 },
         { job: 'test.boom', status: 'error', error: 'Error' },
       ],

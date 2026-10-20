@@ -30,9 +30,23 @@ import { JobRegistry } from '../../shared/jobs/job-registry.js';
 import { TxEventBus } from '../../shared/events/tx-event-bus.js';
 import type { UserSuspended } from '../../shared/events/user-events.js';
 import { AuthModule } from '../auth/auth.module.js';
+import { RateLimitRepository } from '../auth/repositories/rate-limit.repository.js';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
+import { InvitationsController } from './controllers/invitations.controller.js';
+import { ShareController } from './controllers/share.controller.js';
+import { InvitationsRepository } from './repositories/invitations.repository.js';
+import { PurgeRepository } from './repositories/purge.repository.js';
+import { ShareRepository } from './repositories/share.repository.js';
+import { InvitationsService } from './services/invitations.service.js';
+import { PurgeService } from './services/purge.service.js';
+import { ShareService } from './services/share.service.js';
 import { NotificationsController } from './controllers/notifications.controller.js';
 import { PreferencesController } from './controllers/preferences.controller.js';
-import { NotificationsDeliverJob, NotificationsScheduleJob } from './jobs/notifications-jobs.js';
+import {
+  NotificationsDeliverJob,
+  NotificationsPurgeJob,
+  NotificationsScheduleJob,
+} from './jobs/notifications-jobs.js';
 import { DeliveriesRepository } from './repositories/deliveries.repository.js';
 import { PreferencesRepository } from './repositories/preferences.repository.js';
 import { ScheduleRepository } from './repositories/schedule.repository.js';
@@ -51,18 +65,30 @@ import { UnsubscribeLinksService } from './services/unsubscribe-links.service.js
 // NotificationService se exporta para los manejadores de eventos de las specs 001, 002, 009 y 010.
 // Los manejadores de avisos se suscriben al bus al arrancar (quien reacciona depende del evento).
 @Module({
-  imports: [AuthModule],
-  controllers: [NotificationsController, PreferencesController],
+  imports: [AuthModule, SubscriptionsModule],
+  controllers: [
+    NotificationsController,
+    PreferencesController,
+    InvitationsController,
+    ShareController,
+  ],
   providers: [
     NotificationsRepository,
     NotificationFactsRepository,
     PreferencesRepository,
     DeliveriesRepository,
     ScheduleRepository,
+    PurgeRepository,
+    InvitationsRepository,
+    ShareRepository,
+    RateLimitRepository,
     UnsubscribeLinksService,
     PreferencesService,
     DeliveryService,
     ScheduleService,
+    PurgeService,
+    InvitationsService,
+    ShareService,
     NotificationService,
     BillingNotificationHandlers,
     GroupNotificationHandlers,
@@ -79,11 +105,14 @@ export class NotificationsModule implements OnModuleInit {
     private readonly registry: JobRegistry,
     private readonly schedule: ScheduleService,
     private readonly delivery: DeliveryService,
+    private readonly purge: PurgeService,
+    private readonly invitations: InvitationsService,
   ) {}
 
   onModuleInit(): void {
     this.registry.register(new NotificationsScheduleJob(this.schedule));
-    this.registry.register(new NotificationsDeliverJob(this.delivery));
+    this.registry.register(new NotificationsDeliverJob(this.delivery, this.invitations));
+    this.registry.register(new NotificationsPurgeJob(this.purge));
 
     const b = this.billing;
     this.bus.register<ChargeGenerated>('billing.charge-generated', (tx, e) =>
