@@ -1,115 +1,181 @@
 import {
+  applyCatalogImport,
   createCatalogPlan,
   createCatalogService,
   listAdminCatalog,
+  previewCatalogImport,
   setCatalogPlanActive,
   updateCatalogPlan,
-  CATALOG_EDIT_WARNING,
   type PlanInput,
 } from './admin-catalog';
-import { resetCatalogMock } from './admin-catalog.mock';
-import { ApiError } from './http';
+import { apiRequest } from './http';
 
-async function run<T>(promise: Promise<T>): Promise<T> {
-  await jest.advanceTimersByTimeAsync(400);
-  return promise;
-}
+jest.mock('./http', () => ({ apiRequest: jest.fn() }));
 
-async function failureOf(promise: Promise<unknown>): Promise<ApiError> {
-  const outcome = promise.then(
-    () => null,
-    (error: unknown) => error as ApiError,
-  );
-  await jest.advanceTimersByTimeAsync(400);
-  const error = await outcome;
-  if (!error) throw new Error('Se esperaba un error y llegó una respuesta.');
-  return error;
-}
+const mockedRequest = jest.mocked(apiRequest);
 
-const PLAN: PlanInput = {
+const SERVICE_ID = '6b1d3f0e-0000-4000-8000-0000000000s1';
+const PLAN_ID = '6b1d3f0e-0000-4000-8000-0000000000p1';
+
+const PLAN_INPUT: PlanInput = {
   name: 'Estándar',
-  slug: 'netflix-estandar-2',
+  slug: 'netflix-estandar',
   priceCents: 1466,
   currency: 'USD',
   maxSlots: 4,
   individualPriceCents: null,
 };
 
-describe('services/admin-catalog.ts (spec 009 T029)', () => {
+/** Plan con la forma que devuelve el backend (`PlanView`). */
+function apiPlan(overrides: Record<string, unknown> = {}) {
+  return {
+    id: PLAN_ID,
+    serviceId: SERVICE_ID,
+    slug: 'netflix-estandar',
+    name: 'Estándar',
+    priceCents: 1466,
+    currency: 'USD',
+    maxSlots: 4,
+    individualPriceCents: null,
+    verifiedOn: null,
+    verifiedSource: null,
+    isActive: true,
+    ...overrides,
+  };
+}
+
+function lastCall() {
+  const call = mockedRequest.mock.calls.at(-1);
+  if (!call) throw new Error('apiRequest no se llamó');
+  return { path: call[0], options: call[1] ?? {} };
+}
+
+describe('services/admin-catalog.ts conectado al backend (spec 009 T029)', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
-    resetCatalogMock();
+    mockedRequest.mockReset();
   });
 
-  afterEach(() => {
-    jest.useRealTimers();
+  it('CA-009-02: GET /admin/catalog trae servicios con planes activos e inactivos y los expone como `active`', async () => {
+    mockedRequest.mockResolvedValueOnce([
+      {
+        id: SERVICE_ID,
+        slug: 'netflix',
+        name: 'Netflix',
+        category: 'video',
+        logoUrl: null,
+        brandColor: null,
+        isActive: false,
+        plans: [apiPlan(), apiPlan({ id: 'otro', isActive: false })],
+      },
+    ]);
+
+    const services = await listAdminCatalog();
+
+    expect(lastCall().path).toBe('/api/admin/catalog');
+    expect(services[0]).toMatchObject({ slug: 'netflix', active: false });
+    expect(services[0]!.plans.map((plan) => plan.active)).toEqual([true, false]);
+    expect(services[0]!.plans[0]).not.toHaveProperty('isActive');
   });
 
-  it('CA-009-02: crear un servicio y un plan válidos los deja en el catálogo', async () => {
-    const service = await run(
-      createCatalogService({ name: 'Canva', slug: 'canva', category: 'otras' }),
+  it('CA-009-02: crear un servicio hace POST a /services con el cuerpo tal cual', async () => {
+    mockedRequest.mockResolvedValueOnce({
+      id: SERVICE_ID,
+      slug: 'hbo',
+      name: 'HBO',
+      category: 'video',
+      logoUrl: null,
+      brandColor: null,
+      isActive: true,
+    });
+
+    const service = await createCatalogService({ name: 'HBO', slug: 'hbo', category: 'video' });
+
+    expect(lastCall().path).toBe('/api/admin/catalog/services');
+    expect(lastCall().options).toMatchObject({
+      method: 'POST',
+      body: { name: 'HBO', slug: 'hbo', category: 'video' },
+    });
+    expect(service).toMatchObject({ id: SERVICE_ID, active: true, plans: [] });
+  });
+
+  it('CA-009-02: crear un plan envía el servicio en el cuerpo, no en la ruta', async () => {
+    mockedRequest.mockResolvedValueOnce(apiPlan());
+
+    const saved = await createCatalogPlan(SERVICE_ID, PLAN_INPUT);
+
+    expect(lastCall().path).toBe('/api/admin/catalog/plans');
+    expect(lastCall().options).toMatchObject({
+      method: 'POST',
+      body: { serviceId: SERVICE_ID, ...PLAN_INPUT },
+    });
+    expect(saved).toEqual({
+      plan: expect.objectContaining({ id: PLAN_ID, active: true }),
+      warning: null,
+    });
+  });
+
+  it('CA-009-03: un slug repetido llega como error de la API y no se guarda nada', async () => {
+    const conflict = new Error('CONFLICT');
+    mockedRequest.mockRejectedValueOnce(conflict);
+
+    await expect(
+      createCatalogService({ name: 'Netflix', slug: 'netflix', category: 'video' }),
+    ).rejects.toBe(conflict);
+  });
+
+  it('CA-009-04: editar precio devuelve el aviso de la API; sin cambios de precio no hay aviso', async () => {
+    mockedRequest.mockResolvedValueOnce(
+      apiPlan({ priceCents: 1800, warning: 'No cambia las suscripciones existentes' }),
     );
-    await run(createCatalogPlan(service.id, { ...PLAN, slug: 'canva-pro', name: 'Pro' }));
+    const withWarning = await updateCatalogPlan(PLAN_ID, { ...PLAN_INPUT, priceCents: 1800 });
+    expect(lastCall().options).toMatchObject({ method: 'PATCH' });
+    expect(withWarning.warning).toBe('No cambia las suscripciones existentes');
+    expect(withWarning.plan).not.toHaveProperty('warning');
 
-    const catalog = await run(listAdminCatalog());
-    const canva = catalog.find((item) => item.slug === 'canva');
-    expect(canva?.plans.map((plan) => plan.slug)).toEqual(['canva-pro']);
+    mockedRequest.mockResolvedValueOnce(apiPlan());
+    const withoutWarning = await updateCatalogPlan(PLAN_ID, PLAN_INPUT);
+    expect(withoutWarning.warning).toBeNull();
   });
 
-  it('CA-009-03: un slug repetido se rechaza con 409 y no crea nada', async () => {
-    const error = await failureOf(
-      createCatalogService({ name: 'Otro Netflix', slug: 'netflix', category: 'video' }),
-    );
-    expect(error.statusCode).toBe(409);
-    expect(error.code).toBe('CONFLICT');
+  it('CA-009-05: desactivar un plan hace POST a /plans/:id/deactivate', async () => {
+    mockedRequest.mockResolvedValueOnce(apiPlan({ isActive: false }));
 
-    const catalog = await run(listAdminCatalog());
-    expect(catalog.filter((item) => item.slug === 'netflix')).toHaveLength(1);
-  });
+    const plan = await setCatalogPlanActive(PLAN_ID, false);
 
-  it('RF-009-07: los cupos deben estar entre 2 y 20', async () => {
-    const service = await run(
-      createCatalogService({ name: 'Canva', slug: 'canva-2', category: 'otras' }),
-    );
-    const error = await failureOf(
-      createCatalogPlan(service.id, { ...PLAN, slug: 'canva-cupos', maxSlots: 21 }),
-    );
-    expect(error.statusCode).toBe(400);
-  });
-
-  it('CA-009-04: cambiar el precio de un plan devuelve el aviso de que no cambia las suscripciones', async () => {
-    const result = await run(
-      updateCatalogPlan('plan-netflix-estandar', {
-        ...PLAN,
-        slug: 'netflix-estandar',
-        priceCents: 1599,
-      }),
-    );
-    expect(result.warning).toBe(CATALOG_EDIT_WARNING);
-    expect(result.plan.priceCents).toBe(1599);
-  });
-
-  it('CA-009-04: editar solo el nombre no muestra el aviso', async () => {
-    const result = await run(
-      updateCatalogPlan('plan-netflix-estandar', {
-        ...PLAN,
-        slug: 'netflix-estandar',
-        priceCents: 1466,
-        name: 'Estándar HD',
-      }),
-    );
-    expect(result.warning).toBeNull();
-  });
-
-  it('CA-009-05: un plan desactivado queda inactivo en el catálogo', async () => {
-    const plan = await run(setCatalogPlanActive('plan-netflix-premium', false));
+    expect(lastCall().path).toBe(`/api/admin/catalog/plans/${PLAN_ID}/deactivate`);
+    expect(lastCall().options).toMatchObject({ method: 'POST' });
     expect(plan.active).toBe(false);
   });
 
-  it('RF-009-07: un monto no positivo se rechaza', async () => {
-    const error = await failureOf(
-      createCatalogPlan('svc-netflix', { ...PLAN, slug: 'netflix-gratis', priceCents: 0 }),
-    );
-    expect(error.statusCode).toBe(400);
+  it('CA-009-06: la vista previa envía el archivo y devuelve errores por fila sin token', async () => {
+    mockedRequest.mockResolvedValueOnce({
+      token: null,
+      changes: [],
+      errors: [{ row: 3, field: 'priceCents', message: 'El precio debe ser un monto positivo.' }],
+    });
+
+    const preview = await previewCatalogImport('csv', 'slug,name\nhbo,HBO');
+
+    expect(lastCall().path).toBe('/api/admin/catalog/import/preview');
+    expect(lastCall().options).toMatchObject({
+      method: 'POST',
+      body: { format: 'csv', content: 'slug,name\nhbo,HBO' },
+    });
+    expect(preview.token).toBeNull();
+    expect(preview.errors[0]).toEqual({
+      row: 3,
+      field: 'priceCents',
+      message: 'El precio debe ser un monto positivo.',
+    });
+  });
+
+  it('CA-009-06: aplicar la importación envía el token de la vista previa', async () => {
+    mockedRequest.mockResolvedValueOnce({ created: 2, updated: 1 });
+
+    const applied = await applyCatalogImport('token-valido');
+
+    expect(lastCall().path).toBe('/api/admin/catalog/import/apply');
+    expect(lastCall().options).toMatchObject({ method: 'POST', body: { token: 'token-valido' } });
+    expect(applied).toEqual({ created: 2, updated: 1 });
   });
 });

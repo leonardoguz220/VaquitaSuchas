@@ -62,6 +62,8 @@
 
 `POST /admin/catalog/services`, `PATCH /admin/catalog/services/:id`, `POST …/activate|deactivate`, y lo mismo para `/admin/catalog/plans` (RF-009-04 a RF-009-07; CA-009-02 a 05). Reemplazan al stub de la spec 004 (`403`/`501`). `slug` único (`409 CONFLICT`), cupos 2–20, montos positivos. Las respuestas de edición incluyen `warning: "No cambia las suscripciones existentes"` cuando se tocan precios o cupos (RF-009-05).
 
+`GET /admin/catalog` (RF-009-04) → `200` `[{ id, slug, name, category, logoUrl, brandColor, isActive, plans: [{ id, serviceId, slug, name, priceCents, currency, maxSlots, individualPriceCents, verifiedOn, verifiedSource, isActive }] }]`, servicios por nombre con **todos** sus planes (activos e inactivos), sin paginación. *Nota: endpoint añadido el 2026-10-20 a petición del frontend.*
+
 `POST /admin/catalog/import/preview` (archivo CSV o JSON) → `{ token, changes: [...], errors: [{ row, field, message }] }`; `POST /admin/catalog/import/apply` `{ token }` aplica todo o nada (CA-009-06). Última tarea de la spec (RF-009-06).
 
 ## Moderación de cupos (P2)

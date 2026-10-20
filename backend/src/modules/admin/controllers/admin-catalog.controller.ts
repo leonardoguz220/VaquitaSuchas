@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   Param,
   ParseUUIDPipe,
@@ -41,6 +42,14 @@ export class AdminCatalogController {
     private readonly catalog: CatalogAdminService,
     private readonly importer: CatalogImportService,
   ) {}
+
+  @Get()
+  @ApiOperation({
+    summary: 'Lista los servicios con todos sus planes, también inactivos (RF-009-04)',
+  })
+  list(): Promise<(ServiceView & { plans: PlanView[] })[]> {
+    return this.catalog.list();
+  }
 
   @Post('services')
   @ApiOperation({ summary: 'Crea un servicio (RF-009-04)' })

@@ -26,6 +26,8 @@ function invalid(errors: readonly RowError[]): DomainError {
 }
 
 /** Altas, ediciones y (des)activaciones del catálogo (spec 009, US5), todas con auditoría en la misma transacción. */
+const CATALOG_LIST_LIMIT = 500;
+
 @Injectable()
 export class CatalogAdminService {
   constructor(
@@ -33,6 +35,11 @@ export class CatalogAdminService {
     private readonly catalog: CatalogAdminRepository,
     @Inject(AUDIT_PORT) private readonly audit: AuditPort,
   ) {}
+
+  /** `GET /admin/catalog`: todo el catálogo con planes inactivos incluidos (tope de 500 servicios). */
+  list(): Promise<(ServiceView & { plans: PlanView[] })[]> {
+    return this.catalog.listWithPlans(this.db, CATALOG_LIST_LIMIT);
+  }
 
   async createService(adminId: string, body: Record<string, unknown>): Promise<ServiceView> {
     const checked = validateService(1, body);

@@ -1,0 +1,45 @@
+# Workflow del frontend (monorepo: una carpeta, un workflow). Corre solo si cambia frontend/.
+# Complementa a ci.yml, que sigue siendo el que exigen las reglas de rama.
+name: Frontend
+
+on:
+  pull_request:
+    branches: [main, qa, dev]
+    paths: ['frontend/**', 'package.json', 'package-lock.json', '.github/workflows/frontend.yml']
+  push:
+    branches: [main]
+    paths: ['frontend/**', 'package.json', 'package-lock.json', '.github/workflows/frontend.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: frontend (lint, build, test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint (ESLint, Prettier y tsc)
+        run: npm run lint -w frontend
+
+      - name: Build
+        run: npm run build -w frontend
+
+      - name: Pruebas
+        run: npm run test -w frontend

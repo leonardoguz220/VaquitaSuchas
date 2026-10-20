@@ -204,20 +204,20 @@ export function createProxyHandler(options: ProxyOptions = {}) {
     const hasBody = method !== 'GET' && method !== 'HEAD' && request.body !== null;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const init: RequestInit & { duplex?: 'half' } = {
+    const init: RequestInit = {
       method,
       headers: buildUpstreamHeaders(request, relativePath),
       redirect: 'manual',
       cache: 'no-store',
       signal: controller.signal,
     };
-    if (hasBody) {
-      // Streaming: el cuerpo (incluido multipart) no se carga entero en memoria.
-      init.body = request.body;
-      init.duplex = 'half';
-    }
 
     try {
+      // El cuerpo se lee completo antes de reenviarlo. Reenviar el stream (duplex 'half') hacía que
+      // undici reintentara un POST cuando el backend respondía 401 y fallara con «expected non-null
+      // body source», lo que el proxy devolvía como 503.
+      if (hasBody) init.body = await request.arrayBuffer();
+
       const upstream = await fetch(target, init);
 
       const headers = new Headers();
