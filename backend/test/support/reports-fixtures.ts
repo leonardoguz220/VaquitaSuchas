@@ -20,6 +20,7 @@ export interface ReportsGroupOptions {
   /** Precio individual de referencia copiado en el grupo (RN-001-12). */
   individual?: { cents: number; currency: 'BS' | 'USD' };
   billingDay?: number;
+  totalSlots?: number;
 }
 
 export interface ReportsChargeOptions {
@@ -45,7 +46,7 @@ export class ReportsFixtures {
         `INSERT INTO groups (owner_id, name, service_name_snapshot, price_cents, currency,
                              billing_day, total_slots, invite_code,
                              individual_price_cents_snapshot, individual_price_currency_snapshot)
-         VALUES ($1, $2, $3, $4, 'BS', $5, 12, $6, $7, $8) RETURNING id`,
+         VALUES ($1, $2, $3, $4, 'BS', $5, $9, $6, $7, $8) RETURNING id`,
         [
           options.ownerId,
           options.name ?? 'Grupo',
@@ -55,6 +56,7 @@ export class ReportsFixtures {
           code,
           options.individual?.cents ?? null,
           options.individual?.currency ?? null,
+          options.totalSlots ?? 12,
         ],
       );
       const id = (group.rows[0] as { id: string }).id;
