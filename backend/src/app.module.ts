@@ -4,6 +4,7 @@ import { AdaptersModule } from './app-adapters/adapters.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
 import { BillingModule } from './modules/billing/billing.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { ReputationModule } from './modules/reputation/reputation.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
 import { JoinRequestsModule } from './modules/join-requests/join-requests.module.js';
 import { HealthModule } from './modules/health/health.module.js';
@@ -54,6 +55,7 @@ import { StorageModule } from './shared/storage/storage.module.js';
     UsersModule,
     AdminModule,
     ReportsModule,
+    ReputationModule,
   ],
 })
 export class AppModule {}
