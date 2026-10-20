@@ -93,7 +93,7 @@
 - [ ] T049 [P] [US4] [BE] Crear el proyecto gratuito de Supabase Storage (buckets privados), cargar sus claves en las variables de entorno de staging y la llamada diaria al almacén dentro de `maintenance.cleanup` para evitar la pausa por inactividad — Depende: T026, T047 · Cubre: RF-000-20, RF-000-22
 - [ ] T050 [US4] [BE] Configurar el webhook de Telegram de staging (`telegram-set-webhook`) con el bot propio y `TELEGRAM_WEBHOOK_SECRET`; decidir con el equipo el proveedor de correo de staging (Resend con correos de integrantes o Brevo) y registrar la decisión en `context/decisiones/` — Depende: T030, T047 · Cubre: RF-000-22, RF-000-12
 - [x] T051 [US4] [BD] Aplicar las migraciones en staging con `Migrate staging`, sembrar el catálogo y comprobar que la segunda ejecución no cambia nada — Depende: T044, T047 · Cubre: RF-000-21, CA-000-14
-- [ ] T052 [US4] [FE] Verificar staging: abrir `/estado` y comprobar las tres capas (captura en el PR de despliegue) y ejecutar `estado.spec.ts` con `BASE_URL` de staging — Depende: T048, T051 · Cubre: CA-000-14, RF-000-20
+- [x] T052 [US4] [FE] Verificar staging: abrir `/estado` y comprobar las tres capas (captura en el PR de despliegue) y ejecutar `estado.spec.ts` con `BASE_URL` de staging — Depende: T048, T051 · Cubre: CA-000-14, RF-000-20
 
 ## Fase 6: Cierre y verificación
 
