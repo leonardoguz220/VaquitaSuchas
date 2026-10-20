@@ -10,3 +10,19 @@ paths = [
   '''(^|/)\.env\.example$''',
   '''package-lock\.json$''',
 ]
+
+# Las pruebas usan contraseñas y claves inventadas que la regla genérica confunde con secretos.
+# Solo se excusa esa regla y solo en archivos de prueba: las demás (AWS, GitHub, llaves privadas…)
+# siguen activas también ahí. Ignorar por huella no alcanza, porque promover qa a main crea
+# commits nuevos y las huellas cambian. Al extender la configuración por defecto, gitleaks suma
+# esta excepción a la regla original sin reemplazarla.
+[[rules]]
+id = "generic-api-key"
+[[rules.allowlists]]
+description = "Literales de prueba en archivos de test"
+paths = [
+  '''\.(spec|test|e2e-spec)\.tsx?$''',
+  '''(^|/)backend/test/''',
+  '''(^|/)frontend/e2e/''',
+  '''(^|/)database/tests/''',
+]
