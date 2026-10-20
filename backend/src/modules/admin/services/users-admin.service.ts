@@ -181,35 +181,43 @@ export class UsersAdminService {
     };
   }
 
-  /** `POST …/suspend` (CA-009-09, 10, 13). El correo sale después de confirmar y no puede deshacerla. */
-  async suspend(adminId: string, userId: string, reasonInput: unknown): Promise<AdminUserView> {
-    const reason = requireReason(reasonInput);
-    const email = await this.db.withTransaction(async (tx) => {
-      const { actor, target } = await this.lockActorAndTarget(tx, adminId, userId);
-      const verdict = canActOnUser({
-        actor: refOf(actor),
-        target: refOf(target),
-        action: 'suspend',
-      });
-      if (!verdict.ok) throw ruleError(verdict);
-      await this.suspensions.insert(tx, {
-        userId,
-        reason,
-        suspendedBy: adminId,
-        suspendedAt: this.clock.now(),
-      });
-      await this.account.setStatus(tx, userId, 'suspendido');
-      await this.audit.record(tx, {
-        actorId: adminId,
-        action: 'usuario_suspender',
-        targetType: 'user',
-        targetId: userId,
-        reason,
-        metadata: { previousStatus: target.status },
-      });
-      return target.email;
+  /**
+   * Suspende dentro de la transacción de quien llama (también la usa la moderación de
+   * publicaciones, RF-009-13) y devuelve el correo de la persona para avisarle después de confirmar.
+   */
+  async suspendWithin(
+    tx: DbTransaction,
+    adminId: string,
+    userId: string,
+    reason: string,
+  ): Promise<string> {
+    const { actor, target } = await this.lockActorAndTarget(tx, adminId, userId);
+    const verdict = canActOnUser({
+      actor: refOf(actor),
+      target: refOf(target),
+      action: 'suspend',
     });
-    // RF-009-11: si el envío falla, MailOutbox lo deja en reintentos y la suspensión se mantiene.
+    if (!verdict.ok) throw ruleError(verdict);
+    await this.suspensions.insert(tx, {
+      userId,
+      reason,
+      suspendedBy: adminId,
+      suspendedAt: this.clock.now(),
+    });
+    await this.account.setStatus(tx, userId, 'suspendido');
+    await this.audit.record(tx, {
+      actorId: adminId,
+      action: 'usuario_suspender',
+      targetType: 'user',
+      targetId: userId,
+      reason,
+      metadata: { previousStatus: target.status },
+    });
+    return target.email;
+  }
+
+  /** RF-009-11: si el envío falla, MailOutbox lo deja en reintentos y la suspensión se mantiene. */
+  async sendSuspensionMail(email: string, reason: string): Promise<void> {
     await this.mail.send(
       buildSuspensionMail({
         to: email,
@@ -217,6 +225,15 @@ export class UsersAdminService {
         appealEmail: this.config.get<string>('APPEAL_EMAIL'),
       }),
     );
+  }
+
+  /** `POST …/suspend` (CA-009-09, 10, 13). El correo sale después de confirmar y no puede deshacerla. */
+  async suspend(adminId: string, userId: string, reasonInput: unknown): Promise<AdminUserView> {
+    const reason = requireReason(reasonInput);
+    const email = await this.db.withTransaction((tx) =>
+      this.suspendWithin(tx, adminId, userId, reason),
+    );
+    await this.sendSuspensionMail(email, reason);
     return this.getDetail(userId);
   }
 
