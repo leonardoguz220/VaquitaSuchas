@@ -56,8 +56,8 @@
 **Meta:** cualquiera puede reportar una publicación sospechosa; con 3 reportes de personas distintas se oculta mientras un administrador revisa.
 **Prueba independiente:** el tercer reporte oculta la publicación y avisa al titular; reportar dos veces como la misma persona se rechaza.
 
-- [ ] T021 [P] [US4] [BE] `backend/test/listings.reports.e2e-spec.ts`: CA-008-17 (tercer reporte oculta), CA-008-18 (reportar dos veces), límite de 10 reportes por día, reportes contados desde `moderation_cleared_at` — Depende: T008 · Cubre: CA-008-17, CA-008-18, RF-008-17, RF-008-18, RNF-008-04
-- [ ] T022 [US4] [BE] `services/listing-reports.service.ts` y `POST /listings/:id/reports` (inserta, cuenta reportes distintos, oculta con `shouldHide` y avisa `publicacion_oculta` al titular, todo en una transacción); `ListingsService.adminRestore/adminRemove/listReported` para la spec 009 (T031) — Depende: T021, T010 · Cubre: RF-008-17, RF-008-18, CA-008-17, CA-008-18
+- [x] T021 [P] [US4] [BE] `backend/test/listings.reports.e2e-spec.ts`: CA-008-17 (tercer reporte oculta), CA-008-18 (reportar dos veces), límite de 10 reportes por día, reportes contados desde `moderation_cleared_at` — Depende: T008 · Cubre: CA-008-17, CA-008-18, RF-008-17, RF-008-18, RNF-008-04
+- [x] T022 [US4] [BE] `services/listing-reports.service.ts` y `POST /listings/:id/reports` (inserta, cuenta reportes distintos, oculta con `shouldHide` y avisa `publicacion_oculta` al titular, todo en una transacción); `ListingsService.adminRestore/adminRemove/listReported` para la spec 009 (T031) — Depende: T021, T010 · Cubre: RF-008-17, RF-008-18, CA-008-17, CA-008-18
 - [x] T023 [P] [US4] [FE] Botón **Reportar** en `/cupos/[id]` (motivo y comentario opcional) y mensaje de publicación oculta para el titular, con mock, conectado al terminar T022 — Depende: T015 · Cubre: RF-008-17
 
 ## Fase 6: US5 — Vencimiento y eventos del grupo (Prioridad: P2)
@@ -65,12 +65,12 @@
 **Meta:** las publicaciones siguen la vida del grupo: expiran a los 30 días, se ajustan al tamaño del grupo y se cierran con él.
 **Prueba independiente:** con `FakeClock` a 30 días, la publicación pasa a `expirada` y el titular puede renovarla.
 
-- [ ] T024 [P] [US5] [BE] `backend/test/listings.expire.e2e-spec.ts` (CA-008-14: más de 30 días → `expirada`; cierre por grupo lleno; reparación de incoherencias) y `listings.events.e2e-spec.ts` (CA-008-16 grupo cerrado, `MemberAdded`/`MemberRemoved` ajustan `slots_offered`, `OwnerChanged` avisa `publicacion_transferida`, `GroupFrozen`, `UserBanned`) — Depende: T008 · Cubre: CA-008-14, CA-008-16, RF-008-05, RN-008-04
-- [ ] T025 [US5] [BE] `services/listings-expire.service.ts` (tarea `listings.expire` con `SKIP LOCKED`: `expirada`, cierre por grupo lleno y reparación) y `services/handlers/{join-requests,groups}.handlers.ts` (`MemberAdded`, `MemberRemoved`, `GroupClosed`, `GroupFrozen`, `OwnerChanged`, `UserSuspended`/`UserBanned` del titular) — Depende: T024, T018, spec 000 T028 · Cubre: RF-008-05, RF-008-14, RN-008-04, CA-008-14, CA-008-16
+- [x] T024 [P] [US5] [BE] `backend/test/listings.expire.e2e-spec.ts` (CA-008-14: más de 30 días → `expirada`; cierre por grupo lleno; reparación de incoherencias) y `listings.events.e2e-spec.ts` (CA-008-16 grupo cerrado, `MemberAdded`/`MemberRemoved` ajustan `slots_offered`, `OwnerChanged` avisa `publicacion_transferida`, `GroupFrozen`, `UserBanned`) — Depende: T008 · Cubre: CA-008-14, CA-008-16, RF-008-05, RN-008-04
+- [x] T025 [US5] [BE] `services/listings-expire.service.ts` (tarea `listings.expire` con `SKIP LOCKED`: `expirada`, cierre por grupo lleno y reparación) y `services/handlers/{join-requests,groups}.handlers.ts` (`MemberAdded`, `MemberRemoved`, `GroupClosed`, `GroupFrozen`, `OwnerChanged`, `UserSuspended`/`UserBanned` del titular) — Depende: T024, T018, spec 000 T028 · Cubre: RF-008-05, RF-008-14, RN-008-04, CA-008-14, CA-008-16
 
 ## Fase 7: Cierre
 
-- [ ] T026 [BE] Revisión de seguridad: lista blanca de campos de `ListingView`, solo el titular publica y acepta, cuentas restringidas sin publicar ni solicitar, texto libre sin HTML, límites de solicitudes (spec 010) y reportes, orden de bloqueos solicitud → grupo → publicación — Depende: T018, T022, T025 · Cubre: RNF-008-01, RNF-008-03, RNF-008-04, RNF-008-06
+- [x] T026 [BE] Revisión de seguridad: lista blanca de campos de `ListingView`, solo el titular publica y acepta, cuentas restringidas sin publicar ni solicitar, texto libre sin HTML, límites de solicitudes (spec 010) y reportes, orden de bloqueos solicitud → grupo → publicación — Depende: T018, T022, T025 · Cubre: RNF-008-01, RNF-008-03, RNF-008-04, RNF-008-06
 - [ ] T027 [BD] Revisar con Camila los planes de consulta de la búsqueda con 5.000 publicaciones (p95 < 500 ms) y del barrido diario con datos del seed — Depende: T014 · Cubre: RNF-008-02
 - [ ] T028 [FE] Accesibilidad y móvil primero de `/cupos`, `/cupos/[id]` y la pestaña **Publicar cupos** (esqueletos de carga, botón sin duplicados, cuota siempre «estimada») — Depende: T016, T020, T023 · Cubre: RNF-008-05
 - [ ] T029 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (puertos con la spec 010, decisiones del plan) y marcar las tareas hechas — Depende: T026, T027, T028 · Cubre: —
