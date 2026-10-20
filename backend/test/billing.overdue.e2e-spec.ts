@@ -386,6 +386,17 @@ describe('Atrasos y retiro por mora', () => {
       expect((await member(group.id, memberA))?.left_at).toBeNull();
     });
 
+    it('CA-009-32: con el titular baneado (grupo congelado) el cobro vencido no pasa a atrasado ni se retira a nadie', async () => {
+      const chargeId = await harness.insertCharge(group, memberA, { dueAt: OVERDUE });
+      await harness.freezeGroup(group.id);
+
+      await runJob();
+
+      expect((await state(chargeId)).status).toBe('pendiente');
+      expect((await member(group.id, memberA))?.left_at).toBeNull();
+      expect(removedForMora).toEqual([]);
+    });
+
     it('R5: en un grupo cerrado los cobros existentes se pueden seguir saldando', async () => {
       const chargeId = await harness.insertCharge(group, memberA, { dueAt: FUTURE });
       await uploadReceipt(harness, memberA, chargeId, { reference: 'TX-CERRADO' }).expect(201);

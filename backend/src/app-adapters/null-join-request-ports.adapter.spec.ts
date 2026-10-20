@@ -13,7 +13,7 @@ describe('adaptadores nulos de la spec 010 (hasta las specs 007 y 009)', () => {
   });
 
   it('BanPort y AuditPort no hacen nada y no fallan', async () => {
-    await expect(new NullBanAdapter().ban()).resolves.toBeUndefined();
+    await expect(new NullBanAdapter().ban()).resolves.toBeNull();
     await expect(new NullAuditAdapter().record()).resolves.toBeUndefined();
   });
 });

@@ -1,7 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AdaptersModule } from './app-adapters/adapters.module.js';
+import { AdminModule } from './modules/admin/admin.module.js';
 import { BillingModule } from './modules/billing/billing.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { ReputationModule } from './modules/reputation/reputation.module.js';
+import { ReportsModule } from './modules/reports/reports.module.js';
 import { JoinRequestsModule } from './modules/join-requests/join-requests.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module.js';
@@ -46,8 +50,12 @@ import { StorageModule } from './shared/storage/storage.module.js';
     SubscriptionsModule,
     BillingModule,
     JoinRequestsModule,
+    NotificationsModule,
     AuthModule,
     UsersModule,
+    AdminModule,
+    ReportsModule,
+    ReputationModule,
   ],
 })
 export class AppModule {}

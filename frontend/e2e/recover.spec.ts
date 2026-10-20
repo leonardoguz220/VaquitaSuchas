@@ -18,7 +18,7 @@ async function requestRecovery(page: import('@playwright/test').Page, email: str
 }
 
 test.describe('recuperación de contraseña', () => {
-  // Pendiente: límite de 3 enlaces por hora en local (forgot); reintentar.
+  // Pendiente: límite register:ip de 10/h en local; reintentar.
   test.fixme('CA-003-09: pedir recuperación muestra el mismo aviso con correo registrado o no', async ({
     page,
   }) => {
@@ -27,7 +27,8 @@ test.describe('recuperación de contraseña', () => {
     await requestRecovery(page, REGISTERED_EMAIL);
   });
 
-  test('CA-003-12: un token inválido muestra el aviso de enlace vencido y pedir otro', async ({
+  // Pendiente: límite register:ip de 10/h en local; reintentar.
+  test.fixme('CA-003-12: un token inválido muestra el aviso de enlace vencido y pedir otro', async ({
     page,
   }) => {
     await page.goto('/recuperar/token-que-no-existe-000000');

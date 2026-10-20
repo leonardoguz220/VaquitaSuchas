@@ -168,6 +168,17 @@ export class TransferOwnershipDto {
   toUserId!: string;
 }
 
+/** Cuerpo de `POST /admin/groups/:groupId/transfer-ownership`; el motivo lo valida el servicio. */
+export class AdminTransferOwnershipDto {
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID()
+  toUserId!: string;
+
+  @ApiProperty({ minLength: 10, maxLength: 300 })
+  @IsString()
+  reason!: string;
+}
+
 /** Query de `GET /groups` (contracts/api.md). */
 export class ListGroupsQueryDto {
   @ApiPropertyOptional({ enum: ['titular', 'miembro'] })
