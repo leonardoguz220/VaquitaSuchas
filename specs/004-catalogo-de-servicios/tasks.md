@@ -53,7 +53,7 @@
 
 - [x] T017 [US3] [BE] Prueba de integración del contrato con la spec 001 `subscriptions.snapshot.e2e-spec.ts` (CA-004-07: crear una suscripción con un plan, cambiar el precio del plan en el catálogo y comprobar que la suscripción no cambia; aquí se verifica que el catálogo entrega todos los campos de la copia) — Depende: T009, spec 001 (creación de grupos) · Cubre: CA-004-07, RF-004-08, RN-004-01
 - [x] T018 [US3] [BD] Documentar en `database/README.md` el procedimiento para actualizar precios (editar `catalog.json`, `verifiedOn`/`verifiedSource`, `npm run db:seed`) y que el borrado físico no existe — Depende: T005 · Cubre: RF-004-06, RF-004-07, RNF-004-04, RN-004-06
-- [ ] T019 [US3] [BD] Recorrer `quickstart.md` de la spec 004 con un integrante de otra capa y registrar fallos — Depende: T015 · Cubre: RNF-004-01
+- [x] T019 [US3] [BD] Recorrer `quickstart.md` de la spec 004 con un integrante de otra capa y registrar fallos — Depende: T015 · Cubre: RNF-004-01
 
 ## Fase 5: Cierre
 
