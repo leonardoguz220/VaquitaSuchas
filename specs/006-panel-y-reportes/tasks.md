@@ -53,7 +53,7 @@
 - [x] T020 [P] [US4] [BE] `backend/test/calendar.e2e-spec.ts`: CA-006-13 (día 31 en febrero), cortes y vencimientos de cobros abiertos, estimados con «estimado», rol y monto por evento, grupos cerrados solo en meses pasados, próximos 30 días — Depende: T007 · Cubre: CA-006-13, RF-006-11, RF-006-12
 - [x] T021 [US4] [BE] `services/calendar.service.ts` (junta ciclos existentes del pasado y el presente con los cálculos del futuro y aplica `calendarEventsFor`) y `controllers/calendar.controller.ts` con `GET /me/calendar?month=` y `GET /me/calendar/upcoming?days=30` — Depende: T020, T005 · Cubre: RF-006-11, RF-006-12, CA-006-13
 - [x] T022 [P] [US4] [FE] `/panel/calendario` con mock: cuadrícula del mes (celdas con eventos de corte y vencimiento en texto e icono), lista **Próximos 30 días**, rol y monto («estimado» cuando corresponde) — Depende: T012 · Cubre: RF-006-11, RF-006-12, RNF-006-05
-- [ ] T023 [US4] [FE] Conectar el calendario con `GET /me/calendar` y `…/upcoming` — Depende: T021, T022 · Cubre: RF-006-11
+- [x] T023 [US4] [FE] Conectar el calendario con `GET /me/calendar` y `…/upcoming` — Depende: T021, T022 · Cubre: RF-006-11
 
 ## Fase 5: US5 — Historial y exportación a CSV (parte C, Prioridad: P1)
 
@@ -63,7 +63,7 @@
 - [x] T024 [P] [US5] [BE] `backend/test/export.e2e-spec.ts`: CA-006-15 (acentos y montos numéricos con BOM), CA-006-16 (`=CMD()` escapado), CA-006-17 (el miembro exporta el grupo → `403`), límite de 10 exportaciones por hora (`429` con el tiempo de espera) y de 20.000 filas; historial paginado con filtros por mes, suscripción y estado — Depende: T007, T006 · Cubre: CA-006-15, CA-006-16, CA-006-17, RF-006-13, RF-006-14, RF-006-15, RNF-006-04
 - [x] T025 [US5] [BE] `services/history.service.ts` y `services/export.service.ts` (CSV en flujo con cursor de base, límite de filas y `rate_limit_events` cubo `export:user`) con `controllers/history.controller.ts` y `export.controller.ts`: `GET /me/history`, `GET /me/history/export.csv` y `GET /groups/:groupId/history/export.csv` (titular; `403` miembro, `404` ajeno; sin comprobantes) — Depende: T024 · Cubre: RF-006-13, RF-006-14, RF-006-15, RNF-006-03, RNF-006-04, CA-006-15, CA-006-16, CA-006-17
 - [x] T026 [P] [US5] [FE] `/panel/historial` (tabla con filtros de mes, suscripción y estado, «Cargar más» y **Exportar CSV**) y **Exportar CSV del grupo** en la pestaña **Cobranza** del titular, con mock y mensaje de espera para `429` — Depende: T012 · Cubre: RF-006-13, RF-006-14
-- [ ] T027 [US5] [FE] Conectar historial y exportaciones con los endpoints (descarga con el nombre de archivo del servidor) — Depende: T025, T026 · Cubre: RF-006-13, RF-006-14
+- [x] T027 [US5] [FE] Conectar historial y exportaciones con los endpoints (descarga con el nombre de archivo del servidor) — Depende: T025, T026 · Cubre: RF-006-13, RF-006-14
 
 ## Fase 6: Cierre
 

@@ -4,8 +4,7 @@
  * son centavos de Bs calculados por el backend: el frontend no suma, no resta ni calcula
  * porcentajes (plan 006 §6).
  */
-import { apiRequest } from './http';
-import * as mock from './reports.mock';
+import { apiDownload, apiRequest, type ApiFile } from './http';
 
 /** Query string sin los valores vacíos; `''` si no queda ninguno. */
 function buildQuery(params: Record<string, string | number | undefined>): string {
@@ -17,11 +16,20 @@ function buildQuery(params: Record<string, string | number | undefined>): string
   return text ? `?${text}` : '';
 }
 
-/** Archivo descargado de la API (CSV): contenido y nombre que propone el servidor. */
-export interface ApiDownload {
-  blob: Blob;
-  filename: string | null;
+/** Query de historial y exportación (contrato 006): filtros y paginación, solo si vienen. */
+function buildHistoryQuery(params: HistoryFilters & { limit?: number; cursor?: string }): string {
+  const query = new URLSearchParams();
+  if (params.period) query.set('period', params.period);
+  if (params.groupId) query.set('groupId', params.groupId);
+  if (params.status) query.set('status', params.status);
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.cursor) query.set('cursor', params.cursor);
+  const text = query.toString();
+  return text ? `?${text}` : '';
 }
+
+/** Archivo descargado de la API (CSV): contenido y nombre que propone el servidor. */
+export type ApiDownload = ApiFile;
 
 export type ReportRole = 'miembro' | 'titular';
 
@@ -232,12 +240,12 @@ export interface CalendarResponse {
 
 /** `GET /me/calendar?month=` (RF-006-11; CA-006-13): cortes y vencimientos del mes. */
 export function getCalendar(month?: string): Promise<CalendarResponse> {
-  return mock.getCalendar(month);
+  return apiRequest<CalendarResponse>(`/api/me/calendar${buildQuery({ month })}`);
 }
 
 /** `GET /me/calendar/upcoming?days=` (RF-006-11): próximos días, de 1 a 90. */
 export function getUpcomingEvents(days = 30): Promise<CalendarResponse> {
-  return mock.getUpcomingEvents(days);
+  return apiRequest<CalendarResponse>(`/api/me/calendar/upcoming${buildQuery({ days })}`);
 }
 
 export type HistoryStatus = 'pendiente' | 'en_revision' | 'pagado' | 'atrasado' | 'cancelado';
@@ -273,7 +281,7 @@ export interface HistoryFilters {
 export function listHistory(
   params: HistoryFilters & { limit?: number; cursor?: string } = {},
 ): Promise<HistoryPage> {
-  return mock.listHistory(params);
+  return apiRequest<HistoryPage>(`/api/me/history${buildHistoryQuery(params)}`);
 }
 
 /**
@@ -282,7 +290,7 @@ export function listHistory(
  * `422 BUSINESS_RULE` (`EXPORT_TOO_LARGE`).
  */
 export function exportHistoryCsv(filters: HistoryFilters = {}): Promise<ApiDownload> {
-  return mock.exportHistoryCsv(filters);
+  return apiDownload(`/api/me/history/export.csv${buildHistoryQuery(filters)}`);
 }
 
 export interface GroupExportFilters {
@@ -299,5 +307,10 @@ export function exportGroupHistoryCsv(
   groupId: string,
   filters: GroupExportFilters = {},
 ): Promise<ApiDownload> {
-  return mock.exportGroupHistoryCsv(groupId, filters);
+  const query = buildQuery({
+    period: filters.period,
+    userId: filters.userId,
+    status: filters.status,
+  });
+  return apiDownload(`/api/groups/${encodeURIComponent(groupId)}/history/export.csv${query}`);
 }
