@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { startAuthApp, type AuthTestApp } from './support/auth-app.js';
-import { createAdmin, type AdminActor } from './support/admin-fixtures.js';
+import { createAdmin, randomPassword, type AdminActor } from './support/admin-fixtures.js';
 
 // Spec 009, US5: altas, ediciones y (des)activación del catálogo (RF-009-04, 05, 07). Requiere PostgreSQL.
 describe('Catálogo en administración (spec 009)', () => {
@@ -190,5 +190,35 @@ describe('Catálogo en administración (spec 009)', () => {
     expect((await send('post', `/admin/catalog/plans/${randomUUID()}/deactivate`)).status).toBe(
       404,
     );
+  });
+
+  it('RF-009-04: GET /admin/catalog lista servicios con sus planes, también los desactivados', async () => {
+    const service = await send('post', '/admin/catalog/services', serviceBody('lista-servicio'));
+    const plan = await send('post', '/admin/catalog/plans', planBody(service.body.id as string));
+    await send('post', `/admin/catalog/plans/${plan.body.id as string}/deactivate`);
+
+    const res = await pub('/admin/catalog');
+
+    expect(res.status).toBe(200);
+    const listed = (res.body as { id: string; plans: object[] }[]).find(
+      (s) => s.id === service.body.id,
+    );
+    expect(listed).toMatchObject({
+      slug: 'lista-servicio',
+      isActive: true,
+      plans: [{ id: plan.body.id, priceCents: 1999, currency: 'USD', isActive: false }],
+    });
+  });
+
+  it('RF-009-04: GET /admin/catalog responde 403 a un usuario normal y 401 sin sesión', async () => {
+    const password = randomPassword();
+    const user = await t.createUser({ password });
+    const login = await t.login(user.email, password);
+    const normal = await t
+      .http()
+      .get('/admin/catalog')
+      .set('Authorization', `Bearer ${login.body.sessionToken as string}`);
+    expect(normal.status).toBe(403);
+    expect((await t.http().get('/admin/catalog')).status).toBe(401);
   });
 });

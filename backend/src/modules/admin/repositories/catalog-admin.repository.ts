@@ -81,6 +81,27 @@ const toPlan = (r: PlanDb): PlanView => ({
 /** SQL de escritura del catálogo (spec 009, US5) sobre `catalog_services` y `catalog_plans` (0020). */
 @Injectable()
 export class CatalogAdminRepository {
+  /** Servicios por nombre con todos sus planes, activos e inactivos (RF-009-04). Catálogo pequeño: tope fijo. */
+  async listWithPlans(
+    q: Queryable,
+    limit: number,
+  ): Promise<(ServiceView & { plans: PlanView[] })[]> {
+    const services = await q.query<ServiceDb>(
+      `SELECT ${SERVICE_COLUMNS} FROM catalog_services ORDER BY name, id LIMIT $1`,
+      [limit],
+    );
+    const ids = services.rows.map((r) => r.id);
+    const plans = await q.query<PlanDb>(
+      `SELECT ${PLAN_COLUMNS} FROM catalog_plans WHERE service_id = ANY($1::uuid[])
+        ORDER BY price_cents, name, id`,
+      [ids],
+    );
+    return services.rows.map((r) => ({
+      ...toService(r),
+      plans: plans.rows.filter((p) => p.service_id === r.id).map(toPlan),
+    }));
+  }
+
   async findService(q: Queryable, id: string): Promise<ServiceView | null> {
     const result = await q.query<ServiceDb>(
       `SELECT ${SERVICE_COLUMNS} FROM catalog_services WHERE id = $1`,
