@@ -16,12 +16,13 @@ export interface CalendarGroup {
 }
 
 export interface CalendarCharge {
-  chargeId: string;
+  /** `null` para la cuota de referencia del titular (un ciclo, no un cobro). */
+  chargeId: string | null;
   groupId: string;
   /** `AAAA-MM` del corte. */
   period: string;
   amountCents: number;
-  status: string;
+  status: string | null;
   dueAt: Date;
 }
 
@@ -44,7 +45,7 @@ const pad = (n: number, w = 2): string => String(n).padStart(w, '0');
 const dateString = (y: number, m: number, d: number): string => `${pad(y, 4)}-${pad(m)}-${pad(d)}`;
 
 /** Último día de pago: el día de La Paz anterior al instante exclusivo `dueAt`. */
-function lastPayDay(dueAt: Date): string {
+export function lastPayDay(dueAt: Date): string {
   const p = toLaPazParts(new Date(dueAt.getTime() - 1));
   return dateString(p.year, p.month, p.day);
 }
@@ -99,7 +100,7 @@ export function calendarEventsFor(
   }
 
   for (const charge of charges) {
-    if (!OPEN_STATUSES.has(charge.status)) continue;
+    if (charge.status === null || !OPEN_STATUSES.has(charge.status)) continue;
     const group = byGroup.get(charge.groupId);
     if (!group) continue;
     const date = lastPayDay(charge.dueAt);
