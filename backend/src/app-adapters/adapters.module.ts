@@ -18,6 +18,8 @@ import { JoinRequestOwnershipBlockersAdapter } from './ownership-blockers.adapte
 import { OpenChargesAdapter } from './open-charges.adapter.js';
 import { CHARGE_FACTS_PORT } from '../modules/billing/ports/charge-facts.port.js';
 import { ChargeFactsRepository } from '../modules/billing/repositories/charge-facts.repository.js';
+import { BadgesRepository } from '../modules/reputation/repositories/badges.repository.js';
+import { BadgesService } from '../modules/reputation/services/badges.service.js';
 import { ReputationRepository } from '../modules/reputation/repositories/reputation.repository.js';
 import { ReputationQueryService } from '../modules/reputation/services/reputation-query.service.js';
 import { ReputationService } from '../modules/reputation/services/reputation.service.js';
@@ -37,6 +39,8 @@ import { ReputationRatingsAdapter } from './reputation-ratings.adapter.js';
     ChargeFactsRepository,
     { provide: CHARGE_FACTS_PORT, useExisting: ChargeFactsRepository },
     ReputationRepository,
+    BadgesRepository,
+    BadgesService,
     ReputationService,
     ReputationQueryService,
     ReputationRatingsAdapter,

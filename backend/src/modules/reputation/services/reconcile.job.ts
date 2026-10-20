@@ -3,29 +3,12 @@ import type { DbService } from '../../../shared/db/db.service.js';
 import type { JobRunsRepository } from '../../../shared/jobs/job-runs.repository.js';
 import type { JobContext, ScheduledJob } from '../../../shared/jobs/scheduled-job.js';
 import { RULES_VERSION } from '../domain/rules-version.js';
-import type { Reputation } from '../domain/score.js';
-import type {
-  ReputationRepository,
-  StoredReputation,
-} from '../repositories/reputation.repository.js';
+import type { ReputationRepository } from '../repositories/reputation.repository.js';
 import type { ReputationService } from './reputation.service.js';
 
 const ONE_DAY_SECONDS = 24 * 60 * 60;
 const BATCH = 100;
 const THIRTEEN_MONTHS = 13;
-
-function differs(stored: StoredReputation | undefined, fresh: Reputation): boolean {
-  return (
-    !stored ||
-    stored.rulesVersion !== RULES_VERSION ||
-    stored.consideredCount !== fresh.consideredCount ||
-    stored.punctualCount !== fresh.punctualCount ||
-    stored.lateCount !== fresh.lateCount ||
-    stored.halfStars !== fresh.halfStars ||
-    stored.level !== fresh.level ||
-    stored.currentStreak !== fresh.currentStreak
-  );
-}
 
 /**
  * `reputation.reconcile` (RF-007-05, CA-007-14): una vez al día recalcula desde los cobros a
@@ -55,13 +38,10 @@ export class ReputationReconcileJob implements ScheduledJob {
     for (let i = 0; i < userIds.length; i += BATCH) {
       for (const userId of userIds.slice(i, i + BATCH)) {
         try {
-          drift += await ctx.db.withTransaction(async (tx) => {
-            const stored = (await this.repository.getMany(tx, [userId])).get(userId);
-            const fresh = await this.reputation.computeNow(tx, userId, ctx.now);
-            if (!differs(stored, fresh)) return 0;
-            await this.repository.upsert(tx, userId, fresh, RULES_VERSION, ctx.now);
-            return 1;
-          });
+          const changed = await ctx.db.withTransaction((tx) =>
+            this.reputation.reconcileUser(tx, userId, ctx.now),
+          );
+          if (changed) drift += 1;
         } catch (error) {
           failed += 1;
           // Solo el tipo de error: el mensaje podría traer datos personales.
