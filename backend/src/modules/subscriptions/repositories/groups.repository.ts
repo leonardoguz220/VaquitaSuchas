@@ -308,4 +308,13 @@ export class GroupsRepository {
     );
     return (result.rowCount ?? 0) > 0;
   }
+
+  /** Grupos activos que posee la persona (ficha de administración, spec 009). */
+  async countOwnedActive(q: Queryable, ownerId: string): Promise<number> {
+    const result = await q.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM groups WHERE owner_id = $1 AND status = 'activo'`,
+      [ownerId],
+    );
+    return result.rows[0]?.n ?? 0;
+  }
 }

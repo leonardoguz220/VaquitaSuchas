@@ -55,7 +55,7 @@ import { SessionService } from './services/session.service.js';
     { provide: AUTH_SESSION_PORT, useExisting: AuthSessionService },
     { provide: APP_INTERCEPTOR, useClass: SessionRenewalInterceptor },
   ],
-  exports: [AUTH_SESSION_PORT, SessionService],
+  exports: [AUTH_SESSION_PORT, SessionService, MailOutbox],
 })
 export class AuthModule implements OnModuleInit {
   constructor(

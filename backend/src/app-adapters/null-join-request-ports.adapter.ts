@@ -10,11 +10,11 @@ import type {
 // Adaptadores por defecto de los puertos que la spec 010 consume de specs futuras. Se reemplazan
 // al implementarse la spec 009 (baneo y auditoría) y la 007 (calificación).
 
-/** Hasta la spec 009 no existe baneo: no hace nada (decisión por confirmar). */
+/** Sin la spec 009 no existe baneo: no hace nada (decisión por confirmar). */
 @Injectable()
 export class NullBanAdapter implements BanPort {
-  ban(): Promise<void> {
-    return Promise.resolve();
+  ban(): Promise<null> {
+    return Promise.resolve(null);
   }
 }
 
