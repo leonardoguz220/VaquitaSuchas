@@ -256,10 +256,11 @@ describe('Notificaciones: lista, contador y lectura (spec 005)', () => {
     await make(charge, 'recordatorio_vencimiento');
     await make(charge, 'cobro_generado');
     await make(other, 'recordatorio_vencimiento');
-    await t.db.query(
-      `INSERT INTO notification_deliveries (notification_id, channel, respect_window, next_attempt_at)
-       SELECT id, 'email', true, now() FROM notifications`,
+    // `notify` ya crea el envío de correo pendiente de cada aviso (T020): no hace falta insertarlo.
+    const pending = await t.db.query(
+      "SELECT 1 FROM notification_deliveries WHERE status = 'pending' AND channel = 'email'",
     );
+    expect(pending.rowCount).toBe(3);
 
     const cancelled = await db.withTransaction((tx) =>
       notifications.cancelForEntity(tx, 'charge', charge.id, ['recordatorio_vencimiento']),
