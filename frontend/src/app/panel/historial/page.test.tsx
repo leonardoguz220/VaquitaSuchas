@@ -138,7 +138,7 @@ describe('/panel/historial (spec 006 T026)', () => {
     await table();
     await user.click(screen.getByRole('button', { name: 'Cargar más' }));
     expect(mockedHistory).toHaveBeenLastCalledWith({ limit: 25, cursor: 'k2' });
-    expect(await screen.findByText('Paramount+ del curso')).toBeInTheDocument();
+    expect((await screen.findAllByText('Paramount+ del curso'))[0]).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cargar más' })).toBeNull();
   });
 
@@ -228,5 +228,17 @@ describe('/panel/historial (spec 006 T026)', () => {
     await waitFor(() =>
       expect(replace).toHaveBeenCalledWith('/ingresar?next=%2Fpanel%2Fhistorial'),
     );
+  });
+
+  it('RNF-006-05: en celular cada cobro es una tarjeta apilada, con la misma información que la tabla', async () => {
+    renderPage();
+    const cards = within(
+      await screen.findByRole('list', { name: 'Tu historial de cobros' }),
+    ).getAllByRole('listitem');
+    expect(cards).toHaveLength(3);
+    expect(cards[0].textContent).toContain('Octubre 2026');
+    expect(cards[0].textContent).toContain('Bs 19,80');
+    expect(cards[0].textContent).toContain('Pendiente');
+    expect(cards[2].textContent).toContain('Sin pago');
   });
 });

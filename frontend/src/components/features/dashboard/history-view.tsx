@@ -66,6 +66,47 @@ function HistoryRow({ item }: { item: HistoryItem }) {
   );
 }
 
+/** Un cobro en celular: tarjeta apilada con sus datos en pares de texto (RNF-006-05). */
+function HistoryCard({ item }: { item: HistoryItem }) {
+  return (
+    <li className="flex flex-col gap-3 rounded-card border border-line bg-surface p-4">
+      <Link
+        href={chargePath(item.chargeId)}
+        className="inline-flex min-h-11 flex-col justify-center font-bold text-ink underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      >
+        {item.groupName}
+        <span className="text-[15px] font-normal text-muted">
+          {item.serviceName}
+          {item.origin === 'ingreso' ? ' · Pago de ingreso' : ''}
+        </span>
+      </Link>
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-[15px]">
+        <dt className="text-muted">Período</dt>
+        <dd>{formatPeriod(item.period)}</dd>
+        <dt className="text-muted">Monto</dt>
+        <dd className="font-bold">{formatBs(item.amountCents)}</dd>
+        <dt className="text-muted">Estado</dt>
+        <dd>
+          <Badge variant={item.status} />
+        </dd>
+        <dt className="text-muted">Vence</dt>
+        <dd>{formatCalendarDayLaPaz(item.dueDate)}</dd>
+        <dt className="text-muted">Pagado el</dt>
+        <dd>
+          {item.paidAt ? (
+            formatDateLaPaz(item.paidAt)
+          ) : (
+            <>
+              <span aria-hidden="true">—</span>
+              <span className="sr-only">Sin pago</span>
+            </>
+          )}
+        </dd>
+      </dl>
+    </li>
+  );
+}
+
 /**
  * `/panel/historial` (spec 006 T026, plan §6; mockup `Historial.dc.html`): todos los cobros
  * propios, también cancelados y de grupos que dejó, con filtros de mes, suscripción y estado
@@ -187,27 +228,34 @@ export function HistoryView() {
       )}
 
       {history.status === 'success' && history.items.length > 0 && (
-        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:rounded-card sm:border sm:border-line sm:bg-surface sm:px-5">
-          <table className="w-full min-w-[40rem] text-left">
-            <caption className="sr-only">Tu historial de cobros</caption>
-            <thead>
-              <tr className="border-b border-line text-[15px] text-muted">
-                {['Período', 'Suscripción', 'Monto', 'Estado', 'Vence', 'Pagado el'].map(
-                  (header) => (
-                    <th key={header} scope="col" className="py-3 pr-3 font-bold">
-                      {header}
-                    </th>
-                  ),
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {history.items.map((item) => (
-                <HistoryRow key={item.chargeId} item={item} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <ul aria-label="Tu historial de cobros" className="flex flex-col gap-3 sm:hidden">
+            {history.items.map((item) => (
+              <HistoryCard key={item.chargeId} item={item} />
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto sm:block sm:rounded-card sm:border sm:border-line sm:bg-surface sm:px-5">
+            <table className="w-full min-w-[40rem] text-left">
+              <caption className="sr-only">Tu historial de cobros</caption>
+              <thead>
+                <tr className="border-b border-line text-[15px] text-muted">
+                  {['Período', 'Suscripción', 'Monto', 'Estado', 'Vence', 'Pagado el'].map(
+                    (header) => (
+                      <th key={header} scope="col" className="py-3 pr-3 font-bold">
+                        {header}
+                      </th>
+                    ),
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {history.items.map((item) => (
+                  <HistoryRow key={item.chargeId} item={item} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {history.status === 'success' && history.loadMoreError && (
