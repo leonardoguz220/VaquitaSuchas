@@ -19,7 +19,10 @@ import {
 } from '../domain/listing-lifecycle.js';
 import { clampOffered, offeredNow } from '../domain/offered-slots.js';
 import { normalizePlainText } from '../domain/plain-text.js';
-import { ListingReportsRepository } from '../repositories/listing-reports.repository.js';
+import {
+  ListingReportsRepository,
+  type ReportedListingRow,
+} from '../repositories/listing-reports.repository.js';
 import {
   ListingsRepository,
   type ListingChanges,
@@ -300,6 +303,49 @@ export class ListingsService {
       hiddenAt: null,
     });
     await this.joinRequests.rejectOpenForListing(tx, listing.id, 'sin_cupo');
+  }
+
+  /** Spec 009: publicaciones vivas con reportes desde su última restauración. */
+  listReported(): Promise<ReportedListingRow[]> {
+    return this.reports.listReported(this.db);
+  }
+
+  /**
+   * Spec 009 (RF-009-12): restaura una publicación `oculta`. Fija `moderation_cleared_at` para
+   * que los reportes anteriores ya no cuenten y la deja `activa`. Corre en la transacción de la
+   * acción administrativa (grupo → publicación).
+   */
+  async adminRestore(tx: DbTransaction, listingId: string): Promise<void> {
+    const listing = await this.lockForModeration(tx, listingId);
+    if (!nextStatus(listing.status, 'restore')) throw staleState();
+    await this.listings.update(tx, listing.id, {
+      status: 'activa',
+      hiddenAt: null,
+      moderationClearedAt: this.clock.now(),
+    });
+  }
+
+  /** Spec 009 (RF-009-13): retira por moderación una publicación `activa` u `oculta`. */
+  async adminRemove(tx: DbTransaction, listingId: string): Promise<void> {
+    const listing = await this.lockForModeration(tx, listingId);
+    if (!nextStatus(listing.status, 'withdraw')) throw staleState();
+    await this.listings.update(tx, listing.id, {
+      status: 'retirada',
+      endedAt: this.clock.now(),
+      endReason: 'moderacion',
+      hiddenAt: null,
+    });
+  }
+
+  private async lockForModeration(tx: DbTransaction, listingId: string): Promise<ListingRecord> {
+    const found = await this.listings.findById(tx, listingId);
+    if (!found) throw listingNotFound();
+    await this.listings.lockGroup(tx, found.groupId);
+    const listing = await this.listings.findByIdForUpdate(tx, listingId);
+    if (!listing || (listing.status !== 'activa' && listing.status !== 'oculta')) {
+      throw listingNotFound();
+    }
+    return listing;
   }
 
   private async latestExpired(q: Queryable, groupId: string): Promise<ListingRecord | null> {

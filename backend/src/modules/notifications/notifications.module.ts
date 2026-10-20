@@ -31,7 +31,10 @@ import { TxEventBus } from '../../shared/events/tx-event-bus.js';
 import type { UserSuspended } from '../../shared/events/user-events.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { RateLimitRepository } from '../auth/repositories/rate-limit.repository.js';
-import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
+import { GroupMemberGuard } from '../subscriptions/controllers/group-member.guard.js';
+import { GroupOwnerGuard } from '../subscriptions/controllers/group-owner.guard.js';
+import { GroupsRepository } from '../subscriptions/repositories/groups.repository.js';
+import { MembersRepository } from '../subscriptions/repositories/members.repository.js';
 import { InvitationsController } from './controllers/invitations.controller.js';
 import { ShareController } from './controllers/share.controller.js';
 import { InvitationsRepository } from './repositories/invitations.repository.js';
@@ -65,7 +68,7 @@ import { UnsubscribeLinksService } from './services/unsubscribe-links.service.js
 // NotificationService se exporta para los manejadores de eventos de las specs 001, 002, 009 y 010.
 // Los manejadores de avisos se suscriben al bus al arrancar (quien reacciona depende del evento).
 @Module({
-  imports: [AuthModule, SubscriptionsModule],
+  imports: [AuthModule],
   controllers: [
     NotificationsController,
     PreferencesController,
@@ -78,6 +81,11 @@ import { UnsubscribeLinksService } from './services/unsubscribe-links.service.js
     PreferencesRepository,
     DeliveriesRepository,
     ScheduleRepository,
+    // Solo repositorios y guards (sin importar SubscriptionsModule: evita un ciclo de módulos con admin).
+    GroupsRepository,
+    MembersRepository,
+    GroupMemberGuard,
+    GroupOwnerGuard,
     PurgeRepository,
     InvitationsRepository,
     ShareRepository,

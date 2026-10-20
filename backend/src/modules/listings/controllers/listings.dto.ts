@@ -138,3 +138,18 @@ export class RequestSeatDto {
   @MaxLength(MAX_TEXT_INPUT)
   message?: string;
 }
+
+export const REPORT_REASONS = ['spam', 'datos_falsos', 'conducta_indebida', 'otro'] as const;
+
+/** Cuerpo de `POST /listings/:id/reports`. El máximo de 300 lo valida el servicio. */
+export class ReportListingDto {
+  @ApiProperty({ enum: REPORT_REASONS })
+  @IsIn(REPORT_REASONS)
+  reason!: (typeof REPORT_REASONS)[number];
+
+  @ApiPropertyOptional({ maxLength: MAX_TEXT, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_TEXT_INPUT)
+  comment?: string | null;
+}
