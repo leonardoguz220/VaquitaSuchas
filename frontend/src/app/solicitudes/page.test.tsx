@@ -85,9 +85,9 @@ describe('/solicitudes "Mis solicitudes" (spec 010 T017)', () => {
     const link = await screen.findByRole('link', { name: /Max de amigos/ });
     expect(link).toHaveAttribute('href', '/solicitudes/jr1');
     expect(within(link).getByText('Abierta')).toHaveClass('bg-status-en-revision-bg');
-    expect(
-      within(link).getByText('Titular: Rodrigo Salazar Paz · ★ 4,5 · Muy bueno'),
-    ).toBeVisible();
+    expect(within(link).getByText('Titular: Rodrigo Salazar Paz')).toBeVisible();
+    expect(within(link).getByText('4,5 de 5')).toBeVisible();
+    expect(within(link).getByText('Muy bueno')).toBeVisible();
     expect(within(link).getByText('Bs 21,00')).toBeVisible();
     expect(within(link).getByText('Cuota estimada')).toBeVisible();
     expect(within(link).getByRole('timer')).toHaveTextContent('Faltan 1 día y 9 h');
@@ -192,9 +192,8 @@ describe('/solicitudes "Mis solicitudes" (spec 010 T017)', () => {
     expect(within(accepted).getByText('Aceptada')).toBeVisible();
     expect(within(accepted).getByText('Pagado al ingresar')).toBeVisible();
     expect(within(accepted).getByText('Bs 19,80')).toBeVisible();
-    expect(
-      within(accepted).getByText('Titular: Marco Vargas Rojas · Sin calificación'),
-    ).toBeVisible();
+    expect(within(accepted).getByText('Titular: Marco Vargas Rojas')).toBeVisible();
+    expect(within(accepted).getByText('Sin calificación')).toBeVisible();
     expect(within(accepted).getByText('El titular confirmó tu pago.')).toBeVisible();
     expect(within(card(/Cancelada/)).getByText('Chat en solo lectura')).toBeVisible();
   });

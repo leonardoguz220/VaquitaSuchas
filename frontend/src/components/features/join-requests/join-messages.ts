@@ -7,6 +7,7 @@ import type { BadgeTone } from '@/components/ui';
 import { formatDateLaPaz, formatDateTimeLaPaz } from '@/lib/dates';
 import { isConnectionError, type ApiError } from '@/services/http';
 import type { JoinRequestPerson, JoinRequestStatus } from '@/services/join-requests';
+import type { Rating, RatingLevel } from '@/services/reputation';
 import { REGISTER_ERROR_MESSAGES } from '../auth/register-errors';
 import { formatDecimal, PROOF_MESSAGES } from './join-shared';
 
@@ -99,6 +100,16 @@ export function ratingText(person: Pick<JoinRequestPerson, 'stars' | 'level'>): 
   return person.level
     ? `★ ${formatDecimal(person.stars)} · ${person.level}`
     : `★ ${formatDecimal(person.stars)}`;
+}
+
+/**
+ * Calificación lista para `RatingBadge` (spec 007, RNF-007-06). La API no trae `starsLabel` en
+ * estas personas, así que va `null` y `RatingBadge` lo rotula. Sin nivel no hay insignia y devuelve
+ * `null` (se usa `ratingText`).
+ */
+export function personRating(person: Pick<JoinRequestPerson, 'stars' | 'level'>): Rating | null {
+  if (person.level === null) return null;
+  return { level: person.level as RatingLevel, stars: person.stars, starsLabel: null };
 }
 
 /** Fecha de apertura de la ventana (`details.opensAt` o `entryWindow.opensAt`). */

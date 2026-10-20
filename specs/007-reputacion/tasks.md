@@ -46,7 +46,7 @@
 - [x] T019 [P] [US2] [BE] `backend/test/badges.e2e-spec.ts`: CA-007-08 (Racha 3), CA-007-09 (se conserva la insignia, racha a 0) y `GET /users/me/badges` — Depende: T017 · Cubre: CA-007-08, CA-007-09
 - [x] T020 [US2] [BE] `services/badges.service.ts` (otorga y conserva en cada recálculo; avance calculado), tarea `reputation.badges` y `controllers/badges.controller.ts` `GET /users/me/badges` — Depende: T018, T019, T009 · Cubre: RF-007-06, RF-007-07, RF-007-08
 - [x] T021 [P] [US2] [FE] `/perfil/insignias` con mock: obtenidas con fecha y pendientes con barra de avance, distinguidas por texto e icono — Depende: T015 · Cubre: RF-007-07, RNF-007-06
-- [ ] T022 [US2] [FE] Conectar `/perfil/insignias` con `GET /users/me/badges` — Depende: T020, T021 · Cubre: RF-007-07
+- [x] T022 [US2] [FE] Conectar `/perfil/insignias` con `GET /users/me/badges` — Depende: T020, T021 · Cubre: RF-007-07
 
 ## Fase 4: US3 — Ranking del grupo (Prioridad: P2)
 
@@ -57,7 +57,7 @@
 - [x] T024 [P] [US3] [BE] `backend/test/ranking.e2e-spec.ts`: CA-007-10, CA-007-11 (sin montos ni comprobantes), CA-007-12 (ajeno → `404`), el titular aparece solo si tiene cobros como miembro en otros grupos, y rendimiento de menos de 300 ms con 20 miembros — Depende: T010 · Cubre: CA-007-10, CA-007-11, CA-007-12, RF-007-10, RF-007-11, RNF-007-03
 - [x] T025 [US3] [BE] `services/ranking.service.ts` y `controllers/ranking.controller.ts` `GET /groups/:groupId/ranking` (`items` y `unranked`) — Depende: T023, T024 · Cubre: RF-007-09, RF-007-10, RF-007-11, RNF-007-03, RNF-007-04
 - [x] T026 [P] [US3] [FE] Pestaña **Ranking** de `/grupos/[id]` con mock: posición, nombre, nivel, estrellas y racha; los «Nuevo» al final sin posición; sin montos — Depende: T015, spec 001 T020 · Cubre: RF-007-10, RNF-007-06
-- [ ] T027 [US3] [FE] Conectar la pestaña **Ranking** con `GET /groups/:id/ranking` — Depende: T025, T026 · Cubre: RF-007-09
+- [x] T027 [US3] [FE] Conectar la pestaña **Ranking** con `GET /groups/:id/ranking` — Depende: T025, T026 · Cubre: RF-007-09
 
 ## Fase 5: US4 — Corregir un cobro mal calificado (Prioridad: P2)
 

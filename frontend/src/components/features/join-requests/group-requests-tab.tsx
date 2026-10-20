@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { RatingBadge } from '@/components/features/reputation/rating-badge';
 import { Alert, Button, Card } from '@/components/ui';
 import { cx } from '@/components/ui/cx';
 import { useGroupJoinRequests } from '@/hooks/use-join-requests';
 import { requestPath } from '@/lib/routes';
 import type { GroupJoinRequestsPage, JoinRequest } from '@/services/join-requests';
-import { joinErrorMessage, opensAtText, ratingText } from './join-messages';
+import { joinErrorMessage, opensAtText, personRating, ratingText } from './join-messages';
 import { JoinStatusBadge } from './join-status-badge';
 import { RequestCountdown } from './request-countdown';
 
@@ -44,6 +45,7 @@ function HostRequestCard({
   onDeadline: () => void;
 }) {
   const { applicant, phase, entryWindow } = request;
+  const applicantRating = personRating(applicant);
   return (
     <Link
       href={requestPath(request.id)}
@@ -56,7 +58,11 @@ function HostRequestCard({
         <span className="text-lg font-bold break-words">{applicant.fullName}</span>
         <JoinStatusBadge status={phase.status} />
       </div>
-      <span className="text-[15px] text-muted">{ratingText(applicant)}</span>
+      {applicantRating ? (
+        <RatingBadge rating={applicantRating} />
+      ) : (
+        <span className="text-[15px] text-muted">{ratingText(applicant)}</span>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-2 text-[15px]">
         {phase.deadlineAt ? (
           <RequestCountdown
