@@ -2,6 +2,8 @@
 export type TelegramCommand =
   | { readonly type: 'start'; readonly token?: string }
   | { readonly type: 'contact'; readonly phoneNumber: string; readonly contactUserId?: number }
+  /** `my_chat_member`: la persona bloqueó (`blocked`) o desbloqueó el bot (spec 005, RF-005-28). */
+  | { readonly type: 'bot_status'; readonly blocked: boolean }
   | { readonly type: 'other' };
 
 export interface ParsedUpdate {
@@ -47,6 +49,21 @@ function commandOf(message: Obj): TelegramCommand {
 /** Lee un `Update` crudo de Telegram. Devuelve `null` si no trae un `update_id` válido. */
 export function parseUpdate(raw: unknown): ParsedUpdate | null {
   if (!isObj(raw) || !isId(raw.update_id)) return null;
+  const member = isObj(raw.my_chat_member) ? raw.my_chat_member : null;
+  if (member) {
+    const from = isObj(member.from) ? member.from : null;
+    const chat = isObj(member.chat) ? member.chat : null;
+    const status = isObj(member.new_chat_member) ? member.new_chat_member.status : undefined;
+    return {
+      updateId: raw.update_id,
+      ...(from && isId(from.id) ? { telegramUserId: from.id } : {}),
+      ...(chat && isId(chat.id) ? { chatId: chat.id } : {}),
+      command:
+        typeof status === 'string'
+          ? { type: 'bot_status', blocked: status === 'kicked' || status === 'left' }
+          : { type: 'other' },
+    };
+  }
   const message = isObj(raw.message) ? raw.message : null;
   if (!message) return { updateId: raw.update_id, command: { type: 'other' } };
   const from = isObj(message.from) ? message.from : null;

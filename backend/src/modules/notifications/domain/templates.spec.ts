@@ -8,6 +8,7 @@ import {
   formatLaPazDate,
   formatLaPazDateTime,
   render,
+  telegramTextFor,
   type NotificationData,
 } from './templates.js';
 
@@ -84,6 +85,13 @@ describe('render (RNF-005-07, RNF-005-02, CA-005-32)', () => {
       expect(t).not.toContain('Bs ');
       expect(t).not.toContain(FULL.paymentInfo);
       expect(t).not.toContain(FULL.reason);
+    }
+  });
+
+  it('CA-005-32: telegramTextFor da el mismo texto que render para todos los tipos', () => {
+    for (const type of NOTIFICATION_TYPES) {
+      const r = render(type, FULL);
+      expect(telegramTextFor(type, r.link, FULL.appUrl!)).toBe(r.telegramText);
     }
   });
 

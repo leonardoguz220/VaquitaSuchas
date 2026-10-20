@@ -29,6 +29,9 @@ import type {
 import { JobRegistry } from '../../shared/jobs/job-registry.js';
 import { TxEventBus } from '../../shared/events/tx-event-bus.js';
 import type { UserSuspended } from '../../shared/events/user-events.js';
+import { TelegramModule } from '../telegram/telegram.module.js';
+import { TelegramDispatcher } from '../telegram/services/telegram-dispatcher.js';
+import { TelegramBlockHandler } from './services/telegram-block.handler.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { RateLimitRepository } from '../auth/repositories/rate-limit.repository.js';
 import { GroupMemberGuard } from '../subscriptions/controllers/group-member.guard.js';
@@ -68,7 +71,7 @@ import { UnsubscribeLinksService } from './services/unsubscribe-links.service.js
 // NotificationService se exporta para los manejadores de eventos de las specs 001, 002, 009 y 010.
 // Los manejadores de avisos se suscriben al bus al arrancar (quien reacciona depende del evento).
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, TelegramModule],
   controllers: [
     NotificationsController,
     PreferencesController,
@@ -93,6 +96,7 @@ import { UnsubscribeLinksService } from './services/unsubscribe-links.service.js
     UnsubscribeLinksService,
     PreferencesService,
     DeliveryService,
+    TelegramBlockHandler,
     ScheduleService,
     PurgeService,
     InvitationsService,
@@ -115,9 +119,12 @@ export class NotificationsModule implements OnModuleInit {
     private readonly delivery: DeliveryService,
     private readonly purge: PurgeService,
     private readonly invitations: InvitationsService,
+    private readonly dispatcher: TelegramDispatcher,
+    private readonly telegramBlock: TelegramBlockHandler,
   ) {}
 
   onModuleInit(): void {
+    this.dispatcher.register(this.telegramBlock);
     this.registry.register(new NotificationsScheduleJob(this.schedule));
     this.registry.register(new NotificationsDeliverJob(this.delivery, this.invitations));
     this.registry.register(new NotificationsPurgeJob(this.purge));

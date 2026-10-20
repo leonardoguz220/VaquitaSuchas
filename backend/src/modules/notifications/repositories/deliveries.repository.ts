@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Queryable } from '../../../shared/db/db.service.js';
 import type { NotificationCategory, NotificationType } from '../domain/catalog.js';
-import type { DeliveryDecision, SkipReason } from '../domain/delivery-rules.js';
+import type { DeliveryChannel, DeliveryDecision, SkipReason } from '../domain/delivery-rules.js';
 import { PREFERENCE_COLUMNS, toPreferences, type PreferenceRow } from './preferences.repository.js';
 import type { DeliveryPreferences } from '../domain/delivery-rules.js';
 
@@ -16,6 +16,8 @@ export interface DueDelivery {
   link: string | null;
   userId: string;
   userEmail: string;
+  /** Chat privado del bot: en Telegram coincide con el id de la cuenta (spec 003). */
+  telegramChatId: number | null;
   userStatus: string;
   prefs: DeliveryPreferences;
 }
@@ -31,6 +33,7 @@ type DueRow = PreferenceRow & {
   link: string | null;
   user_id: string;
   email: string;
+  telegram_user_id: string | null;
   user_status: string;
 };
 
@@ -62,20 +65,25 @@ export class DeliveriesRepository {
     }
   }
 
-  /** Lote de correos pendientes que ya tocan, bloqueados para esta transacción (RF-005-19). */
-  async claimDueEmails(q: Queryable, now: Date, limit: number): Promise<DueDelivery[]> {
+  /** Lote de envíos pendientes del canal que ya tocan, bloqueados para esta transacción (RF-005-19). */
+  async claimDue(
+    q: Queryable,
+    channel: DeliveryChannel,
+    now: Date,
+    limit: number,
+  ): Promise<DueDelivery[]> {
     const result = await q.query<DueRow>(
       `SELECT d.id, d.attempts, d.respect_window, n.type, n.category, n.title, n.body, n.link,
-              n.user_id, u.email, u.status AS user_status, ${PREFERENCE_COLUMNS}
+              n.user_id, u.email, u.telegram_user_id, u.status AS user_status, ${PREFERENCE_COLUMNS}
          FROM notification_deliveries d
          JOIN notifications n ON n.id = d.notification_id
          JOIN users u ON u.id = n.user_id
          LEFT JOIN notification_preferences p ON p.user_id = n.user_id
-        WHERE d.status = 'pending' AND d.channel = 'email' AND d.next_attempt_at <= $1
+        WHERE d.status = 'pending' AND d.channel = $3 AND d.next_attempt_at <= $1
         ORDER BY d.next_attempt_at, d.id
         LIMIT $2
           FOR UPDATE OF d SKIP LOCKED`,
-      [now, limit],
+      [now, limit, channel],
     );
     return result.rows.map((r) => ({
       id: r.id,
@@ -88,6 +96,7 @@ export class DeliveriesRepository {
       link: r.link,
       userId: r.user_id,
       userEmail: r.email,
+      telegramChatId: r.telegram_user_id === null ? null : Number(r.telegram_user_id),
       userStatus: r.user_status,
       prefs: toPreferences(r),
     }));

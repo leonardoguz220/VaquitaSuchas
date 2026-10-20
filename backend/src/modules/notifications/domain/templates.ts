@@ -364,3 +364,34 @@ export function render(type: NotificationType, data: NotificationData): Rendered
     telegramText: url && data.appUrl ? `${parts.short} ${url}` : parts.short,
   };
 }
+
+// Datos de relleno: el texto corto de Telegram es fijo por tipo y no usa ninguno de ellos.
+const FILLER: NotificationData = {
+  personName: 'x',
+  groupName: 'x',
+  groupId: 'x',
+  chargeId: 'x',
+  requestId: 'x',
+  disputeId: 'x',
+  amountCents: 0,
+  dueAt: new Date(0),
+  period: '1970-01',
+  reason: 'x',
+  minutes: 0,
+  count: 1,
+  slotsFreed: 1,
+};
+
+/**
+ * Texto de Telegram de un aviso ya guardado (RF-005-27, RNF-005-02): solo la frase corta del tipo
+ * y el enlace a la app. No recibe el título ni el cuerpo, así que no puede filtrar montos, motivos
+ * ni datos de pago. `link` es la ruta interna guardada con el aviso.
+ */
+export function telegramTextFor(
+  type: NotificationType,
+  link: string | null,
+  appUrl: string,
+): string {
+  const short = build(type, FILLER).short;
+  return link && /^\/[^/]/.test(link) ? `${short} ${appUrl.replace(/\/+$/, '')}${link}` : short;
+}

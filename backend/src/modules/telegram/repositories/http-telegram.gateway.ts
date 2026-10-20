@@ -1,5 +1,6 @@
 import { parseUpdate } from '../domain/telegram-update.js';
 import {
+  TelegramBotBlockedError,
   TelegramDeliveryError,
   TelegramGateway,
   type TelegramMessage,
@@ -43,6 +44,7 @@ export class HttpTelegramGateway extends TelegramGateway {
     } catch {
       throw new TelegramDeliveryError('No se pudo contactar a Telegram.');
     }
+    if (status === 403) throw new TelegramBotBlockedError();
     if (status < 200 || status >= 300) {
       throw new TelegramDeliveryError(`Telegram rechazó el mensaje (HTTP ${status}).`);
     }

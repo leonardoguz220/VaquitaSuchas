@@ -62,16 +62,24 @@ export class PreferencesRepository {
   async ensureAndGet(
     q: Queryable,
     userId: string,
-  ): Promise<{ prefs: DeliveryPreferences; userStatus: string } | null> {
+  ): Promise<{ prefs: DeliveryPreferences; userStatus: string; telegramLinked: boolean } | null> {
     await this.ensure(q, userId);
-    const result = await q.query<PreferenceRow & { status: string }>(
-      `SELECT u.status, ${PREFERENCE_COLUMNS}
+    const result = await q.query<
+      PreferenceRow & { status: string; telegram_user_id: string | null }
+    >(
+      `SELECT u.status, u.telegram_user_id, ${PREFERENCE_COLUMNS}
          FROM users u LEFT JOIN notification_preferences p ON p.user_id = u.id
         WHERE u.id = $1`,
       [userId],
     );
     const row = result.rows[0];
-    return row ? { prefs: toPreferences(row), userStatus: row.status } : null;
+    return row
+      ? {
+          prefs: toPreferences(row),
+          userStatus: row.status,
+          telegramLinked: row.telegram_user_id !== null,
+        }
+      : null;
   }
 
   async get(q: Queryable, userId: string): Promise<DeliveryPreferences> {
@@ -100,5 +108,35 @@ export class PreferencesRepository {
 
   async disableEmail(q: Queryable, userId: string, category: NotificationCategory): Promise<void> {
     await this.update(q, userId, { email: { [category]: false } });
+  }
+
+  /** RF-005-28: la persona bloqueó el bot; se corta el canal hasta que lo reactive. */
+  async markTelegramBlocked(q: Queryable, telegramUserId: number, now: Date): Promise<void> {
+    await q.query(
+      `INSERT INTO notification_preferences (user_id, telegram_blocked_at)
+       SELECT id, $2 FROM users WHERE telegram_user_id = $1
+       ON CONFLICT (user_id) DO UPDATE
+         SET telegram_blocked_at = COALESCE(notification_preferences.telegram_blocked_at, $2)`,
+      [telegramUserId, now],
+    );
+  }
+
+  /** CA-005-33: vuelve a permitir los avisos por Telegram (el celular sigue verificado). */
+  async clearTelegramBlocked(q: Queryable, userId: string): Promise<void> {
+    await this.ensure(q, userId);
+    await q.query(
+      'UPDATE notification_preferences SET telegram_blocked_at = NULL WHERE user_id = $1',
+      [userId],
+    );
+  }
+
+  /** RF-005-17: rebote permanente del correo; se deja de enviar. */
+  async markEmailBounced(q: Queryable, userId: string, now: Date): Promise<void> {
+    await this.ensure(q, userId);
+    await q.query(
+      `UPDATE notification_preferences SET email_bounced_at = COALESCE(email_bounced_at, $2)
+        WHERE user_id = $1`,
+      [userId, now],
+    );
   }
 }

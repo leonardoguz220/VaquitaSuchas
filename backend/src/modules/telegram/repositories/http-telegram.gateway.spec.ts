@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { TelegramDeliveryError } from '../ports/telegram.gateway.js';
+import { TelegramBotBlockedError, TelegramDeliveryError } from '../ports/telegram.gateway.js';
 import { HttpTelegramGateway } from './http-telegram.gateway.js';
 
 const TOKEN = 'TOKEN-SECRETO';
@@ -43,5 +43,14 @@ describe('HttpTelegramGateway', () => {
 
     expect(error).toBeInstanceOf(TelegramDeliveryError);
     expect((error as Error).message).not.toContain(TOKEN);
+  });
+
+  it('CA-005-33: un 403 al enviar se reconoce como bot bloqueado', async () => {
+    const fetchFn = jest.fn(async () => new Response('{}', { status: 403 }));
+    const gateway = new HttpTelegramGateway(TOKEN, fetchFn as unknown as typeof fetch);
+
+    await expect(gateway.sendMessage(1, { text: 'hola' })).rejects.toBeInstanceOf(
+      TelegramBotBlockedError,
+    );
   });
 });

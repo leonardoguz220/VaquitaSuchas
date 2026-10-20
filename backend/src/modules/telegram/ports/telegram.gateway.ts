@@ -19,6 +19,14 @@ export class TelegramDeliveryError extends Error {
   }
 }
 
+/** La persona bloqueó el bot (Telegram responde 403): no tiene sentido reintentar. */
+export class TelegramBotBlockedError extends TelegramDeliveryError {
+  constructor() {
+    super('La persona bloqueó el bot.');
+    this.name = 'TelegramBotBlockedError';
+  }
+}
+
 /** Puerto del bot (RF-000-22): `dev` guarda los mensajes en memoria; `prod` llama a Telegram. */
 export abstract class TelegramGateway {
   abstract sendMessage(chatId: number, message: TelegramMessage): Promise<void>;

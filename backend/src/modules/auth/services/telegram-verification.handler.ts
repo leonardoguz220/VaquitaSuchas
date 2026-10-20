@@ -45,6 +45,7 @@ export class TelegramVerificationHandler implements TelegramUpdateHandler {
   async handle(update: ParsedUpdate): Promise<void> {
     const { command, telegramUserId, chatId } = update;
     if (telegramUserId === undefined || chatId === undefined) return;
+    if (command.type === 'bot_status') return;
     let reply: string;
     let withContactButton = false;
     if (command.type === 'start' && command.token) {

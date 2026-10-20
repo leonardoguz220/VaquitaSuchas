@@ -265,7 +265,8 @@ describe('Notificaciones: lista, contador y lectura (spec 005)', () => {
     const cancelled = await db.withTransaction((tx) =>
       notifications.cancelForEntity(tx, 'charge', charge.id, ['recordatorio_vencimiento']),
     );
-    expect(cancelled).toBe(1);
+    // Un envío de correo y uno de Telegram del mismo aviso.
+    expect(cancelled).toBe(2);
 
     const rows = await t.db.query<{
       type: string;
@@ -277,14 +278,15 @@ describe('Notificaciones: lista, contador y lectura (spec 005)', () => {
          FROM notification_deliveries d JOIN notifications n ON n.id = d.notification_id`,
     );
     const skipped = rows.rows.filter((r) => r.status === 'skipped');
-    expect(skipped).toEqual([
-      expect.objectContaining({
+    expect(skipped).toHaveLength(2);
+    for (const row of skipped) {
+      expect(row).toMatchObject({
         type: 'recordatorio_vencimiento',
         entity_id: charge.id,
         skip_reason: 'aviso_cancelado',
-      }),
-    ]);
-    expect(rows.rows.filter((r) => r.status === 'pending')).toHaveLength(2);
+      });
+    }
+    expect(rows.rows.filter((r) => r.status === 'pending')).toHaveLength(4);
   });
 
   it('CA-005-21: con 1.000 registros la lista y el contador responden en menos de 300 ms', async () => {
