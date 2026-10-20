@@ -114,10 +114,48 @@ function clean(value: unknown, depth: number): unknown {
   return value;
 }
 
-/** Quita las claves sensibles (CI, contraseñas, tokens, chats, comprobantes, contacto). */
+/**
+ * Lista blanca de claves de `metadata` por acción (RNF-009-03): solo ids, estados y conteos; nada
+ * de texto libre (el motivo va en la columna `reason`). Lo no declarado se descarta. Toda acción
+ * del CHECK de 0092 debe tener su tabla: la prueba unitaria lo comprueba.
+ */
+export const AUDIT_METADATA_KEYS: Readonly<Record<AdminAuditAction, readonly string[]>> = {
+  catalogo_crear: ['serviceId', 'planId'],
+  catalogo_editar: ['serviceId', 'planId', 'changedFields'],
+  catalogo_activar: ['serviceId', 'planId'],
+  catalogo_desactivar: ['serviceId', 'planId'],
+  catalogo_importar: ['created', 'updated', 'errors'],
+  usuario_suspender: ['previousStatus'],
+  usuario_reactivar: ['previousStatus'],
+  usuario_banear: ['banId', 'disputeId', 'effects'],
+  baneo_revertir: ['userId', 'previousStatus'],
+  rol_promover: ['fromRole', 'toRole'],
+  rol_quitar: ['fromRole', 'toRole'],
+  titular_habilitar: ['enablementId'],
+  titular_quitar_habilitacion: ['enablementId'],
+  reclamo_abrir_evidencia: ['disputeId', 'requestId'],
+  reclamo_resolver: ['disputeId', 'requestId', 'outcome', 'banId'],
+  publicacion_restaurar: ['listingId'],
+  publicacion_eliminar: ['listingId'],
+  publicacion_eliminar_y_suspender: ['listingId', 'userId'],
+  titularidad_transferir: ['groupId', 'fromUserId', 'toUserId'],
+};
+
+/**
+ * Deja solo las claves declaradas para la acción y, sobre ellas, quita las sensibles (segunda red).
+ * Una acción sin tabla es un error de programación y lanza.
+ */
 export function sanitizeMetadata(
+  action: AdminAuditAction,
   metadata: Record<string, unknown> | undefined,
 ): Record<string, unknown> {
+  const allowed = AUDIT_METADATA_KEYS[action] as readonly string[] | undefined;
+  if (!allowed)
+    throw new Error(`La acción de auditoría "${action}" no declara claves de metadata.`);
   if (!metadata) return {};
-  return clean(metadata, 0) as Record<string, unknown>;
+  const picked: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (Object.hasOwn(metadata, key)) picked[key] = metadata[key];
+  }
+  return clean(picked, 0) as Record<string, unknown>;
 }

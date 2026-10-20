@@ -80,7 +80,7 @@ export class AuditService implements AuditPort {
       targetType,
       targetId: entry.targetId,
       reason: entry.reason ?? null,
-      metadata: sanitizeMetadata(entry.metadata),
+      metadata: sanitizeMetadata(action, entry.metadata),
       occurredAt: this.clock.now(),
     });
   }
