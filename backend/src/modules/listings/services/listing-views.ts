@@ -35,3 +35,31 @@ export interface ListingsPage {
   items: ListingView[];
   nextCursor: string | null;
 }
+
+/** Lo que ve el titular de su publicación (contrato 008, `OwnerListing`). */
+export interface OwnerListing {
+  id: string;
+  groupId: string;
+  status: 'activa' | 'oculta' | 'expirada' | 'retirada' | 'cerrada';
+  slotsOffered: number;
+  description: string | null;
+  conditions: string | null;
+  publishedAt: string;
+  expiresAt: string;
+  renewedAt: string | null;
+  hiddenAt: string | null;
+  endReason: string | null;
+  /** Reportes desde la última restauración. */
+  reportCount: number;
+  /** Solicitudes activas originadas en la publicación. */
+  openRequests: number;
+  preview: ListingView | null;
+  version: number;
+}
+
+/** Lo que ve un miembro del grupo (contrato 008, `GroupListingSummary`). */
+export interface GroupListingSummary {
+  active: boolean;
+  slotsOffered: number | null;
+  expiresAt: string | null;
+}

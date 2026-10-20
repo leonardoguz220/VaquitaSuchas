@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Clock } from '../../../shared/clock/clock.js';
 import { DbService, type DbTransaction } from '../../../shared/db/db.service.js';
 import { DomainError } from '../../../shared/errors/domain-error.js';
@@ -40,6 +40,7 @@ import { openRequestError } from '../domain/open-request-errors.js';
 import { paymentQrKeyOf, proofKeyOf } from '../domain/request-files.js';
 import { transition } from '../domain/request-state.js';
 import { availableSlots } from '../domain/slots.js';
+import { LISTING_QUOTA_PORT, type ListingQuotaPort } from '../ports/listing-quota.port.js';
 import { RequestEventsRepository } from '../repositories/events.repository.js';
 import { RequestsRepository, type JoinRequestRecord } from '../repositories/requests.repository.js';
 import { JoinRequestsService, type RequestAccess } from './join-requests.service.js';
@@ -147,6 +148,7 @@ export class EntryPaymentService {
     private readonly membership: MembershipService,
     private readonly billingCycles: BillingCyclesService,
     private readonly charges: ChargesService,
+    @Inject(LISTING_QUOTA_PORT) private readonly listingQuota: ListingQuotaPort,
   ) {}
 
   /**
@@ -201,6 +203,13 @@ export class EntryPaymentService {
           reserved,
         });
         if (slots <= 0) throw openRequestError(['no_slots'], null);
+        // Una solicitud de publicación no puede reservar más cupos que los que la publicación
+        // todavía ofrece (RF-010-20, CA-010-06, CA-008-12).
+        if (record.listingId !== null) {
+          const offered = await this.listingQuota.remainingOffered(tx, record.listingId);
+          const taken = await this.requests.countReservedForListing(tx, record.listingId, now);
+          if (offered - taken <= 0) throw openRequestError(['no_slots'], null);
+        }
 
         const groupInfo = await this.requests.groupPaymentInfo(tx, group.id);
         const info = resolvePaymentInfo(
@@ -535,6 +544,12 @@ export class EntryPaymentService {
         const { record } = await this.lockAndExpire(tx, requestId, version, now);
         if (record.status === 'expirada') return { error: invalidTransition('expirada', action) };
         transition(record.status, action, this.contextOf(record, now));
+        // Si cierra la publicación, el manejador de `listings` rechaza las demás `abierta` de ella.
+        // Se bloquean AHORA (antes del grupo) para respetar el orden solicitud → grupo y no
+        // cruzarse con quien envía datos de pago a una de ellas.
+        if (record.listingId !== null) {
+          await this.requests.listOpenByListingForUpdate(tx, record.listingId);
+        }
         const group = (await this.groups.findByIdForUpdate(tx, record.groupId)) as GroupRow;
         if (group.owner_id !== userId) throw forbidden();
         if (group.frozen_at !== null) {
@@ -544,6 +559,13 @@ export class EntryPaymentService {
             'El grupo está congelado y solo se puede consultar.',
             { rule: 'RF-009-22' },
           );
+        }
+        // Aceptar nunca supera los cupos que la publicación todavía ofrece (RF-010-20).
+        if (
+          record.listingId !== null &&
+          (await this.listingQuota.remainingOffered(tx, record.listingId)) < 1
+        ) {
+          throw openRequestError(['no_slots'], null);
         }
         // El ciclo del último corte va ANTES del alta: si no, la generación crearía un segundo
         // cobro para la persona (CA-002-24, CA-010-12).
