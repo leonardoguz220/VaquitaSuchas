@@ -1,0 +1,42 @@
+# Despliegue continuo del frontend (Vercel). Corre cuando cambia frontend/ en main, que es la rama de
+# producción de Vercel. Primero ejecuta las pruebas del frontend (frontend.yml) y solo si pasan pide el
+# despliegue con un Deploy Hook de Vercel.
+# Necesita el secreto VERCEL_DEPLOY_HOOK_URL (Vercel > proyecto > Settings > Git > Deploy Hooks, rama main).
+# Sin él, se omite el despliegue sin fallar. Vercel además despliega por su cuenta cada push; el hook solo
+# garantiza que el despliegue ocurra después de las pruebas.
+name: Deploy frontend
+
+on:
+  push:
+    branches: [main]
+    paths: ['frontend/**', '.github/workflows/deploy-frontend.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: pruebas del frontend
+    uses: ./.github/workflows/frontend.yml
+
+  deploy:
+    name: desplegar en Vercel
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pedir el despliegue a Vercel
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "Falta el secreto VERCEL_DEPLOY_HOOK_URL: se omite el despliegue."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK" > /dev/null
+          echo "Despliegue solicitado a Vercel."
