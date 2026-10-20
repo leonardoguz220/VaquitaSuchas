@@ -22,6 +22,9 @@ export interface ListingFiltersProps {
  * celular y una fila que se ajusta en pantallas anchas. Solo lleva los valores al padre; la API
  * filtra y ordena.
  */
+/** Largo máximo del texto de búsqueda (contrato 008, `q` ≤ 60 caracteres). */
+const SERVICE_QUERY_MAX = 60;
+
 export function ListingFilters({ values, onChange }: ListingFiltersProps) {
   const set = (patch: Partial<ListingFilterValues>) => onChange({ ...values, ...patch });
 
@@ -37,6 +40,7 @@ export function ListingFilters({ values, onChange }: ListingFiltersProps) {
         value={values.service}
         onChange={(event) => set({ service: event.target.value })}
         autoComplete="off"
+        maxLength={SERVICE_QUERY_MAX}
       />
       <Select
         label={LISTING_MESSAGES.categoryLabel}
