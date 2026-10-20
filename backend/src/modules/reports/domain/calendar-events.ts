@@ -44,7 +44,7 @@ const pad = (n: number, w = 2): string => String(n).padStart(w, '0');
 const dateString = (y: number, m: number, d: number): string => `${pad(y, 4)}-${pad(m)}-${pad(d)}`;
 
 /** Último día de pago: el día de La Paz anterior al instante exclusivo `dueAt`. */
-function lastPayDay(dueAt: Date): string {
+export function lastPayDay(dueAt: Date): string {
   const p = toLaPazParts(new Date(dueAt.getTime() - 1));
   return dateString(p.year, p.month, p.day);
 }
