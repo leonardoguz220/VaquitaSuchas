@@ -1,11 +1,26 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, IsUUID, Length, Max, Min } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Length,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { LISTING_SORTS, type ListingSort } from '../domain/search-cursor.js';
+import { MAX_LISTING_TEXT, MAX_REQUEST_MESSAGE } from '../services/listings.service.js';
 import { MAX_PAGE_SIZE } from '../services/listings-search.service.js';
 
 const CATEGORIES = ['video', 'musica', 'juegos', 'educacion', 'almacenamiento', 'otras'] as const;
 const MAX_CENTS = 100_000_000;
+const MAX_OFFERED = 19;
+const MAX_TEXT = MAX_LISTING_TEXT;
+// Tope de entrada generoso: el servicio mide caracteres Unicode tras recortar y responde el detalle.
+const MAX_TEXT_INPUT = 2000;
 
 /** Query de `GET /listings` (contrato 008). */
 export class SearchListingsQueryDto {
@@ -61,4 +76,65 @@ export class SearchListingsQueryDto {
   @IsString()
   @Length(1, 300)
   cursor?: string;
+}
+
+/** Cuerpo de `POST /groups/:groupId/listing` (contrato 008). Los textos se normalizan en el servicio. */
+export class PublishListingDto {
+  @ApiProperty({ minimum: 1, maximum: 19, description: 'Cupos que se ofrecen (1..libres).' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(MAX_OFFERED)
+  slotsOffered!: number;
+
+  @ApiPropertyOptional({ maxLength: MAX_TEXT, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_TEXT_INPUT)
+  description?: string | null;
+
+  @ApiPropertyOptional({ maxLength: MAX_TEXT, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_TEXT_INPUT)
+  conditions?: string | null;
+}
+
+/** Cuerpo de `PATCH /groups/:groupId/listing`. */
+export class UpdateListingDto {
+  @ApiPropertyOptional({ minimum: 1, maximum: 19 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(MAX_OFFERED)
+  slotsOffered?: number;
+
+  @ApiPropertyOptional({ maxLength: MAX_TEXT, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_TEXT_INPUT)
+  description?: string | null;
+
+  @ApiPropertyOptional({ maxLength: MAX_TEXT, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_TEXT_INPUT)
+  conditions?: string | null;
+
+  @ApiPropertyOptional({ description: 'Control optimista; si no coincide, `409 STALE_STATE`.' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  version?: number;
+}
+
+/** Cuerpo de `POST /listings/:id/requests`. El máximo de 200 lo valida el servicio (CA-008-08). */
+export class RequestSeatDto {
+  @ApiPropertyOptional({ maxLength: MAX_REQUEST_MESSAGE, description: 'Primera línea del chat.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(MAX_TEXT_INPUT)
+  message?: string;
 }
