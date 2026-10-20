@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Historial</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid #D9DDD7; background: #FFFFFF">
+    <a href="Grupos.dc.html" style="display: flex; align-items: center; gap: 10px; color: #17201C; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#1E6B4E"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#F5F6F2" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#F5F6F2"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">vaquita</span>
+    </a>
+    <nav aria-label="Principal" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="Panel.dc.html" aria-current="page" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; background: #E3F1EA; color: #14503A; font-weight: 700; text-decoration: none">Panel</a>
+      <a href="Grupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis suscripciones</a>
+      <a href="MisCobros.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
+      <a href="Solicitudes.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis solicitudes</a>
+    </nav>
+    <a href="Perfil.dc.html" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1180px; margin: 0 auto; padding: 32px 32px 48px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+      <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 40px; letter-spacing: -1px">Historial</h1>
+      <button type="button" style="min-height: 46px; padding: 0 18px; border-radius: 12px; border: 1.5px solid #1E6B4E; background: #FFFFFF; color: #1E6B4E; font: inherit; font-weight: 700; cursor: pointer">Exportar CSV</button>
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap">
+      <select aria-label="Mes" style="height: 44px; border: 1.5px solid #C9CFC8; border-radius: 10px; padding: 0 12px; font: inherit; background: #FFFFFF; color: #17201C"><option selected>Todos los meses</option><option>Octubre 2026</option><option>Septiembre 2026</option></select>
+      <select aria-label="Suscripción" style="height: 44px; border: 1.5px solid #C9CFC8; border-radius: 10px; padding: 0 12px; font: inherit; background: #FFFFFF; color: #17201C"><option selected>Todas las suscripciones</option><option>Spotify depa</option><option>Disney+ primos</option></select>
+      <select aria-label="Estado" style="height: 44px; border: 1.5px solid #C9CFC8; border-radius: 10px; padding: 0 12px; font: inherit; background: #FFFFFF; color: #17201C"><option selected>Todos los estados</option><option>Pagado</option><option>Atrasado</option></select>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 16px; overflow-x: auto">
+      <table style="width: 100%; min-width: 720px; border-collapse: collapse; font-size: 15px">
+        <thead><tr style="text-align: left; color: #4F5A55; font-size: 14px"><th scope="col" style="padding: 12px 18px">Período</th><th scope="col" style="padding: 12px 18px">Suscripción</th><th scope="col" style="padding: 12px 18px">Rol</th><th scope="col" style="padding: 12px 18px; text-align: right">Monto</th><th scope="col" style="padding: 12px 18px">Estado</th><th scope="col" style="padding: 12px 18px">Pagado el</th></tr></thead>
+        <tbody>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+            <tr style="border-top: 1px solid #E6E9E4"><td style="padding: 12px 18px">{{r.period}}</td><td style="padding: 12px 18px; font-weight: 700">{{r.group}}</td><td style="padding: 12px 18px; color: #4F5A55">{{r.role}}</td><td style="padding: 12px 18px; text-align: right; font-variant-numeric: tabular-nums">{{r.amount}}</td><td style="padding: 12px 18px"><span style="border-radius: 999px; padding: 3px 12px; font-size: 14px; font-weight: 700; background: {{r.bg}}; color: {{r.fg}}">{{r.status}}</span></td><td style="padding: 12px 18px; color: #4F5A55">{{r.paid}}</td></tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+    <div style="display: flex; justify-content: center"><button type="button" style="min-height: 46px; padding: 0 22px; border-radius: 12px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; font: inherit; font-weight: 700; cursor: pointer">Cargar más</button></div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = {
+      pagado: { status: 'Pagado', bg: '#D7EFE2', fg: '#17573F' },
+      pendiente: { status: 'Pendiente', bg: '#FCEBC7', fg: '#7A4B00' },
+      atrasado: { status: 'Atrasado', bg: '#FBDCD8', fg: '#9B1C12' }
+    };
+    return {
+      rows: [
+        { period: 'Oct. 2026', group: 'Spotify depa', role: 'Miembro', amount: 'Bs 19,80', ...s.pendiente, paid: '—' },
+        { period: 'Oct. 2026', group: 'Disney+ primos', role: 'Miembro', amount: 'Bs 22,10', ...s.pagado, paid: '13 oct.' },
+        { period: 'Sep. 2026', group: 'Spotify depa', role: 'Miembro · ingreso', amount: 'Bs 19,80', ...s.pagado, paid: '18 sep.' },
+        { period: 'Sep. 2026', group: 'Disney+ primos', role: 'Miembro', amount: 'Bs 22,10', ...s.pagado, paid: '14 sep.' },
+        { period: 'Sep. 2026', group: 'Paramount+ del curso', role: 'Miembro (retirada)', amount: 'Bs 14,20', ...s.atrasado, paid: '—' },
+        { period: 'Sep. 2026', group: 'YouTube de la U', role: 'Miembro', amount: 'Bs 16,40', ...s.pagado, paid: '6 sep.' },
+        { period: 'Ago. 2026', group: 'Paramount+ del curso', role: 'Miembro', amount: 'Bs 14,20', ...s.pagado, paid: '5 ago.' },
+        { period: 'Ago. 2026', group: 'YouTube de la U', role: 'Miembro', amount: 'Bs 16,40', ...s.pagado, paid: '7 ago.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

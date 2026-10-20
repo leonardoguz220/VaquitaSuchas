@@ -13,5 +13,6 @@ Reglas de esta parte del código:
 - El frontend no calcula cuotas, montos ni estados: muestra lo que entrega la API.
 - Cada vista con datos cubre los estados de carga, vacío, error y con datos, y se diseña primero para celular.
 - Los montos se muestran como `Bs 25,50` y las fechas en America/La_Paz, con funciones de `lib/`.
+- Antes de construir una pantalla, lee su mockup en [`design/mockups/`](design/mockups/README.md) (tabla pantalla → ruta → spec) y usa sus colores, tipografías y estados. Es una guía visual: si contradice la spec, el plan §6 o el contrato, mandan estos.
 
-Skills relacionadas: `vaquita-nextjs-conventions`, `frontend-ui-engineering`.
+Skills relacionadas (de consulta, no hace falta leerlas en cada tarea): `vaquita-nextjs-conventions`, `frontend-ui-engineering`.

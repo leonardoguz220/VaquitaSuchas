@@ -46,6 +46,14 @@ Módulo `billing` con tres responsabilidades: **generar** cobros por ciclo (idem
 
 Detalle en [`data-model.md`](data-model.md): `billing_cycles` (0040), `charges` (0041), `receipts` y `payment_references` (0042), disparadores de integridad (0043) y `charge_events` de solo anexado (0044). Pruebas de integridad en `database/tests/billing.integrity.test.ts`. Seed de desarrollo: un ciclo con cobros en los cuatro estados no finales para probar la interfaz.
 
+### Ajustes al modelo aprobados el 2026-10-19 (`/speckit-analyze`)
+
+H1 (CHECK de estados en `charge_events`), H2 (estado inicial según el origen), H3 (copia del cobro igual a la del ciclo), H4 (la base es `floor` y el resto lo asume el titular), M1 (cobros finales de solo lectura y `first_submitted_at` inmutable), M2 (`period` y `due_date` atados a `cut_date`) y M3 (el seed pasa a T047). Detalle en `data-model.md` §1 y §4.
+
+Para el backend: `ensureCurrentCycle` calcula el siguiente corte a partir del último `cut_date` del grupo (spec 001, PR #43 M5); la generación copia en cada cobro la copia del ciclo con `amount_cents = base_share_cents`; el cobro de ingreso se inserta ya `pagado` con `settlement = 'ingreso'`; un cobro `pagado` o `cancelado` ya no se actualiza.
+
+Notas de la revisión de cierre (PR #79), para el backend: (1) en `createEntryCharge` (spec 010) hay que llamar a `ensureCurrentCycle` **antes** de dar de alta al miembro; si no, se le genera un cobro `ciclo` `pendiente` y el de ingreso ya no nace `pagado` (CA-002-24). (2) Si `total_bs_cents < member_count`, la cuota base sería 0 y el cobro (`amount_cents > 0`) falla: el backend debe impedir ese caso, que no se da con el mínimo de Bs 1,00 y 20 cupos. (3) Que el miembro no confirme su propio pago (RN-002-03, `settled_by <> user_id`) lo valida el servicio; la base no lo impone. Propuesta pendiente: `exchange_rate > 0` también en `billing_cycles`.
+
 ## 4. Contratos de API — _Leonardo (Backend)_
 
 Detalle en [`contracts/api.md`](contracts/api.md): `GET /me/charges`, `GET /charges/:id`, `POST /charges/:id/receipts`, `GET /charges/:id/receipts/:rid/file`, `POST /charges/:id/{confirm,reject,manual-payment,cancel}`, `GET /groups/:id/charges`, `GET /groups/:id/billing/summary`.
@@ -91,7 +99,7 @@ backend/src/modules/billing/
 - **`ChargesService`**: `confirm`, `reject`, `manualPayment`, `cancel` y `createEntryCharge`. Cada uno: bloquea el cobro, ejecuta `sweepGroup` antes, valida acceso, estado de grupo y `version`, aplica `transition`, escribe el evento, publica el evento interno. `createEntryCharge` ubica el ciclo del período con `ensureCurrentCycle` (si faltara) y, si ya existe un cobro no cancelado de la persona en ese período, no crea otro (la spec 010 lo evita antes).
 - **`ReceiptsService.upload`**: pasos de `research.md` R4; reserva la referencia con `PaymentReferenceService`; si reemplaza, libera la anterior y deja la antigua `reemplazado`; fija `first_submitted_at` solo la primera vez. `fileUrl` valida acceso y emite la URL firmada.
 - **`OverdueService.sweep(now)` y `sweepGroup(groupId, now)`**: por cada cobro `pendiente` con `due_at <= now` de un grupo activo y no congelado: transición a `atrasado`, evento `atrasado`; si el usuario sigue siendo miembro activo, `MembershipService.removeMember(tx, groupId, userId, 'mora')` y evento `retiro_por_mora`; publica `ChargeBecameOverdue` y `MemberRemovedForNonPayment`. Procesa cada grupo en su transacción con bloqueo de aviso (`pg_try_advisory_xact_lock`).
-- **`RetentionService`**: cobros de grupos con `closed_at < now − 2 meses`: borra del almacén los archivos de comprobantes con `file_deleted_at IS NULL` y marca la fecha (CA-002-33). La retención de solicitudes (spec 010) es independiente.
+- **`RetentionService`**: cobros `pagado` o `cancelado` de grupos con `closed_at < now − 2 meses`: borra del almacén los archivos de comprobantes con `file_deleted_at IS NULL` y marca la fecha (CA-002-33). Los cobros abiertos (`pendiente`, `en_revision`, `atrasado`) conservan su comprobante; se borra en la corrida siguiente a su cierre. La retención de solicitudes (spec 010) es independiente.
 - **Tareas registradas:** `billing.generate`, `billing.overdue`, `billing.retention` (ver contrato). Todas escriben en `job_runs`.
 
 ### Eventos

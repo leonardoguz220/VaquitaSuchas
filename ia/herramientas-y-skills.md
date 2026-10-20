@@ -19,6 +19,7 @@ Por ejemplo, `.claude/references/definition-of-done.md` es una guía general, mi
 - **Licencia:** MIT, copyright 2025 Addy Osmani. La copia está en [`licencias/agent-skills-LICENSE`](licencias/agent-skills-LICENSE).
 - **Revisión previa:** se leyó el contenido de cada skill antes de copiarla. Las instaladas son solo archivos Markdown, sin scripts ni hooks.
 - **Versión fija:** las skills están copiadas dentro del repositorio y no se actualizan solas, de modo que todo el equipo usa la misma versión.
+- **Archivadas (2026-10-19):** para ahorrar tokens, las skills genéricas de esta tabla, salvo `frontend-ui-engineering`, se movieron a [`skills-archivadas/`](skills-archivadas/). Claude Code ya no las carga ni las activa solo; se pueden leer a mano cuando hagan falta o volver a `.claude/skills/` por PR.
 
 | Skill | Uso en Vaquita | Capa | Momento |
 |---|---|---|---|
@@ -127,10 +128,12 @@ Están en `.claude/settings.json` (compartido por Git) y los scripts en `.claude
 
 | Hook | Evento | Qué hace |
 |---|---|---|
-| `guard-files.mjs` | Antes de leer o escribir un archivo | Bloquea `.env` (salvo `.env.example`), claves y credenciales. Bloquea editar una migración que ya está en `main` (RN-000-02). Avisa, sin bloquear, al tocar una spec, un contrato, un modelo, la constitución, `CLAUDE.md`, `context/` o un test existente |
-| `guard-bash.mjs` | Antes de un comando de terminal | Bloquea push a `main`, push forzado, `--no-verify`, leer secretos con `cat` o similares, y `db:reset`, `db:restore`, `db:migrate` o `db:seed` contra una base que no es la local (RF-000-21) |
-| `post-edit.mjs` | Después de editar código en `backend/`, `frontend/` o `database/` | Formatea con Prettier y corre los tests unitarios relacionados (Jest o Vitest). Si fallan, se lo devuelve a Claude para que lo corrija. No hace nada hasta que exista el código. `VAQUITA_HOOK_TESTS=0` desactiva los tests |
+| `guard-files.mjs` | Antes de leer o escribir un archivo | Bloquea `.env` (salvo `.env.example`), claves y credenciales. Bloquea que un agente edite `.claude/hooks/`, `.claude/agents/` y `.claude/settings.json`. Bloquea editar una migración que ya está en `main` (RN-000-02). Avisa, sin bloquear, al tocar una spec, un contrato, un modelo, la constitución, `CLAUDE.md`, `context/` o un test existente |
+| `guard-bash.mjs` | Antes de un comando de terminal | Bloquea push a `main`, `dev` o `qa`, push forzado, `--no-verify`, leer secretos con `cat` o similares, modificar hooks, agentes o `settings.json` desde la terminal, y `db:reset`, `db:restore`, `db:migrate` o `db:seed` contra una base que no es la local (RF-000-21). **Antes de cada push** corre `npm run lint` y `npm run test` de cada capa que cambió respecto de `dev` y bloquea el push si algo falla; se omite con `--dry-run` |
+| `post-edit.mjs` | Después de editar código en `backend/`, `frontend/` o `database/` | Formatea con Prettier. Con `VAQUITA_HOOK_TESTS=1` también corre los tests unitarios relacionados y, si fallan, se lo devuelve a Claude; por defecto no los corre (los corren el pre-push y la CI). No hace nada hasta que exista el código |
 
-Permisos: se permiten sin preguntar lint, build, tests, `db:up`, `db:migrate`, `db:seed` y los comandos de Git de lectura. Se pregunta antes de `git push`, `git reset --hard`, `git clean`, `db:reset`, `db:restore` y `npm install`. Se prohíben `rm -rf`, el push forzado y `--no-verify`.
+Permisos: se permiten sin preguntar lint, build, tests, `db:up`, `db:migrate`, `db:seed`, los comandos de Git de lectura, `git add`, `git commit`, `git switch`, `git pull --no-rebase origin dev`, el push de ramas `feat/` y `fix/` y `gh pr create`/`ready`. Así los agentes trabajan sin interrupciones y los hooks siguen protegiendo `main`, `dev` y `qa`. Se pregunta antes de `git push --force-with-lease`, `git reset --hard`, `git clean`, `db:reset`, `db:restore` y `npm install`. Se prohíben `rm -rf`, el push forzado y `--no-verify`.
+
+Variables para personas (se exportan antes de abrir Claude Code; puestas dentro de un comando no tienen efecto): `VAQUITA_ALLOW_CLAUDE_CONFIG=1` permite editar hooks, agentes y `settings.json` para preparar un PR; `VAQUITA_PREPUSH=0` omite la verificación previa al push; `VAQUITA_HOOK_TESTS=1` enciende los tests después de editar.
 
 Para probar un hook a mano: `echo '{"tool_name":"Bash","tool_input":{"command":"git push origin main"}}' | node .claude/hooks/guard-bash.mjs`. Un cambio en los hooks se hace por PR revisado por dos capas, como las skills (§6).

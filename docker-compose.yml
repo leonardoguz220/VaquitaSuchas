@@ -1,0 +1,37 @@
+# Entorno local de Vaquita (spec 000, RF-000-04 y RF-000-12).
+# Uso: npm run db:up / npm run db:down. Si el puerto 5432 está ocupado: DB_PORT=5435 npm run db:up
+# Las credenciales son solo de desarrollo local y no son secretos.
+name: vaquita
+
+services:
+  db:
+    image: postgres:16.10-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vaquita
+      POSTGRES_PASSWORD: vaquita
+      POSTGRES_DB: vaquita
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Crea la base vaquita_test al inicializar el volumen.
+      - ./database/docker/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vaquita -d vaquita"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  mail:
+    image: axllent/mailpit:v1.27.0
+    restart: unless-stopped
+    ports:
+      - "${MAIL_SMTP_PORT:-1025}:1025" # SMTP que usa MailService en modo dev
+      - "${MAIL_UI_PORT:-8025}:8025" # interfaz web y API de Mailpit
+
+volumes:
+  db-data:

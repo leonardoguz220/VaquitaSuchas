@@ -1,0 +1,9 @@
+# Maquetas de referencia (no son código de la app); ver design/mockups/README.md
+design/
+.next/
+out/
+node_modules/
+coverage/
+playwright-report/
+test-results/
+next-env.d.ts

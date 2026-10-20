@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Spotify depa · Ranking</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid #D9DDD7; background: #FFFFFF">
+    <a href="Grupos.dc.html" style="display: flex; align-items: center; gap: 10px; color: #17201C; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#1E6B4E"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#F5F6F2" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#F5F6F2"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">vaquita</span>
+    </a>
+    <nav aria-label="Principal" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="Grupos.dc.html" aria-current="page" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; background: #E3F1EA; color: #14503A; font-weight: 700; text-decoration: none">Mis suscripciones</a>
+      <a href="MisCobros.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
+      <a href="Solicitudes.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis solicitudes</a>
+      <a href="Cupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Cupos libres</a>
+    </nav>
+    <a href="Perfil.dc.html" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1080px; margin: 0 auto; padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 22px">
+    <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap">
+      <span aria-hidden="true" style="width: 56px; height: 56px; border-radius: 14px; background: #14743A; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 26px">S</span>
+      <div style="flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 2px"><h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; letter-spacing: -0.6px">Spotify depa</h1><span style="font-size: 15px; color: #4F5A55">Eres miembro · 6 de 6 cupos</span></div>
+    </div>
+    <div role="tablist" aria-label="Secciones del grupo" style="display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid #D9DDD7">
+      <a href="GrupoMiembro.dc.html" role="tab" aria-selected="false" style="min-height: 48px; padding: 0 18px; display: flex; align-items: center; border-bottom: 3px solid transparent; color: #4F5A55; font-weight: 700; text-decoration: none">Resumen</a>
+      <span role="tab" aria-selected="false" style="min-height: 48px; padding: 0 18px; display: flex; align-items: center; color: #4F5A55; font-weight: 700">Miembros</span>
+      <span role="tab" aria-selected="false" style="min-height: 48px; padding: 0 18px; display: flex; align-items: center; color: #4F5A55; font-weight: 700">Cobros</span>
+      <span role="tab" aria-selected="true" style="min-height: 48px; padding: 0 18px; display: flex; align-items: center; border-bottom: 3px solid #1E6B4E; color: #14503A; font-weight: 700">Ranking</span>
+    </div>
+    <p style="margin: 0; font-size: 15px; color: #4F5A55">Ordenado por calificación de puntualidad de los últimos 12 meses. No se muestran montos ni comprobantes.</p>
+    <ol style="margin: 0; padding: 0; list-style: none; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; overflow: hidden">
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+        <li style="display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-top: 1px solid #E6E9E4; background: {{r.bg}}; flex-wrap: wrap">
+          <span style="width: 36px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 22px; color: #4F5A55">{{r.pos}}</span>
+          <span style="flex: 1; min-width: 180px; font-weight: 700; font-size: 16px">{{r.name}}</span>
+          <span style="min-width: 110px; font-size: 15px">{{r.level}}</span>
+          <span style="min-width: 110px; font-size: 15px; color: #7A4B00" aria-label="{{r.starsLabel}}">{{r.stars}}</span>
+          <span style="min-width: 100px; font-size: 14px; color: #4F5A55">Racha: {{r.streak}}</span>
+        </li>
+      </sc-for>
+    </ol>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const r = (pos, name, level, stars, starsLabel, streak, me) => ({ pos, name, level, stars, starsLabel, streak, bg: me ? '#F3F8F5' : '#FFFFFF' });
+    return {
+      rows: [
+        r('1', 'Sofía Mamani', 'Excelente', '★★★★★ 5', '5 de 5 estrellas', '11', false),
+        r('2', 'Bruno Paz', 'Excelente', '★★★★★ 5', '5 de 5 estrellas', '8', false),
+        r('3', 'Ana Quispe (tú)', 'Bueno', '★★★★½ 4,5', '4,5 de 5 estrellas', '2', true),
+        r('4', 'Lucía Torrez', 'Regular', '★★★½ 3,5', '3,5 de 5 estrellas', '1', false),
+        r('—', 'Iván Céspedes', 'Nuevo', 'Sin calificación', 'Sin calificación todavía', '1', false)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

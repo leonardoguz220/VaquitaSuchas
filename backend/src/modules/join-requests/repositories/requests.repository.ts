@@ -1,0 +1,729 @@
+import { Injectable } from '@nestjs/common';
+import type { Queryable } from '../../../shared/db/db.service.js';
+import type { EntryQuote } from '../domain/entry-quote.js';
+import type { RequestStatus } from '../domain/request-state.js';
+
+export const ACTIVE_STATUSES: readonly RequestStatus[] = [
+  'abierta',
+  'esperando_pago',
+  'pago_informado',
+];
+
+/** Una solicitud de ingreso (`join_requests`, 0050); los bigint llegan como número entero seguro. */
+export interface JoinRequestRecord {
+  id: string;
+  groupId: string;
+  applicantId: string;
+  source: 'codigo' | 'publicacion';
+  listingId: string | null;
+  status: RequestStatus;
+  openedAt: Date;
+  openDeadlineAt: Date;
+  quoteAmountCents: number | null;
+  quotePriceCents: number | null;
+  quoteCurrency: string | null;
+  quoteExchangeRate: string | null;
+  quoteTotalBsCents: number | null;
+  quoteMemberCount: number | null;
+  paymentText: string | null;
+  paymentQrKey: string | null;
+  paymentQrMime: string | null;
+  paymentSentAt: Date | null;
+  payDeadlineAt: Date | null;
+  extendedAt: Date | null;
+  proofKey: string | null;
+  proofMime: string | null;
+  proofSizeBytes: number | null;
+  proofMethod: 'qr' | 'transferencia' | null;
+  proofReference: string | null;
+  proofUploadedAt: Date | null;
+  decisionDeadlineAt: Date | null;
+  reminderSentAt: Date | null;
+  finalAt: Date | null;
+  finalReason: string | null;
+  decidedBy: string | null;
+  rejectReason: string | null;
+  rejectedAsFalse: boolean;
+  acceptedMethod: 'comprobante' | 'efectivo' | null;
+  chargeId: string | null;
+  contentPurgedAt: Date | null;
+  version: number;
+}
+
+interface Row {
+  id: string;
+  group_id: string;
+  applicant_id: string;
+  source: 'codigo' | 'publicacion';
+  listing_id: string | null;
+  status: RequestStatus;
+  opened_at: Date;
+  open_deadline_at: Date;
+  quote_amount_cents: string | null;
+  quote_price_cents: string | null;
+  quote_currency: string | null;
+  quote_exchange_rate: string | null;
+  quote_total_bs_cents: string | null;
+  quote_member_count: number | null;
+  payment_text: string | null;
+  payment_qr_key: string | null;
+  payment_qr_mime: string | null;
+  payment_sent_at: Date | null;
+  pay_deadline_at: Date | null;
+  extended_at: Date | null;
+  proof_key: string | null;
+  proof_mime: string | null;
+  proof_size_bytes: number | null;
+  proof_method: 'qr' | 'transferencia' | null;
+  proof_reference: string | null;
+  proof_uploaded_at: Date | null;
+  decision_deadline_at: Date | null;
+  reminder_sent_at: Date | null;
+  final_at: Date | null;
+  final_reason: string | null;
+  decided_by: string | null;
+  reject_reason: string | null;
+  rejected_as_false: boolean;
+  accepted_method: 'comprobante' | 'efectivo' | null;
+  charge_id: string | null;
+  content_purged_at: Date | null;
+  version: number;
+}
+
+const COLUMNS = `jr.id, jr.group_id, jr.applicant_id, jr.source, jr.listing_id, jr.status, jr.opened_at,
+  jr.open_deadline_at, jr.quote_amount_cents::text AS quote_amount_cents,
+  jr.quote_price_cents::text AS quote_price_cents, jr.quote_currency,
+  jr.quote_exchange_rate::text AS quote_exchange_rate,
+  jr.quote_total_bs_cents::text AS quote_total_bs_cents, jr.quote_member_count, jr.payment_text,
+  jr.payment_qr_key, jr.payment_qr_mime, jr.payment_sent_at, jr.pay_deadline_at, jr.extended_at,
+  jr.proof_key, jr.proof_mime, jr.proof_size_bytes, jr.proof_method, jr.proof_reference,
+  jr.proof_uploaded_at, jr.decision_deadline_at, jr.reminder_sent_at, jr.final_at, jr.final_reason,
+  jr.decided_by, jr.reject_reason, jr.rejected_as_false, jr.accepted_method, jr.charge_id,
+  jr.content_purged_at, jr.version`;
+
+const num = (value: string | null): number | null => (value === null ? null : Number(value));
+
+function toRecord(row: Row): JoinRequestRecord {
+  return {
+    id: row.id,
+    groupId: row.group_id,
+    applicantId: row.applicant_id,
+    source: row.source,
+    listingId: row.listing_id,
+    status: row.status,
+    openedAt: row.opened_at,
+    openDeadlineAt: row.open_deadline_at,
+    quoteAmountCents: num(row.quote_amount_cents),
+    quotePriceCents: num(row.quote_price_cents),
+    quoteCurrency: row.quote_currency,
+    quoteExchangeRate: row.quote_exchange_rate,
+    quoteTotalBsCents: num(row.quote_total_bs_cents),
+    quoteMemberCount: row.quote_member_count,
+    paymentText: row.payment_text,
+    paymentQrKey: row.payment_qr_key,
+    paymentQrMime: row.payment_qr_mime,
+    paymentSentAt: row.payment_sent_at,
+    payDeadlineAt: row.pay_deadline_at,
+    extendedAt: row.extended_at,
+    proofKey: row.proof_key,
+    proofMime: row.proof_mime,
+    proofSizeBytes: row.proof_size_bytes,
+    proofMethod: row.proof_method,
+    proofReference: row.proof_reference,
+    proofUploadedAt: row.proof_uploaded_at,
+    decisionDeadlineAt: row.decision_deadline_at,
+    reminderSentAt: row.reminder_sent_at,
+    finalAt: row.final_at,
+    finalReason: row.final_reason,
+    decidedBy: row.decided_by,
+    rejectReason: row.reject_reason,
+    rejectedAsFalse: row.rejected_as_false,
+    acceptedMethod: row.accepted_method,
+    chargeId: row.charge_id,
+    contentPurgedAt: row.content_purged_at,
+    version: row.version,
+  };
+}
+
+export interface NewJoinRequest {
+  groupId: string;
+  applicantId: string;
+  source: 'codigo' | 'publicacion';
+  listingId?: string | null;
+  openedAt: Date;
+  openDeadlineAt: Date;
+}
+
+export type ListScope =
+  | { kind: 'applicant'; userId: string }
+  | { kind: 'host'; userId: string }
+  | { kind: 'either'; userId: string }
+  | { kind: 'group'; groupId: string };
+
+export interface ListFilter {
+  statuses?: readonly RequestStatus[];
+  groupId?: string;
+  limit: number;
+  cursor?: { openedAt: Date; id: string } | null;
+}
+
+/**
+ * Único lugar con SQL sobre `join_requests` (0050). Toda acción bloquea la solicitud con
+ * `findByIdForUpdate` y, si toca cupos, el grupo DESPUÉS (orden solicitud → grupo, plan §5).
+ */
+@Injectable()
+export class RequestsRepository {
+  async insert(q: Queryable, input: NewJoinRequest): Promise<JoinRequestRecord> {
+    const result = await q.query<Row>(
+      `INSERT INTO join_requests AS jr (group_id, applicant_id, source, listing_id, opened_at, open_deadline_at)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING ${COLUMNS}`,
+      [
+        input.groupId,
+        input.applicantId,
+        input.source,
+        input.listingId ?? null,
+        input.openedAt,
+        input.openDeadlineAt,
+      ],
+    );
+    return toRecord(result.rows[0] as Row);
+  }
+
+  async findById(q: Queryable, id: string): Promise<JoinRequestRecord | null> {
+    const result = await q.query<Row>(`SELECT ${COLUMNS} FROM join_requests jr WHERE jr.id = $1`, [
+      id,
+    ]);
+    const row = result.rows[0];
+    return row ? toRecord(row) : null;
+  }
+
+  async findByIdForUpdate(q: Queryable, id: string): Promise<JoinRequestRecord | null> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_requests jr WHERE jr.id = $1 FOR UPDATE OF jr`,
+      [id],
+    );
+    const row = result.rows[0];
+    return row ? toRecord(row) : null;
+  }
+
+  /** Solicitudes activas de la persona, bloqueadas en orden de id (sin interbloqueos). */
+  async listActiveByApplicantForUpdate(
+    q: Queryable,
+    applicantId: string,
+  ): Promise<JoinRequestRecord[]> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_requests jr
+        WHERE jr.applicant_id = $1 AND jr.status = ANY($2::text[])
+        ORDER BY jr.id FOR UPDATE OF jr`,
+      [applicantId, ACTIVE_STATUSES],
+    );
+    return result.rows.map(toRecord);
+  }
+
+  /** Cantidad de solicitudes activas de la persona, en un grupo o en total (RF-010-02). */
+  async countActive(q: Queryable, applicantId: string, groupId?: string): Promise<number> {
+    const result = await q.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM join_requests
+        WHERE applicant_id = $1 AND status = ANY($2::text[]) AND ($3::uuid IS NULL OR group_id = $3)`,
+      [applicantId, ACTIVE_STATUSES, groupId ?? null],
+    );
+    return Number(result.rows[0]?.n ?? 0);
+  }
+
+  /**
+   * Persiste el vencimiento en un solo `UPDATE` (el disparador de solo lectura final lo exige).
+   * `false` si la solicitud ya no estaba en el estado esperado.
+   */
+  async markExpired(
+    q: Queryable,
+    id: string,
+    from: RequestStatus,
+    finalReason: string,
+    now: Date,
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET status = 'expirada', final_at = $4, final_reason = $3, version = version + 1
+        WHERE id = $1 AND status = $2`,
+      [id, from, finalReason, now],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Datos de pago configurados en el grupo (spec 001, RF-001-20), para copiarlos a la solicitud. */
+  async groupPaymentInfo(
+    q: Queryable,
+    groupId: string,
+  ): Promise<{ text: string | null; qrKey: string | null; qrMime: string | null }> {
+    const result = await q.query<{
+      payment_info_text: string | null;
+      payment_qr_key: string | null;
+      payment_qr_mime: string | null;
+    }>('SELECT payment_info_text, payment_qr_key, payment_qr_mime FROM groups WHERE id = $1', [
+      groupId,
+    ]);
+    const row = result.rows[0];
+    return {
+      text: row?.payment_info_text ?? null,
+      qrKey: row?.payment_qr_key ?? null,
+      qrMime: row?.payment_qr_mime ?? null,
+    };
+  }
+
+  /** `abierta` → `esperando_pago` con la cotización y los datos de pago (un solo `UPDATE`, RN-010-01). */
+  async recordPaymentData(
+    q: Queryable,
+    id: string,
+    data: {
+      quote: EntryQuote;
+      paymentText: string | null;
+      qrKey: string | null;
+      qrMime: string | null;
+      sentAt: Date;
+      payDeadlineAt: Date;
+    },
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET status = 'esperando_pago', quote_amount_cents = $2, quote_price_cents = $3,
+              quote_currency = $4, quote_exchange_rate = $5, quote_total_bs_cents = $6,
+              quote_member_count = $7, payment_text = $8, payment_qr_key = $9,
+              payment_qr_mime = $10, payment_sent_at = $11, pay_deadline_at = $12
+        WHERE id = $1 AND status = 'abierta'`,
+      [
+        id,
+        data.quote.amountCents,
+        data.quote.priceCents,
+        data.quote.currency,
+        data.quote.exchangeRate,
+        data.quote.totalBsCents,
+        data.quote.memberCount,
+        data.paymentText,
+        data.qrKey,
+        data.qrMime,
+        data.sentAt,
+        data.payDeadlineAt,
+      ],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Prórroga única del plazo de pago (RF-010-28). */
+  async recordExtension(
+    q: Queryable,
+    id: string,
+    payDeadlineAt: Date,
+    now: Date,
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET pay_deadline_at = $2, extended_at = $3, version = version + 1
+        WHERE id = $1 AND status = 'esperando_pago' AND extended_at IS NULL`,
+      [id, payDeadlineAt, now],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** `esperando_pago` → `pago_informado` con el comprobante (RF-010-13). */
+  async recordProof(
+    q: Queryable,
+    id: string,
+    proof: {
+      key: string;
+      mime: string;
+      sizeBytes: number;
+      method: 'qr' | 'transferencia';
+      reference: string;
+      uploadedAt: Date;
+      decisionDeadlineAt: Date;
+    },
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET status = 'pago_informado', proof_key = $2, proof_mime = $3, proof_size_bytes = $4,
+              proof_method = $5, proof_reference = $6, proof_uploaded_at = $7,
+              decision_deadline_at = $8
+        WHERE id = $1 AND status = 'esperando_pago'`,
+      [
+        id,
+        proof.key,
+        proof.mime,
+        proof.sizeBytes,
+        proof.method,
+        proof.reference,
+        proof.uploadedAt,
+        proof.decisionDeadlineAt,
+      ],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /**
+   * `esperando_pago` o `pago_informado` → `aceptada` con el cobro de ingreso (RN-010-03). Un solo
+   * `UPDATE`: la base exige `charge_id`, el método y el titular junto con el estado final.
+   */
+  async recordAcceptance(
+    q: Queryable,
+    id: string,
+    from: RequestStatus,
+    data: { method: 'comprobante' | 'efectivo'; chargeId: string; decidedBy: string; now: Date },
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET status = 'aceptada', final_at = $3, final_reason = $4, decided_by = $5,
+              accepted_method = $6, charge_id = $7
+        WHERE id = $1 AND status = $2`,
+      [
+        id,
+        from,
+        data.now,
+        data.method === 'efectivo' ? 'efectivo' : 'confirmada',
+        data.decidedBy,
+        data.method,
+        data.chargeId,
+      ],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Rechazo del titular con motivo (RF-010-16). */
+  async recordRejection(
+    q: Queryable,
+    id: string,
+    from: RequestStatus,
+    data: { reason: string; rejectedAsFalse: boolean; decidedBy: string; now: Date },
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET status = 'rechazada', final_at = $3, final_reason = 'rechazo_titular',
+              decided_by = $4, reject_reason = $5, rejected_as_false = $6
+        WHERE id = $1 AND status = $2`,
+      [id, from, data.now, data.decidedBy, data.reason, data.rejectedAsFalse],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Cancelación por el solicitante o por el sistema (`finalReason` dice cuál). */
+  async recordCancellation(
+    q: Queryable,
+    id: string,
+    from: RequestStatus,
+    finalReason: 'cancelada_solicitante' | 'aceptado_en_otro_grupo' | 'solicitante_suspendido',
+    now: Date,
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET status = 'cancelada', final_at = $3, final_reason = $4
+        WHERE id = $1 AND status = $2`,
+      [id, from, now, finalReason],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Rechazo del sistema (grupo cerrado o titular baneado): sin titular que decida ni motivo escrito. */
+  async recordSystemRejection(
+    q: Queryable,
+    id: string,
+    from: RequestStatus,
+    finalReason: 'grupo_cerrado' | 'titular_baneado' | 'sin_cupo',
+    now: Date,
+  ): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests
+          SET status = 'rechazada', final_at = $3, final_reason = $4
+        WHERE id = $1 AND status = $2`,
+      [id, from, now, finalReason],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Solicitudes activas de un grupo, bloqueadas en orden de id (cierre del grupo). */
+  async listActiveByGroupForUpdate(q: Queryable, groupId: string): Promise<JoinRequestRecord[]> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_requests jr
+        WHERE jr.group_id = $1 AND jr.status = ANY($2::text[])
+        ORDER BY jr.id FOR UPDATE OF jr`,
+      [groupId, ACTIVE_STATUSES],
+    );
+    return result.rows.map(toRecord);
+  }
+
+  /** Solicitudes activas a los grupos que posee la persona, bloqueadas en orden de id (baneo del titular). */
+  async listActiveByHostForUpdate(q: Queryable, hostId: string): Promise<JoinRequestRecord[]> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_requests jr JOIN groups g ON g.id = jr.group_id
+        WHERE g.owner_id = $1 AND jr.status = ANY($2::text[])
+        ORDER BY jr.id FOR UPDATE OF jr`,
+      [hostId, ACTIVE_STATUSES],
+    );
+    return result.rows.map(toRecord);
+  }
+
+  /** Bloquea la solicitud si nadie más la tiene (`SKIP LOCKED`): la tarea no espera a una acción en curso. */
+  async findByIdForUpdateSkipLocked(q: Queryable, id: string): Promise<JoinRequestRecord | null> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_requests jr WHERE jr.id = $1 FOR UPDATE OF jr SKIP LOCKED`,
+      [id],
+    );
+    const row = result.rows[0];
+    return row ? toRecord(row) : null;
+  }
+
+  /** Ids de solicitudes activas cuyo plazo ya venció (barrido; usa `join_requests_sweep_idx`). */
+  async listDueIds(q: Queryable, now: Date, limit: number): Promise<string[]> {
+    const result = await q.query<{ id: string }>(
+      `SELECT id FROM join_requests
+        WHERE (status = 'abierta' AND open_deadline_at <= $1)
+           OR (status = 'esperando_pago' AND pay_deadline_at <= $1)
+           OR (status = 'pago_informado' AND decision_deadline_at <= $1)
+        ORDER BY COALESCE(decision_deadline_at, pay_deadline_at, open_deadline_at), id
+        LIMIT $2`,
+      [now, limit],
+    );
+    return result.rows.map((r) => r.id);
+  }
+
+  /** Ids de `pago_informado` vigentes, sin recordatorio y con el comprobante subido hasta `uploadedBefore`. */
+  async listReminderDueIds(
+    q: Queryable,
+    now: Date,
+    uploadedBefore: Date,
+    limit: number,
+  ): Promise<string[]> {
+    const result = await q.query<{ id: string }>(
+      `SELECT id FROM join_requests
+        WHERE status = 'pago_informado' AND reminder_sent_at IS NULL
+          AND proof_uploaded_at <= $2 AND decision_deadline_at > $1
+        ORDER BY proof_uploaded_at, id
+        LIMIT $3`,
+      [now, uploadedBefore, limit],
+    );
+    return result.rows.map((r) => r.id);
+  }
+
+  /** Marca el recordatorio una sola vez (no cambia de estado ni la versión). */
+  async markReminderSent(q: Queryable, id: string, now: Date): Promise<boolean> {
+    const result = await q.query(
+      `UPDATE join_requests SET reminder_sent_at = $2
+        WHERE id = $1 AND status = 'pago_informado' AND reminder_sent_at IS NULL`,
+      [id, now],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** ¿Hay solicitudes en pago con plazo vigente? (RN-010-09: impide transferir o cerrar el grupo). */
+  async hasPayingRequests(q: Queryable, groupId: string, now: Date): Promise<boolean> {
+    return (await this.countReserved(q, groupId, now)) > 0;
+  }
+
+  /**
+   * Ids de solicitudes cuyo contenido ya cumplió la retención (RNF-010-09): estado final hace 2
+   * meses o más, sin reclamo abierto y, si hubo reclamos, con el último resuelto hace 2 meses o más.
+   * `onlyId` repite la comprobación para una sola solicitud, ya bloqueada.
+   */
+  async listPurgeableIds(
+    q: Queryable,
+    cutoff: Date,
+    limit: number,
+    onlyId: string | null = null,
+  ): Promise<string[]> {
+    const result = await q.query<{ id: string }>(
+      `SELECT jr.id FROM join_requests jr
+        WHERE jr.final_at IS NOT NULL AND jr.content_purged_at IS NULL
+          AND ($3::uuid IS NULL OR jr.id = $3)
+          AND NOT EXISTS (SELECT 1 FROM join_disputes d
+                           WHERE d.request_id = jr.id AND d.status = 'abierto')
+          AND GREATEST(jr.final_at,
+                       COALESCE((SELECT max(d.resolved_at) FROM join_disputes d
+                                  WHERE d.request_id = jr.id), jr.final_at)) <= $1
+        ORDER BY jr.final_at, jr.id
+        LIMIT $2`,
+      [cutoff, limit, onlyId],
+    );
+    return result.rows.map((r) => r.id);
+  }
+
+  /** Marca el contenido como eliminado; es lo único que admite una solicitud en estado final. */
+  async markContentPurged(q: Queryable, id: string, now: Date): Promise<void> {
+    await q.query(
+      'UPDATE join_requests SET content_purged_at = $2 WHERE id = $1 AND content_purged_at IS NULL',
+      [id, now],
+    );
+  }
+
+  /**
+   * Solicitudes `abierta` de la persona a OTROS grupos del mismo servicio del catálogo que el
+   * grupo `groupId` (RN-008-05, CA-010-47), bloqueadas en orden de id. Un grupo personalizado
+   * (sin plan de catálogo) no tiene servicio común: devuelve vacío.
+   */
+  async listOpenInSameServiceForUpdate(
+    q: Queryable,
+    applicantId: string,
+    groupId: string,
+    exceptRequestId: string,
+  ): Promise<JoinRequestRecord[]> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_requests jr
+         JOIN groups g ON g.id = jr.group_id
+         JOIN catalog_plans p ON p.id = g.catalog_plan_id
+        WHERE jr.applicant_id = $1 AND jr.status = 'abierta' AND jr.id <> $3 AND jr.group_id <> $2
+          AND p.service_id = (SELECT cp.service_id FROM groups ag
+                                JOIN catalog_plans cp ON cp.id = ag.catalog_plan_id
+                               WHERE ag.id = $2)
+        ORDER BY jr.id FOR UPDATE OF jr`,
+      [applicantId, groupId, exceptRequestId],
+    );
+    return result.rows.map(toRecord);
+  }
+
+  /** Reservas vigentes de las solicitudes de una publicación (RF-010-20, CA-008-12). */
+  async countReservedForListing(q: Queryable, listingId: string, now: Date): Promise<number> {
+    const result = await q.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM join_requests
+        WHERE listing_id = $1
+          AND ((status = 'esperando_pago' AND pay_deadline_at > $2)
+            OR (status = 'pago_informado' AND decision_deadline_at > $2))`,
+      [listingId, now],
+    );
+    return Number(result.rows[0]?.n ?? 0);
+  }
+
+  /** Solicitudes `abierta` de una publicación, bloqueadas en orden de id (cierre por cupos). */
+  async listOpenByListingForUpdate(q: Queryable, listingId: string): Promise<JoinRequestRecord[]> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_requests jr
+        WHERE jr.listing_id = $1 AND jr.status = 'abierta'
+        ORDER BY jr.id FOR UPDATE OF jr`,
+      [listingId],
+    );
+    return result.rows.map(toRecord);
+  }
+
+  /** Cupos reservados con plazo vigente (RN-010-02). */
+  async countReserved(q: Queryable, groupId: string, now: Date): Promise<number> {
+    const result = await q.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM join_requests
+        WHERE group_id = $1
+          AND ((status = 'esperando_pago' AND pay_deadline_at > $2)
+            OR (status = 'pago_informado' AND decision_deadline_at > $2))`,
+      [groupId, now],
+    );
+    return Number(result.rows[0]?.n ?? 0);
+  }
+
+  /**
+   * Cobros del período vigente que no están cancelados (H3): `charges_member_period_uq` chocaría
+   * al confirmar. Los cobros abiertos de otros períodos los cuenta `OpenChargesPort`.
+   */
+  async countNonCancelledChargesInPeriod(
+    q: Queryable,
+    groupId: string,
+    userId: string,
+    period: string,
+  ): Promise<number> {
+    const result = await q.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM charges
+        WHERE group_id = $1 AND user_id = $2 AND period = $3 AND status <> 'cancelado'`,
+      [groupId, userId, period],
+    );
+    return Number(result.rows[0]?.n ?? 0);
+  }
+
+  async accountStatus(
+    q: Queryable,
+    userId: string,
+  ): Promise<'activo' | 'suspendido' | 'baneado' | null> {
+    const result = await q.query<{ status: 'activo' | 'suspendido' | 'baneado' }>(
+      'SELECT status FROM users WHERE id = $1',
+      [userId],
+    );
+    return result.rows[0]?.status ?? null;
+  }
+
+  async fullNames(q: Queryable, userIds: readonly string[]): Promise<Map<string, string>> {
+    if (userIds.length === 0) return new Map();
+    const result = await q.query<{ id: string; full_name: string }>(
+      'SELECT id, full_name FROM users WHERE id = ANY($1::uuid[])',
+      [userIds],
+    );
+    return new Map(result.rows.map((row) => [row.id, row.full_name]));
+  }
+
+  /**
+   * Página de solicitudes. Como solicitante, las más recientes primero; como titular (o por
+   * grupo), de la más antigua a la más reciente (RF-010-26). Sin rol, las de ambos papeles con
+   * el orden del solicitante. Pide `limit + 1` filas para saber si hay más.
+   */
+  async list(q: Queryable, scope: ListScope, filter: ListFilter): Promise<JoinRequestRecord[]> {
+    const params: unknown[] = [];
+    const bind = (value: unknown): string => {
+      params.push(value);
+      return `$${params.length}`;
+    };
+    const where: string[] = [];
+    let ascending = false;
+    switch (scope.kind) {
+      case 'applicant':
+        where.push(`jr.applicant_id = ${bind(scope.userId)}`);
+        break;
+      case 'host':
+        where.push(`g.owner_id = ${bind(scope.userId)}`);
+        ascending = true;
+        break;
+      case 'either': {
+        const user = bind(scope.userId);
+        where.push(`(jr.applicant_id = ${user} OR g.owner_id = ${user})`);
+        break;
+      }
+      case 'group':
+        where.push(`jr.group_id = ${bind(scope.groupId)}`);
+        ascending = true;
+        break;
+    }
+    if (filter.groupId) where.push(`jr.group_id = ${bind(filter.groupId)}`);
+    if (filter.statuses && filter.statuses.length > 0) {
+      where.push(`jr.status = ANY(${bind(filter.statuses)}::text[])`);
+    }
+    if (filter.cursor) {
+      const op = ascending ? '>' : '<';
+      where.push(
+        `(jr.opened_at, jr.id) ${op} (${bind(filter.cursor.openedAt)}, ${bind(filter.cursor.id)})`,
+      );
+    }
+    const dir = ascending ? 'ASC' : 'DESC';
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_requests jr JOIN groups g ON g.id = jr.group_id
+        WHERE ${where.join(' AND ')}
+        ORDER BY jr.opened_at ${dir}, jr.id ${dir}
+        LIMIT ${bind(filter.limit + 1)}`,
+      params,
+    );
+    return result.rows.map(toRecord);
+  }
+
+  /** Solicitudes del titular que esperan una acción suya: `abierta` y `pago_informado` vigentes. */
+  async countActionableAsHost(q: Queryable, hostId: string, now: Date): Promise<number> {
+    const result = await q.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM join_requests jr JOIN groups g ON g.id = jr.group_id
+        WHERE g.owner_id = $1
+          AND ((jr.status = 'abierta' AND jr.open_deadline_at > $2)
+            OR (jr.status = 'pago_informado' AND jr.decision_deadline_at > $2))`,
+      [hostId, now],
+    );
+    return Number(result.rows[0]?.n ?? 0);
+  }
+
+  /** Solicitudes activas vigentes de la persona como solicitante. */
+  async countActiveAsApplicant(q: Queryable, applicantId: string, now: Date): Promise<number> {
+    const result = await q.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM join_requests
+        WHERE applicant_id = $1
+          AND ((status = 'abierta' AND open_deadline_at > $2)
+            OR (status = 'esperando_pago' AND pay_deadline_at > $2)
+            OR (status = 'pago_informado' AND decision_deadline_at > $2))`,
+      [applicantId, now],
+    );
+    return Number(result.rows[0]?.n ?? 0);
+  }
+}

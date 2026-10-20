@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Ingresar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-wrap: wrap">
+  <section style="flex: 1 1 520px; min-width: 0; box-sizing: border-box; background: #1E6B4E; color: #F5F6F2; padding: 56px 64px; display: flex; flex-direction: column; gap: 40px">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <svg width="40" height="40" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#F5F6F2"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#1E6B4E" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#1E6B4E"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 28px; letter-spacing: -0.5px">vaquita</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px; max-width: 480px">
+      <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 48px; line-height: 1.05; letter-spacing: -1.2px">Las suscripciones compartidas, con las cuentas claras.</h1>
+      <p style="margin: 0; font-size: 19px; line-height: 1.5; color: #DCEBE3">Vaquita calcula la cuota de cada uno, convierte de dólares a bolivianos y lleva el registro de quién pagó cada mes.</p>
+    </div>
+    <div aria-hidden="true" style="margin-top: auto; max-width: 420px; background: #F5F6F2; color: #17201C; border-radius: 20px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <span style="font-weight: 700; font-size: 17px">Netflix · Plan Estándar</span>
+        <span style="font-size: 14px; color: #4F5A55">4 miembros</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <span style="font-size: 15px; color: #4F5A55">Tu cuota de noviembre</span>
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 28px">Bs 25,50</span>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap">
+        <span style="background: #D7EFE2; color: #17573F; border-radius: 999px; padding: 4px 12px; font-size: 14px; font-weight: 700">Pagado · 3</span>
+        <span style="background: #DCE6FB; color: #1C3F94; border-radius: 999px; padding: 4px 12px; font-size: 14px; font-weight: 700">En revisión · 1</span>
+      </div>
+    </div>
+  </section>
+  <section style="flex: 1 1 480px; min-width: 0; box-sizing: border-box; padding: 56px 24px; display: flex; align-items: center; justify-content: center">
+    <div style="width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 28px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; letter-spacing: -0.6px">Ingresa a tu cuenta</h2>
+        <p style="margin: 0; font-size: 17px; color: #4F5A55">Usa el correo con el que te registraste.</p>
+      </div>
+      <form style="display: flex; flex-direction: column; gap: 18px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="correo" style="font-weight: 700; font-size: 15px">Correo</label>
+          <input id="correo" type="email" value="ana.quispe@gmail.com" style="height: 50px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 17px; background: #FFFFFF; color: #17201C">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline">
+            <label for="clave" style="font-weight: 700; font-size: 15px">Contraseña</label>
+            <a href="#" style="font-size: 15px">¿Olvidaste tu contraseña?</a>
+          </div>
+          <input id="clave" type="password" value="contrasena2026" style="height: 50px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 17px; background: #FFFFFF; color: #17201C">
+        </div>
+        <a href="Grupos.dc.html" style="height: 52px; display: flex; align-items: center; justify-content: center; background: #1E6B4E; color: #FFFFFF; border-radius: 12px; font-weight: 700; font-size: 17px; text-decoration: none">Ingresar</a>
+      </form>
+      <p style="margin: 0; font-size: 16px; color: #4F5A55; padding-top: 20px; border-top: 1px solid #D9DDD7">¿Todavía no tienes cuenta? <a href="Registro.dc.html" style="font-weight: 700">Crea una</a></p>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

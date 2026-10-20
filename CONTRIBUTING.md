@@ -87,12 +87,15 @@ El orden de dependencia es base de datos, backend y frontend, pero el trabajo co
 
 ## 5. Ramas y PRs
 
-- `main` se mantiene estable y no recibe pushes directos.
+- Hay tres ramas permanentes y ninguna recibe pushes directos: `dev` integra el trabajo del día a día y es la rama por defecto, `qa` recibe lo que se va a probar antes de publicar y `main` contiene solo lo que ya pasó por `qa`.
+- Las ramas de trabajo salen de `dev` y vuelven a `dev` por PR. Luego se abre un PR de `dev` a `qa` y, cuando la prueba pasa, otro de `qa` a `main`.
 - `spec/NNN-nombre` contiene la especificación y el plan.
 - `bd/NNN-tX-descripcion`, `be/NNN-tX-descripcion` y `fe/NNN-tX-descripcion` contienen una tarea cada una, con el prefijo de su capa.
 - Los PRs son pequeños (una tarea) y usan la plantilla de `.github/pull_request_template.md`.
-- Un PR de una capa lo revisa otra capa (base de datos, backend y frontend se revisan entre sí). Se necesita una aprobación como mínimo, y dos para cambios en `CLAUDE.md`, en la constitución o en specs ya aprobadas.
-- El merge es con squash.
+- Los PR no necesitan aprobación humana (decisión de los tres, 2026-10-18). Se fusionan solos con auto-merge cuando pasan los checks obligatorios: `flow` y la CI. Cualquiera puede comentar un PR, y las conversaciones abiertas bloquean la fusión hasta resolverlas.
+- El flujo es obligatorio y lo comprueba el check `flow`: las ramas de trabajo van a `dev`, `dev` va a `qa` y solo `qa` va a `main`. Un PR hacia `main` desde otra rama no se puede fusionar.
+- Los PR hacia `dev` se fusionan con squash. Los de `dev` a `qa` y de `qa` a `main` se fusionan con merge commit, para que las tres ramas no se desfasen.
+- Los cambios en `CLAUDE.md`, en la constitución o en specs ya aprobadas siguen necesitando la conformidad de las tres personas, que se deja por escrito en el PR antes de fusionar.
 
 ## 6. Ritmo del equipo
 
@@ -110,7 +113,7 @@ El orden de dependencia es base de datos, backend y frontend, pero el trabajo co
 3. Los cambios de alcance pasan por la spec y los cambios técnicos entre capas, por el contrato.
 4. Las reglas de negocio viven solo en el backend, con la base de datos como respaldo mediante restricciones.
 5. La spec se discute en el PR, no solo por chat.
-6. Al trabajar con IA se pide una tarea por vez, con la constitución, la spec y el plan como contexto, y siempre hay revisión humana.
+6. Al trabajar con IA se pide una tarea por vez, con la constitución, la spec y el plan como contexto, y lo generado se revisa en el PR (comentarios) y por la CI, que es la que bloquea la fusión.
 7. Los diez módulos entran en el alcance y se construyen en orden: MVP (P0), importantes (P1) y extras (P2). Cada etapa se termina y se prueba de punta a punta antes de empezar la siguiente.
 
 ## 8. Gestión de tareas

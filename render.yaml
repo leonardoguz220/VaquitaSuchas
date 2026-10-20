@@ -1,0 +1,54 @@
+# Staging de Vaquita en Render (spec 000 T047, research R1). Se crea desde el panel con
+# New > Blueprint apuntando a este repositorio. Plan gratuito: la base caduca a los 30 días.
+# Las migraciones no corren al arrancar: se aplican con el workflow «Migrate staging» (T051).
+
+databases:
+  - name: vaquita-staging-db
+    plan: free
+    region: virginia
+    postgresMajorVersion: "16"
+    databaseName: vaquita
+    user: vaquita
+
+services:
+  - type: web
+    name: vaquita-staging-api
+    runtime: node
+    plan: free
+    region: virginia
+    branch: dev
+    # --include=dev: NODE_ENV=production también rige el build y Nest CLI es dependencia de desarrollo.
+    buildCommand: npm ci --include=dev --workspace backend --include-workspace-root && npm run build -w backend
+    startCommand: npm run start -w backend
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vaquita-staging-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FINGERPRINT_KEY
+        generateValue: true
+      - key: JOBS_TOKEN
+        generateValue: true
+      # 32 bytes en hexadecimal: se pega a mano (openssl rand -hex 32).
+      - key: CI_ENCRYPTION_KEY
+        sync: false
+      # Hasta T049 y T050: archivos en disco efímero, bot simulado y correo sin proveedor.
+      - key: MAIL_MODE
+        value: dev
+      - key: TELEGRAM_MODE
+        value: dev
+      - key: STORAGE_DRIVER
+        value: local
+      - key: JOBS_INPROCESS
+        value: "true"
+      # URL de Vercel cuando exista (T048).
+      - key: FRONTEND_ORIGIN
+        sync: false

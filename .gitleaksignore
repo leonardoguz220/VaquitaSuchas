@@ -1,0 +1,7 @@
+# Contraseñas falsas de prueba ('clave-segura-123') en el helper de tests, no son secretos reales.
+# Huellas del commit de dev que las trajo (PR #91).
+7184d90328783431e8126a26b458c109169a524e:backend/test/support/auth-app.ts:generic-api-key:112
+7184d90328783431e8126a26b458c109169a524e:backend/test/support/auth-app.ts:generic-api-key:113
+# Contraseñas falsas de prueba ('clave-de-prueba-123', 'otra-clave-98765') en el test de los CLI de arranque, no son secretos reales (PR #112).
+911372480fb3f3a5f00b7ecda2a57a78ed56192d:backend/test/cli.seed.e2e-spec.ts:generic-api-key:29
+911372480fb3f3a5f00b7ecda2a57a78ed56192d:backend/test/cli.seed.e2e-spec.ts:generic-api-key:69

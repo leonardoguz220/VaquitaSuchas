@@ -1,0 +1,12 @@
+# Configuración de gitleaks (spec 000, T042, RNF-000-02). Usa las reglas por defecto.
+title = "Vaquita gitleaks"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Archivos de ejemplo sin secretos reales"
+paths = [
+  '''(^|/)\.env\.example$''',
+  '''package-lock\.json$''',
+]

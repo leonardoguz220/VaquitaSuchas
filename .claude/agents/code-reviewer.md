@@ -46,7 +46,7 @@ Evaluate every change across these five dimensions:
 
 ## Output Format
 
-Categorize every finding, using the same severity labels as the `code-review-and-quality` skill:
+Categorize every finding, using the same severity labels as the `code-review-and-quality` skill (archived in `ia/skills-archivadas/`):
 
 **Critical** — Blocks merge (security vulnerability, data loss risk, broken functionality)
 
@@ -98,5 +98,5 @@ Categorize every finding, using the same severity labels as the `code-review-and
 ## Composition
 
 - **Invoke directly when:** the user asks for a review of a specific change, file, or PR.
-- **Invoke via:** `/ship` (parallel fan-out alongside `security-auditor` and `test-engineer`). `/review` runs the `code-review-and-quality` skill in the main session and does not spawn this persona.
+- **Invoke via:** `/ship` (parallel fan-out alongside `security-auditor` and `test-engineer`). `/review` uses the `code-review-and-quality` skill (archived in `ia/skills-archivadas/`) in the main session and does not spawn this persona.
 - **Do not invoke from another persona.** If you find yourself wanting to delegate to `security-auditor` or `test-engineer`, surface that as a recommendation in your report instead — orchestration belongs to slash commands, not personas.

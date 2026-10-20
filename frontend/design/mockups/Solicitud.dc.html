@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vaquita · Solicitud a Max de amigos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1E6B4E}a:hover{color:#14503A}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F2; color: #17201C; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; padding: 14px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid #D9DDD7; background: #FFFFFF">
+    <a href="Grupos.dc.html" style="display: flex; align-items: center; gap: 10px; color: #17201C; text-decoration: none">
+      <svg width="34" height="34" viewBox="0 0 36 36" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="11" fill="#1E6B4E"></rect><path d="M9 11 L18 26 L27 11" fill="none" stroke="#F5F6F2" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="25.5" cy="25" r="3.2" fill="#F5F6F2"></circle></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -0.5px">vaquita</span>
+    </a>
+    <nav aria-label="Principal" style="display: flex; gap: 4px; flex-wrap: wrap; flex: 1">
+      <a href="Grupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis suscripciones</a>
+      <a href="MisCobros.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Mis cobros</a>
+      <a href="Solicitudes.dc.html" aria-current="page" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; background: #E3F1EA; color: #14503A; font-weight: 700; text-decoration: none">Mis solicitudes</a>
+      <a href="Cupos.dc.html" style="min-height: 44px; padding: 0 16px; display: flex; align-items: center; border-radius: 10px; color: #17201C; text-decoration: none">Cupos libres</a>
+    </nav>
+    <a href="Perfil.dc.html" aria-label="Mi perfil: Ana Quispe" style="width: 44px; height: 44px; border-radius: 999px; background: #17201C; color: #F5F6F2; display: flex; align-items: center; justify-content: center; font-weight: 700; text-decoration: none">AQ</a>
+  </header>
+  <main style="flex: 1; box-sizing: border-box; width: 100%; max-width: 1240px; margin: 0 auto; padding: 24px 32px 40px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+      <span aria-hidden="true" style="width: 52px; height: 52px; border-radius: 14px; background: #4B2A8C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 24px">M</span>
+      <div style="flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 2px">
+        <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; letter-spacing: -0.6px">Solicitud a Max de amigos</h1>
+        <span style="font-size: 15px; color: #4F5A55">Titular: <strong style="color: #17201C">Rodrigo Salazar</strong> <span aria-label="4,5 de 5 estrellas" style="color: #7A4B00">★★★★½</span> · Max · Estándar</span>
+      </div>
+      <div role="timer" aria-live="off" style="display: flex; align-items: center; gap: 12px; background: #FBDCD8; color: #7E1710; border-radius: 14px; padding: 10px 18px">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 30px">12:34</span>
+        <span style="font-size: 14px; line-height: 1.3">para pagar y<br>subir tu comprobante</span>
+      </div>
+    </div>
+    <ol aria-label="Estado de la solicitud" style="margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px; font-size: 15px">
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+        <li aria-current="{{s.current}}" style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: {{s.bg}}; color: {{s.fg}}; font-weight: 700">{{s.label}}</li>
+      </sc-for>
+    </ol>
+    <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+      <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+        <section aria-labelledby="datos" style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+          <h2 id="datos" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px">1. Paga tu cuota de ingreso</h2>
+          <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+            <div style="flex: 1; min-width: 180px; display: flex; flex-direction: column; gap: 2px">
+              <span style="font-size: 14px; color: #4F5A55">Cuota fijada al enviarte los datos</span>
+              <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 36px">Bs 21,00</span>
+              <span style="font-size: 14px; color: #4F5A55">Bs 84,00 del mes entre 4 miembros, contándote</span>
+            </div>
+            <button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1.5px solid #1E6B4E; background: #FFFFFF; color: #1E6B4E; font: inherit; font-weight: 700; cursor: pointer">Copiar monto</button>
+          </div>
+          <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap; background: #F5F6F2; border-radius: 14px; padding: 14px">
+            <div role="img" aria-label="QR de pago de Rodrigo" style="width: 96px; height: 96px; box-sizing: border-box; border: 2px dashed #A9B1AC; border-radius: 12px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 13px; color: #4F5A55">QR de pago</div>
+            <div style="flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 4px; font-size: 15px">
+              <span style="font-weight: 700">BNB · Cuenta 4502-117733</span>
+              <span>Rodrigo Salazar Paz</span>
+              <a href="#" style="font-weight: 700">Copiar datos</a>
+            </div>
+          </div>
+        </section>
+        <form aria-labelledby="comprobante" style="background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+          <h2 id="comprobante" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px">2. Sube tu comprobante</h2>
+          <button type="button" style="min-height: 64px; border-radius: 14px; border: 1.5px dashed #1E6B4E; background: #F3F8F5; color: #14503A; font: inherit; font-weight: 700; font-size: 16px; cursor: pointer">Elegir archivo · JPG, PNG o PDF hasta 5 MB</button>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="metodo" style="font-weight: 700; font-size: 15px">Método</label>
+              <select id="metodo" style="height: 46px; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 12px; font: inherit; font-size: 16px; background: #FFFFFF; color: #17201C"><option selected>QR</option><option>Transferencia</option></select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="ref" style="font-weight: 700; font-size: 15px">Referencia (obligatoria)</label>
+              <input id="ref" type="text" placeholder="Número del comprobante" style="height: 46px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 0 14px; font: inherit; font-size: 16px; color: #17201C">
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap">
+            <a href="#" style="color: #9B1C12; font-weight: 700; min-height: 44px; display: flex; align-items: center">Cancelar solicitud</a>
+            <a href="SolicitudTitular.dc.html" style="min-height: 50px; padding: 0 26px; display: flex; align-items: center; background: #1E6B4E; color: #FFFFFF; border-radius: 12px; font-weight: 700; font-size: 17px; text-decoration: none">Enviar comprobante</a>
+          </div>
+        </form>
+        <p role="note" style="margin: 0; font-size: 14px; line-height: 1.45; color: #5C3900; background: #FCEBC7; border-radius: 12px; padding: 12px 14px">Vaquita no custodia el dinero ni lo devuelve. Si pagas y no te agregan, podrás abrir un reclamo con esta conversación como evidencia.</p>
+      </div>
+      <section aria-labelledby="chat" style="flex: 1 1 460px; min-width: 0; background: #FFFFFF; border: 1px solid #D9DDD7; border-radius: 18px; display: flex; flex-direction: column; min-height: 640px">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #E6E9E4; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+          <h2 id="chat" style="margin: 0; font-size: 17px">Chat con Rodrigo</h2>
+          <span style="font-size: 14px; color: #4F5A55">Solo lo ven ustedes dos</span>
+        </div>
+        <ol aria-label="Mensajes" style="margin: 0; list-style: none; flex: 1; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; background: #FAFBF8">
+          <sc-for list="{{messages}}" as="m" hint-placeholder-count="6">
+            <li style="display: flex; flex-direction: column; align-items: {{m.align}}; gap: 4px">
+              <sc-if value="{{m.isSystem}}" hint-placeholder-val="{{ false }}">
+                <span style="align-self: center; font-size: 13px; color: #4F5A55; background: #EEF0EC; border-radius: 999px; padding: 6px 14px; text-align: center">{{m.text}}</span>
+              </sc-if>
+              <sc-if value="{{m.isBubble}}" hint-placeholder-val="{{ true }}">
+                <div style="max-width: 78%; display: flex; flex-direction: column; gap: 8px; background: {{m.bg}}; color: {{m.fg}}; border-radius: 16px; padding: 10px 14px; font-size: 15px; line-height: 1.4">
+                  <sc-if value="{{m.hasImage}}" hint-placeholder-val="{{ false }}">
+                    <div role="img" aria-label="Imagen enviada: QR de pago" style="width: 180px; height: 120px; border-radius: 10px; background: #DDE2DC; color: #4F5A55; display: flex; align-items: center; justify-content: center; font-size: 13px">Imagen: QR de pago</div>
+                  </sc-if>
+                  <span>{{m.text}}</span>
+                </div>
+                <span style="font-size: 12px; color: #6B7570">{{m.meta}}</span>
+              </sc-if>
+            </li>
+          </sc-for>
+        </ol>
+        <form style="padding: 14px 16px; border-top: 1px solid #E6E9E4; display: flex; gap: 10px; align-items: flex-end">
+          <button type="button" aria-label="Adjuntar imagen" style="width: 46px; height: 46px; flex: none; border-radius: 12px; border: 1.5px solid #C9CFC8; background: #FFFFFF; color: #17201C; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"></rect><circle cx="9" cy="10" r="1.6" fill="currentColor"></circle><path d="M21 16 L15 11 L6 19" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path></svg></button>
+          <label for="mensaje" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Mensaje para Rodrigo</label>
+          <textarea id="mensaje" rows="1" placeholder="Escribe un mensaje…" style="flex: 1; min-width: 0; min-height: 46px; box-sizing: border-box; border: 1.5px solid #C9CFC8; border-radius: 12px; padding: 11px 14px; font: inherit; font-size: 16px; color: #17201C; resize: none"></textarea>
+          <button type="button" style="height: 46px; padding: 0 18px; flex: none; border-radius: 12px; border: 0; background: #1E6B4E; color: #FFFFFF; font: inherit; font-weight: 700; cursor: pointer">Enviar</button>
+        </form>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const step = (label, state) => ({
+      label,
+      current: state === 'now' ? 'step' : 'false',
+      bg: state === 'done' ? '#D7EFE2' : state === 'now' ? '#17201C' : '#E6E7E9',
+      fg: state === 'done' ? '#17573F' : state === 'now' ? '#FFFFFF' : '#4F5A55'
+    });
+    const mine = (text, meta) => ({ text, meta, align: 'flex-end', isSystem: false, isBubble: true, hasImage: false, bg: '#1E6B4E', fg: '#FFFFFF' });
+    const theirs = (text, meta, hasImage) => ({ text, meta, align: 'flex-start', isSystem: false, isBubble: true, hasImage: !!hasImage, bg: '#EEF0EC', fg: '#17201C' });
+    const system = (text) => ({ text, meta: '', align: 'center', isSystem: true, isBubble: false, hasImage: false, bg: '', fg: '' });
+    return {
+      steps: [step('✓ Abierta', 'done'), step('Esperando tu pago', 'now'), step('Pago informado', 'next'), step('Aceptada', 'next')],
+      messages: [
+        system('Abriste la solicitud · hoy 14:20'),
+        mine('¡Hola Rodrigo! Carla me pasó el código. ¿Todavía tienes un cupo en Max?', 'Tú · 14:21'),
+        theirs('Hola Ana, sí, me queda uno. Te mando los datos para que pagues.', 'Rodrigo · 14:35'),
+        system('Rodrigo envió los datos de pago · cuota fijada en Bs 21,00 · cupo reservado · 14:41'),
+        theirs('Este es mi QR del BNB. Avísame cuando subas el comprobante.', 'Rodrigo · 14:41', true),
+        mine('Perfecto, pago ahora mismo.', 'Tú · 14:42 · Leído')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
