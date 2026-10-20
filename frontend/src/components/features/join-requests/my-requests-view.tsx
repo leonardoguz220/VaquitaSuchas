@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { ServiceLogo } from '@/components/features/catalog/ServiceLogo';
+import { RatingBadge } from '@/components/features/reputation/rating-badge';
 import { Alert, Button } from '@/components/ui';
 import { cx } from '@/components/ui/cx';
 import { useMyJoinRequests, type MyRequestsScope } from '@/hooks/use-join-requests';
@@ -14,6 +15,7 @@ import {
   JOIN_MESSAGES,
   joinErrorMessage,
   opensAtText,
+  personRating,
   ratingText,
 } from './join-messages';
 import { JoinStatusBadge } from './join-status-badge';
@@ -60,6 +62,7 @@ function amountOf(request: JoinRequest): { cents: number; label: string } {
  */
 function RequestCard({ request, onDeadline }: { request: JoinRequest; onDeadline: () => void }) {
   const { group, phase } = request;
+  const hostRating = personRating(request.host);
   const amount = amountOf(request);
   const reason = finalReasonText(request.finalReason);
   const isFinal = FINAL_JOIN_STATUSES.includes(phase.status);
@@ -82,9 +85,12 @@ function RequestCard({ request, onDeadline }: { request: JoinRequest; onDeadline
             <span className="truncate text-lg font-bold">{group.name}</span>
             <JoinStatusBadge status={phase.status} />
           </div>
-          <span className="text-[15px] text-muted">
-            Titular: {request.host.fullName} · {ratingText(request.host)}
-          </span>
+          <span className="text-[15px] text-muted">Titular: {request.host.fullName}</span>
+          {hostRating ? (
+            <RatingBadge rating={hostRating} />
+          ) : (
+            <span className="text-[15px] text-muted">{ratingText(request.host)}</span>
+          )}
         </div>
         <div className="flex flex-col items-end">
           <span className="font-display text-xl font-bold">{formatBs(amount.cents)}</span>

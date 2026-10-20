@@ -2,10 +2,9 @@
  * Cliente de los endpoints de reputación (spec 007, `contracts/api.md`). Una función por endpoint y
  * tipos del contrato. El frontend muestra `stars`, `starsLabel`, `level`, `consideredCount`, etc.
  * tal como llegan: no calcula estrellas, niveles, racha ni habilitación, y nunca envía puntuaciones
- * ni fechas de pago. Por ahora las funciones responden con datos simulados de `reputation.mock.ts`;
- * al conectar el backend solo cambia el cuerpo por `apiRequest`.
+ * ni fechas de pago. Los datos simulados de `reputation.mock.ts` solo los usan los tests.
  */
-import * as mock from './reputation.mock';
+import { apiRequest } from './http';
 
 /** Nivel de calificación (RF-007-02). `Nuevo` significa que aún no hay estrellas. */
 export type RatingLevel = 'Nuevo' | 'En riesgo' | 'Regular' | 'Bueno' | 'Excelente';
@@ -127,12 +126,12 @@ export interface ReputationRequestOptions {
 
 /** `GET /users/me/reputation` (RF-007-01 a 05, RF-007-15; CA-007-01, 02, 16, 20). */
 export function getMyReputation(options: ReputationRequestOptions = {}): Promise<ReputationDetail> {
-  return mock.getMyReputation(options);
+  return apiRequest<ReputationDetail>('/api/users/me/reputation', { signal: options.signal });
 }
 
 /** `GET /users/me/badges` (RF-007-06 a 08; CA-007-08, 09; P2). */
 export function getMyBadges(options: ReputationRequestOptions = {}): Promise<BadgesResponse> {
-  return mock.getMyBadges(options);
+  return apiRequest<BadgesResponse>('/api/users/me/badges', { signal: options.signal });
 }
 
 /** `GET /groups/:groupId/ranking` (RF-007-09 a 11; CA-007-10, 11, 12; P2). */
@@ -140,7 +139,9 @@ export function getGroupRanking(
   groupId: string,
   options: ReputationRequestOptions = {},
 ): Promise<GroupRanking> {
-  return mock.getGroupRanking(groupId, options);
+  return apiRequest<GroupRanking>(`/api/groups/${encodeURIComponent(groupId)}/ranking`, {
+    signal: options.signal,
+  });
 }
 
 /** `POST /charges/:chargeId/reputation-report` (RF-007-14; P2). Responde 201. */
@@ -148,7 +149,10 @@ export function reportChargeReputation(
   chargeId: string,
   input: ReportChargeReputationRequest,
 ): Promise<void> {
-  return mock.reportChargeReputation(chargeId, input);
+  return apiRequest<void>(`/api/charges/${encodeURIComponent(chargeId)}/reputation-report`, {
+    method: 'POST',
+    body: input,
+  });
 }
 
 /** `POST /charges/:chargeId/reputation-exclusion` (RF-007-14; CA-007-13; P2). Solo el titular. */
@@ -156,5 +160,8 @@ export function excludeChargeReputation(
   chargeId: string,
   input: ExcludeChargeReputationRequest,
 ): Promise<void> {
-  return mock.excludeChargeReputation(chargeId, input);
+  return apiRequest<void>(`/api/charges/${encodeURIComponent(chargeId)}/reputation-exclusion`, {
+    method: 'POST',
+    body: input,
+  });
 }
