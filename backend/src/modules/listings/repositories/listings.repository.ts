@@ -125,6 +125,51 @@ export class ListingsRepository {
       : null;
   }
 
+  /** El grupo sin bloquearlo (lecturas); `null` si no existe. */
+  async findGroup(q: Queryable, groupId: string): Promise<LockedGroup | null> {
+    const result = await q.query<{
+      id: string;
+      owner_id: string;
+      status: 'activo' | 'cerrado';
+      frozen_at: Date | null;
+      accepting_members: boolean;
+      total_slots: number;
+    }>(
+      `SELECT id, owner_id, status, frozen_at, accepting_members, total_slots
+         FROM groups WHERE id = $1`,
+      [groupId],
+    );
+    const row = result.rows[0];
+    return row
+      ? {
+          id: row.id,
+          ownerId: row.owner_id,
+          status: row.status,
+          frozen: row.frozen_at !== null,
+          acceptingMembers: row.accepting_members,
+          totalSlots: row.total_slots,
+        }
+      : null;
+  }
+
+  async isActiveMember(q: Queryable, groupId: string, userId: string): Promise<boolean> {
+    const result = await q.query(
+      'SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2 AND left_at IS NULL',
+      [groupId, userId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /** Solicitudes activas originadas en la publicación (`OwnerListing.openRequests`). */
+  async countActiveRequests(q: Queryable, listingId: string): Promise<number> {
+    const result = await q.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM join_requests
+        WHERE listing_id = $1 AND status IN ('abierta', 'esperando_pago', 'pago_informado')`,
+      [listingId],
+    );
+    return Number(result.rows[0]?.n ?? 0);
+  }
+
   async countActiveMembers(q: Queryable, groupId: string): Promise<number> {
     const result = await q.query<{ n: string }>(
       'SELECT count(*)::text AS n FROM group_members WHERE group_id = $1 AND left_at IS NULL',
@@ -224,10 +269,14 @@ export class ListingsRepository {
     return row ? toRecord(row) : null;
   }
 
-  /** Cupos que todavía se ofrecen (`ListingQuotaPort.remainingOffered`); 0 si no está activa. */
+  /**
+   * Cupos que todavía se ofrecen (`ListingQuotaPort.remainingOffered`). Solo `cerrada` tiene 0
+   * (0080): una publicación oculta, vencida o retirada conserva sus cupos para las solicitudes
+   * que ya están en curso (spec 010 sigue su flujo).
+   */
   async remainingOffered(q: Queryable, listingId: string): Promise<number> {
     const result = await q.query<{ slots_offered: number }>(
-      `SELECT slots_offered FROM listings WHERE id = $1 AND status = 'activa'`,
+      `SELECT slots_offered FROM listings WHERE id = $1`,
       [listingId],
     );
     return result.rows[0]?.slots_offered ?? 0;

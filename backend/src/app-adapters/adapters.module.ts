@@ -16,6 +16,9 @@ import { HostEligibilityAdapter } from './host-eligibility.adapter.js';
 import { RequestsRepository } from '../modules/join-requests/repositories/requests.repository.js';
 import { JoinRequestOwnershipBlockersAdapter } from './ownership-blockers.adapter.js';
 import { OpenChargesAdapter } from './open-charges.adapter.js';
+import { LISTING_QUOTA_PORT } from '../modules/join-requests/ports/listing-quota.port.js';
+import { ListingsRepository } from '../modules/listings/repositories/listings.repository.js';
+import { ListingQuotaAdapter } from './listing-quota.adapter.js';
 import { CHARGE_FACTS_PORT } from '../modules/billing/ports/charge-facts.port.js';
 import { ChargeFactsRepository } from '../modules/billing/repositories/charge-facts.repository.js';
 import { BadgesRepository } from '../modules/reputation/repositories/badges.repository.js';
@@ -54,6 +57,10 @@ import { ReputationRatingsAdapter } from './reputation-ratings.adapter.js';
     { provide: AUDIT_PORT, useExisting: AuditService },
     // Spec 007: la calificación real reemplaza al adaptador nulo.
     { provide: REPUTATION_QUERY_PORT, useExisting: ReputationRatingsAdapter },
+    // Spec 008: cupos ofrecidos por publicación (RF-010-20).
+    ListingsRepository,
+    ListingQuotaAdapter,
+    { provide: LISTING_QUOTA_PORT, useExisting: ListingQuotaAdapter },
     { provide: HOST_ELIGIBILITY_PORT, useExisting: HostEligibilityAdapter },
     { provide: OPEN_CHARGES_PORT, useExisting: OpenChargesAdapter },
     { provide: OWNERSHIP_BLOCKERS_PORT, useExisting: JoinRequestOwnershipBlockersAdapter },
@@ -66,6 +73,7 @@ import { ReputationRatingsAdapter } from './reputation-ratings.adapter.js';
     AUDIT_PORT,
     REPUTATION_QUERY_PORT,
     USER_GROUP_COUNTS_PORT,
+    LISTING_QUOTA_PORT,
   ],
 })
 export class AdaptersModule {}

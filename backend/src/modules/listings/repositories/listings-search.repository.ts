@@ -206,6 +206,22 @@ export class ListingsSearchRepository {
     return result.rows.map(toRow);
   }
 
+  /** Vista previa del titular: la publicación `activa` y vigente, sin exclusiones por persona. */
+  async findForPreview(
+    q: Queryable,
+    listingId: string,
+    now: Date,
+  ): Promise<ListingSearchRow | null> {
+    const result = await q.query<Row>(
+      `${SELECT}, 0::text AS sort_key
+       ${FROM}
+       WHERE l.status = 'activa' AND l.expires_at > $1 AND l.id = $2`,
+      [now, listingId],
+    );
+    const row = result.rows[0];
+    return row ? toRow(row) : null;
+  }
+
   /** Una publicación visible para la persona (404 si no es activa, es propia o de su grupo). */
   async findVisible(
     q: Queryable,
