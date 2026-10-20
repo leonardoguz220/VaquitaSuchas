@@ -4,9 +4,12 @@ import {
   getJoinRequestsSummary,
   getPaymentQr,
   getProofFile,
+  listDisputes,
   listGroupJoinRequests,
   listJoinRequests,
+  openDispute,
   openJoinRequest,
+  respondDispute,
   sendPaymentData,
   uploadJoinProof,
 } from './join-requests';
@@ -139,5 +142,42 @@ describe('services/join-requests conectado al backend (contrato 010)', () => {
         reference: 'REF-1',
       }),
     ).rejects.toMatchObject({ statusCode: 413 });
+  });
+});
+
+describe('services/join-requests conectado al backend (contrato 010): reclamos', () => {
+  beforeEach(() => {
+    mockedRequest.mockReset();
+    mockedRequest.mockResolvedValue({} as never);
+  });
+
+  it('RF-010-21: openDispute envía descripción e imagen opcional con multipart a POST …/disputes', async () => {
+    const evidence = image('image/png', 'captura.png');
+    await openDispute(REQUEST_ID, { description: 'Pagué y nada', evidence });
+    const { path, options } = lastCall();
+    expect(path).toBe(`/api/join-requests/${REQUEST_ID}/disputes`);
+    expect(options.method).toBe('POST');
+    const form = formOf(options.body);
+    expect(form.get('description')).toBe('Pagué y nada');
+    expect(form.get('evidence')).toBeInstanceOf(File);
+  });
+
+  it('RF-010-21: openDispute sin imagen no adjunta el campo evidence', async () => {
+    await openDispute(REQUEST_ID, { description: 'Pagué y nada' });
+    expect(formOf(lastCall().options.body).has('evidence')).toBe(false);
+  });
+
+  it('RF-010-22: respondDispute envía el texto a POST …/disputes/:disputeId/response', async () => {
+    const disputeId = '6b1d3f0e-0000-4000-8000-0000000000d1';
+    await respondDispute(REQUEST_ID, disputeId, { text: 'Sí pagué, adjunto captura' });
+    const { path, options } = lastCall();
+    expect(path).toBe(`/api/join-requests/${REQUEST_ID}/disputes/${disputeId}/response`);
+    expect(options.method).toBe('POST');
+    expect(formOf(options.body).get('text')).toBe('Sí pagué, adjunto captura');
+  });
+
+  it('RF-010-21: listDisputes hace GET …/disputes', async () => {
+    await listDisputes(REQUEST_ID);
+    expect(lastCall()).toEqual({ path: `/api/join-requests/${REQUEST_ID}/disputes`, options: {} });
   });
 });

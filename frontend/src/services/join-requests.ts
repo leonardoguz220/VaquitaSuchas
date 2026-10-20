@@ -5,12 +5,10 @@
  * cuenta regresiva con `deadlineAt` y `serverNow`.
  *
  * Conectadas al backend (T018, T023, T027): apertura, listados, detalle, datos de pago, prórroga,
- * comprobante, enlaces firmados y resumen de la barra. Las decisiones del titular (T031), el chat
- * (T035) y los reclamos (T040) siguen con datos simulados de `join-requests.mock.ts` hasta sus
- * tareas.
+ * comprobante, enlaces firmados, resumen de la barra y reclamos (T040). Las decisiones del titular
+ * (T031) y el chat (T035) siguen con datos simulados de `join-requests.mock.ts` hasta sus tareas.
  */
 import { apiRequest } from './http';
-import * as mock from './join-requests.mock';
 
 export type JoinRequestStatus =
   | 'abierta'
@@ -532,7 +530,10 @@ export interface OpenDisputeRequest {
  * `DISPUTE_WINDOW_CLOSED`, `DISPUTE_ALREADY_OPEN`), `413` y `415`.
  */
 export function openDispute(requestId: string, input: OpenDisputeRequest): Promise<Dispute> {
-  return mock.openDispute(requestId, input);
+  const form = new FormData();
+  form.append('description', input.description);
+  if (input.evidence) form.append('evidence', input.evidence);
+  return apiRequest<Dispute>(requestPath(requestId, '/disputes'), { method: 'POST', body: form });
 }
 
 export interface RespondDisputeRequest {
@@ -550,10 +551,19 @@ export function respondDispute(
   disputeId: string,
   input: RespondDisputeRequest,
 ): Promise<Dispute> {
-  return mock.respondDispute(requestId, disputeId, input);
+  const form = new FormData();
+  form.append('text', input.text);
+  if (input.evidence) form.append('evidence', input.evidence);
+  return apiRequest<Dispute>(
+    requestPath(requestId, `/disputes/${encodeURIComponent(disputeId)}/response`),
+    {
+      method: 'POST',
+      body: form,
+    },
+  );
 }
 
 /** `GET /join-requests/:id/disputes`: los reclamos de la solicitud, con su resolución. */
 export function listDisputes(requestId: string): Promise<{ items: Dispute[] }> {
-  return mock.listDisputes(requestId);
+  return apiRequest<{ items: Dispute[] }>(requestPath(requestId, '/disputes'));
 }
