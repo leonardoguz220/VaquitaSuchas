@@ -11,7 +11,7 @@ import { AdminActionDialog } from './admin-action-dialog';
 import { AdminStatusBadge } from './admin-status-badge';
 import { ROLE_LABEL } from './admin-labels';
 
-type DialogKind = 'suspend' | 'reactivate' | 'ban' | 'promote' | 'demote';
+type DialogKind = 'suspend' | 'reactivate' | 'ban' | 'unban' | 'promote' | 'demote';
 
 interface DialogConfig {
   title: string;
@@ -53,6 +53,16 @@ function dialogFor(kind: DialogKind, user: AdminUserDetail): DialogConfig {
         reasonRequired: true,
         notice: 'La cuenta quedó baneada.',
       };
+    case 'unban':
+      return {
+        title: `¿Revertir el baneo de ${user.fullName}?`,
+        description:
+          'La cuenta vuelve a estar activa y se liberan su correo, celular, cédula y Telegram. Los grupos que el baneo congeló se descongelan. No se restituyen las pertenencias ni los cobros.',
+        confirmLabel: 'Revertir baneo',
+        danger: true,
+        reasonRequired: true,
+        notice: 'El baneo fue revertido.',
+      };
     case 'promote':
       return {
         title: `¿Promover a ${user.fullName} a administrador?`,
@@ -74,10 +84,12 @@ function dialogFor(kind: DialogKind, user: AdminUserDetail): DialogConfig {
   }
 }
 
-function actionFor(kind: DialogKind, reason: string): AdminUserAction {
+function actionFor(kind: DialogKind, reason: string, user: AdminUserDetail): AdminUserAction {
   switch (kind) {
     case 'suspend':
       return { type: 'suspend', reason };
+    case 'unban':
+      return { type: 'unban', banId: user.ban?.id ?? '', reason };
     case 'reactivate':
       return { type: 'reactivate', reason: reason || undefined };
     case 'ban':
@@ -127,7 +139,7 @@ export function AdminUserView({ userId }: { userId: string }) {
 
   async function confirm(reason: string): Promise<ApiSubmitResult<unknown> | null> {
     if (!dialog) return null;
-    const outcome = await ficha.act(actionFor(dialog, reason));
+    const outcome = await ficha.act(actionFor(dialog, reason, user));
     if (outcome?.ok) {
       setNotice(dialogFor(dialog, outcome.data).notice);
       setDialog(null);
@@ -164,7 +176,7 @@ export function AdminUserView({ userId }: { userId: string }) {
         <dl className="grid gap-4 sm:grid-cols-2">
           <Info label="Correo" value={user.email} />
           <Info label="CI" value={user.ciMasked} />
-          <Info label="Celular" value={user.phone} />
+          <Info label="Celular" value={user.phone ?? '—'} />
           <Info
             label="Último ingreso"
             value={user.lastLoginAt ? formatDateTimeLaPaz(user.lastLoginAt) : 'Nunca'}
@@ -207,6 +219,11 @@ export function AdminUserView({ userId }: { userId: string }) {
         {user.status !== 'baneado' && (
           <Button variant="danger" onClick={() => setDialog('ban')}>
             Banear
+          </Button>
+        )}
+        {user.status === 'baneado' && user.ban && (
+          <Button variant="secondary" onClick={() => setDialog('unban')}>
+            Revertir baneo
           </Button>
         )}
         {user.role === 'usuario' ? (

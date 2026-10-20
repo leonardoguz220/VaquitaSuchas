@@ -127,7 +127,7 @@ function UserCard({ user }: { user: AdminUserRow }) {
         </div>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
           <dt className="text-muted">Celular</dt>
-          <dd className="text-ink">{user.phone}</dd>
+          <dd className="text-ink">{user.phone ?? '—'}</dd>
           <dt className="text-muted">Rol</dt>
           <dd className="text-ink">{ROLE_LABEL[user.role]}</dd>
           <dt className="text-muted">Alta</dt>
