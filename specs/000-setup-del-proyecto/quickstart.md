@@ -21,6 +21,8 @@ npm run db:migrate && npm run db:seed
 npm run dev                                # backend en :3001 y frontend en :3000
 ```
 
+**Orden del seed (spec 009):** el seed `database/seeds/0090_admin_dev.sql` (habilitación de `titular@dev.vaquita` y `miembro1@dev.vaquita`, reclamos y auditoría de ejemplo) toma al administrador activo más antiguo. El administrador debe existir **antes** de `npm run db:seed`: se crea con `npm run build -w backend && SEED_ADMIN_EMAIL=… SEED_ADMIN_NAME=… SEED_ADMIN_PASSWORD=… npm run seed:admin -w backend`. Sin administrador esa parte del seed no hace nada (no falla) y el titular de desarrollo queda sin habilitar; si se creó después, basta repetir `npm run db:seed` (es idempotente). El baneo revertido de ejemplo solo se siembra con dos administradores.
+
 Si el puerto 5432 ya lo usa otro PostgreSQL, levantar la base con otro puerto del host (`DB_PORT=5435 npm run db:up`) y usar ese mismo puerto en `DATABASE_URL`.
 
 Para usar `/speckit-implement` sobre esta spec, definir antes la feature activa: `export SPECIFY_FEATURE_DIRECTORY=specs/000-setup-del-proyecto`.

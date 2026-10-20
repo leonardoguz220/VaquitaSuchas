@@ -45,6 +45,13 @@ ReputationDetail extends Rating {  // solo la propia persona (RF-007-04)
 ### `POST /charges/:chargeId/reputation-exclusion` (RF-007-14; CA-007-13) — P2
 - **Auth:** titular del grupo. **Request:** `{ reason }` (10–300). **Response 200.** Queda registrado quién y cuándo. La calificación del dueño se recalcula en la misma operación.
 
+## Aclaraciones de la implementación (verificadas en `backend/src/modules/reputation`)
+
+- El nivel sin calificación (menos de 3 cobros considerados) es **`Nuevo`**, con `stars: null`.
+- `recent` de `GET /users/me/reputation` lista solo cobros de ciclo `pagado` o `atrasado` (los últimos); **omite los cobros de origen `ingreso`**.
+- Las insignias se otorgan en cada recálculo y en la conciliación diaria (`reputation.reconcile`). «Grupo completo» queda fuera del catálogo; «Sin atrasos 6 meses» exige al menos 3 cobros en los últimos 6 meses y ninguno tardío.
+- Respuestas: `POST /charges/:chargeId/reputation-report` → `201 { chargeId }`; `POST /charges/:chargeId/reputation-exclusion` → `200 { chargeId, excluded: true }`.
+
 ## Servicios internos (no son endpoints)
 
 | Servicio / puerto | Lo usa | Qué hace |

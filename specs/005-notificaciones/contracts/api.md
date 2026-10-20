@@ -58,6 +58,12 @@ NotificationPreferences {
 ### `GET /charges/:chargeId/reminder-share` (RF-005-16; CA-005-18)
 - **Auth:** titular del grupo del cobro. **Response 200:** `{ phone: "+59171234567", text }` con el monto, el período y el vencimiento; el cliente arma `https://wa.me/<número sin +>?text=…`. Solo para cobros `pendiente` o `atrasado` de miembros activos. **Errores:** `422 BUSINESS_RULE` (`CHARGE_NOT_COLLECTABLE`).
 
+## Aclaraciones de la implementación (verificadas en `backend/src/modules/notifications`)
+
+- `PUT /notification-preferences` acepta **cuerpos parciales**: `email` y `telegram` son opcionales y dentro de cada uno solo se cambian los interruptores enviados.
+- La ruta de invitaciones es `POST /groups/:id/invitations` (el parámetro se llama `:id`, no `:groupId`) y el enlace del correo se arma con `FRONTEND_ORIGIN` (no con `{APP_URL}`).
+- **Decisión pendiente del equipo:** el catálogo de 29 tipos de aviso no tiene tipo para el evento `JoinRequestCancelled` de la spec 010, así que ese evento hoy no genera aviso. No se inventa un tipo: queda por decidir si se agrega uno (cambio de catálogo por PR avisando a las otras capas) o si la cancelación no avisa.
+
 ## Tareas programadas
 
 | Tarea | Frecuencia | Efecto | Entrega |

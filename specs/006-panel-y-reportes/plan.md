@@ -140,7 +140,7 @@ backend/src/modules/reports/
 | CA-006-16 (`=CMD()` escapado) | Unitario + integración | BE | `csv.spec.ts`; `export.e2e-spec.ts` |
 | CA-006-17 (miembro exporta el grupo → 403) | Integración | BE | `export.e2e-spec.ts` |
 | CA-006-18 (panel ajeno → 404) | Integración | BE | `dashboard.access.e2e-spec.ts` |
-| CA-006-19 (< 1 s p95 con 20 suscripciones y 12 meses) | Rendimiento | BE | `dashboard.perf-spec.ts` (siembra 20 × 12) |
+| CA-006-19 (< 1 s p95 con 20 suscripciones y 12 meses) | Rendimiento | BE | `dashboard.perf.e2e-spec.ts` (siembra 20 × 12) |
 | CA-006-20 (pagado se refleja en menos de 1 min) | Integración | BE | `dashboard.freshness.e2e-spec.ts` |
 | CA-006-21 (ahorro negativo: signo y nota) | Unitario + E2E | BE, FE | `savings.spec.ts`; `frontend/e2e/panel-savings-negative.spec.ts` |
 | CA-006-22 (Σ desglose = total) | Integración + integridad | BE, BD | `dashboard.spend.e2e-spec.ts`; `reports.integrity.test.ts` |

@@ -107,6 +107,14 @@ HistoryItem {                             // RF-006-13
 ### `GET /groups/:groupId/history/export.csv?period=&userId=&status=` (RF-006-14; CA-006-17)
 - **Auth:** titular (`403` miembro: solo puede exportar el suyo; `404` ajeno). Mismas reglas y columnas más `miembro` (nombre, escapado) entre `grupo` y `monto_bs`. Nunca incluye comprobantes, referencias ni celulares.
 
+## Aclaraciones de la implementación (verificadas en `backend/src/modules/reports`)
+
+- **Paginación** (`/me/dashboard/lists` y `/me/history`): `limit` por omisión 20 y máximo 50; un valor mayor responde `400 VALIDATION_ERROR`. Un `cursor` ilegible responde `400 VALIDATION_ERROR` con `fields.cursor = ["INVALID_CURSOR"]`.
+- **`isEmpty`** es `true` solo si el mes no tiene líneas **y** no hay deudas de otros períodos (cobros `pendiente`/`atrasado` ni `en_revision` fuera del mes consultado).
+- `GET /me/calendar/upcoming?days=`: `days` fuera de 1–90 responde `400 VALIDATION_ERROR`.
+- **Nombres de los CSV:** `vaquita-historial-AAAA-MM-DD.csv` (propio) y `vaquita-historial-grupo-AAAA-MM-DD.csv` (de grupo); la fecha es la de generación en La Paz.
+- La prueba de rendimiento de RNF-006-01 es `backend/test/dashboard.perf.e2e-spec.ts`.
+
 ## Servicios internos
 
 | Servicio | Lo usan | Qué hace |

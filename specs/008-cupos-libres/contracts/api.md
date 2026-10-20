@@ -77,6 +77,14 @@ GroupListingSummary {               // lo ve un miembro (RF: "ver que el grupo t
 - **Auth:** sesión. **Request:** `{ reason: "spam" | "datos_falsos" | "conducta_indebida" | "otro", comment?: ≤300 }`. **Response 204.** Al tercer reporte de usuarios distintos la publicación pasa a `oculta`, sale de la búsqueda y se avisa al titular (spec 005).
 - **Errores:** `404 LISTING_NOT_FOUND`, `409 ALREADY_REPORTED`, `422 BUSINESS_RULE` (`CANNOT_REPORT_OWN_LISTING`), `429 RATE_LIMITED` (10 reportes por día por usuario), `403 ACCOUNT_RESTRICTED`.
 
+## Aclaraciones de la implementación (verificadas en `backend/src/modules/listings`)
+
+- `slotsOffered` se valida de 1 a 19 en el DTO (más de 19 → `400 VALIDATION_ERROR`); si cabe en el DTO pero supera los cupos libres responde `422 NO_FREE_SLOTS`.
+- **Prioridad de `cannotRequestReason`** (se informa solo la primera regla incumplida): `CUENTA_RESTRINGIDA`, `VENTANA_CERRADA`, `SIN_CUPOS`, `COBROS_ABIERTOS`, `SOLICITUD_ACTIVA`, `DEMASIADAS_SOLICITUDES`.
+- `GET /listings/:id` responde `200` con `cannotRequestReason = SIN_CUPOS` si no queda cupo, y `404` si el titular está suspendido o baneado, el grupo está congelado o el grupo no recibe miembros.
+- `POST /groups/:groupId/listing/renew` sobre una publicación `cerrada` o `retirada` responde `404`; `DELETE /groups/:groupId/listing` retira también una publicación `expirada`.
+- `GET /groups/:groupId/listing` sin publicación vigente responde `200` con el JSON `null`.
+
 ## Moderación (spec 009, P2)
 
 `GET /admin/listings/reports` y `POST /admin/listings/:id/restore | delete | delete-and-suspend` son de la spec 009; usan `ListingsService.listReported / adminRestore / adminRemove` de este módulo (ver Servicios internos). Restaurar fija `moderation_cleared_at` y deja la publicación `activa`; eliminar la pasa a `retirada` con `end_reason = 'moderacion'`.

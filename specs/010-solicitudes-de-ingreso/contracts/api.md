@@ -164,8 +164,14 @@ La cola de reclamos, la apertura de la evidencia y la resolución (`estafa_confi
 
 | Tarea | Frecuencia | Efecto |
 |---|---|---|
-| `joinRequests.sweep` | cada tick (5 min) | Persiste los vencimientos: `abierta` (24 h o fin de ventana), `esperando_pago` (plazo), `pago_informado` (60 min, motivo `titular_sin_respuesta`); envía el recordatorio de 30 min (CA-010-14). |
-| `joinRequests.retention` | diaria | Elimina chat, imágenes y comprobantes 2 meses después del estado final o de la resolución del reclamo; conserva la línea de tiempo y la decisión (CA-010-44). |
+| `join_requests.sweep` | cada tick (5 min) | Persiste los vencimientos: `abierta` (24 h o fin de ventana), `esperando_pago` (plazo), `pago_informado` (60 min, motivo `titular_sin_respuesta`); envía el recordatorio de 30 min (CA-010-14). |
+| `join_requests.retention` | diaria | Elimina chat, imágenes y comprobantes 2 meses después del estado final o de la resolución del reclamo; conserva la línea de tiempo y la decisión (CA-010-44). |
+
+Aclaraciones de la implementación (verificadas en `backend/src/modules/join-requests`):
+
+- Las tareas se registran en el `JobRegistry` con esos nombres exactos, en minúsculas y con guion bajo.
+- Al expirar una solicitud en `pago_informado` (`titular_sin_respuesta`) la referencia de pago **no** se libera; solo se libera al rechazar o cancelar.
+- `finalReason = solicitante_suspendido` cubre la suspensión **y** el baneo del solicitante (ambos cancelan sus solicitudes activas).
 
 ## Eventos internos (`TxEventBus`)
 

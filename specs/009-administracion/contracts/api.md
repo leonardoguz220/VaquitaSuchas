@@ -97,4 +97,17 @@
 | `SAME_ADMIN` | 422 | RF-009-23. |
 | `DISPUTE_NOT_OPEN` | 409 | Resolver un reclamo ya resuelto. |
 
+## Aclaraciones de la implementación (verificadas en `backend/src/modules/admin`, `subscriptions` y `join-requests`)
+
+- **`AuditEntry`:** `{ id, adminId, action, targetType, targetId, reason, metadata, occurredAt }`. `GET /admin/audit-log` responde `400 VALIDATION_ERROR` con `fields.cursor = INVALID_CURSOR` (cursor ilegible) o `fields.from = FROM_AFTER_TO` (`from` posterior a `to`).
+- **`AdminUserRow`:** `{ id, fullName, email, role, status, createdAt, lastLoginAt }`. La ficha (`AdminUserView`) añade `phone`, `ciMasked`, `groupsAsHost`, `groupsAsMember`, `reputation { level, stars, consideredCharges }`, `reportsReceived` y los subobjetos `ban { id, reason, source, disputeId, bannedBy, bannedAt }`, `suspension { reason, suspendedBy, suspendedAt }` y `hostEnablement { reason, enabledBy, enabledAt }` (cada uno `null` si no aplica). Sin la spec 007, `consideredCharges` y `reportsReceived` valen `0`.
+- **Errores de usuarios:** revertir un baneo ya revertido responde `409 CONFLICT` con `details.rule = RF-009-23`; asignar el rol que ya tiene responde `409 INVALID_TRANSITION`; suspender, banear o reactivar a un administrador o a uno mismo responde `422 ADMIN_TARGET_FORBIDDEN`.
+- **Cola de reclamos:** `AdminDisputeRow = { id, requestId, kind, status, openedBy { userId, fullName }, accused { userId, fullName }, openedAt, respondedAt, hasResponse, resolvedAt }`. `limit` por omisión 20 y máximo 100; `cursor` ilegible → `400 INVALID_CURSOR`.
+- **Habilitaciones:** habilitar a quien ya está habilitado o revocar sin habilitación vigente responde `409 CONFLICT` (`details.rule = RF-009-21`).
+- **`POST /admin/groups/:groupId/transfer-ownership`:** `Response 200 { groupId, fromUserId, toUserId }`. Si el titular actual no está `suspendido` responde `422 BUSINESS_RULE` con `details.rule = RF-009-24`. Vive en el módulo `subscriptions`.
+- **Catálogo admin:** `:id` es un UUID (uno mal formado responde `404`); el `slug` es inmutable: el `PATCH` no lo cambia.
+- **Importación:** `POST /admin/catalog/import/preview` recibe JSON `{ format: "csv" | "json", content: string }` (no un archivo) y responde `{ token | null, changes, errors }`; `token` es `null` si hay errores. El token vive en memoria 15 minutos, es de un solo uso y solo lo canjea quien hizo la vista previa; uno inválido, vencido o ya usado responde `422 IMPORT_TOKEN_INVALID`. Tope: 500 filas y 500.000 caracteres.
+- **`GET /admin/stats`:** `punctualityRate` es `number | null`; `charges.managedCents` y `topServices: [{ name, groups }]` son agregados sin personas.
+- **Moderación de publicaciones:** `restore` solo desde `oculta`; `delete` y `delete-and-suspend` aceptan `activa` u `oculta` y dejan la publicación `cerrada` con `end_reason = 'moderacion'`; cualquier otro estado responde `409 INVALID_TRANSITION`. Respuesta `{ listingId, decision, status }`.
+
 > **Contrato congelado** al aprobarse el plan. Los cambios se hacen por PR sobre este archivo avisando a las otras dos capas.
