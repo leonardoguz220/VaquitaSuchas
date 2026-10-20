@@ -71,7 +71,7 @@ describe('proxy /api/[...path] (RF-000-15, contrato C)', () => {
     expect(lastCall().url).toBe('http://backend.test:3001/v/health');
   });
 
-  it('RF-000-15: reenvía el cuerpo en streaming con duplex half', async () => {
+  it('RF-000-15: reenvía el cuerpo completo (sin stream) para no romper los 401 de un POST', async () => {
     fetchMock.mockResolvedValue(json({ ok: true }, { status: 201 }));
     const res = await POST(
       req('/api/groups', {
@@ -83,8 +83,8 @@ describe('proxy /api/[...path] (RF-000-15, contrato C)', () => {
     expect(res.status).toBe(201);
     const { init } = lastCall();
     expect(init.method).toBe('POST');
-    expect(init.body).toBeInstanceOf(ReadableStream);
-    expect((init as RequestInit & { duplex?: string }).duplex).toBe('half');
+    expect(init.body).toBeInstanceOf(ArrayBuffer);
+    expect(init).not.toHaveProperty('duplex');
     expect(await new Response(init.body).text()).toBe('{"name":"Netflix"}');
   });
 
@@ -221,6 +221,27 @@ describe('proxy /api/[...path] (RF-000-15, contrato C)', () => {
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual(error);
     expect(setCookies(res)).toEqual([expect.stringMatching(/^vq_session=; Path=\/; Max-Age=0;/)]);
+  });
+
+  it('RF-000-15: un POST de login con 401 del backend devuelve el 401 con su cuerpo, no un 503', async () => {
+    const error = {
+      statusCode: 401,
+      code: 'INVALID_CREDENTIALS',
+      message: 'Correo o contraseña incorrectos.',
+    };
+    fetchMock.mockResolvedValue(json(error, { status: 401 }));
+    const res = await POST(
+      req('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'miembro3@dev.vaquita', password: 'incorrecta' }),
+      }),
+    );
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual(error);
+    // El cuerpo viaja completo (no como stream): así undici no reintenta el POST tras el 401.
+    expect(lastCall().init.body).toBeInstanceOf(ArrayBuffer);
+    expect(lastCall().init).not.toHaveProperty('duplex');
   });
 
   it('RF-000-15: logout borra ambas cookies cuando el backend responde 204', async () => {

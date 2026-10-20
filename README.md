@@ -8,7 +8,62 @@ El proyecto se desarrolla con Spec Driven Development: la especificación se esc
 
 ## Estado
 
-Las once specs y sus planes están aprobados por las tres capas (2026-10-18). La implementación empieza por la spec 000 (`specs/000-setup-del-proyecto/tasks.md`). Ya existe la raíz del monorepo (`package.json` con npm workspaces, `.nvmrc`, formato común) y el backend base se está incorporando; la base de datos (Docker Compose, migraciones y seed) y el frontend se están incorporando también. Hasta que se fusionen esas tareas (T002 a T005), las carpetas que aún no tienen su proyecto contienen solo su guía de capa.
+Las once specs (000 a 010) están implementadas y desplegadas en staging: la base de datos y el backend en Render, y el frontend en Vercel (enlaces en [Despliegue](#despliegue-staging)). El avance real de cada spec se ve en su `tasks.md` (tareas marcadas `[x]`) y el orden de construcción en [`specs/00-roadmap.md`](specs/00-roadmap.md).
+
+## Módulos y cómo funcionan
+
+La app tiene diez módulos de negocio más el setup. Cada uno tiene su spec (qué y por qué), su plan (cómo) y su contrato de API. Las reglas de negocio viven solo en el backend: el frontend muestra lo que el backend calcula y la base de datos refuerza la integridad con restricciones.
+
+| # | Módulo | Qué hace y cómo funciona | Spec |
+| - | ------ | ------------------------ | ---- |
+| 1 | Usuarios y autenticación | Registro, ingreso y recuperación de contraseña con JWT en cookie httpOnly. Hay roles (usuario y administrador) y los datos sensibles nunca salen en logs. | [003](specs/003-usuarios-y-autenticacion/spec.md) |
+| 2 | Catálogo de servicios | Plataformas (Netflix, Spotify, Disney+...) y sus planes con precio en USD. Es la base para crear un grupo; el administrador lo mantiene. | [004](specs/004-catalogo-de-servicios/spec.md) |
+| 3 y 4 | Suscripciones compartidas, división y moneda | Un titular crea un grupo a partir de un plan, define el día de cobro y el tipo de cambio USD a Bs. El backend divide el precio en cuotas enteras en centavos; los centavos sobrantes van al titular y la suma de cuotas es igual al total. El grupo tiene un código de invitación. | [001](specs/001-suscripciones-compartidas/spec.md) |
+| 5 | Cobros y pagos | Cada mes se generan los cobros de cada miembro con copia del precio y del tipo de cambio. El miembro sube su comprobante, el titular lo confirma o lo rechaza. Estados: `pendiente`, `en_revision`, `pagado`, `atrasado`, `cancelado`. Queda un historial exportable. | [002](specs/002-cobros-y-pagos/spec.md) |
+| 3 (ingreso) | Solicitudes de ingreso y chat | Quien quiere entrar abre una solicitud, conversa con el titular en un chat, paga y solo es miembro cuando el titular confirma el pago. Si algo sale mal puede abrir un reclamo. | [010](specs/010-solicitudes-de-ingreso/spec.md) |
+| 6 | Notificaciones | Avisos en la app, por correo (Resend) y por Telegram opcional: recordatorios de cobro, mora, retiros por mora e invitaciones. Los dispara una tarea programada (`/internal/jobs/tick`). | [005](specs/005-notificaciones/spec.md) |
+| 7 | Panel y reportes | Gasto mensual, ahorro frente al precio individual, calendario de cobros y deudas pendientes. | [006](specs/006-panel-y-reportes/spec.md) |
+| 8 | Reputación | Calificación por puntualidad, insignias y ranking. La calificación habilita a un usuario como titular. | [007](specs/007-reputacion/spec.md) |
+| 9 | Cupos libres | Un titular publica cupos disponibles y otros usuarios los buscan y piden entrar. | [008](specs/008-cupos-libres/spec.md) |
+| 10 | Administración | Usuarios, baneos, reclamos en disputa, catálogo, estadísticas y auditoría de acciones. | [009](specs/009-administracion/spec.md) |
+
+Flujo de punta a punta: el titular crea el grupo, una persona abre una solicitud y paga, el titular confirma y esa persona entra con su cobro de ingreso; cada mes el sistema genera los cobros, avisa a los miembros, ellos suben su comprobante y el titular lo confirma; el panel y la reputación se alimentan de ese historial. El detalle está en [`context/funcionamiento-del-sistema.md`](context/funcionamiento-del-sistema.md).
+
+### Arquitectura
+
+- **Frontend (Next.js):** pantallas por rol y un proxy `/api` que reenvía al backend con la cookie httpOnly.
+- **Backend (NestJS):** un módulo por área en `backend/src/modules/` con capas `controllers`, `services`, `domain` (funciones puras con tests), `repositories` y `ports`. Documentación Swagger en `/api/docs`.
+- **Base de datos (PostgreSQL):** migraciones SQL numeradas en `database/migrations`, seed del catálogo y pruebas de integridad.
+- **Servicios externos:** Supabase Storage (comprobantes con URL firmada), Resend (correo) y Telegram (opcional).
+
+## Integración y despliegue continuo
+
+El repositorio es un monorepo y cada capa tiene su propio workflow, además del CI general:
+
+| Workflow | Cuándo corre | Qué hace |
+| -------- | ------------ | -------- |
+| [`backend.yml`](.github/workflows/backend.yml) | PR o push a `main` que toca `backend/` o `database/` | Lint, build y pruebas del backend contra PostgreSQL 16 |
+| [`frontend.yml`](.github/workflows/frontend.yml) | PR o push a `main` que toca `frontend/` | Lint, build y pruebas del frontend |
+| [`ci.yml`](.github/workflows/ci.yml) | Todo PR y push a `main` | lint, build, pruebas de las tres capas, db-check y gitleaks (revisión de secretos) |
+| [`e2e.yml`](.github/workflows/e2e.yml) | PR | Flujo completo en el navegador con Playwright |
+| [`branch-flow.yml`](.github/workflows/branch-flow.yml) y [`auto-merge.yml`](.github/workflows/auto-merge.yml) | PR | Valida el flujo `dev` a `qa` a `main` y fusiona los PR de `dev` cuando pasan |
+| [`migrate-staging.yml`](.github/workflows/migrate-staging.yml) | Manual, solo desde `main` | Aplica las migraciones en la base de staging |
+| [`jobs-tick.yml`](.github/workflows/jobs-tick.yml) | Cada 10 minutos | Respaldo del disparador de tareas programadas |
+
+### Despliegue (staging)
+
+| Parte | Dónde | URL | Cómo comprobarlo |
+| ----- | ----- | --- | ---------------- |
+| Frontend | Vercel | https://vaquita-suchas.vercel.app | [`/estado`](https://vaquita-suchas.vercel.app/estado) muestra frontend, backend y base en OK |
+| Backend | Render, servicio web gratuito (`render.yaml`) | https://vaquita-staging-api.onrender.com | [`/health`](https://vaquita-staging-api.onrender.com/health) responde `status: ok` con la base `up` |
+| Base de datos | Render, PostgreSQL 16 gratuito (`render.yaml`) | Solo accesible desde el backend y desde `migrate-staging.yml` | Las migraciones y el catálogo se aplican con el workflow «Migrate staging» |
+
+El frontend llama al backend a través de su proxy `/api` (variable `BACKEND_URL` en Vercel), así que [`/api/health`](https://vaquita-suchas.vercel.app/api/health) recorre las tres capas. Las migraciones nunca corren al arrancar el backend. El servicio gratuito de Render se duerme tras 15 minutos sin tráfico (la primera petición tarda cerca de un minuto) y la base gratuita caduca a los 30 días de creada (ver `specs/000-setup-del-proyecto/research.md`, R1).
+
+## Hooks y subagentes de Claude Code
+
+- **Hooks** (`.claude/hooks/`): bloquean secretos, push a ramas protegidas o forzado, `--no-verify`, edición de migraciones ya en `main` y push con lint o tests rotos; además formatean tras editar.
+- **Subagentes** (`.claude/agents/`): `db-engineer`, `backend-engineer` y `frontend-engineer` implementan tareas de su capa; `contract-checker`, `ca-traceability-checker`, `code-reviewer`, `security-auditor` y `test-engineer` revisan. Ver [`ia/herramientas-y-skills.md`](ia/herramientas-y-skills.md).
 
 ## Stack
 
@@ -52,8 +107,6 @@ npm run dev                                # backend en :3001 y frontend en :300
 | Mailpit (correos de desarrollo) | http://localhost:8025                                                                  |
 
 Si el puerto 5432 ya lo usa otro PostgreSQL, levanta la base con otro puerto del host (`DB_PORT=5435 npm run db:up`) y usa ese mismo puerto en `DATABASE_URL`.
-
-> Algunos comandos y páginas estarán disponibles conforme se fusionen las tareas de la spec 000: la base y Docker Compose (T002 y siguientes de base de datos), el backend (T004) y el frontend (T005). Hasta entonces, `npm run db:up` y `npm run dev` pueden no encontrar su destino.
 
 ## Variables de entorno
 
@@ -104,7 +157,7 @@ VaquitaSuchas/
 ├── CONTRIBUTING.md       roles por capa, ramas y PRs
 ├── .claude/              skills, agentes y listas de referencia para Claude Code
 ├── .specify/             Spec Kit y constitución
-├── .github/              plantilla de PR
+├── .github/              workflows de CI/CD y plantilla de PR
 ├── context/              proyecto, dominio, stack, arquitectura y decisiones
 ├── ia/                   herramientas, skills y MCPs, licencias de terceros
 ├── specs/                una carpeta por feature con spec, plan y tareas
