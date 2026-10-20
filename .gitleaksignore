@@ -17,3 +17,5 @@ fd0d3d9dd0c39e707a87d57af7fb02b7db5871d7:backend/test/auth.log-privacy.e2e-spec.
 3fa0713584f2a9c42e1983f0f080202e81f0256b:backend/src/modules/auth/domain/validate-registration.spec.ts:generic-api-key:7
 3fa0713584f2a9c42e1983f0f080202e81f0256b:backend/src/modules/auth/domain/validate-registration.spec.ts:generic-api-key:8
 f9ec9c1256f4dd6251f913a00e2a3cba8d39d9d5:frontend/src/app/recuperar/[token]/page.test.tsx:generic-api-key:11
+# Contraseña de ejemplo ('cambia-esto-123') en la guía de la spec 003, no es un secreto real.
+00a0153ee88b7bf9f01e8805bc565e17dcef06f2:specs/003-usuarios-y-autenticacion/quickstart.md:generic-api-key:37
