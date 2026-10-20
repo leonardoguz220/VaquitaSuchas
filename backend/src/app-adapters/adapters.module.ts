@@ -2,6 +2,11 @@ import { Global, Module } from '@nestjs/common';
 import { HOST_ELIGIBILITY_PORT } from '../modules/subscriptions/ports/host-eligibility.port.js';
 import { OPEN_CHARGES_PORT } from '../modules/subscriptions/ports/open-charges.port.js';
 import { OWNERSHIP_BLOCKERS_PORT } from '../modules/subscriptions/ports/ownership-blockers.port.js';
+import { USER_GROUP_COUNTS_PORT } from '../modules/admin/ports/user-group-counts.port.js';
+import { BanService } from '../modules/admin/services/ban.service.js';
+import { GroupsRepository } from '../modules/subscriptions/repositories/groups.repository.js';
+import { MembersRepository } from '../modules/subscriptions/repositories/members.repository.js';
+import { UserGroupCountsAdapter } from './user-group-counts.adapter.js';
 import { AdminModule } from '../modules/admin/admin.module.js';
 import { AuditService } from '../modules/admin/services/audit.service.js';
 import { AUDIT_PORT } from '../modules/join-requests/ports/audit.port.js';
@@ -11,7 +16,7 @@ import { HostEligibilityAdapter } from './host-eligibility.adapter.js';
 import { RequestsRepository } from '../modules/join-requests/repositories/requests.repository.js';
 import { JoinRequestOwnershipBlockersAdapter } from './ownership-blockers.adapter.js';
 import { OpenChargesAdapter } from './open-charges.adapter.js';
-import { NullBanAdapter, NullReputationAdapter } from './null-join-request-ports.adapter.js';
+import { NullReputationAdapter } from './null-join-request-ports.adapter.js';
 
 // Global para que los módulos que definen un puerto lo inyecten sin importar al que lo implementa.
 @Global()
@@ -22,9 +27,13 @@ import { NullBanAdapter, NullReputationAdapter } from './null-join-request-ports
     OpenChargesAdapter,
     RequestsRepository,
     JoinRequestOwnershipBlockersAdapter,
-    NullBanAdapter,
     NullReputationAdapter,
-    { provide: BAN_PORT, useExisting: NullBanAdapter },
+    GroupsRepository,
+    MembersRepository,
+    UserGroupCountsAdapter,
+    { provide: USER_GROUP_COUNTS_PORT, useExisting: UserGroupCountsAdapter },
+    // Spec 009: el baneo real reemplaza al adaptador nulo (RF-009-19).
+    { provide: BAN_PORT, useExisting: BanService },
     // Spec 009: el registro real reemplaza al adaptador nulo (RF-009-18).
     { provide: AUDIT_PORT, useExisting: AuditService },
     { provide: REPUTATION_QUERY_PORT, useExisting: NullReputationAdapter },
@@ -39,6 +48,7 @@ import { NullBanAdapter, NullReputationAdapter } from './null-join-request-ports
     BAN_PORT,
     AUDIT_PORT,
     REPUTATION_QUERY_PORT,
+    USER_GROUP_COUNTS_PORT,
   ],
 })
 export class AdaptersModule {}

@@ -115,4 +115,15 @@ export class MembersRepository {
     );
     return result.rows.map((row) => row.group_id);
   }
+
+  /** Grupos activos donde la persona es miembro sin ser titular (ficha de administración, spec 009). */
+  async countMemberActive(q: Queryable, userId: string): Promise<number> {
+    const result = await q.query<{ n: number }>(
+      `SELECT count(*)::int AS n
+         FROM group_members m JOIN groups g ON g.id = m.group_id
+        WHERE m.user_id = $1 AND m.left_at IS NULL AND m.role <> 'titular' AND g.status = 'activo'`,
+      [userId],
+    );
+    return result.rows[0]?.n ?? 0;
+  }
 }

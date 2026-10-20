@@ -47,7 +47,7 @@ describe('Auditoría de administración (spec 009)', () => {
         targetType: 'user',
         targetId,
         reason: 'Pagos reportados como falsos',
-        metadata: { before: { status: 'activo' }, after: { status: 'suspendido' } },
+        metadata: { previousStatus: 'activo' },
       });
     });
     const res = await list('?action=usuario_suspender');
@@ -59,7 +59,7 @@ describe('Auditoría de administración (spec 009)', () => {
       targetType: 'user',
       targetId,
       reason: 'Pagos reportados como falsos',
-      metadata: { before: { status: 'activo' }, after: { status: 'suspendido' } },
+      metadata: { previousStatus: 'activo' },
     });
     expect(res.body.nextCursor).toBeNull();
   });
@@ -152,7 +152,7 @@ describe('Auditoría de administración (spec 009)', () => {
           action: 'catalogo_editar',
           targetType: 'catalog_plan',
           targetId,
-          metadata: { n: i },
+          metadata: { serviceId: targetId, n: i },
         });
       }
     });

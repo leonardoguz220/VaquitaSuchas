@@ -2,6 +2,7 @@ import {
   ADMIN_AUDIT_ACTIONS,
   normalizeAction,
   normalizeTargetType,
+  AUDIT_METADATA_KEYS,
   sanitizeMetadata,
 } from './audit-entry.js';
 
@@ -22,24 +23,51 @@ describe('normalizeAction / normalizeTargetType', () => {
   });
 });
 
-describe('sanitizeMetadata', () => {
-  it('RNF-009-03: elimina CI, contraseñas, tokens, chats y comprobantes, a cualquier profundidad', () => {
-    const result = sanitizeMetadata({
-      before: { status: 'activo', ci: 'x', passwordHash: 'x' },
-      after: { status: 'suspendido', nested: [{ accessToken: 'x', ok: 1 }] },
-      chatMessage: 'x',
-      receiptUrl: 'x',
-      email: 'a@b.c',
-      groupId: 'g1',
-    });
-    expect(result).toEqual({
-      before: { status: 'activo' },
-      after: { status: 'suspendido', nested: [{ ok: 1 }] },
-      groupId: 'g1',
-    });
+describe('sanitizeMetadata (lista blanca por acción)', () => {
+  const NOISE: Record<string, unknown> = {
+    password: 'x',
+    passwordHash: 'x',
+    ci: '123',
+    email: 'a@b.c',
+    phone: '+591',
+    token: 't',
+    chatMessage: 'hola',
+    receiptUrl: 'u',
+    notes: 'texto libre',
+    reason: 'otro motivo',
+    unknownKey: 1,
+  };
+
+  it('RNF-009-03: cada acción del CHECK tiene su tabla de claves', () => {
+    for (const action of ADMIN_AUDIT_ACTIONS) {
+      expect(AUDIT_METADATA_KEYS[action]).toBeDefined();
+    }
+    expect(Object.keys(AUDIT_METADATA_KEYS).sort()).toEqual([...ADMIN_AUDIT_ACTIONS].sort());
+  });
+
+  it('RNF-009-03: por cada acción solo salen las claves declaradas, nunca las sensibles ni las no declaradas', () => {
+    for (const action of ADMIN_AUDIT_ACTIONS) {
+      const declared = Object.fromEntries(AUDIT_METADATA_KEYS[action].map((k) => [k, 'v1']));
+      const result = sanitizeMetadata(action, { ...NOISE, ...declared });
+      expect(Object.keys(result).sort()).toEqual([...AUDIT_METADATA_KEYS[action]].sort());
+      for (const key of Object.keys(NOISE)) expect(result).not.toHaveProperty(key);
+    }
+  });
+
+  it('RNF-009-03: la segunda red quita claves sensibles anidadas en las permitidas', () => {
+    expect(
+      sanitizeMetadata('usuario_banear', {
+        banId: 'b1',
+        effects: { frozenGroups: 1, removedMemberships: 2, email: 'a@b.c' },
+      }),
+    ).toEqual({ banId: 'b1', effects: { frozenGroups: 1, removedMemberships: 2 } });
+  });
+
+  it('RNF-009-03: una acción sin tabla falla en ejecución en lugar de guardar sin filtro', () => {
+    expect(() => sanitizeMetadata('inventada' as never, { a: 1 })).toThrow(/no declara/);
   });
 
   it('metadata ausente produce un objeto vacío', () => {
-    expect(sanitizeMetadata(undefined)).toEqual({});
+    expect(sanitizeMetadata('usuario_suspender', undefined)).toEqual({});
   });
 });

@@ -1,5 +1,6 @@
 import { plainToInstance, Transform } from 'class-transformer';
 import {
+  IsEmail,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -125,6 +126,12 @@ export class EnvVars {
   @ValidateIf((env: EnvVars) => env.FRONTEND_ORIGIN !== undefined)
   @Matches(FRONTEND_ORIGIN_PATTERN, { message: FRONTEND_ORIGIN_MESSAGE })
   FRONTEND_ORIGIN?: string;
+
+  // --- Opcional: contacto de apelaciones que lleva el correo de suspensión (spec 009, RF-009-11) ---
+  @Transform(blankToUndefined)
+  @ValidateIf((env: EnvVars) => env.APPEAL_EMAIL !== undefined)
+  @IsEmail({}, { message: 'debe ser un correo válido' })
+  APPEAL_EMAIL?: string;
 
   // --- Opcionales del correo (RF-000-12): Mailpit en dev y proveedor en prod ---
   @Transform(portToNumber)
