@@ -156,6 +156,28 @@ describe('ChargeReputationActions (RF-007-14; CA-007-13)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it.each([
+    ['REPORT_ALREADY_SENT', 'Ya enviaste un reporte para este cobro'],
+    ['CHARGE_ALREADY_EXCLUDED', 'Este cobro ya está excluido de la reputación'],
+  ])(
+    'CA-007-13: BUSINESS_RULE con details.code %s muestra su mensaje propio en la página',
+    async (code, title) => {
+      mockedReport.mockRejectedValue(
+        new ApiError(422, 'BUSINESS_RULE', 'Regla de negocio.', { code }),
+      );
+      const user = userEvent.setup();
+      const onNotice = jest.fn();
+      render(<ChargeReputationActions charge={owned} onNotice={onNotice} />);
+      await user.click(screen.getByRole('button', { name: 'Reportar calificación' }));
+      const dialog = screen.getByRole('dialog', { name: 'Reportar calificación' });
+      await user.type(within(dialog).getByRole('textbox'), VALID_TEXT);
+      await user.click(within(dialog).getByRole('button', { name: 'Enviar reporte' }));
+
+      await waitFor(() => expect(onNotice).toHaveBeenCalledWith({ variant: 'warning', title }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    },
+  );
+
   it('CA-007-13: un 400 de validación se muestra en el campo del motivo', async () => {
     mockedExclude.mockRejectedValue(new ApiError(400, 'VALIDATION_ERROR', 'Dato inválido.'));
     const user = userEvent.setup();
