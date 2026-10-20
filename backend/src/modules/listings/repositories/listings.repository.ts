@@ -125,6 +125,33 @@ export class ListingsRepository {
       : null;
   }
 
+  /** Como `lockGroup` pero salta el grupo si otra transacción lo tiene bloqueado (tarea diaria). */
+  async lockGroupSkipLocked(q: Queryable, groupId: string): Promise<LockedGroup | null> {
+    const result = await q.query<{
+      id: string;
+      owner_id: string;
+      status: 'activo' | 'cerrado';
+      frozen_at: Date | null;
+      accepting_members: boolean;
+      total_slots: number;
+    }>(
+      `SELECT id, owner_id, status, frozen_at, accepting_members, total_slots
+         FROM groups WHERE id = $1 FOR UPDATE SKIP LOCKED`,
+      [groupId],
+    );
+    const row = result.rows[0];
+    return row
+      ? {
+          id: row.id,
+          ownerId: row.owner_id,
+          status: row.status,
+          frozen: row.frozen_at !== null,
+          acceptingMembers: row.accepting_members,
+          totalSlots: row.total_slots,
+        }
+      : null;
+  }
+
   /** El grupo sin bloquearlo (lecturas); `null` si no existe. */
   async findGroup(q: Queryable, groupId: string): Promise<LockedGroup | null> {
     const result = await q.query<{
@@ -150,6 +177,13 @@ export class ListingsRepository {
           totalSlots: row.total_slots,
         }
       : null;
+  }
+
+  async groupName(q: Queryable, groupId: string): Promise<string | null> {
+    const result = await q.query<{ name: string }>('SELECT name FROM groups WHERE id = $1', [
+      groupId,
+    ]);
+    return result.rows[0]?.name ?? null;
   }
 
   async isActiveMember(q: Queryable, groupId: string, userId: string): Promise<boolean> {
@@ -207,6 +241,51 @@ export class ListingsRepository {
     );
     const row = result.rows[0];
     return row ? toRecord(row) : null;
+  }
+
+  async findByIdForUpdateSkipLocked(q: Queryable, id: string): Promise<ListingRecord | null> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM listings l WHERE l.id = $1 FOR UPDATE OF l SKIP LOCKED`,
+      [id],
+    );
+    const row = result.rows[0];
+    return row ? toRecord(row) : null;
+  }
+
+  /**
+   * Publicaciones vivas (`activa`/`oculta`) que necesitan una acción: vencidas, de un grupo
+   * cerrado o congelado, de un titular baneado o con más cupos ofrecidos que libres (RN-008-04).
+   */
+  async listNeedingAttention(
+    q: Queryable,
+    now: Date,
+    limit: number,
+  ): Promise<{ id: string; groupId: string }[]> {
+    const result = await q.query<{ id: string; group_id: string }>(
+      `SELECT l.id, l.group_id
+         FROM listings l
+         JOIN groups g ON g.id = l.group_id
+         JOIN users u ON u.id = g.owner_id
+        WHERE l.status IN ('activa', 'oculta')
+          AND ((l.status = 'activa' AND l.expires_at <= $1)
+               OR g.status = 'cerrado' OR g.frozen_at IS NOT NULL OR u.status = 'baneado'
+               OR l.slots_offered > g.total_slots - (
+                    SELECT count(*) FROM group_members m
+                     WHERE m.group_id = g.id AND m.left_at IS NULL))
+        ORDER BY l.id LIMIT $2`,
+      [now, limit],
+    );
+    return result.rows.map((row) => ({ id: row.id, groupId: row.group_id }));
+  }
+
+  /** Publicaciones vivas de los grupos del titular, por grupo (orden de bloqueo estable). */
+  async listLiveByOwner(q: Queryable, ownerId: string): Promise<{ id: string; groupId: string }[]> {
+    const result = await q.query<{ id: string; group_id: string }>(
+      `SELECT l.id, l.group_id FROM listings l JOIN groups g ON g.id = l.group_id
+        WHERE g.owner_id = $1 AND l.status IN ('activa', 'oculta') ORDER BY l.group_id`,
+      [ownerId],
+    );
+    return result.rows.map((row) => ({ id: row.id, groupId: row.group_id }));
   }
 
   /** La publicación `activa` u `oculta` del grupo (a lo sumo una: `listings_group_active_uq`). */

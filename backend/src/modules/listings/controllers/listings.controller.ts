@@ -1,12 +1,25 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
@@ -16,8 +29,9 @@ import { requireUserId, uuidParam } from '../../../shared/http/request-user.js';
 import type { JoinRequestView } from '../../join-requests/services/request-views.js';
 import type { ListingsPage, ListingView } from '../services/listing-views.js';
 import { ListingsSearchService } from '../services/listings-search.service.js';
+import { ListingReportsService } from '../services/listing-reports.service.js';
 import { ListingsService } from '../services/listings.service.js';
-import { RequestSeatDto, SearchListingsQueryDto } from './listings.dto.js';
+import { ReportListingDto, RequestSeatDto, SearchListingsQueryDto } from './listings.dto.js';
 
 /** Búsqueda y detalle de publicaciones de cupos libres (spec 008). Solo traduce HTTP. */
 @ApiTags('listings')
@@ -29,6 +43,7 @@ export class ListingsController {
   constructor(
     private readonly search: ListingsSearchService,
     private readonly service: ListingsService,
+    private readonly reportsService: ListingReportsService,
   ) {}
 
   @Get()
@@ -70,5 +85,22 @@ export class ListingsController {
     @Body() body: RequestSeatDto,
   ): Promise<JoinRequestView> {
     return this.service.requestSeat(requireUserId(request), id, body.message);
+  }
+
+  @Post(':id/reports')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Reportar una publicación (RF-008-17, RF-008-18)' })
+  @ApiNoContentResponse({ description: 'Reporte registrado; al tercero la publicación se oculta.' })
+  @ApiNotFoundResponse({ description: 'LISTING_NOT_FOUND.' })
+  @ApiForbiddenResponse({ description: 'ACCOUNT_RESTRICTED: cuenta suspendida o baneada.' })
+  @ApiConflictResponse({ description: 'ALREADY_REPORTED.' })
+  @ApiUnprocessableEntityResponse({ description: 'BUSINESS_RULE: CANNOT_REPORT_OWN_LISTING.' })
+  @ApiTooManyRequestsResponse({ description: 'RATE_LIMITED: 10 reportes por día.' })
+  async report(
+    @Req() request: AuthenticatedRequest,
+    @Param('id', uuidParam()) id: string,
+    @Body() body: ReportListingDto,
+  ): Promise<void> {
+    await this.reportsService.report(requireUserId(request), id, body);
   }
 }

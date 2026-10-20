@@ -1,4 +1,11 @@
-import { canPublish, expiresAt, isExpired, nextStatus } from './listing-lifecycle.js';
+import {
+  canPublish,
+  expiresAt,
+  isExpired,
+  nextStatus,
+  reconcileAction,
+  type ReconcileInput,
+} from './listing-lifecycle.js';
 
 const open = { status: 'activo', frozen: false, acceptingMembers: true } as const;
 
@@ -81,5 +88,86 @@ describe('nextStatus', () => {
     expect(nextStatus('expirada', 'withdraw')).toBe('retirada');
     expect(nextStatus('activa', 'close')).toBe('cerrada');
     expect(nextStatus('expirada', 'close')).toBeNull();
+  });
+});
+
+describe('reconcileAction', () => {
+  const now = new Date('2026-10-20T12:00:00Z');
+  const base: ReconcileInput = {
+    listing: { status: 'activa', slotsOffered: 2, expiresAt: new Date('2026-11-01T00:00:00Z') },
+    group: { status: 'activo', frozen: false, totalSlots: 5, members: 2 },
+    ownerBanned: false,
+    now,
+  };
+  const with_ = (patch: {
+    listing?: Partial<ReconcileInput['listing']>;
+    group?: Partial<ReconcileInput['group']>;
+    ownerBanned?: boolean;
+  }): ReconcileInput => ({
+    ...base,
+    ...(patch.ownerBanned === undefined ? {} : { ownerBanned: patch.ownerBanned }),
+    listing: { ...base.listing, ...patch.listing },
+    group: { ...base.group, ...patch.group },
+  });
+
+  it('RN-008-04: al día no hace nada', () => {
+    expect(reconcileAction(base)).toEqual({ kind: 'none' });
+  });
+
+  it('CA-008-14: activa vencida pasa a expirada; oculta vencida no cambia', () => {
+    const expiresAtPast = new Date('2026-10-20T12:00:00Z');
+    expect(reconcileAction(with_({ listing: { expiresAt: expiresAtPast } }))).toEqual({
+      kind: 'expire',
+    });
+    expect(
+      reconcileAction(with_({ listing: { status: 'oculta', expiresAt: expiresAtPast } })),
+    ).toEqual({ kind: 'none' });
+  });
+
+  it('CA-008-16: grupo cerrado o congelado y titular baneado cierran', () => {
+    expect(reconcileAction(with_({ group: { status: 'cerrado' } }))).toEqual({
+      kind: 'close',
+      reason: 'grupo_cerrado',
+    });
+    expect(reconcileAction(with_({ group: { frozen: true } }))).toEqual({
+      kind: 'close',
+      reason: 'grupo_congelado',
+    });
+    expect(reconcileAction(with_({ ownerBanned: true }))).toEqual({
+      kind: 'close',
+      reason: 'grupo_congelado',
+    });
+  });
+
+  it('RN-008-04: recorta los cupos a los libres y cierra por grupo lleno', () => {
+    expect(reconcileAction(with_({ group: { members: 4 } }))).toEqual({
+      kind: 'adjust',
+      slotsOffered: 1,
+    });
+    expect(reconcileAction(with_({ group: { members: 5 } }))).toEqual({
+      kind: 'close',
+      reason: 'grupo_lleno',
+    });
+    expect(reconcileAction(with_({ group: { totalSlots: 3, members: 4 } }))).toEqual({
+      kind: 'close',
+      reason: 'grupo_lleno',
+    });
+  });
+
+  it('RN-008-04: una expirada solo baja cupos y nunca se cierra; retirada y cerrada no cambian', () => {
+    const expired = { status: 'expirada' } as const;
+    expect(reconcileAction(with_({ listing: expired, group: { members: 4 } }))).toEqual({
+      kind: 'adjust',
+      slotsOffered: 1,
+    });
+    expect(reconcileAction(with_({ listing: expired, group: { members: 5 } }))).toEqual({
+      kind: 'none',
+    });
+    expect(
+      reconcileAction(with_({ listing: { status: 'cerrada' }, group: { status: 'cerrado' } })),
+    ).toEqual({ kind: 'none' });
+    expect(reconcileAction(with_({ listing: { status: 'retirada' }, ownerBanned: true }))).toEqual({
+      kind: 'none',
+    });
   });
 });

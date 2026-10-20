@@ -65,3 +65,47 @@ export function nextStatus(
   if (current === null) return action === 'publish' ? 'activa' : null;
   return TRANSITIONS[current][action] ?? null;
 }
+
+export type ListingCloseReason = 'grupo_cerrado' | 'grupo_congelado' | 'grupo_lleno';
+
+export type ReconcileAction =
+  | { kind: 'none' }
+  | { kind: 'expire' }
+  | { kind: 'adjust'; slotsOffered: number }
+  | { kind: 'close'; reason: ListingCloseReason };
+
+export interface ReconcileInput {
+  listing: { status: ListingStatus; slotsOffered: number; expiresAt: Date };
+  group: { status: 'activo' | 'cerrado'; frozen: boolean; totalSlots: number; members: number };
+  ownerBanned: boolean;
+  now: Date;
+}
+
+/**
+ * Qué hacer con una publicación según el estado actual del grupo y del titular (RF-008-05,
+ * RN-008-04, CA-008-14, CA-008-16). Una sola función para el proceso diario y para los eventos,
+ * de modo que ambos lleguen al mismo resultado; idempotente (`none` cuando ya está al día).
+ * `expirada` solo baja sus cupos y nunca se cierra: no existe esa transición.
+ */
+export function reconcileAction({
+  listing,
+  group,
+  ownerBanned,
+  now,
+}: ReconcileInput): ReconcileAction {
+  const { status, slotsOffered } = listing;
+  if (status === 'retirada' || status === 'cerrada') return { kind: 'none' };
+  const free = Math.max(0, group.totalSlots - group.members);
+  const clamped = Math.min(slotsOffered, free);
+  if (status === 'expirada') {
+    return clamped >= 1 && clamped < slotsOffered
+      ? { kind: 'adjust', slotsOffered: clamped }
+      : { kind: 'none' };
+  }
+  if (group.status === 'cerrado') return { kind: 'close', reason: 'grupo_cerrado' };
+  if (group.frozen || ownerBanned) return { kind: 'close', reason: 'grupo_congelado' };
+  if (status === 'activa' && isExpired(listing.expiresAt, now)) return { kind: 'expire' };
+  if (clamped < 1) return { kind: 'close', reason: 'grupo_lleno' };
+  if (clamped < slotsOffered) return { kind: 'adjust', slotsOffered: clamped };
+  return { kind: 'none' };
+}
