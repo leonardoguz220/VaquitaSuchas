@@ -16,8 +16,7 @@ function uniqueDigits(length: number): string {
 }
 
 test.describe('registro con el bot simulado', () => {
-  // Pendiente: límite register:ip de 10/h en local; reintentar.
-  test.fixme('CA-003-27: registro completo verifica el celular y deja sesión iniciada', async ({
+  test('CA-003-27: registro completo verifica el celular y deja sesión iniciada', async ({
     page,
     context,
   }) => {

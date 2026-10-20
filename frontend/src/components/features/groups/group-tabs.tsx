@@ -66,7 +66,7 @@ export function GroupTabs<Id extends string>({
             type="button"
             role="tab"
             aria-selected={active}
-            aria-controls={panelId(idPrefix, tab.id)}
+            aria-controls={active ? panelId(idPrefix, tab.id) : undefined}
             tabIndex={active ? 0 : -1}
             onClick={() => onSelect(tab.id)}
             className={cx(
