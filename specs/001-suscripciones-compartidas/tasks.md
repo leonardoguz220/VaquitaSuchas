@@ -91,7 +91,7 @@
 
 - [x] T035 [P] [US7] [BE] `backend/test/ownership.e2e-spec.ts` (CA-001-13 un único titular; CA-001-30 transferir a no habilitado; destinatario con 5 grupos; bloqueo por solicitudes en pago vía `OwnershipBlockersPort`) y `groups.close.e2e-spec.ts` (CA-001-16 grupo cerrado rechaza unirse y editar; RN-001-07; los miembros siguen activos en solo lectura) — Depende: T027 · Cubre: CA-001-13, CA-001-16, CA-001-30, RN-001-07, RN-001-14
 - [x] T036 [US7] [BE] `MembershipService.transferOwnership` y `close`, con `POST /groups/:id/transfer-ownership` y `POST /groups/:id/close`: preguntan a `OwnershipBlockersPort` (solicitudes en pago, spec 010) y, para transferir, a `HostEligibilityPort` y al conteo de grupos del destinatario; transferir cambia los dos `role` en una transacción y `groups.owner_id`; publican `OwnerChanged` y `GroupClosed` — Depende: T013, T035 · Cubre: RF-001-17, RF-001-18, RN-001-07, RN-001-14, CA-001-13, CA-001-30
-- [ ] T037 [US7] [FE] Acciones **Transferir titularidad** y **Cerrar** en **Ajustes** con modales que explican el efecto, y los errores por `code`; E2E `frontend/e2e/groups.spec.ts` del flujo crear → transferir → cerrar — Depende: T034, T036 · Cubre: RF-001-17, RF-001-18
+- [x] T037 [US7] [FE] Acciones **Transferir titularidad** y **Cerrar** en **Ajustes** con modales que explican el efecto, y los errores por `code`; E2E `frontend/e2e/groups.spec.ts` del flujo crear → transferir → cerrar — Depende: T034, T036 · Cubre: RF-001-17, RF-001-18
 
 ## Fase 9: Integración con otras specs, seguridad y cierre
 

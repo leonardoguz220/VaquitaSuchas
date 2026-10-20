@@ -71,10 +71,9 @@ test.describe('grupos', () => {
     expect(groupUrl).toMatch(/\/grupos\/[^/]+$/);
   });
 
-  // Pendiente: el backend rechaza la transferencia con NOT_HOST_ELIGIBLE (RF-001-21: 4,5 estrellas
-  // y 6 cobros considerados en 12 meses) y el seed de desarrollo no habilita al miembro como
-  // titular. El resto del flujo (solicitud, datos de pago y pago en efectivo) sí se verifica.
-  test.fixme('crear → transferir → cerrar: el nuevo titular cierra el grupo (CA-001-13)', async ({
+  // El seed de desarrollo habilita a miembro1 como titular (database/seeds/0090_admin_dev.sql),
+  // así que la transferencia pasa la regla de elegibilidad (RF-001-21).
+  test('crear → transferir → cerrar: el nuevo titular cierra el grupo (CA-001-13)', async ({
     page,
     browser,
   }) => {
