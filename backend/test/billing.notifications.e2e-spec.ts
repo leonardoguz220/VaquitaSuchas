@@ -31,6 +31,7 @@ describe('Avisos de cobros conectados al barrido de atrasos (spec 002 T041)', ()
     await harness.pool.query(
       "UPDATE groups SET status = 'cerrado', closed_at = now() WHERE status = 'activo'",
     );
+    await harness.pool.query('DELETE FROM notification_deliveries');
     await harness.pool.query('DELETE FROM notifications');
     group = await harness.createGroup({ members: 2 });
     [memberA] = group.memberIds as [string, string];

@@ -68,7 +68,7 @@
 ## Fase 6: Cierre
 
 - [x] T028 [BE] Revisión de seguridad: ningún identificador de usuario del cuerpo o la ruta, el titular no ve comprobantes en lo que exporta, límites de exportación, CSV con escape de fórmulas, caché sin datos de otras personas — Depende: T011, T025 · Cubre: RNF-006-03, RNF-006-04
-- [ ] T029 [BD] Revisar con Camila los planes de consulta de las vistas con el seed de 20 suscripciones × 12 meses (p95 < 1 s) y decidir si hace falta el rol de lectura de T003 — Depende: T010 · Cubre: RNF-006-01
+- [x] T029 [BD] Revisar con Camila los planes de consulta de las vistas con el seed de 20 suscripciones × 12 meses (p95 < 1 s) y decidir si hace falta el rol de lectura de T003 — Depende: T010 · Cubre: RNF-006-01
 - [ ] T030 [FE] Accesibilidad y móvil primero de panel, gráficos, calendario e historial (tarjetas apiladas, tablas alternativas, patrones además del color, porcentajes en texto) — Depende: T019, T023, T027 · Cubre: RNF-006-05
 - [ ] T031 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (excepción de lectura de vistas, decisiones del panel) y marcar las tareas hechas — Depende: T028, T029, T030 · Cubre: —
 
