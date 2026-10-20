@@ -58,3 +58,20 @@ export function disputeEligibility(args: {
   if (request.ownDisputeOpen) return { ok: false, reason: 'already_open' };
   return { ok: true, kind, closesAt };
 }
+
+export const MIN_DISPUTE_TEXT = 10;
+export const MAX_DISPUTE_TEXT = 500;
+export const MIN_RESOLUTION_REASON = 10;
+export const MAX_RESOLUTION_REASON = 300;
+
+/** Texto de 10 a 500 caracteres sin contar los espacios de los extremos (RF-010-21, RF-010-22). */
+export const isValidDisputeText = (text: unknown): text is string =>
+  typeof text === 'string' &&
+  text.trim().length >= MIN_DISPUTE_TEXT &&
+  text.trim().length <= MAX_DISPUTE_TEXT;
+
+/** Motivo de la resolución: 10 a 300 caracteres (RF-010-24). */
+export const isValidResolutionReason = (reason: unknown): reason is string =>
+  typeof reason === 'string' &&
+  reason.trim().length >= MIN_RESOLUTION_REASON &&
+  reason.trim().length <= MAX_RESOLUTION_REASON;
