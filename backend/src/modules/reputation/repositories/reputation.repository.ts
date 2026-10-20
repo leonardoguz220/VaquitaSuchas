@@ -21,6 +21,13 @@ export interface ChargeLabel {
   period: string;
 }
 
+export interface GroupMemberRow {
+  userId: string;
+  fullName: string;
+  role: 'titular' | 'miembro';
+  joinedAt: Date;
+}
+
 /** SQL de `user_reputation` (0060) y lecturas de apoyo de la reputación (spec 007). */
 @Injectable()
 export class ReputationRepository {
@@ -150,12 +157,46 @@ export class ReputationRepository {
     return result.rows.length > 0;
   }
 
-  /** Personas con cobros que vencen desde `since` (conciliación diaria). */
-  async userIdsWithChargesSince(q: Queryable, since: Date): Promise<string[]> {
-    const result = await q.query<{ user_id: string }>(
-      `SELECT DISTINCT user_id FROM charges WHERE due_at >= $1 ORDER BY user_id`,
-      [since],
+  /** ¿La persona es miembro activo del grupo? (ranking, `404` si no). */
+  async isActiveMember(q: Queryable, groupId: string, userId: string): Promise<boolean> {
+    const result = await q.query(
+      `SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2 AND left_at IS NULL`,
+      [groupId, userId],
     );
-    return result.rows.map((row) => row.user_id);
+    return result.rows.length > 0;
+  }
+
+  /** Miembros activos del grupo, con su ingreso actual. */
+  async activeMembers(q: Queryable, groupId: string): Promise<GroupMemberRow[]> {
+    const result = await q.query<{
+      user_id: string;
+      full_name: string;
+      role: 'titular' | 'miembro';
+      joined_at: Date;
+    }>(
+      `SELECT m.user_id, u.full_name, m.role, m.joined_at
+         FROM group_members m JOIN users u ON u.id = m.user_id
+        WHERE m.group_id = $1 AND m.left_at IS NULL
+        ORDER BY m.joined_at, m.user_id`,
+      [groupId],
+    );
+    return result.rows.map((r) => ({
+      userId: r.user_id,
+      fullName: r.full_name,
+      role: r.role,
+      joinedAt: r.joined_at,
+    }));
+  }
+
+  /** Personas a conciliar: con cobros recientes, con calificación guardada o de otra versión de reglas. */
+  async userIdsToReconcile(q: Queryable, since: Date, rulesVersion: number): Promise<string[]> {
+    const result = await q.query<{ user_id: string }>(
+      `SELECT user_id FROM charges WHERE due_at >= $1
+       UNION SELECT user_id FROM user_reputation
+              WHERE considered_count > 0 OR rules_version <> $2
+       ORDER BY user_id`,
+      [since, rulesVersion],
+    );
+    return result.rows.map((r) => r.user_id);
   }
 }

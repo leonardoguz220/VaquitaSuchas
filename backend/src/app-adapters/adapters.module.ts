@@ -16,10 +16,17 @@ import { HostEligibilityAdapter } from './host-eligibility.adapter.js';
 import { RequestsRepository } from '../modules/join-requests/repositories/requests.repository.js';
 import { JoinRequestOwnershipBlockersAdapter } from './ownership-blockers.adapter.js';
 import { OpenChargesAdapter } from './open-charges.adapter.js';
-import { NullReputationAdapter } from './null-join-request-ports.adapter.js';
 import { LISTING_QUOTA_PORT } from '../modules/join-requests/ports/listing-quota.port.js';
 import { ListingsRepository } from '../modules/listings/repositories/listings.repository.js';
 import { ListingQuotaAdapter } from './listing-quota.adapter.js';
+import { CHARGE_FACTS_PORT } from '../modules/billing/ports/charge-facts.port.js';
+import { ChargeFactsRepository } from '../modules/billing/repositories/charge-facts.repository.js';
+import { BadgesRepository } from '../modules/reputation/repositories/badges.repository.js';
+import { BadgesService } from '../modules/reputation/services/badges.service.js';
+import { ReputationRepository } from '../modules/reputation/repositories/reputation.repository.js';
+import { ReputationQueryService } from '../modules/reputation/services/reputation-query.service.js';
+import { ReputationService } from '../modules/reputation/services/reputation.service.js';
+import { ReputationRatingsAdapter } from './reputation-ratings.adapter.js';
 
 // Global para que los módulos que definen un puerto lo inyecten sin importar al que lo implementa.
 @Global()
@@ -30,7 +37,16 @@ import { ListingQuotaAdapter } from './listing-quota.adapter.js';
     OpenChargesAdapter,
     RequestsRepository,
     JoinRequestOwnershipBlockersAdapter,
-    NullReputationAdapter,
+    // Spec 007: la calificación se arma aquí (no se importa su módulo) para no cerrar un ciclo
+    // de módulos: `reputation` -> `billing` -> `subscriptions` -> adaptadores.
+    ChargeFactsRepository,
+    { provide: CHARGE_FACTS_PORT, useExisting: ChargeFactsRepository },
+    ReputationRepository,
+    BadgesRepository,
+    BadgesService,
+    ReputationService,
+    ReputationQueryService,
+    ReputationRatingsAdapter,
     GroupsRepository,
     MembersRepository,
     UserGroupCountsAdapter,
@@ -39,7 +55,8 @@ import { ListingQuotaAdapter } from './listing-quota.adapter.js';
     { provide: BAN_PORT, useExisting: BanService },
     // Spec 009: el registro real reemplaza al adaptador nulo (RF-009-18).
     { provide: AUDIT_PORT, useExisting: AuditService },
-    { provide: REPUTATION_QUERY_PORT, useExisting: NullReputationAdapter },
+    // Spec 007: la calificación real reemplaza al adaptador nulo.
+    { provide: REPUTATION_QUERY_PORT, useExisting: ReputationRatingsAdapter },
     // Spec 008: cupos ofrecidos por publicación (RF-010-20).
     ListingsRepository,
     ListingQuotaAdapter,
