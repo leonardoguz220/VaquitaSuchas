@@ -42,9 +42,9 @@
 **Prueba independiente:** con 3 cobros puntuales seguidos aparece «Racha 3»; si luego paga tarde, la insignia se conserva y la racha vuelve a 0.
 
 - [x] T017 [BD] Migración `0063_user_badges.sql` (P2): `user_badges` (usuario, código, `earned_at`, `rules_version`; única por usuario y código) — Depende: T002 · Cubre: RF-007-06, RF-007-07, RF-007-08
-- [ ] T018 [P] [US2] [BE] `domain/badges-rules.ts` (`badgesEarned(facts, existing)`: Primer pago, Racha 3 y demás reglas versionadas; avance `current/target` calculado) y `badges-rules.spec.ts` (CA-007-08, 09) — Depende: T006 · Cubre: RF-007-06, RF-007-07, RF-007-08, RN-007-07, CA-007-08, CA-007-09
-- [ ] T019 [P] [US2] [BE] `backend/test/badges.e2e-spec.ts`: CA-007-08 (Racha 3), CA-007-09 (se conserva la insignia, racha a 0) y `GET /users/me/badges` — Depende: T017 · Cubre: CA-007-08, CA-007-09
-- [ ] T020 [US2] [BE] `services/badges.service.ts` (otorga y conserva en cada recálculo; avance calculado), tarea `reputation.badges` y `controllers/badges.controller.ts` `GET /users/me/badges` — Depende: T018, T019, T009 · Cubre: RF-007-06, RF-007-07, RF-007-08
+- [x] T018 [P] [US2] [BE] `domain/badges-rules.ts` (`badgesEarned(facts, existing)`: Primer pago, Racha 3 y demás reglas versionadas; avance `current/target` calculado) y `badges-rules.spec.ts` (CA-007-08, 09) — Depende: T006 · Cubre: RF-007-06, RF-007-07, RF-007-08, RN-007-07, CA-007-08, CA-007-09
+- [x] T019 [P] [US2] [BE] `backend/test/badges.e2e-spec.ts`: CA-007-08 (Racha 3), CA-007-09 (se conserva la insignia, racha a 0) y `GET /users/me/badges` — Depende: T017 · Cubre: CA-007-08, CA-007-09
+- [x] T020 [US2] [BE] `services/badges.service.ts` (otorga y conserva en cada recálculo; avance calculado), tarea `reputation.badges` y `controllers/badges.controller.ts` `GET /users/me/badges` — Depende: T018, T019, T009 · Cubre: RF-007-06, RF-007-07, RF-007-08
 - [x] T021 [P] [US2] [FE] `/perfil/insignias` con mock: obtenidas con fecha y pendientes con barra de avance, distinguidas por texto e icono — Depende: T015 · Cubre: RF-007-07, RNF-007-06
 - [ ] T022 [US2] [FE] Conectar `/perfil/insignias` con `GET /users/me/badges` — Depende: T020, T021 · Cubre: RF-007-07
 
@@ -65,15 +65,15 @@
 **Prueba independiente:** el titular excluye un cobro con motivo y la calificación del dueño se recalcula en la misma operación.
 
 - [x] T028 [BD] Migraciones `0061_charge_reputation_exclusions.sql` (cobro único, titular, motivo de 10 a 300, fecha) y `0062_reputation_reports.sql` (cobro, dueño, comentario de 10 a 300; un reporte por persona y cobro) — Depende: T002 · Cubre: RF-007-14
-- [ ] T029 [P] [US4] [BE] `backend/test/reports.e2e-spec.ts`: CA-007-13 (exclusión con motivo, registrada y recalculada), `CHARGE_ALREADY_EXCLUDED`, `REPORT_ALREADY_SENT`, solo el titular del grupo excluye y solo el dueño reporta — Depende: T028 · Cubre: CA-007-13, RF-007-14
-- [ ] T030 [US4] [BE] `services/reports.service.ts`, `repositories/exclusions.repository.ts` y `controllers/reports.controller.ts` (`POST /charges/:id/reputation-report`, `POST /charges/:id/reputation-exclusion`, que recalcula con `recomputeUser` en la misma transacción) — Depende: T029, T009 · Cubre: RF-007-14, CA-007-13
+- [x] T029 [P] [US4] [BE] `backend/test/reports.e2e-spec.ts`: CA-007-13 (exclusión con motivo, registrada y recalculada), `CHARGE_ALREADY_EXCLUDED`, `REPORT_ALREADY_SENT`, solo el titular del grupo excluye y solo el dueño reporta — Depende: T028 · Cubre: CA-007-13, RF-007-14
+- [x] T030 [US4] [BE] `services/reports.service.ts`, `repositories/exclusions.repository.ts` y `controllers/reports.controller.ts` (`POST /charges/:id/reputation-report`, `POST /charges/:id/reputation-exclusion`, que recalcula con `recomputeUser` en la misma transacción) — Depende: T029, T009 · Cubre: RF-007-14, CA-007-13
 - [x] T031 [BD] Completar `reputation.integrity.test.ts` con las pruebas de exclusiones, reportes e insignias (únicos) — Depende: T017, T028 · Cubre: RF-007-08, RF-007-14
 - [x] T032 [P] [US4] [FE] En `/cobros/[id]` (spec 002): botón «Reportar calificación» para el dueño y «Excluir de reputación» con motivo para el titular, con mock — Depende: spec 002 T018 · Cubre: RF-007-14
 - [ ] T033 [US4] [FE] Conectar el reporte y la exclusión con el backend — Depende: T030, T032 · Cubre: RF-007-14
 
 ## Fase 6: Cierre
 
-- [ ] T034 [BE] Revisión de seguridad: fechas solo del servidor, la calificación de una persona nunca depende de datos de otra, sin `GET /users/:id/reputation` abierto, ranking sin montos y suspendidos conservan su calificación sin aparecer en búsquedas nuevas — Depende: T025, T030 · Cubre: RNF-007-04, RNF-007-05, RN-007-08
+- [x] T034 [BE] Revisión de seguridad: fechas solo del servidor, la calificación de una persona nunca depende de datos de otra, sin `GET /users/:id/reputation` abierto, ranking sin montos y suspendidos conservan su calificación sin aparecer en búsquedas nuevas — Depende: T025, T030 · Cubre: RNF-007-04, RNF-007-05, RN-007-08
 - [ ] T035 [BD] Revisar con Camila los planes de consulta de `getRatings` por lote, `ChargeFactsPort` (12 meses) y la conciliación diaria con datos del seed — Depende: T013 · Cubre: RNF-007-03
 - [ ] T036 [FE] Accesibilidad de estrellas, niveles e insignias (texto, icono y valor numérico) — Depende: T022, T027 · Cubre: RNF-007-06
 - [ ] T037 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado y marcar las tareas hechas — Depende: T033, T034, T035, T036 · Cubre: —
@@ -108,4 +108,6 @@
 |---|---|---|---|
 | 2026-10-20 | `ChargeFactsPort` ya existe en `billing` (spec 002 T017) con su implementación; `reputation` lo consume de ahí en vez de redefinirlo. `ReputationQueryPort` público de `reputation` (`getRatings`, `checkHostRating`) convive con el puerto `getMany` de `join-requests`; el cambio del adaptador nulo va en T014 | Aplicado | No |
 | 2026-10-20 | `reputation.reconcile` deja el `drift` como advertencia de `job_runs` (`drift: N`; no hay columna propia). Los adaptadores reales de `REPUTATION_QUERY_PORT` y `HostEligibilityPort` se arman en `AdaptersModule` con las clases de `reputation` (sin importar su módulo, que cerraría un ciclo de módulos); «Nuevo» llega como `level: 'Nuevo'` y `stars: null` | Aplicado | No |
+| 2026-10-20 | T034 revisión de seguridad: los únicos cuerpos son textos de reporte y exclusión (10–300); todas las fechas salen del `Clock` del servidor; no existe `GET /users/:id/reputation` (404); el ranking no trae montos ni comprobantes; suspendidos conservan su fila de `user_reputation` | Revisado | No |
+| 2026-10-20 | Insignias: se otorgan en cada recálculo y en la conciliación diaria, sin una tarea `reputation.badges` aparte. «Grupo completo» queda fuera del catálogo (depende de pagos de otras personas, choca con RN-007-08); «Sin atrasos 6 meses» = al menos 3 cobros en los últimos 6 meses y ninguno tardío | Aplicado | Por confirmar (catálogo de RF-007-06) |
 | — | `ChargeFactsPort` depende de que 002 guarde `first_submitted_at` y el rechazo «inválido» en `charge_events.metadata` | Verificar con Leonardo al terminar spec 002 T017 | No |

@@ -12,10 +12,16 @@ import type { UserBanned } from '../../shared/events/user-events.js';
 import { TxEventBus } from '../../shared/events/tx-event-bus.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { BillingModule } from '../billing/billing.module.js';
+import { ReportsController } from './controllers/reports.controller.js';
+import { BadgesController } from './controllers/badges.controller.js';
 import { RankingController } from './controllers/ranking.controller.js';
 import { ReputationController } from './controllers/reputation.controller.js';
 import { REPUTATION_RATINGS_PORT } from './ports/reputation-query.port.js';
 import { ReputationRepository } from './repositories/reputation.repository.js';
+import { BadgesRepository } from './repositories/badges.repository.js';
+import { BadgesService } from './services/badges.service.js';
+import { ExclusionsRepository } from './repositories/exclusions.repository.js';
+import { ReportsService } from './services/reports.service.js';
 import { RankingService } from './services/ranking.service.js';
 import { ReputationReconcileJob } from './services/reconcile.job.js';
 import { ReputationEventsHandler } from './services/reputation-events.handler.js';
@@ -25,9 +31,13 @@ import { ReputationService } from './services/reputation.service.js';
 // DbService, Clock y TxEventBus llegan de módulos globales. `ChargeFactsPort` lo exporta billing.
 @Module({
   imports: [BillingModule, AuthModule],
-  controllers: [ReputationController, RankingController],
+  controllers: [ReputationController, RankingController, BadgesController, ReportsController],
   providers: [
     ReputationRepository,
+    BadgesRepository,
+    BadgesService,
+    ExclusionsRepository,
+    ReportsService,
     ReputationService,
     ReputationQueryService,
     ReputationEventsHandler,

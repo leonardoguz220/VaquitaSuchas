@@ -8,7 +8,11 @@ import {
 import type { ChargeFact } from '../domain/facts.js';
 import { RULES_VERSION } from '../domain/rules-version.js';
 import { computeReputation, windowStart, type Reputation } from '../domain/score.js';
-import { ReputationRepository } from '../repositories/reputation.repository.js';
+import {
+  ReputationRepository,
+  type StoredReputation,
+} from '../repositories/reputation.repository.js';
+import { BadgesService } from './badges.service.js';
 
 export function toFact(fact: BillingFact, excluded: boolean): ChargeFact {
   return {
@@ -35,6 +39,7 @@ export class ReputationService {
   constructor(
     @Inject(CHARGE_FACTS_PORT) private readonly facts: ChargeFactsPort,
     private readonly repository: ReputationRepository,
+    private readonly badges: BadgesService,
   ) {}
 
   /** Hechos de los últimos 12 meses de una persona, con las exclusiones aplicadas. */
@@ -52,10 +57,39 @@ export class ReputationService {
     return computeReputation(await this.loadFacts(q, userId, now), now);
   }
 
-  /** Recalcula y guarda `user_reputation` dentro de la transacción del hecho (RF-007-05). */
+  /** Recalcula y guarda `user_reputation` y otorga insignias dentro de la transacción del hecho (RF-007-05). */
   async recomputeUser(tx: Queryable, userId: string, now: Date): Promise<Reputation> {
-    const reputation = await this.computeNow(tx, userId, now);
+    const facts = await this.loadFacts(tx, userId, now);
+    const reputation = computeReputation(facts, now);
     await this.repository.upsert(tx, userId, reputation, RULES_VERSION, now);
+    await this.badges.grant(tx, userId, facts, now);
     return reputation;
   }
+
+  /**
+   * Conciliación de una persona: corrige la fila guardada si difiere de lo calculado (también por
+   * el paso del tiempo o un cambio de `RULES_VERSION`) y otorga insignias. `true` si había diferencia.
+   */
+  async reconcileUser(tx: Queryable, userId: string, now: Date): Promise<boolean> {
+    const facts = await this.loadFacts(tx, userId, now);
+    const fresh = computeReputation(facts, now);
+    const stored = (await this.repository.getMany(tx, [userId])).get(userId);
+    const drift = differs(stored, fresh);
+    if (drift) await this.repository.upsert(tx, userId, fresh, RULES_VERSION, now);
+    await this.badges.grant(tx, userId, facts, now);
+    return drift;
+  }
+}
+
+function differs(stored: StoredReputation | undefined, fresh: Reputation): boolean {
+  return (
+    !stored ||
+    stored.rulesVersion !== RULES_VERSION ||
+    stored.consideredCount !== fresh.consideredCount ||
+    stored.punctualCount !== fresh.punctualCount ||
+    stored.lateCount !== fresh.lateCount ||
+    stored.halfStars !== fresh.halfStars ||
+    stored.level !== fresh.level ||
+    stored.currentStreak !== fresh.currentStreak
+  );
 }
