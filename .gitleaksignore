@@ -5,3 +5,15 @@
 # Contraseñas falsas de prueba ('clave-de-prueba-123', 'otra-clave-98765') en el test de los CLI de arranque, no son secretos reales (PR #112).
 911372480fb3f3a5f00b7ecda2a57a78ed56192d:backend/test/cli.seed.e2e-spec.ts:generic-api-key:29
 911372480fb3f3a5f00b7ecda2a57a78ed56192d:backend/test/cli.seed.e2e-spec.ts:generic-api-key:69
+# Literales de prueba (contraseñas de test, JWT_SECRET de test y un token de ejemplo) en archivos de test, no son secretos reales.
+# Huellas de los commits que los trajeron; salieron al promover qa a main (PR #195). Autorizado por el usuario: solo estas 10.
+53066d3a3a25b8a2cfed4764b6a5a13e1037f4ab:frontend/e2e/register.spec.ts:generic-api-key:10
+b445f44f51277011677a7b2445ba455d4d0bc32a:backend/test/cli.seed.e2e-spec.ts:generic-api-key:29
+b445f44f51277011677a7b2445ba455d4d0bc32a:backend/test/cli.seed.e2e-spec.ts:generic-api-key:69
+fd0d3d9dd0c39e707a87d57af7fb02b7db5871d7:backend/test/auth.log-privacy.e2e-spec.ts:generic-api-key:28
+fd0d3d9dd0c39e707a87d57af7fb02b7db5871d7:backend/test/auth.log-privacy.e2e-spec.ts:generic-api-key:29
+6785308f363313784bbacf86ca402efd5f1d79a2:backend/test/billing.generate.e2e-spec.ts:generic-api-key:122
+6785308f363313784bbacf86ca402efd5f1d79a2:backend/test/support/billing-harness.ts:generic-api-key:39
+3fa0713584f2a9c42e1983f0f080202e81f0256b:backend/src/modules/auth/domain/validate-registration.spec.ts:generic-api-key:7
+3fa0713584f2a9c42e1983f0f080202e81f0256b:backend/src/modules/auth/domain/validate-registration.spec.ts:generic-api-key:8
+f9ec9c1256f4dd6251f913a00e2a3cba8d39d9d5:frontend/src/app/recuperar/[token]/page.test.tsx:generic-api-key:11
