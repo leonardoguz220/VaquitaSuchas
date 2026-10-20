@@ -7,8 +7,8 @@ import type { NotificationCategory, SendTiming } from './catalog.js';
 export const DELIVERY_CHANNELS = ['email', 'telegram'] as const;
 export type DeliveryChannel = (typeof DELIVERY_CHANNELS)[number];
 
-/** Canales que hoy crean envíos. Telegram (parte C) se suma aquí sin tocar el resto del diseño. */
-export const ENABLED_CHANNELS: readonly DeliveryChannel[] = ['email'];
+/** Canales que crean envíos: correo (parte B) y Telegram (parte C, RF-005-26). */
+export const ENABLED_CHANNELS: readonly DeliveryChannel[] = ['email', 'telegram'];
 
 export const SKIP_REASONS = [
   'preferencia_desactivada',

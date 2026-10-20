@@ -9,7 +9,7 @@ import {
   type NotificationType,
   type RecipientRole,
 } from '../domain/catalog.js';
-import { deliveryPlan } from '../domain/delivery-rules.js';
+import { deliveryPlan, ENABLED_CHANNELS } from '../domain/delivery-rules.js';
 import { dedupeKey } from '../domain/dedupe.js';
 import { decodeNotificationCursor } from '../domain/notification-cursor.js';
 import { render, type NotificationData } from '../domain/templates.js';
@@ -107,6 +107,10 @@ export class NotificationService {
         { category, timing: NOTIFICATION_CATALOG[input.type].timing },
         account.prefs,
         { status: account.userStatus },
+        // Sin cuenta de Telegram vinculada (p. ej. un administrador) no hay envío de Telegram.
+        account.telegramLinked
+          ? ENABLED_CHANNELS
+          : ENABLED_CHANNELS.filter((c) => c !== 'telegram'),
       );
       await this.deliveries.insertPlan(tx, id, plan, now);
     }

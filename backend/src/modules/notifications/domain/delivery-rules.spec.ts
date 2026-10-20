@@ -16,7 +16,7 @@ const prefs = (over: Partial<DeliveryPreferences> = {}): DeliveryPreferences => 
 
 describe('deliveryPlan', () => {
   it('por defecto el correo queda pendiente y los recordatorios respetan la ventana', () => {
-    expect(deliveryPlan(recordatorio, prefs(), active)).toEqual([
+    expect(deliveryPlan(recordatorio, prefs(), active, ['email'])).toEqual([
       { channel: 'email', status: 'pending', respectWindow: true },
     ]);
     expect(deliveryPlan(inmediato, prefs(), active)[0]).toMatchObject({ respectWindow: false });
@@ -24,7 +24,7 @@ describe('deliveryPlan', () => {
 
   it('CA-005-11: correo de recordatorios desactivado → skipped con motivo', () => {
     const off = prefs({ email: { ...DEFAULT_PREFERENCES.email, recordatorios: false } });
-    expect(deliveryPlan(recordatorio, off, active)).toEqual([
+    expect(deliveryPlan(recordatorio, off, active, ['email'])).toEqual([
       {
         channel: 'email',
         status: 'skipped',

@@ -48,6 +48,17 @@ export class PreferencesController {
     });
   }
 
+  @Post('notification-preferences/telegram/reactivate')
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiUnauthorizedResponse({ description: 'UNAUTHENTICATED: sin sesión válida.' })
+  @ApiOperation({ summary: 'Reactiva los avisos por Telegram tras bloquear el bot (RF-005-28)' })
+  @ApiOkResponse({ description: 'Preferencias resultantes.' })
+  reactivateTelegram(@Req() request: AuthenticatedRequest): Promise<PreferencesView> {
+    return this.preferences.reactivateTelegram(requireUserId(request));
+  }
+
   /** Pública: el token firmado identifica al usuario, la categoría y el canal (CA-005-13). */
   @Post('notifications/unsubscribe')
   @HttpCode(200)

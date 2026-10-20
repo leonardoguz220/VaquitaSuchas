@@ -64,4 +64,18 @@ describe('parseUpdate', () => {
     });
     expect(parsed?.command).toEqual({ type: 'contact', phoneNumber: '71234567' });
   });
+
+  it('CA-005-33: my_chat_member con estado kicked es bot bloqueado; member, desbloqueado', () => {
+    const raw = (status: string) => ({
+      update_id: 9,
+      my_chat_member: { from: { id: 77 }, chat: { id: 77 }, new_chat_member: { status } },
+    });
+    expect(parseUpdate(raw('kicked'))).toEqual({
+      updateId: 9,
+      telegramUserId: 77,
+      chatId: 77,
+      command: { type: 'bot_status', blocked: true },
+    });
+    expect(parseUpdate(raw('member'))?.command).toEqual({ type: 'bot_status', blocked: false });
+  });
 });

@@ -41,6 +41,22 @@ export class PreferencesService {
     return this.view(userId);
   }
 
+  /** CA-005-33, RF-005-28: quita la marca de bot bloqueado; si sigue bloqueado, el próximo envío la repone. */
+  async reactivateTelegram(userId: string): Promise<PreferencesView> {
+    await this.repository.clearTelegramBlocked(this.db, userId);
+    return this.view(userId);
+  }
+
+  /** RF-005-17: rebote permanente del correo; se deja de enviar (sin endpoint del proveedor aún). */
+  async markEmailBounced(userId: string): Promise<void> {
+    await this.repository.markEmailBounced(this.db, userId, this.clock.now());
+  }
+
+  /** CA-005-33: el bot fue bloqueado desde Telegram (`my_chat_member`). */
+  async markTelegramBlocked(telegramUserId: number): Promise<void> {
+    await this.repository.markTelegramBlocked(this.db, telegramUserId, this.clock.now());
+  }
+
   /** CA-005-13: desactiva el correo de la categoría del token. `400` si el token no es válido. */
   async unsubscribe(token: string): Promise<{ category: NotificationCategory }> {
     const payload = this.links.verify(token);

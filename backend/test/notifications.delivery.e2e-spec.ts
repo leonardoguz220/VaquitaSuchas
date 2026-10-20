@@ -85,7 +85,7 @@ describe('Entrega de correos de avisos (spec 005)', () => {
         channel: string;
       }>(
         `SELECT status, attempts, skip_reason, respect_window, next_attempt_at, last_error, channel
-           FROM notification_deliveries ORDER BY created_at`,
+           FROM notification_deliveries WHERE channel = 'email' ORDER BY created_at`,
       )
     ).rows;
   const visibleCount = async (userId: string): Promise<number> =>
@@ -184,7 +184,7 @@ describe('Entrega de correos de avisos (spec 005)', () => {
     expect(await visibleCount(owner.id)).toBe(1);
 
     const now = new Date('2026-10-20T15:00:00Z');
-    await expect(delivery.deliver(now)).resolves.toBe(1);
+    await expect(delivery.deliver(now)).resolves.toBe(2); // correo + Telegram
     const [row] = await deliveryRows();
     expect(row).toMatchObject({ status: 'pending', attempts: 1, last_error: 'MailDeliveryError' });
     expect(row!.next_attempt_at.toISOString()).toBe('2026-10-20T15:05:00.000Z');
