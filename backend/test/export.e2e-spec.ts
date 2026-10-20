@@ -161,6 +161,7 @@ describe('Historial y exportación', () => {
     for (let i = 0; i < 10; i++) await download(user, '/me/history/export.csv').expect(200);
 
     const blocked = await get(user, '/me/history/export.csv').expect(429);
+    expect(blocked.headers['cache-control']).toBe('private, no-store');
     expect(blocked.body.error?.details ?? blocked.body.details).toMatchObject({
       retryAfterSeconds: expect.any(Number),
     });

@@ -35,18 +35,13 @@ export class ReportsService {
     if (scope.userId !== userId) return this.deny(scope, userId);
     if (await this.exclusions.isExcluded(this.db, chargeId)) {
       throw new DomainError(
-        ErrorCode.BUSINESS_RULE,
+        'CHARGE_ALREADY_EXCLUDED',
         422,
         'Este cobro ya fue excluido de tu calificación.',
-        {
-          code: 'CHARGE_ALREADY_EXCLUDED',
-        },
       );
     }
     if (await this.exclusions.reportExists(this.db, chargeId, userId)) {
-      throw new DomainError(ErrorCode.BUSINESS_RULE, 422, 'Ya reportaste este cobro.', {
-        code: 'REPORT_ALREADY_SENT',
-      });
+      throw new DomainError('REPORT_ALREADY_SENT', 422, 'Ya reportaste este cobro.');
     }
     await this.exclusions.insertReport(this.db, chargeId, userId, comment);
   }
@@ -61,9 +56,7 @@ export class ReportsService {
     if (scope.groupOwnerId !== userId) return this.deny(scope, userId);
     await this.db.withTransaction(async (tx) => {
       if (await this.exclusions.isExcluded(tx, chargeId)) {
-        throw new DomainError(ErrorCode.BUSINESS_RULE, 422, 'Este cobro ya está excluido.', {
-          code: 'CHARGE_ALREADY_EXCLUDED',
-        });
+        throw new DomainError('CHARGE_ALREADY_EXCLUDED', 422, 'Este cobro ya está excluido.');
       }
       const now = this.clock.now();
       await this.exclusions.insertExclusion(tx, chargeId, reason, userId);
