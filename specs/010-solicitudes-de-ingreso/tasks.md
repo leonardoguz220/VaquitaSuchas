@@ -81,7 +81,7 @@
 
 ## Fase 7: Integración con la spec 008 (cupos libres)
 
-- [ ] T036 [BE] Cambios que pide la spec 008: `ports/listing-quota.port.ts` (`ListingQuotaPort.remainingOffered(tx, listingId)`, implementado por `listings` en `app-adapters/`), `JoinRequestsService.openFromListing(userId, listing, message)` (abre la solicitud desde una publicación con la misma lógica que `open`), `rejectOpenForListing(tx, listingId, reason)` (rechaza las solicitudes `abierta` de una publicación cerrada u ocultada), evento `JoinRequestAccepted{listingId?}` y validación de que aceptar no supera `slots_offered`; pruebas en `join-requests.listing.e2e-spec.ts` — Depende: T029, spec 008 · Cubre: RF-010-20, CA-010-06 (coherencia con cupos ofrecidos)
+- [x] T036 [BE] Cambios que pide la spec 008: `ports/listing-quota.port.ts` (`ListingQuotaPort.remainingOffered(tx, listingId)`, implementado por `listings` en `app-adapters/`), `JoinRequestsService.openFromListing(userId, listing, message)` (abre la solicitud desde una publicación con la misma lógica que `open`), `rejectOpenForListing(tx, listingId, reason)` (rechaza las solicitudes `abierta` de una publicación cerrada u ocultada), evento `JoinRequestAccepted{listingId?}` y validación de que aceptar no supera `slots_offered`; pruebas en `join-requests.listing.e2e-spec.ts` — Depende: T029, spec 008 · Cubre: RF-010-20, CA-010-06 (coherencia con cupos ofrecidos)
 
 ## Fase 8: US6 — Reclamos y sanción (Prioridad: P1 con núcleo en el MVP)
 
@@ -104,7 +104,7 @@
 
 ## Fase 10: Integración, seguridad y cierre
 
-- [ ] T044 [BE] Conectar los avisos de la spec 005 parte A a los eventos de este módulo (apertura, datos de pago, comprobante, recordatorio, decisión, reclamo) y verificar CA-010-14 con ella — Depende: T042, spec 005 (parte A) · Cubre: RF-010-04, CA-010-14
+- [x] T044 [BE] Conectar los avisos de la spec 005 parte A a los eventos de este módulo (apertura, datos de pago, comprobante, recordatorio, decisión, reclamo) y verificar CA-010-14 con ella — Depende: T042, spec 005 (parte A) · Cubre: RF-010-04, CA-010-14
 - [x] T045 [BE] Revisión de seguridad: tabla de acciones por rol del plan §7, archivos con firma binaria y URL firmada ≤ 10 min, registros sin texto de mensajes, referencias, URLs firmadas ni nombres de archivo, cuota y plazos solo del servidor — Depende: T038, T043 · Cubre: RNF-010-01, RNF-010-02, RNF-010-08
 - [ ] T046 [FE] E2E `frontend/e2e/join-request.spec.ts` (chat en ≤ 10 s, `<script>` como texto: CA-010-19, CA-010-22) y flujo feliz `mvp-flow.spec.ts` del MVP (CA-010-36), coordinado con las specs 001 y 002 — Depende: T031, T035, spec 002 T043 · Cubre: CA-010-19, CA-010-22, CA-010-36
 - [x] T047 [FE] Accesibilidad y móvil primero de `/unirse`, `/solicitudes` y `/solicitudes/[id]` (cuenta regresiva legible, acciones en barra fija, estados con color y texto) — Depende: T031, T035 · Cubre: RNF-010-06

@@ -270,6 +270,19 @@ test('RF-001-21, RF-009-21: titular@dev.vaquita queda habilitado como titular', 
   assert.equal(row?.n, 1);
 });
 
+test('RF-001-21, RF-009-21: miembro1@dev.vaquita tiene una habilitación vigente para el E2E de transferencia', async () => {
+  const rows = await run<{ reason: string; audited: number }>(
+    `SELECT h.reason,
+            (SELECT count(*)::int FROM admin_audit_log a
+              WHERE a.action = 'titular_habilitar' AND a.target_id = u.id) AS audited
+     FROM host_enablements h JOIN users u ON u.id = h.user_id
+     WHERE u.email = 'miembro1@dev.vaquita' AND h.revoked_at IS NULL`,
+  );
+  assert.deepEqual(rows, [
+    { reason: 'Titular de prueba para el E2E de transferencia', audited: 1 },
+  ]);
+});
+
 test('CA-009-20: dos usuarios con reclamos abiertos y un baneo revertido por otro administrador', async () => {
   const openers = await run<{ email: string }>(
     `SELECT DISTINCT u.email FROM join_disputes d JOIN users u ON u.id = d.opened_by
@@ -290,6 +303,7 @@ test('CA-009-20: dos usuarios con reclamos abiertos y un baneo revertido por otr
   );
   assert.deepEqual(actions.map((row) => row.action).sort(), [
     'baneo_revertir',
+    'titular_habilitar',
     'titular_habilitar',
     'usuario_banear',
   ]);

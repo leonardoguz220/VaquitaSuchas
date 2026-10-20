@@ -426,7 +426,7 @@ export class RequestsRepository {
     q: Queryable,
     id: string,
     from: RequestStatus,
-    finalReason: 'grupo_cerrado' | 'titular_baneado',
+    finalReason: 'grupo_cerrado' | 'titular_baneado' | 'sin_cupo',
     now: Date,
   ): Promise<boolean> {
     const result = await q.query(
@@ -573,6 +573,29 @@ export class RequestsRepository {
                                WHERE ag.id = $2)
         ORDER BY jr.id FOR UPDATE OF jr`,
       [applicantId, groupId, exceptRequestId],
+    );
+    return result.rows.map(toRecord);
+  }
+
+  /** Reservas vigentes de las solicitudes de una publicación (RF-010-20, CA-008-12). */
+  async countReservedForListing(q: Queryable, listingId: string, now: Date): Promise<number> {
+    const result = await q.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM join_requests
+        WHERE listing_id = $1
+          AND ((status = 'esperando_pago' AND pay_deadline_at > $2)
+            OR (status = 'pago_informado' AND decision_deadline_at > $2))`,
+      [listingId, now],
+    );
+    return Number(result.rows[0]?.n ?? 0);
+  }
+
+  /** Solicitudes `abierta` de una publicación, bloqueadas en orden de id (cierre por cupos). */
+  async listOpenByListingForUpdate(q: Queryable, listingId: string): Promise<JoinRequestRecord[]> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_requests jr
+        WHERE jr.listing_id = $1 AND jr.status = 'abierta'
+        ORDER BY jr.id FOR UPDATE OF jr`,
+      [listingId],
     );
     return result.rows.map(toRecord);
   }

@@ -1,8 +1,9 @@
 -- 0090_admin_dev: datos de administración de ejemplo para desarrollo (spec 009 T006 y spec 001
 -- T041). El administrador lo crea `npm run seed:admin -w backend` (spec 003 T022): aquí se toma
 -- el administrador activo más antiguo. Sin administrador ni usuarios de desarrollo no hace nada.
---   - titular@dev.vaquita queda habilitado como titular (habilitación manual, RF-009-21), para
---     crear grupos desde el primer día (spec 001, RF-001-21).
+--   - titular@dev.vaquita y miembro1@dev.vaquita quedan habilitados como titulares (habilitación
+--     manual, RF-009-21), para crear grupos desde el primer día (spec 001, RF-001-21); miembro1
+--     además recibe la titularidad en el E2E de transferencia (spec 001 T037).
 --   - Dos usuarios con reclamos abiertos sobre la solicitud rechazada de 0050: miembro3 (ya
 --     abierto en 0050) y miembro1, el titular, que responde con su propio reclamo.
 --   - Un baneo revertido de miembro2. Lo revierte otro administrador (RF-009-23), así que solo
@@ -34,6 +35,16 @@ BEGIN
     INSERT INTO admin_audit_log (admin_id, action, target_type, target_id, reason, occurred_at)
     VALUES (v_admin, 'titular_habilitar', 'user', v_owner,
             'Titular de prueba del equipo de desarrollo', v_now);
+  END IF;
+
+  IF v_m1 IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM host_enablements WHERE user_id = v_m1 AND revoked_at IS NULL
+  ) THEN
+    INSERT INTO host_enablements (user_id, reason, enabled_by, enabled_at)
+    VALUES (v_m1, 'Titular de prueba para el E2E de transferencia', v_admin, v_now);
+    INSERT INTO admin_audit_log (admin_id, action, target_type, target_id, reason, occurred_at)
+    VALUES (v_admin, 'titular_habilitar', 'user', v_m1,
+            'Titular de prueba para el E2E de transferencia', v_now);
   END IF;
 
   SELECT r.id INTO v_request
