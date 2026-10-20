@@ -4,6 +4,8 @@
 name: Backend
 
 on:
+  # Lo reutiliza deploy-backend.yml: prueba antes de pedir el despliegue.
+  workflow_call:
   pull_request:
     branches: [main, qa, dev]
     paths: ['backend/**', 'database/**', 'package.json', 'package-lock.json', '.github/workflows/backend.yml']

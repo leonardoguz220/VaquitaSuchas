@@ -47,6 +47,8 @@ El repositorio es un monorepo y cada capa tiene su propio workflow, además del 
 | [`ci.yml`](.github/workflows/ci.yml) | Todo PR y push a `main` | lint, build, pruebas de las tres capas, db-check y gitleaks (revisión de secretos) |
 | [`e2e.yml`](.github/workflows/e2e.yml) | PR | Flujo completo en el navegador con Playwright |
 | [`branch-flow.yml`](.github/workflows/branch-flow.yml) y [`auto-merge.yml`](.github/workflows/auto-merge.yml) | PR | Valida el flujo `dev` a `qa` a `main` y fusiona los PR de `dev` cuando pasan |
+| [`deploy-backend.yml`](.github/workflows/deploy-backend.yml) | Push a `dev` que toca `backend/`, `database/` o `render.yaml` | Prueba el backend y pide el despliegue a Render (ver [`backend/DEPLOY.md`](backend/DEPLOY.md)) |
+| [`deploy-frontend.yml`](.github/workflows/deploy-frontend.yml) | Push a `main` que toca `frontend/` | Prueba el frontend y pide el despliegue a Vercel (ver [`frontend/DEPLOY.md`](frontend/DEPLOY.md)) |
 | [`migrate-staging.yml`](.github/workflows/migrate-staging.yml) | Manual, solo desde `main` | Aplica las migraciones en la base de staging |
 | [`jobs-tick.yml`](.github/workflows/jobs-tick.yml) | Cada 10 minutos | Respaldo del disparador de tareas programadas |
 
