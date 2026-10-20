@@ -19,7 +19,8 @@ function renderPanel(eligibility: HostEligibility) {
 describe('HostEligibilityPanel (RF-001-21, CA-001-24)', () => {
   it('muestra las estrellas y el nivel cuando hay calificación', () => {
     renderPanel(base);
-    expect(screen.getByText('4,0 (Bueno)')).toBeInTheDocument();
+    expect(screen.getByText('4,0 de 5')).toBeInTheDocument();
+    expect(screen.getByText('Bueno')).toBeInTheDocument();
   });
 
   it('CA-001-24: con stars null muestra «Sin calificación todavía» y no formatea un número', () => {

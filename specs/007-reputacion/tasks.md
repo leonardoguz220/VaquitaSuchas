@@ -32,7 +32,7 @@
 - [x] T013 [US1] [BE] `services/reconcile.job.ts` tarea `reputation.reconcile` diaria: por lotes recalcula a quienes tuvieron cobros en los últimos 13 meses, corrige diferencias (también las del paso del tiempo), suma `drift` en `job_runs`; si cambió `RULES_VERSION` recalcula a todos — Depende: T009, spec 000 T028 · Cubre: RF-007-05, RN-007-07, CA-007-14
 - [x] T014 [US1] [BE] Conectar el adaptador `HostEligibilityPort` de la spec 001 (T013) con `checkHostRating` y la habilitación manual de la spec 009; prueba cruzada `groups.create.e2e-spec.ts` (CA-007-21) — Depende: T010, spec 001 T013 · Cubre: RF-007-15, RF-007-16, RF-007-17, CA-007-21
 - [x] T015 [P] [US1] [FE] Componente `ui`/`features` `RatingBadge` (estrellas + valor numérico + nivel en texto e icono) y `/perfil/reputacion` con mock: «4,5 de 5», cuántos cobros faltan si es «Nuevo», detalle (considerados, puntuales, tardíos, racha), últimos cobros con resultado y vencimiento, explicación de la fórmula con el ejemplo, estado de habilitación como titular — Depende: spec 000 T036 · Cubre: RF-007-01, RF-007-02, RF-007-03, RF-007-04, RNF-007-01, RNF-007-06
-- [ ] T016 [US1] [FE] Conectar `/perfil/reputacion` con `GET /users/me/reputation` y usar `RatingBadge` en las solicitudes (spec 010), publicaciones (spec 008) y creación de grupos (spec 001) — Depende: T011, T015 · Cubre: RF-007-04, RF-007-15
+- [x] T016 [US1] [FE] Conectar `/perfil/reputacion` con `GET /users/me/reputation` y usar `RatingBadge` en las solicitudes (spec 010), publicaciones (spec 008) y creación de grupos (spec 001) — Depende: T011, T015 · Cubre: RF-007-04, RF-007-15
 
 **Punto de control (I2):** la calificación se actualiza con cada cobro y la spec 001 decide quién puede ser titular con datos reales.
 
@@ -69,7 +69,7 @@
 - [x] T030 [US4] [BE] `services/reports.service.ts`, `repositories/exclusions.repository.ts` y `controllers/reports.controller.ts` (`POST /charges/:id/reputation-report`, `POST /charges/:id/reputation-exclusion`, que recalcula con `recomputeUser` en la misma transacción) — Depende: T029, T009 · Cubre: RF-007-14, CA-007-13
 - [x] T031 [BD] Completar `reputation.integrity.test.ts` con las pruebas de exclusiones, reportes e insignias (únicos) — Depende: T017, T028 · Cubre: RF-007-08, RF-007-14
 - [x] T032 [P] [US4] [FE] En `/cobros/[id]` (spec 002): botón «Reportar calificación» para el dueño y «Excluir de reputación» con motivo para el titular, con mock — Depende: spec 002 T018 · Cubre: RF-007-14
-- [ ] T033 [US4] [FE] Conectar el reporte y la exclusión con el backend — Depende: T030, T032 · Cubre: RF-007-14
+- [x] T033 [US4] [FE] Conectar el reporte y la exclusión con el backend — Depende: T030, T032 · Cubre: RF-007-14
 
 ## Fase 6: Cierre
 

@@ -21,7 +21,7 @@
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --selectProjects unit",
-    "test:e2e": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --selectProjects e2e --runInBand --passWithNoTests"
+    "test:e2e": "node scripts/run-e2e.mjs"
   },
   "dependencies": {
     "@nestjs/common": "12.1.3",

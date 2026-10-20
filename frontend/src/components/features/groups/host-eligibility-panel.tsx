@@ -1,7 +1,10 @@
 'use client';
 
+import type { ReactNode } from 'react';
+import { RatingBadge } from '@/components/features/reputation/rating-badge';
 import { Button, Modal } from '@/components/ui';
 import type { HostEligibility } from '@/services/groups';
+import type { RatingLevel } from '@/services/reputation';
 
 function formatDecimal(value: number): string {
   return value.toFixed(1).replace('.', ',');
@@ -13,7 +16,7 @@ function Requirement({
   required,
 }: {
   label: string;
-  current: string;
+  current: ReactNode;
   required: string;
 }) {
   return (
@@ -29,10 +32,15 @@ function Requirement({
   );
 }
 
-/** «4,0 (Bueno)»; sin calificación (`stars: null`) no se formatea ningún número. */
-function starsText(stars: number | null, level: string | null): string {
+/**
+ * Estrellas y nivel con `RatingBadge` (spec 007, RNF-007-06). Sin calificación (`stars: null`) no
+ * hay número; sin nivel se muestra solo el número.
+ */
+function starsText(stars: number | null, level: string | null): ReactNode {
   if (stars === null) return 'Sin calificación todavía';
-  return level ? `${formatDecimal(stars)} (${level})` : formatDecimal(stars);
+  if (level === null) return formatDecimal(stars);
+  const rating = { level: level as RatingLevel, stars, starsLabel: `${formatDecimal(stars)} de 5` };
+  return <RatingBadge rating={rating} />;
 }
 
 export interface HostEligibilityPanelProps {

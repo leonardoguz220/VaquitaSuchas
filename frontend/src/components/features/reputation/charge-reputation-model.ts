@@ -48,9 +48,18 @@ export type ReputationError =
   | { target: 'field'; message: string }
   | { target: 'page'; notice: ReviewNotice };
 
+/**
+ * Código de negocio del error. El backend responde `BUSINESS_RULE` y pone el código concreto en
+ * `details.code` (diferencia con `contracts/api.md`, spec 007); si llega directo en `code`, se usa.
+ */
+function businessCode(error: ApiError): string {
+  const nested = error.details?.code;
+  return error.code === 'BUSINESS_RULE' && typeof nested === 'string' ? nested : error.code;
+}
+
 /** Traduce el error por `code` y luego por `statusCode` (nunca por `message`). */
 export function reputationError(error: ApiError, action: ReputationAction): ReputationError {
-  switch (error.code) {
+  switch (businessCode(error)) {
     case 'CHARGE_ALREADY_EXCLUDED':
       return {
         target: 'page',
