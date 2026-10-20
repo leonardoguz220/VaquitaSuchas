@@ -6,6 +6,7 @@ import { useAdminCatalog } from '@/hooks/use-admin-catalog';
 import { formatBs, formatUsd } from '@/lib/money';
 import type { AdminCatalogPlan, AdminCatalogService } from '@/services/admin-catalog';
 import { AdminActionDialog } from './admin-action-dialog';
+import { AdminCatalogImport } from './admin-catalog-import';
 import { AdminCatalogForm, CATEGORY_OPTIONS, type CatalogFormTarget } from './admin-catalog-form';
 
 type ToggleTarget =
@@ -58,6 +59,17 @@ export function AdminCatalogView() {
 
       {notice && <Alert variant="success">{notice}</Alert>}
       {warning && <Alert variant="info">{warning}</Alert>}
+
+      <AdminCatalogImport
+        importPreview={catalog.importPreview}
+        importApply={catalog.importApply}
+        isPreviewing={catalog.isPreviewing}
+        isApplying={catalog.isApplying}
+        onApplied={(message) => {
+          setNotice(message);
+          setWarning(null);
+        }}
+      />
 
       {services.length === 0 && (
         <p className="text-muted">Todavía no hay servicios en el catálogo.</p>

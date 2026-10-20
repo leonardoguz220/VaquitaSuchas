@@ -2,13 +2,18 @@
 
 import { useCallback } from 'react';
 import {
+  applyCatalogImport,
   createCatalogPlan,
   createCatalogService,
   listAdminCatalog,
+  previewCatalogImport,
   setCatalogPlanActive,
   setCatalogServiceActive,
   updateCatalogPlan,
   updateCatalogService,
+  type CatalogImportApplied,
+  type CatalogImportFormat,
+  type CatalogImportPreview,
   type PlanInput,
   type PlanSaveResult,
   type ServiceInput,
@@ -56,7 +61,8 @@ function toResult(saved: PlanSaveResult): CatalogActionResult {
 
 /**
  * Catálogo de administración (`GET /admin/catalog`, RF-009-04). Cada alta, edición o cambio de
- * estado vuelve a pedir la lista para que la pantalla muestre lo que guardó la API.
+ * estado vuelve a pedir la lista para que la pantalla muestre lo que guardó la API. La importación
+ * (RF-009-06) tiene su propia vista previa y aplicación; aplicar también vuelve a pedir la lista.
  */
 export function useAdminCatalog() {
   const load = useCallback(() => listAdminCatalog(), []);
@@ -73,5 +79,35 @@ export function useAdminCatalog() {
     [submit, refresh],
   );
 
-  return { ...resource, act, isSubmitting };
+  const preview = useApiSubmit((input: { format: CatalogImportFormat; content: string }) =>
+    previewCatalogImport(input.format, input.content),
+  );
+  const apply = useApiSubmit((token: string) => applyCatalogImport(token));
+
+  const importPreview = useCallback(
+    (
+      format: CatalogImportFormat,
+      content: string,
+    ): Promise<ApiSubmitResult<CatalogImportPreview> | null> => preview.submit({ format, content }),
+    [preview],
+  );
+
+  const importApply = useCallback(
+    async (token: string): Promise<ApiSubmitResult<CatalogImportApplied> | null> => {
+      const outcome = await apply.submit(token);
+      if (outcome?.ok) void refresh();
+      return outcome;
+    },
+    [apply, refresh],
+  );
+
+  return {
+    ...resource,
+    act,
+    isSubmitting,
+    importPreview,
+    isPreviewing: preview.isSubmitting,
+    importApply,
+    isApplying: apply.isSubmitting,
+  };
 }
