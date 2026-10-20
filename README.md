@@ -8,7 +8,7 @@ El proyecto se desarrolla con Spec Driven Development: la especificación se esc
 
 ## Estado
 
-Las once specs (000 a 010) están implementadas y desplegadas en staging: la base de datos y el backend en Render, y el frontend en Vercel. El avance real de cada spec se ve en su `tasks.md` (tareas marcadas `[x]`) y el orden de construcción en [`specs/00-roadmap.md`](specs/00-roadmap.md).
+Las once specs (000 a 010) están implementadas y desplegadas en staging: la base de datos y el backend en Render, y el frontend en Vercel (enlaces en [Despliegue](#despliegue-staging)). El avance real de cada spec se ve en su `tasks.md` (tareas marcadas `[x]`) y el orden de construcción en [`specs/00-roadmap.md`](specs/00-roadmap.md).
 
 ## Módulos y cómo funcionan
 
@@ -50,7 +50,15 @@ El repositorio es un monorepo y cada capa tiene su propio workflow, además del 
 | [`migrate-staging.yml`](.github/workflows/migrate-staging.yml) | Manual, solo desde `main` | Aplica las migraciones en la base de staging |
 | [`jobs-tick.yml`](.github/workflows/jobs-tick.yml) | Cada 10 minutos | Respaldo del disparador de tareas programadas |
 
-Despliegue: el backend y PostgreSQL en Render (`render.yaml`), el frontend en Vercel (variable `BACKEND_URL`).
+### Despliegue (staging)
+
+| Parte | Dónde | URL | Cómo comprobarlo |
+| ----- | ----- | --- | ---------------- |
+| Frontend | Vercel | https://vaquita-suchas.vercel.app | [`/estado`](https://vaquita-suchas.vercel.app/estado) muestra frontend, backend y base en OK |
+| Backend | Render, servicio web gratuito (`render.yaml`) | https://vaquita-staging-api.onrender.com | [`/health`](https://vaquita-staging-api.onrender.com/health) responde `status: ok` con la base `up` |
+| Base de datos | Render, PostgreSQL 16 gratuito (`render.yaml`) | Solo accesible desde el backend y desde `migrate-staging.yml` | Las migraciones y el catálogo se aplican con el workflow «Migrate staging» |
+
+El frontend llama al backend a través de su proxy `/api` (variable `BACKEND_URL` en Vercel), así que [`/api/health`](https://vaquita-suchas.vercel.app/api/health) recorre las tres capas. Las migraciones nunca corren al arrancar el backend. El servicio gratuito de Render se duerme tras 15 minutos sin tráfico (la primera petición tarda cerca de un minuto) y la base gratuita caduca a los 30 días de creada (ver `specs/000-setup-del-proyecto/research.md`, R1).
 
 ## Hooks y subagentes de Claude Code
 
