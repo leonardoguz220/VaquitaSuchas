@@ -4,7 +4,7 @@ import {
   fingerprint,
   parseKey,
 } from '../src/modules/users/services/identity.service.js';
-import { DEV_USERS, SeedError, seedAdmin, seedDevUsers } from '../src/cli/seed-users.js';
+import { DEV_ADMIN, DEV_USERS, SeedError, seedAdmin, seedDevUsers } from '../src/cli/seed-users.js';
 import { BillingHarness } from './support/billing-harness.js';
 
 // Comandos de semilla (spec 003 T022 y T046) contra PostgreSQL real.
@@ -102,10 +102,10 @@ describe('Comandos de semilla', () => {
   it('RF-000-06: crea el titular y tres miembros verificados con datos ficticios y la contraseña del entorno', async () => {
     const results = await seedDevUsers(deps({ SEED_DEV_PASSWORD: 'clave-dev-12345' }));
 
-    expect(Object.values(results)).toEqual(['created', 'created', 'created', 'created']);
+    expect(Object.values(results)).toEqual(['created', 'created', 'created', 'created', 'created']);
     const { rows } = await harness.pool.query(
       `SELECT email, role, verified_at, phone_e164, telegram_user_id::text AS telegram,
-              password_hash, ci_encrypted FROM users ORDER BY email`,
+              password_hash, ci_encrypted FROM users WHERE role = 'usuario' ORDER BY email`,
     );
     expect(rows.map((row) => row.email)).toEqual([...DEV_USERS.map((user) => user.email)].sort());
     expect(rows.map((row) => row.email)).toEqual(
@@ -121,6 +121,25 @@ describe('Comandos de semilla', () => {
     }
   });
 
+  it('CA-009-31: crea un segundo administrador para que otro revierta el baneo del E2E', async () => {
+    await seedDevUsers(deps({ SEED_DEV_PASSWORD: 'clave-dev-12345' }));
+
+    const { rows } = await harness.pool.query(
+      `SELECT email, role, verified_at, phone_e164, telegram_user_id, password_hash, ci_encrypted
+         FROM users WHERE role = 'admin'`,
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      email: DEV_ADMIN.email,
+      role: 'admin',
+      phone_e164: null,
+      telegram_user_id: null,
+    });
+    expect(rows[0].verified_at).not.toBeNull();
+    expect(await hasher.verify(rows[0].password_hash, 'clave-dev-12345')).toBe(true);
+    expect(decryptCi(rows[0].ci_encrypted, new Map([[1, parseKey(CI_KEY)]]))).toMatch(/^ADMIN-/);
+  });
+
   it('RF-000-06: es idempotente por correo y completa los que falten', async () => {
     const env = { SEED_DEV_PASSWORD: 'clave-dev-12345' };
     await seedDevUsers(deps(env));
@@ -133,8 +152,9 @@ describe('Comandos de semilla', () => {
       'miembro1@dev.vaquita': 'exists',
       'miembro2@dev.vaquita': 'exists',
       'miembro3@dev.vaquita': 'created',
+      'admin2@dev.vaquita': 'exists',
     });
-    expect((await harness.pool.query('SELECT count(*) AS n FROM users')).rows[0].n).toBe('4');
+    expect((await harness.pool.query('SELECT count(*) AS n FROM users')).rows[0].n).toBe('5');
   });
 
   it('RF-000-06: no corre en producción ni sin SEED_DEV_PASSWORD', async () => {

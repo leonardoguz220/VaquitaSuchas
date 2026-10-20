@@ -109,7 +109,7 @@ export async function seedAdmin(
   });
 }
 
-/** Cuatro usuarios de prueba: un titular y tres miembros, con datos ficticios fijos. */
+/** Cuatro usuarios de prueba: un titular y tres miembros, con datos ficticios fijos (más `DEV_ADMIN`). */
 export const DEV_USERS: readonly {
   email: string;
   fullName: string;
@@ -142,6 +142,12 @@ export const DEV_USERS: readonly {
   },
 ];
 
+/**
+ * Segundo administrador de prueba: revertir un baneo exige un administrador distinto del que lo
+ * aplicó (spec 009, RF-009-23), así que el E2E del baneo (spec 009 T018) necesita dos.
+ */
+export const DEV_ADMIN = { email: 'admin2@dev.vaquita', fullName: 'Administrador Dos de Prueba' };
+
 /** `seed:dev-users` (RF-000-06): solo fuera de producción y con `SEED_DEV_PASSWORD`. */
 export async function seedDevUsers(deps: SeedDeps): Promise<Record<string, SeedResult>> {
   if (deps.env['NODE_ENV'] === 'production') {
@@ -149,6 +155,7 @@ export async function seedDevUsers(deps: SeedDeps): Promise<Record<string, SeedR
   }
   const password = requireVar(deps.env, 'SEED_DEV_PASSWORD');
   for (const user of DEV_USERS) checkPassword(password, user.email);
+  checkPassword(password, DEV_ADMIN.email);
   const results: Record<string, SeedResult> = {};
   for (const user of DEV_USERS) {
     results[user.email] = await insertSeedUser(deps, {
@@ -159,5 +166,13 @@ export async function seedDevUsers(deps: SeedDeps): Promise<Record<string, SeedR
       telegramUserId: user.telegramUserId,
     });
   }
+  results[DEV_ADMIN.email] = await insertSeedUser(deps, {
+    ...DEV_ADMIN,
+    password,
+    role: 'admin',
+    syntheticCi: `ADMIN-${randomUUID()}`,
+    phoneE164: null,
+    telegramUserId: null,
+  });
   return results;
 }

@@ -2,7 +2,8 @@ import { Pool } from 'pg';
 import { PasswordHasher } from '../modules/auth/services/password-hasher.js';
 import { SeedError, seedDevUsers } from './seed-users.js';
 
-// Crea cuatro usuarios de prueba: `npm run seed:dev-users -w backend` (spec 003 T046). Solo corre
+// Crea cuatro usuarios de prueba y un segundo administrador (admin2@dev.vaquita, spec 009 T018):
+// `npm run seed:dev-users -w backend` (spec 003 T046). Solo corre
 // si NODE_ENV no es production. Lee SEED_DEV_PASSWORD (nunca en el repositorio), DATABASE_URL,
 // CI_ENCRYPTION_KEY y FINGERPRINT_KEY. No imprime contraseñas.
 async function main(): Promise<void> {
