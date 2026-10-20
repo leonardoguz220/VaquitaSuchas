@@ -1,11 +1,12 @@
 // Spec 009, T037 (CA-009-21; data-model.md, índices de users y admin_audit_log): planes de
 // consulta de la búsqueda de usuarios y del log de auditoría con 10.000 usuarios de prueba. Las
 // consultas son copia de backend/src/modules/admin/repositories/users-admin.repository.ts (list)
-// y audit.repository.ts (list); la lista de columnas se resume. Las estadísticas (spec 009 T034)
-// aún no existen en backend/src y no se revisan aquí. Todos los datos son ficticios.
+// y audit.repository.ts (list), y las estadísticas del tablero de stats.repository.ts (collect);
+// la lista de columnas se resume. Todos los datos son ficticios.
 //
 // Volumen: 10.000 usuarios verificados (5 administradores) y 50.000 entradas de auditoría
-// repartidas en el último año. La carga va con session_replication_role = replica (sin
+// repartidas en el último año; para el tablero, 2.000 grupos con 72.000 cobros en 12 meses,
+// reputación de todos los usuarios, 1.800 publicaciones, 6.000 solicitudes y 300 reclamos. La carga va con session_replication_role = replica (sin
 // disparadores ni FK) para que tarde poco: las filas respetan los CHECK, y los disparadores ya
 // los prueba admin.integrity.test.ts. Después se corre ANALYZE.
 //
@@ -15,7 +16,9 @@
 // Resultado: la búsqueda de usuarios por texto ('%término%') recorre users (un índice B-tree no
 // sirve para LIKE con comodín inicial), pero con 10.000 usuarios tarda unos 40 ms: no hace falta
 // un índice nuevo. El log sin filtro recorría toda la tabla, que crece sin límite: lo resuelve
-// admin_audit_log_recent_idx (0095). Los filtros del log usan sus índices de 0092.
+// admin_audit_log_recent_idx (0095). Los filtros del log usan sus índices de 0092. Las
+// estadísticas son conteos y sumas sobre tablas enteras o un período, y las ocho consultas juntas
+// quedan muy por debajo de los 2 s.
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -30,6 +33,8 @@ const FAKE_HASH = '$argon2id$v=19$m=19456,t=2,p=1$dGVzdA$ZmFrZQ';
 const USERS = 10000;
 const ADMINS = 5;
 const AUDIT_ENTRIES = 50000;
+const GROUPS = 2000;
+const MONTHS = 12;
 const RUNS = 10;
 // CA-009-21: menos de 2 s.
 const BUDGET_MS = 2000;
@@ -71,6 +76,59 @@ const auditSql = (where: string, limitParam: number): string => `
   SELECT ${AUDIT_COLUMNS} FROM admin_audit_log ${where}
    ORDER BY occurred_at DESC, id DESC LIMIT $${limitParam}`;
 
+interface StatsWindow {
+  period: string;
+  monthStart: Date;
+  since30d: Date;
+}
+
+// StatsRepository.collect(): las ocho consultas del tablero (US7), con sus parámetros.
+const STATS_QUERIES: [string, (w: StatsWindow) => unknown[], string][] = [
+  [
+    'usuarios',
+    (w) => [w.monthStart, w.since30d],
+    `SELECT count(*)::text AS total,
+            count(*) FILTER (WHERE created_at >= $1)::text AS new_month,
+            count(*) FILTER (WHERE last_login_at >= $2)::text AS active
+       FROM users`,
+  ],
+  ['grupos', () => [], 'SELECT status, count(*)::text AS total FROM groups GROUP BY status'],
+  [
+    'cobros del período',
+    (w) => [w.period],
+    `SELECT status, count(*)::text AS total, COALESCE(sum(amount_cents), 0)::text AS cents
+       FROM charges WHERE period = $1 GROUP BY status`,
+  ],
+  [
+    'puntualidad',
+    () => [],
+    `SELECT sum(punctual_count)::text AS punctual, sum(considered_count)::text AS considered
+       FROM user_reputation`,
+  ],
+  [
+    'servicios principales',
+    () => [],
+    `SELECT service_name_snapshot AS name, count(*)::text AS total
+       FROM groups WHERE status = 'activo'
+      GROUP BY service_name_snapshot ORDER BY count(*) DESC, service_name_snapshot LIMIT 5`,
+  ],
+  [
+    'publicaciones',
+    () => [],
+    "SELECT count(*)::text AS total FROM listings WHERE status = 'activa'",
+  ],
+  [
+    'solicitudes del mes',
+    (w) => [w.monthStart],
+    'SELECT count(*)::text AS total FROM join_requests WHERE created_at >= $1',
+  ],
+  [
+    'reclamos abiertos',
+    () => [],
+    "SELECT count(*)::text AS total FROM join_disputes WHERE status = 'abierto'",
+  ],
+];
+
 // ---------------------------------------------------------------- datos de volumen
 
 const LOAD_SQL = `
@@ -101,7 +159,88 @@ const LOAD_SQL = `
     CROSS JOIN LATERAL (
       SELECT (ARRAY['usuario_suspender', 'usuario_reactivar', 'usuario_banear',
                     'titular_habilitar', 'rol_promover'])[1 + (e / ${ADMINS}) % 5] AS action
-    ) a`;
+    ) a;
+
+  -- Tablero: el grupo gn es del usuario común n = gn; uno de cada diez está cerrado.
+  INSERT INTO groups (owner_id, name, service_name_snapshot, price_cents, currency, billing_day,
+                      total_slots, invite_code, status, closed_at)
+  SELECT usr.id, 'Grupo ' || gn,
+         (ARRAY['Netflix', 'Spotify', 'YouTube Premium', 'Disney+', 'Max', 'Duolingo',
+                'Google One'])[1 + gn % 7],
+         6000, 'BS', 5, 5,
+         translate(lpad(to_hex(gn * 7919), 8, 'A'), '0123456789abcdef', 'ABCDEFGHJKMNPQRS'),
+         CASE WHEN gn % 10 = 0 THEN 'cerrado' ELSE 'activo' END,
+         CASE WHEN gn % 10 = 0 THEN now() - interval '10 days' END
+    FROM generate_series(1, ${GROUPS}) AS gn
+    JOIN usr ON usr.n = gn;
+
+  CREATE TEMP TABLE gr AS
+    SELECT id, owner_id, row_number() OVER (ORDER BY id) AS gn FROM groups;
+
+  -- Tres cobros por grupo y mes: los del mes en curso abiertos, los anteriores pagados y uno de
+  -- cada 25 cancelado.
+  INSERT INTO charges (group_id, user_id, cycle_id, period, origin, status, amount_cents,
+                       price_cents, currency, total_bs_cents, member_count, issued_at, due_at,
+                       paid_at, settled_by, settlement, cancelled_at, cancelled_by, cancel_reason)
+  SELECT gr.id, usr.id, gen_random_uuid(), to_char(c.cut, 'YYYY-MM'), 'ciclo', st.status, 1500,
+         6000, 'BS', 6000, 4, c.cut, c.cut + interval '4 days',
+         CASE WHEN st.status = 'pagado' THEN c.cut + interval '1 day' END,
+         CASE WHEN st.status = 'pagado' THEN gr.owner_id END,
+         CASE WHEN st.status = 'pagado' THEN 'manual' END,
+         CASE WHEN st.status = 'cancelado' THEN c.cut + interval '2 days' END,
+         CASE WHEN st.status = 'cancelado' THEN gr.owner_id END,
+         CASE WHEN st.status = 'cancelado' THEN 'Cobro duplicado' END
+    FROM gr
+    CROSS JOIN generate_series(1, 3) AS k
+    JOIN usr ON usr.n = ${GROUPS} + 1 + ((gr.gn * 3 + k) % (${USERS} - ${ADMINS} - ${GROUPS}))
+    CROSS JOIN LATERAL (
+      SELECT (date_trunc('month', now()) - make_interval(months => m))::date + 4 AS cut, m
+        FROM generate_series(0, ${MONTHS - 1}) AS m
+    ) c
+    CROSS JOIN LATERAL (
+      SELECT CASE WHEN c.m = 0 THEN (ARRAY['pendiente', 'en_revision', 'atrasado'])[1 + k % 3]
+                  WHEN (gr.gn + k + c.m) % 25 = 0 THEN 'cancelado'
+                  ELSE 'pagado' END AS status
+    ) st;
+
+  INSERT INTO user_reputation (user_id, considered_count, punctual_count, late_count,
+                               displayed_half_stars, level, current_streak, rules_version,
+                               computed_at)
+  SELECT id, 12, 10, 2, 8, 'Bueno', 3, 1, now() FROM users;
+
+  -- Una publicación por grupo activo: dos de cada tres 'activa', el resto 'expirada'.
+  INSERT INTO listings (group_id, slots_offered, status, published_at, expires_at)
+  SELECT id, 1, CASE WHEN gn % 3 = 0 THEN 'expirada' ELSE 'activa' END, p.at,
+         p.at + interval '30 days'
+    FROM gr
+    CROSS JOIN LATERAL (
+      SELECT now() - CASE WHEN gn % 3 = 0 THEN interval '40 days' ELSE interval '1 day' END AS at
+    ) p
+   WHERE gn % 10 <> 0;
+
+  INSERT INTO join_requests (group_id, applicant_id, status, opened_at, open_deadline_at,
+                             final_at, final_reason, created_at)
+  SELECT gr.id, usr.id, 'expirada', o.at, o.at + interval '24 hours',
+         o.at + interval '24 hours', 'plazo_solicitud', o.at
+    FROM gr
+    CROSS JOIN generate_series(1, 3) AS k
+    JOIN usr ON usr.n = ${GROUPS} + 1 + ((gr.gn * 5 + k) % (${USERS} - ${ADMINS} - ${GROUPS}))
+    CROSS JOIN LATERAL (SELECT now() - make_interval(days => ((gr.gn + k) % 90)::int) AS at) o;
+
+  -- 300 reclamos, uno de cada tres resuelto.
+  INSERT INTO join_disputes (request_id, kind, opened_by, accused_id, description, opened_at,
+                             status, resolution, resolution_reason, resolved_by, resolved_at)
+  SELECT d.id, 'pago_sin_ingreso', d.applicant_id, d.owner_id,
+         'Pagué y no me aceptaron en el grupo', d.final_at,
+         CASE WHEN d.r % 3 = 0 THEN 'resuelto' ELSE 'abierto' END,
+         CASE WHEN d.r % 3 = 0 THEN 'sin_falta' END,
+         CASE WHEN d.r % 3 = 0 THEN 'No hubo falta del titular' END,
+         CASE WHEN d.r % 3 = 0 THEN (SELECT id FROM adm WHERE n = 1) END,
+         CASE WHEN d.r % 3 = 0 THEN d.final_at + interval '1 day' END
+    FROM (SELECT jr.id, jr.applicant_id, g.owner_id, jr.final_at,
+                 row_number() OVER (ORDER BY jr.id) AS r
+            FROM join_requests jr JOIN groups g ON g.id = jr.group_id
+           ORDER BY jr.id LIMIT 300) d`;
 
 // ---------------------------------------------------------------- base y conexión
 
@@ -124,7 +263,9 @@ before(async () => {
     await client.query(statement, statement.includes('$1') ? [FAKE_HASH] : []);
   }
   await client.query('COMMIT');
-  await client.query('ANALYZE users, admin_audit_log');
+  await client.query(
+    'ANALYZE users, admin_audit_log, groups, charges, user_reputation, listings, join_requests, join_disputes',
+  );
 
   const { rows } = await client.query<{ admin: string; target: string }>(
     `SELECT (SELECT id FROM users WHERE email = 'admin1@example.com') AS admin,
@@ -270,4 +411,22 @@ test('CA-009-21: el log de auditoría sin filtro, por fechas y con cursor usa ad
     assert.ok(indexesUsed(plan).includes('admin_audit_log_recent_idx'), summary(plan));
     assert.ok(p95 < BUDGET_MS, `p95 ${p95} ms`);
   }
+});
+
+test('CA-009-21: las estadísticas del tablero responden en menos de 2 s', async (t) => {
+  const now = new Date();
+  const window: StatsWindow = {
+    period: now.toISOString().slice(0, 7),
+    monthStart: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
+    since30d: new Date(now.getTime() - 30 * 24 * 3600 * 1000),
+  };
+  // collect() lanza las ocho a la vez; la suma de sus p95 es una cota superior del tablero.
+  let total = 0;
+  for (const [name, params, sql] of STATS_QUERIES) {
+    const { plan, p95 } = await measure(sql, params(window));
+    t.diagnostic(`${name}: ${summary(plan)}; p95 ${p95} ms`);
+    total += p95;
+  }
+  t.diagnostic(`tablero: ${total} ms`);
+  assert.ok(total < BUDGET_MS, `${total} ms`);
 });
