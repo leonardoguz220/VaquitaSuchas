@@ -1,11 +1,9 @@
 /**
  * Cliente de los endpoints de notificaciones (spec 005, `contracts/api.md`). Una función por
  * endpoint; los tipos salen del contrato. Todos trabajan sobre la persona con sesión
- * (CA-005-21): el frontend nunca pide avisos de otra persona. Por ahora cada función responde con
- * datos simulados de `notifications.mock.ts`; al conectar el backend solo cambia el cuerpo por
- * `apiRequest`.
+ * (CA-005-21): el frontend nunca pide avisos de otra persona.
  */
-import * as mock from './notifications.mock';
+import { apiRequest } from './http';
 
 /** Tipo de aviso por el que se eligen los canales (RF-005-17). */
 export type NotificationCategory = 'recordatorios' | 'resoluciones' | 'titular' | 'grupo';
@@ -47,22 +45,30 @@ export interface ListNotificationsParams {
 export function listNotifications(
   params: ListNotificationsParams = {},
 ): Promise<NotificationsPage> {
-  return mock.listNotifications(params);
+  const query = new URLSearchParams();
+  if (params.unread) query.set('unread', 'true');
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.cursor) query.set('cursor', params.cursor);
+  const search = query.toString();
+  const suffix = search ? `?${search}` : '';
+  return apiRequest<NotificationsPage>(`/api/notifications${suffix}`);
 }
 
 /** `GET /notifications/unread-count`: lo consulta la campana cada 30 s. */
 export function getUnreadCount(): Promise<{ unreadCount: number }> {
-  return mock.getUnreadCount();
+  return apiRequest<{ unreadCount: number }>('/api/notifications/unread-count');
 }
 
 /** `POST /notifications/:id/read` (`204`). Una notificación ajena responde `404`. */
 export function markNotificationRead(notificationId: string): Promise<void> {
-  return mock.markNotificationRead(notificationId);
+  return apiRequest<void>(`/api/notifications/${encodeURIComponent(notificationId)}/read`, {
+    method: 'POST',
+  });
 }
 
 /** `POST /notifications/read-all` (`204`, CA-005-22). */
 export function markAllNotificationsRead(): Promise<void> {
-  return mock.markAllNotificationsRead();
+  return apiRequest<void>('/api/notifications/read-all', { method: 'POST' });
 }
 
 /** Interruptores por tipo de aviso de un canal (RF-005-17). */
@@ -89,7 +95,7 @@ export interface UpdateNotificationPreferencesRequest {
 
 /** `GET /notification-preferences` (RF-005-17). */
 export function getNotificationPreferences(): Promise<NotificationPreferences> {
-  return mock.getNotificationPreferences();
+  return apiRequest<NotificationPreferences>('/api/notification-preferences');
 }
 
 /**
@@ -99,12 +105,14 @@ export function getNotificationPreferences(): Promise<NotificationPreferences> {
 export function updateNotificationPreferences(
   input: UpdateNotificationPreferencesRequest,
 ): Promise<unknown> {
-  return mock.updateNotificationPreferences(input);
+  return apiRequest<unknown>('/api/notification-preferences', { method: 'PUT', body: input });
 }
 
 /** `POST /notification-preferences/telegram/reactivate` (RF-005-28; CA-005-33). */
 export function reactivateTelegram(): Promise<NotificationPreferences> {
-  return mock.reactivateTelegram();
+  return apiRequest<NotificationPreferences>('/api/notification-preferences/telegram/reactivate', {
+    method: 'POST',
+  });
 }
 
 /**
@@ -113,5 +121,8 @@ export function reactivateTelegram(): Promise<NotificationPreferences> {
  * es válido.
  */
 export function unsubscribeEmail(token: string): Promise<{ category: NotificationCategory }> {
-  return mock.unsubscribeEmail(token);
+  return apiRequest<{ category: NotificationCategory }>('/api/notifications/unsubscribe', {
+    method: 'POST',
+    body: { token },
+  });
 }

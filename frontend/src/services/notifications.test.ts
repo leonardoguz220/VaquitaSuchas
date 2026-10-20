@@ -1,3 +1,4 @@
+import { apiRequest } from './http';
 import {
   getNotificationPreferences,
   getUnreadCount,
@@ -8,91 +9,92 @@ import {
   unsubscribeEmail,
   updateNotificationPreferences,
 } from './notifications';
-import { MOCK_UNSUBSCRIBE_TOKENS, resetNotificationsMock } from './notifications.mock';
 
-beforeEach(() => {
-  jest.useFakeTimers();
-  resetNotificationsMock();
-});
-afterEach(() => jest.useRealTimers());
+jest.mock('./http', () => ({ apiRequest: jest.fn() }));
 
-async function settle<T>(promise: Promise<T>): Promise<T> {
-  await jest.runAllTimersAsync();
-  return promise;
+const mockedRequest = jest.mocked(apiRequest);
+const NOTIFICATION_ID = '5b0d7c3e-0000-4000-8000-0000000000a1';
+
+function lastCall() {
+  const call = mockedRequest.mock.calls.at(-1);
+  if (!call) throw new Error('apiRequest no se llamó');
+  return { path: call[0], options: call[1] };
 }
 
-async function expectRejection(promise: Promise<unknown>, shape: object) {
-  const assertion = expect(promise).rejects.toMatchObject(shape);
-  await jest.runAllTimersAsync();
-  await assertion;
-}
+describe('services/notifications conectado al backend (contrato 005)', () => {
+  beforeEach(() => {
+    mockedRequest.mockReset();
+    mockedRequest.mockResolvedValue({} as never);
+  });
 
-describe('services/notifications con datos simulados (contrato 005): centro de avisos', () => {
-  it('RF-005-01: listNotifications trae título, texto, fecha, enlace y el contador', async () => {
-    const page = await settle(listNotifications());
-    expect(page.items.length).toBeGreaterThan(0);
-    page.items.forEach((item) => {
-      expect(item).toEqual(
-        expect.objectContaining({ title: expect.any(String), createdAt: expect.any(String) }),
-      );
+  it('RF-005-01: listNotifications pide GET /api/notifications y devuelve la página tal cual', async () => {
+    const page = { items: [], nextCursor: null, unreadCount: 0 };
+    mockedRequest.mockResolvedValueOnce(page as never);
+    await expect(listNotifications()).resolves.toBe(page);
+    expect(lastCall().path).toBe('/api/notifications');
+  });
+
+  it('RF-005-02: el filtro unread, el límite y el cursor van en la query', async () => {
+    await listNotifications({ unread: true, limit: 20, cursor: 'abc' });
+    expect(lastCall().path).toBe('/api/notifications?unread=true&limit=20&cursor=abc');
+    await listNotifications({ limit: 5 });
+    expect(lastCall().path).toBe('/api/notifications?limit=5');
+  });
+
+  it('RF-005-02: getUnreadCount pide GET /api/notifications/unread-count', async () => {
+    await getUnreadCount();
+    expect(lastCall().path).toBe('/api/notifications/unread-count');
+  });
+
+  it('CA-005-22: markNotificationRead hace POST con el id codificado', async () => {
+    await markNotificationRead(NOTIFICATION_ID);
+    expect(lastCall()).toEqual({
+      path: `/api/notifications/${NOTIFICATION_ID}/read`,
+      options: { method: 'POST' },
     });
-    expect(page.unreadCount).toBe(page.items.filter((item) => item.readAt === null).length);
   });
 
-  it('RF-005-02: el filtro unread trae solo las no leídas y pagina con cursor', async () => {
-    const unread = await settle(listNotifications({ unread: true }));
-    expect(unread.items.every((item) => item.readAt === null)).toBe(true);
-    const first = await settle(listNotifications({ limit: 2 }));
-    expect(first.items).toHaveLength(2);
-    const second = await settle(listNotifications({ limit: 2, cursor: first.nextCursor ?? '' }));
-    expect(second.items[0].id).not.toBe(first.items[0].id);
+  it('CA-005-22: markAllNotificationsRead hace POST a read-all', async () => {
+    await markAllNotificationsRead();
+    expect(lastCall()).toEqual({
+      path: '/api/notifications/read-all',
+      options: { method: 'POST' },
+    });
   });
 
-  it('RF-005-02: getUnreadCount coincide con la lista', async () => {
-    const { unreadCount } = await settle(getUnreadCount());
-    const page = await settle(listNotifications());
-    expect(unreadCount).toBe(page.unreadCount);
+  it('CA-005-11, CA-005-32: getNotificationPreferences pide GET /api/notification-preferences', async () => {
+    await getNotificationPreferences();
+    expect(lastCall().path).toBe('/api/notification-preferences');
   });
 
-  it('RF-005-02: markNotificationRead baja el contador y responde 404 a un id ajeno', async () => {
-    const [first] = (await settle(listNotifications({ unread: true }))).items;
-    const before = (await settle(getUnreadCount())).unreadCount;
-    await settle(markNotificationRead(first.id));
-    expect((await settle(getUnreadCount())).unreadCount).toBe(before - 1);
-    await expectRejection(markNotificationRead('ajena'), { statusCode: 404 });
+  it('RF-005-17: updateNotificationPreferences hace PUT con los interruptores', async () => {
+    const input = {
+      email: { recordatorios: false, resoluciones: true, titular: true, grupo: true },
+      telegram: { recordatorios: true, resoluciones: true, titular: true, grupo: true },
+    };
+    await updateNotificationPreferences(input);
+    expect(lastCall()).toEqual({
+      path: '/api/notification-preferences',
+      options: { method: 'PUT', body: input },
+    });
   });
 
-  it('CA-005-22: tras marcar todas como leídas, el contador queda en cero', async () => {
-    await settle(markAllNotificationsRead());
-    expect((await settle(getUnreadCount())).unreadCount).toBe(0);
-  });
-});
-
-describe('services/notifications con datos simulados (contrato 005): preferencias', () => {
-  it('RF-005-17: guarda los interruptores por tipo para correo y Telegram', async () => {
-    const current = await settle(getNotificationPreferences());
-    expect(current.securityEmailsAlwaysOn).toBe(true);
-    await settle(
-      updateNotificationPreferences({
-        email: { ...current.email, recordatorios: false },
-        telegram: { recordatorios: false, resoluciones: false, titular: false, grupo: false },
-      }),
-    );
-    const saved = await settle(getNotificationPreferences());
-    expect(saved.email.recordatorios).toBe(false);
-    expect(saved.telegram.titular).toBe(false);
+  it('RF-005-28, CA-005-33: reactivateTelegram hace POST a su ruta del contrato', async () => {
+    await reactivateTelegram();
+    expect(lastCall()).toEqual({
+      path: '/api/notification-preferences/telegram/reactivate',
+      options: { method: 'POST' },
+    });
   });
 
-  it('RF-005-17: reactivateTelegram quita el bloqueo', async () => {
-    expect((await settle(getNotificationPreferences())).telegram.blocked).toBe(true);
-    expect((await settle(reactivateTelegram())).telegram.blocked).toBe(false);
-  });
-
-  it('RF-005-18: unsubscribeEmail desactiva el tipo del enlace; un token inválido da 400', async () => {
-    await expect(settle(unsubscribeEmail(MOCK_UNSUBSCRIBE_TOKENS.valid))).resolves.toEqual({
+  it('RF-005-18, CA-005-13: unsubscribeEmail manda el token en el cuerpo de un POST', async () => {
+    mockedRequest.mockResolvedValueOnce({ category: 'recordatorios' } as never);
+    await expect(unsubscribeEmail('token-firmado')).resolves.toEqual({
       category: 'recordatorios',
     });
-    expect((await settle(getNotificationPreferences())).email.recordatorios).toBe(false);
-    await expectRejection(unsubscribeEmail('otro'), { statusCode: 400 });
+    expect(lastCall()).toEqual({
+      path: '/api/notifications/unsubscribe',
+      options: { method: 'POST', body: { token: 'token-firmado' } },
+    });
   });
 });

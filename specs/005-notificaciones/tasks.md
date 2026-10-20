@@ -27,7 +27,7 @@
 - [x] T010 [P] [US1] [BE] `backend/test/notifications.join-requests.e2e-spec.ts`: CA-005-25 (solicitud nueva con el nombre), CA-005-26 (datos de pago: monto y 15 min), CA-005-27 (30 min: un solo recordatorio), CA-005-28 (mensajes de chat agrupados por tanda sin leer), avisos de aceptada, rechazada, expirada y reclamos — Depende: T005 · Cubre: CA-005-25, CA-005-26, CA-005-27, CA-005-28, RF-005-22, RF-005-23, RF-005-24, RF-005-25
 - [x] T011 [US1] [BE] `services/handlers/join-requests.handlers.ts`: `JoinRequestOpened` → `solicitud_nueva`; `ProofSubmitted`/`DecisionReminderDue` → `solicitud_comprobante`/`solicitud_recordatorio_30`; `PaymentDataSent` → `solicitud_datos_pago`; `JoinRequestAccepted/Rejected/Expired/Cancelled` → avisos al solicitante (y al titular si cancela el sistema); `ChatMessageSent` → `solicitud_mensaje` con clave `chat:<solicitud>:<destinatario>:<último leído>`; `DisputeOpened`/`DisputeResolved` → `reclamo_abierto`/`reclamo_resuelto` — Depende: T010, T007, spec 010 T012 · Cubre: RF-005-22, RF-005-23, RF-005-24, RF-005-25, CA-005-25, CA-005-26, CA-005-27, CA-005-28
 - [x] T012 [P] [US1] [FE] Campana de la barra superior (contador con número, panel con los últimos avisos y «Marcar todas como leídas»; consulta `unread-count` cada 30 s, pausada con la pestaña oculta) y `/notificaciones` (lista paginada, filtro «No leídas», cada aviso lleva a su `link`) con mock; estados leída/no leída con texto o icono además del color — Depende: spec 000 T036 · Cubre: RF-005-02, RF-005-03, RNF-005-06
-- [ ] T013 [US1] [FE] Conectar la campana y `/notificaciones` con `GET /notifications`, `unread-count`, `read` y `read-all` — Depende: T007, T012 · Cubre: RF-005-01, RF-005-02
+- [x] T013 [US1] [FE] Conectar la campana y `/notificaciones` con `GET /notifications`, `unread-count`, `read` y `read-all` — Depende: T007, T012 · Cubre: RF-005-01, RF-005-02
 
 **Punto de control (parte A, I1):** los hechos de las specs 001, 002 y 010 generan avisos en la app; el MVP queda notificado.
 
@@ -52,7 +52,7 @@
 - [x] T021 [US3] [BE] `controllers/preferences.controller.ts`: `GET/PUT /notification-preferences`, `POST /notifications/unsubscribe` (token HMAC con confirmación por `POST`; el enlace de desactivación va en todo correo no transaccional) — Depende: T020 · Cubre: RF-005-17, RF-005-18, CA-005-13
 - [x] T022 [BE] `services/purge.service.ts` y tarea `notifications.purge` diaria (notificaciones de más de 90 días y direcciones de invitaciones de más de 30 días) con `notifications.purge.e2e-spec.ts` (CA-005-23) — Depende: T020 · Cubre: RF-005-21, CA-005-23
 - [x] T023 [P] [US3] [FE] `/ajustes/avisos` (interruptores por tipo para correo y Telegram, aviso de correo con problema, estado de Telegram con «Reactivar»; texto fijo de que la app y los correos de seguridad no se desactivan) y `/avisos/desactivar?token=` (página pública con botón de confirmación) con mock — Depende: T012 · Cubre: RF-005-17, RF-005-18, RNF-005-06
-- [ ] T024 [US3] [FE] Conectar `/ajustes/avisos` y `/avisos/desactivar` con `GET/PUT /notification-preferences` y `POST /notifications/unsubscribe` — Depende: T021, T023 · Cubre: RF-005-17, RF-005-18
+- [x] T024 [US3] [FE] Conectar `/ajustes/avisos` y `/avisos/desactivar` con `GET/PUT /notification-preferences` y `POST /notifications/unsubscribe` — Depende: T021, T023 · Cubre: RF-005-17, RF-005-18
 
 ## Fase 5: US4 — Invitaciones y WhatsApp (parte B, Prioridad: P1)
 
