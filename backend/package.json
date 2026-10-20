@@ -12,12 +12,16 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
+    "telegram:set-webhook": "node --env-file-if-exists=.env dist/cli/telegram-set-webhook.js",
+    "seed:admin": "node --env-file-if-exists=.env dist/cli/seed-admin.js",
+    "host:enable": "node --env-file-if-exists=.env dist/cli/host-enable.js",
+    "seed:dev-users": "node --env-file-if-exists=.env dist/cli/seed-dev-users.js",
     "lint": "eslint . && prettier --check . && tsc --noEmit",
     "lint:fix": "eslint . --fix && prettier --write .",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --selectProjects unit",
-    "test:e2e": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --selectProjects e2e --runInBand --passWithNoTests"
+    "test:e2e": "node scripts/run-e2e.mjs"
   },
   "dependencies": {
     "@nestjs/common": "12.1.3",

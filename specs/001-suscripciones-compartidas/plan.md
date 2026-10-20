@@ -49,6 +49,35 @@ Detalle en [`data-model.md`](data-model.md): `groups` y `group_members` (migraci
 
 Seed de desarrollo: dos grupos de ejemplo con un titular habilitado y tres miembros, solo con `NODE_ENV != production`.
 
+### Cambios al modelo y a las tareas (aprobados el 2026-10-18, PR #43; se aplicaron todas las recomendaciones)
+
+> Detectado por `/speckit-analyze` (3 CRITICAL y 3 HIGH). Ya están en `data-model.md` y en `tasks.md` de las specs 001, 003 y 010. M5 se resolvió sin columna nueva: el corte se deriva del último `billing_cycles.cut_date`.
+
+**Bloquean T001–T004 (modelo):**
+
+| ID | Problema | Propuesta |
+|---|---|---|
+| H2 | `group_members` no tiene `created_at` ni `updated_at`, pero la convención de la spec 000 (data-model §1) los exige en toda tabla, la prueba `schema.conventions` falla sin ellos y T004 aplica `set_updated_at` "en ambas tablas". | Agregar `created_at` y `updated_at` (`timestamptz NOT NULL DEFAULT now()`) a `group_members`, con el disparador `set_updated_at`. |
+| H3 | La spec 001 delega a la 010 la FK `group_members.join_request_id`, pero la migración 0054 de la 010 solo agrega `charges.join_request_id`. | Que 010 T006 agregue también la FK de `group_members.join_request_id` y el CHECK `((join_source = solicitud) = (join_request_id IS NOT NULL))`, o que la 001 deje de exigirla. Se coordina con el plan de la 010. |
+| M1 | Nada en la base impide insertar un miembro en un grupo `cerrado` o congelado (`frozen_at`). | Que `group_members_capacity` también rechace si `status <> activo OR frozen_at IS NOT NULL`. |
+| M2 | "o de reactivar" en `group_members_capacity` contradice el modelo de una fila por estadía. | Hacer inmutables `left_at` y `left_reason` una vez fijados; el control de cupo solo en `INSERT`. |
+| M3 | `groups_closed_readonly` impediría fijar `frozen_at` en un grupo cerrado, y el baneo (spec 009, T028) revertiría toda su transacción. | Exceptuar `frozen_at` y `frozen_reason` en `groups_closed_readonly`, o que el baneo solo congele grupos `activo`. |
+| M5 | "`billing_day` rige desde el siguiente corte" (§5) no tiene columna de vigencia: con el día nuevo podrían salir dos cortes en el mismo período (UNIQUE `(group_id, period)` de la 002). | [NECESITA ACLARACIÓN] `billing_day_effective_from` o derivar el corte del último `billing_cycles.cut_date` (spec 002). |
+
+**Bloquean T005 y T041 (seed de desarrollo):**
+
+| ID | Problema | Propuesta |
+|---|---|---|
+| C1 | T005 siembra "12 meses de ciclos y cobros", pero `billing_cycles` y `charges` son de la spec 002 (0040–0049) y no figuran en *Depende*. | T005 solo siembra `groups` y `group_members` (archivo `seeds/0030_groups_dev.sql`). Los ciclos y cobros los siembra la spec 002 con su propio archivo 004x. |
+| C2 | Los grupos necesitan un titular y tres miembros, pero `users` exige `password_hash` y `ci_encrypted` (cifrado con la clave del backend), y `db:seed` rechaza todo seed que mencione "password" (RF-009-02). Solo existe `seed:admin`. | Un comando de backend `seed:dev-users` (como `seed:admin`, solo fuera de producción y con la contraseña por variable de entorno) que cree usuarios de prueba. El seed de BD referencia esos usuarios por correo y no siembra contraseñas. Es una tarea nueva [BE] en la spec 003. |
+| C3 | "Titular habilitado" necesita `host_enablements` (0091, spec 009), y T041 no depende de esa tarea. | T041 depende de la tarea de la spec 009 que crea 0091. Hasta entonces el titular de desarrollo se habilita con el comando de administración. |
+| H1 | `db:seed` aplica los `.sql` antes de `catalog.json`: en una base recién reiniciada, un grupo con `catalog_plan_id` fallaría por la FK. | Que `db:seed` aplique primero el catálogo y después los `.sql` (cambio en `database/src/seed.ts`, en la misma transacción), o sembrar grupos con servicio personalizado. |
+| M4 | Los disparadores BEFORE INSERT corren aunque haya `ON CONFLICT DO NOTHING`: re-sembrar un grupo lleno fallaría por cupo. | El seed usa `INSERT … SELECT … WHERE NOT EXISTS` y se prueba un doble `db:seed`. |
+
+**Menores (se resuelven al implementar):** documentar en RF-001-11 que el redondeo es mitad hacia arriba (L1); en `groups_immutable_snapshots`, comparar solo las columnas `*_snapshot` y `catalog_plan_id`, sin la generada (L2); citar CA-001-08 en la prueba de RN-001-05 (L3).
+
+**Si se aprueba:** actualizar `data-model.md` §1, §2 y §4, las tareas T001–T005 y T041 (y agregar la tarea [BE] de `seed:dev-users` en la spec 003), y avisar a la spec 010 (H3) y a la 009 (C3, M3).
+
 ## 4. Contratos de API — _Leonardo (Backend)_
 
 Detalle en [`contracts/api.md`](contracts/api.md): `GET /users/me/host-eligibility`, `POST /groups/quote`, `POST /groups`, `GET /groups`, `GET /groups/:id`, `PATCH /groups/:id`, `PUT /groups/:id/payment-info`, `POST /groups/:id/invite-code/regenerate`, `DELETE /groups/:id/members/:userId`, `POST /groups/:id/leave`, `POST /groups/:id/transfer-ownership`, `POST /groups/:id/close`.
@@ -102,7 +131,7 @@ backend/src/
 - **`PaymentInfoService`**: guarda el texto y el QR mediante `FileStorage` (clave `groups/<id>/qr/<uuid>.<ext>`), valida tipo real (firma binaria) y tamaño (2 MB), y conserva el QR anterior si la validación falla. Solo genera la URL firmada (10 min) cuando un miembro consulta el grupo.
 - **`GroupViewService`**: arma `GroupSummary`/`GroupDetail` con `splitShares` y `entryWindow`; el código solo se incluye para el titular; los teléfonos solo para miembros activos.
 - **`HostEligibilityPort`** (implementado por un adaptador en `app-adapters/` registrado en `AppModule`): `check(userId)` → `{ eligible, source, current, requirement }`. En el MVP: `manual` si hay una habilitación vigente de la spec 009 (`host_enablements`); `calificacion` si la spec 007 informa ≥ 4,5 estrellas con ≥ 6 cobros considerados (RF-007-15). Antes de existir la reputación, la parte de calificación devuelve "no habilitado".
-- **Manejadores de eventos que registra este módulo:** `UserBanned` (spec 009) → congela los grupos que el usuario posee (`frozen_at`, `frozen_reason`) y retira al usuario de los grupos donde es miembro (`reason = 'baneo'`, evento `MemberRemoved`); `UserUnbanned` → descongela los grupos del usuario que se congelaron por ese baneo (`frozen_at` y `frozen_reason` a `NULL`, CA-009-37); `UserSuspended` → no hace nada con el grupo (RN-009-03).
+- **Manejadores de eventos que registra este módulo:** `UserBanned` (spec 009) → congela los grupos que el usuario posee (`frozen_at`, `frozen_reason`) — en un grupo `cerrado` solo se pueden cambiar `frozen_at`, `frozen_reason` y `updated_at` (disparador `groups_closed_readonly`): congelar o descongelar **no** incrementa `version`, o se revierte la transacción del baneo y retira al usuario de los grupos donde es miembro (`reason = 'baneo'`, evento `MemberRemoved`); `UserUnbanned` → descongela los grupos del usuario que se congelaron por ese baneo (`frozen_at` y `frozen_reason` a `NULL`, CA-009-37); `UserSuspended` → no hace nada con el grupo (RN-009-03).
 - **Retiro por mora (RF-001-23):** lo ejecuta la spec 002 llamando a `MembershipService.removeMember(..., 'mora')`; esta spec garantiza que las cuotas de quienes quedan se recalculen (se calculan al consultar).
 
 ### Consultas con permisos

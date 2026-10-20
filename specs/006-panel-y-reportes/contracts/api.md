@@ -102,7 +102,7 @@ HistoryItem {                             // RF-006-13
 ### `GET /me/history/export.csv?period=&groupId=&status=` (RF-006-14, 15; CA-006-15, 16)
 - **Response 200:** `text/csv; charset=utf-8`, con BOM, `Content-Disposition: attachment; filename="vaquita-historial-AAAA-MM-DD.csv"`.
 - **Columnas:** `periodo,servicio,grupo,monto_bs,estado,vencimiento,fecha_pago,origen`. Separador coma; `monto_bs` con punto decimal (`25.50`); fechas `AAAA-MM-DD` de La Paz; texto entre comillas cuando hace falta (RFC 4180); las celdas de texto que empiezan con `=`, `+`, `-` o `@` (o tabulación o retorno) se anteponen con `'` (RNF-006-04).
-- **Errores:** `429 RATE_LIMITED` (10 exportaciones por hora por usuario), `422 BUSINESS_RULE` (`EXPORT_TOO_LARGE`: más de 20.000 filas; filtrar por período).
+- **Errores:** `429 RATE_LIMITED` (10 exportaciones por hora por usuario), `422 EXPORT_TOO_LARGE` (más de 20.000 filas; filtrar por período).
 
 ### `GET /groups/:groupId/history/export.csv?period=&userId=&status=` (RF-006-14; CA-006-17)
 - **Auth:** titular (`403` miembro: solo puede exportar el suyo; `404` ajeno). Mismas reglas y columnas más `miembro` (nombre, escapado) entre `grupo` y `monto_bs`. Nunca incluye comprobantes, referencias ni celulares.

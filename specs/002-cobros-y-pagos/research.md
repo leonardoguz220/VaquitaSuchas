@@ -44,4 +44,4 @@
 
 La spec dice que un grupo cerrado «queda en solo lectura» (RF-001-18) y que no genera cobros, pero no dice qué pasa con los cobros ya abiertos. Dejarlos intocables atraparía al titular con comprobantes `en_revision` que no puede confirmar.
 
-**Decisión (aprobada 2026-10-18).** En un grupo **cerrado**, los cobros existentes se pueden seguir saldando (subir, confirmar, rechazar, pago manual, cancelar), pero la tarea de atrasos no actúa sobre ellos (nadie es retirado de un grupo cerrado). En un grupo **congelado** por titular baneado, todo queda quieto (RF-002-05).
+**Decisión (aprobada 2026-10-18).** En un grupo **cerrado**, los cobros existentes se pueden seguir saldando (subir, confirmar, rechazar, pago manual, cancelar), pero la tarea de atrasos no actúa sobre ellos (nadie es retirado de un grupo cerrado). La retención de comprobantes (RN-002-06) solo borra los de cobros `pagado` o `cancelado`: si borrara el de un cobro `en_revision`, el titular no podría revisarlo; se borra en la corrida diaria posterior a su cierre. En un grupo **congelado** por titular baneado, todo queda quieto (RF-002-05).

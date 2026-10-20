@@ -9,8 +9,17 @@ export const LOGIN_PATH = '/ingresar';
 /** Parámetro de consulta con la ruta a la que volver tras ingresar (spec 003 T029). */
 export const NEXT_PARAM = 'next';
 
-/** Rutas que se ven sin sesión; sus subrutas también son públicas. */
-export const PUBLIC_ROUTES = ['/ingresar', '/registro', '/recuperar', '/estado'] as const;
+/**
+ * Rutas que se ven sin sesión; sus subrutas también son públicas. `/avisos/desactivar` es la
+ * página del enlace para dejar de recibir un tipo de correo (plan 005 §6, RF-005-18).
+ */
+export const PUBLIC_ROUTES = [
+  '/ingresar',
+  '/registro',
+  '/recuperar',
+  '/estado',
+  '/avisos/desactivar',
+] as const;
 
 export type PublicRoute = (typeof PUBLIC_ROUTES)[number];
 
@@ -78,3 +87,153 @@ export function buildAuthLink(path: string, searchParams: SearchParamsRecord = {
   const query = params.toString();
   return query ? `${path}?${query}` : path;
 }
+
+/** Pantalla para pedir el enlace de recuperación de contraseña (spec 003 T035). */
+export const RECOVER_PATH = '/recuperar';
+
+/**
+ * "Unirme con un código" (plan 010 §6): acepta `?codigo=XXXXXXXX` del enlace de invitación.
+ * La pantalla llega con la spec 010.
+ */
+export const JOIN_PATH = '/unirse';
+
+/** "Mis solicitudes" de ingreso (plan 010 §6). Ruta protegida. */
+export const REQUESTS_PATH = '/solicitudes';
+
+/** Detalle de una solicitud de ingreso, con su chat (plan 010 §6). Ruta protegida. */
+export function requestPath(requestId: string): string {
+  return `${REQUESTS_PATH}/${encodeURIComponent(requestId)}`;
+}
+
+/** Destino tras ingresar cuando no hay otro: la raíz redirige según la sesión (RF-000-16). */
+export const DEFAULT_AFTER_LOGIN_PATH = '/';
+
+/** Base ficticia para resolver rutas relativas y comprobar que no cambian de origen. */
+const SAME_ORIGIN_BASE = 'http://vaquita.invalid';
+
+function firstValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+/**
+ * Devuelve `value` si es una ruta interna segura para redirigir tras ingresar, o `null`.
+ * Evita la redirección abierta: exige que empiece con una sola `/` (no `//` ni `/\`), sin
+ * esquema (`https:`, `javascript:`), sin barras invertidas ni caracteres de control (el
+ * navegador los quita o los cambia por `/`) y que al resolverla no cambie de origen.
+ */
+export function safeNextPath(value: string | string[] | undefined): string | null {
+  const candidate = firstValue(value);
+  if (!candidate || !candidate.startsWith('/')) return null;
+  if (candidate.startsWith('//') || candidate.includes('\\')) return null;
+  // Espacios y caracteres de control (U+0000 a U+0020 y U+007F).
+  if (/[\x00-\x20\x7f]/.test(candidate)) return null;
+  try {
+    const url = new URL(candidate, SAME_ORIGIN_BASE);
+    if (url.origin !== SAME_ORIGIN_BASE) return null;
+    // Ni el proxy /api (mostraría JSON crudo) ni una pantalla pública (volvería a /ingresar).
+    if (url.pathname === '/api' || url.pathname.startsWith('/api/')) return null;
+    if (isPublicPath(url.pathname)) return null;
+  } catch {
+    return null;
+  }
+  return candidate;
+}
+
+/**
+ * A dónde ir tras ingresar (spec 003 T029): a `next` si es una ruta interna segura; si no, y
+ * llegó un código de invitación, a `/unirse?codigo=…` (plan 010 §6); si no, a `/`.
+ */
+export function resolvePostLoginPath(searchParams: SearchParamsRecord = {}): string {
+  const next = safeNextPath(searchParams[NEXT_PARAM]);
+  if (next) return next;
+  const code = firstValue(searchParams[INVITE_CODE_PARAM])?.trim();
+  if (code) {
+    return `${JOIN_PATH}?${new URLSearchParams({ [INVITE_CODE_PARAM]: code }).toString()}`;
+  }
+  return DEFAULT_AFTER_LOGIN_PATH;
+}
+
+/** Centro de notificaciones (plan 005 §6). Ruta protegida. */
+export const NOTIFICATIONS_PATH = '/notificaciones';
+
+/**
+ * Devuelve el `link` de una notificación si es una ruta interna de la app (empieza con una sola
+ * `/`, sin barras invertidas ni caracteres de control), o `null`. El backend ya lo restringe;
+ * esto evita abrir un enlace externo si llegara uno por error.
+ */
+export function safeInternalLink(link: string | null | undefined): string | null {
+  if (!link || !link.startsWith('/') || link.startsWith('//') || link.includes('\\')) return null;
+  if (/[\x00-\x20\x7f]/.test(link)) return null;
+  return link;
+}
+
+/** Ajustes de avisos por correo y Telegram (plan 005 §6). Ruta protegida. */
+export const NOTIFICATION_SETTINGS_PATH = '/ajustes/avisos';
+
+/** Página pública para dejar de recibir un tipo de correo (`?token=`, plan 005 §6). */
+export const UNSUBSCRIBE_PATH = '/avisos/desactivar';
+
+/** Detalle de un grupo (plan 001 §6). Ruta protegida. */
+export function groupPath(groupId: string): string {
+  return `/grupos/${encodeURIComponent(groupId)}`;
+}
+
+/** Panel del usuario (plan 006 §6). Ruta protegida. */
+export const PANEL_PATH = '/panel';
+
+/** Calendario de cortes y vencimientos (plan 006 §6). Ruta protegida. */
+export const PANEL_CALENDAR_PATH = '/panel/calendario';
+
+/** Historial de cobros con exportación a CSV (plan 006 §6). Ruta protegida. */
+export const PANEL_HISTORY_PATH = '/panel/historial';
+
+/** Mi perfil (spec 003, plan §6). Ruta protegida. */
+export const PROFILE_PATH = '/perfil';
+
+/** Mi reputación y habilitación como titular (spec 007, plan §6). Ruta protegida. */
+export const REPUTATION_PATH = '/perfil/reputacion';
+
+/** Mis insignias: obtenidas y pendientes con su avance (spec 007, plan §6). Ruta protegida. */
+export const BADGES_PATH = '/perfil/insignias';
+
+/** Cupos libres: publicaciones de grupos que buscan miembros (spec 008, plan §6). Ruta protegida. */
+export const LISTINGS_PATH = '/cupos';
+
+/** Detalle de una publicación de cupo (spec 008, plan §6). Ruta protegida. */
+export function listingPath(listingId: string): string {
+  return `${LISTINGS_PATH}/${encodeURIComponent(listingId)}`;
+}
+
+/**
+ * Panel de administración (spec 009, plan §6). Solo para `role = admin`: la pantalla lo comprueba
+ * con `GET /auth/me` y el servidor responde `403` a cualquier llamada de `/admin` (RNF-009-01).
+ */
+export const ADMIN_PATH = '/admin';
+
+/** Lista de usuarios con búsqueda y filtros (spec 009, RF-009-08). */
+export const ADMIN_USERS_PATH = '/admin/usuarios';
+
+/** Ficha de un usuario y sus acciones (spec 009, RF-009-09). */
+export function adminUserPath(userId: string): string {
+  return `${ADMIN_USERS_PATH}/${encodeURIComponent(userId)}`;
+}
+
+/** Habilitaciones manuales de titulares (spec 009, RF-009-21). */
+export const ADMIN_HOSTS_PATH = '/admin/titulares';
+
+/** Cola de reclamos de ingreso (spec 009, RF-009-20). */
+export const ADMIN_DISPUTES_PATH = '/admin/reclamos';
+
+/** Detalle de un reclamo: evidencia y resolución (spec 009, RF-009-20). */
+export function adminDisputePath(disputeId: string): string {
+  return `${ADMIN_DISPUTES_PATH}/${encodeURIComponent(disputeId)}`;
+}
+
+/** Catálogo de servicios y planes (spec 009, RF-009-04). */
+export const ADMIN_CATALOG_PATH = '/admin/catalogo';
+
+/** Publicaciones reportadas u ocultas de cupos (spec 009, RF-009-12). */
+export const ADMIN_MODERATION_PATH = '/admin/moderacion';
+
+/** Log de auditoría de las acciones de administración, solo lectura (spec 009, RF-009-18). */
+export const ADMIN_AUDIT_PATH = '/admin/auditoria';

@@ -5,7 +5,11 @@ export interface PasswordRulesProps {
   /** Id de la lista, para enlazarla con `aria-describedby` desde el campo de contraseña. */
   id: string;
   password: string;
-  email: string;
+  /**
+   * Correo de la cuenta. Sin él (`/recuperar/[token]`) la regla "Distinta de tu correo" no se
+   * evalúa en vivo: se muestra como nota de que la comprueba el servidor al guardar.
+   */
+  email?: string;
 }
 
 function MetIcon() {
@@ -64,6 +68,11 @@ export function PasswordRules({ id, password, email }: PasswordRulesProps) {
           </li>
         ))}
       </ul>
+      {email === undefined && (
+        <p className="mt-2 text-[15px] text-muted">
+          Tampoco puede ser igual a tu correo: lo comprobamos al guardar.
+        </p>
+      )}
       <p aria-live="polite" className="sr-only">
         {password ? `La contraseña cumple ${metCount} de ${rules.length} reglas.` : ''}
       </p>

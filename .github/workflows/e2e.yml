@@ -1,0 +1,130 @@
+# E2E con Playwright (spec 000, T043, RF-000-19): levanta base, backend y frontend en modo dev
+# y corre frontend/e2e. Hoy cubre /estado (T040, CA-000-10); el flujo del MVP se suma con T043
+# de la spec 002 cuando exista.
+# Cuándo corre: en los PR con la etiqueta «e2e» y en cada push a main.
+# Las claves de este workflow son de prueba, se generan en cada ejecución y no son secretos.
+name: E2E
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'e2e')
+    timeout-minutes: 25
+
+    services:
+      db:
+        image: postgres:16.10-alpine
+        env:
+          POSTGRES_USER: vaquita
+          POSTGRES_PASSWORD: vaquita
+          POSTGRES_DB: vaquita
+          TZ: UTC
+          PGTZ: UTC
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vaquita -d vaquita"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      mail:
+        image: axllent/mailpit:v1.27.0
+        ports:
+          - 1025:1025
+          - 8025:8025
+
+    env:
+      CI: 'true'
+      DATABASE_URL: postgres://vaquita:vaquita@localhost:5432/vaquita
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Instalar Chromium para Playwright
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Aplicar migraciones
+        run: npm run db:migrate
+
+      - name: Compilar backend y frontend
+        run: |
+          npm run build -w backend
+          npm run build -w frontend
+
+      - name: Generar claves de prueba para el backend
+        run: |
+          {
+            echo "JWT_SECRET=$(openssl rand -hex 32)"
+            echo "FINGERPRINT_KEY=$(openssl rand -hex 32)"
+            echo "CI_ENCRYPTION_KEY=$(openssl rand -hex 32)"
+            echo "JOBS_TOKEN=$(openssl rand -hex 32)"
+          } >> "$GITHUB_ENV"
+          # Las claves recién generadas no se ven en este paso: se exportan para el siguiente.
+        shell: bash
+
+      - name: Arrancar backend y frontends
+        shell: bash
+        run: |
+          NODE_ENV=development PORT=3001 MAIL_MODE=dev TELEGRAM_MODE=dev STORAGE_DRIVER=local \
+            JOBS_INPROCESS=false SMTP_HOST=localhost SMTP_PORT=1025 \
+            nohup npm run start -w backend > backend.log 2>&1 &
+          # Frontend conectado al backend (modo up) y otro apuntando a un puerto sin nada (modo down).
+          (cd frontend && BACKEND_URL=http://localhost:3001 nohup npx next start -p 3000 > ../frontend-up.log 2>&1 &)
+          (cd frontend && BACKEND_URL=http://localhost:3999 nohup npx next start -p 3100 > ../frontend-down.log 2>&1 &)
+          for url in http://localhost:3001/health http://localhost:3000/estado http://localhost:3100/estado; do
+            for i in $(seq 1 60); do
+              curl -fsS -o /dev/null "$url" && break
+              sleep 2
+            done
+            curl -fsS -o /dev/null "$url" || { echo "::error::No respondió $url"; cat backend.log frontend-up.log frontend-down.log; exit 1; }
+          done
+
+      - name: E2E con el backend arriba (CA-000-10)
+        working-directory: frontend
+        run: npx playwright test --project=chromium --project=mobile
+        env:
+          BASE_URL: http://localhost:3000
+          E2E_BACKEND: up
+
+      - name: E2E con el backend inalcanzable (CA-000-10)
+        working-directory: frontend
+        run: npx playwright test --project=chromium --project=mobile
+        env:
+          BASE_URL: http://localhost:3100
+          E2E_BACKEND: down
+
+      - name: Guardar el reporte de Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+            backend.log
+            frontend-up.log
+            frontend-down.log
+          retention-days: 7

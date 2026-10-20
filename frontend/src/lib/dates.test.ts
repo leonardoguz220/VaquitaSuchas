@@ -1,4 +1,15 @@
-import { formatDateLaPaz, formatDateTimeLaPaz, lapazDayOf } from './dates';
+import {
+  formatCalendarDayLaPaz,
+  formatDateLaPaz,
+  formatDateTimeLaPaz,
+  formatPeriod,
+  formatClock,
+  formatPeriodShort,
+  formatRemaining,
+  formatTimeLeft,
+  lapazDayOf,
+  recentPeriods,
+} from './dates';
 
 describe('formatDateTimeLaPaz (RF-000-17)', () => {
   it('CA-000-12 muestra las 02:00 UTC del día 1 como las 22:00 del día anterior en La Paz', () => {
@@ -72,5 +83,74 @@ describe('lapazDayOf', () => {
 
   it('CA-000-12 lanza RangeError ante una fecha inválida', () => {
     expect(() => lapazDayOf('mañana')).toThrow(RangeError);
+  });
+});
+
+describe('formatCalendarDayLaPaz (RF-001-19)', () => {
+  it('muestra el día que entrega la API sin correrlo por la zona horaria', () => {
+    expect(formatCalendarDayLaPaz('2026-11-15')).toBe('15 nov 2026');
+    expect(formatCalendarDayLaPaz('2027-01-01')).toBe('1 ene 2027');
+  });
+
+  it('rechaza un texto que no es YYYY-MM-DD', () => {
+    expect(() => formatCalendarDayLaPaz('15/11/2026')).toThrow(RangeError);
+    expect(() => formatCalendarDayLaPaz('2026-13-01')).toThrow(RangeError);
+  });
+});
+
+describe('formatPeriod (RF-002-15)', () => {
+  it('muestra el período YYYY-MM con el mes en palabras', () => {
+    expect(formatPeriod('2026-10')).toBe('Octubre 2026');
+    expect(formatPeriod('2027-01')).toBe('Enero 2027');
+  });
+
+  it('rechaza un texto que no es YYYY-MM', () => {
+    expect(() => formatPeriod('2026-13')).toThrow(RangeError);
+    expect(() => formatPeriod('oct 2026')).toThrow(RangeError);
+  });
+});
+
+describe('recentPeriods (RF-002-15)', () => {
+  it('parte del mes de La Paz y cruza el año hacia atrás', () => {
+    // 1 feb 02:00 UTC todavía es 31 de enero en La Paz.
+    expect(recentPeriods('2027-02-01T02:00:00Z', 3)).toEqual(['2027-01', '2026-12', '2026-11']);
+  });
+});
+
+describe('formatRemaining (RF-002-09)', () => {
+  it('junta días, horas y minutos en español', () => {
+    expect(formatRemaining(90061)).toBe('1 día, 1 hora y 1 minuto');
+    expect(formatRemaining(3 * 86400 + 5 * 3600)).toBe('3 días y 5 horas');
+    expect(formatRemaining(120)).toBe('2 minutos');
+    expect(formatRemaining(30)).toBe('menos de 1 minuto');
+  });
+});
+
+describe('formatTimeLeft (spec 010)', () => {
+  it('RNF-010-06: da formato a los segundos que faltan, sin calcular el vencimiento', () => {
+    expect(formatTimeLeft(3 * 86400 + 4 * 3600 + 59)).toBe('Faltan 3 días y 4 h');
+    expect(formatTimeLeft(86400)).toBe('Faltan 1 día');
+    expect(formatTimeLeft(5 * 3600 + 20 * 60 + 10)).toBe('Faltan 5 h 20 min');
+    expect(formatTimeLeft(12 * 60)).toBe('Faltan 12 min');
+    expect(formatTimeLeft(59)).toBe('Falta menos de 1 minuto');
+    expect(formatTimeLeft(-5)).toBe('Falta menos de 1 minuto');
+  });
+});
+
+describe('formatClock (spec 010)', () => {
+  it('RNF-010-06: muestra mm:ss para los plazos de minutos y h:mm:ss si pasa de una hora', () => {
+    expect(formatClock(754)).toBe('12:34');
+    expect(formatClock(15 * 60)).toBe('15:00');
+    expect(formatClock(5)).toBe('00:05');
+    expect(formatClock(3725)).toBe('1:02:05');
+    expect(formatClock(-3)).toBe('00:00');
+  });
+});
+
+describe('formatPeriodShort (spec 006)', () => {
+  it('RF-006-07: da el mes abreviado y el año para los ejes de los gráficos', () => {
+    expect(formatPeriodShort('2026-10')).toBe('oct 2026');
+    expect(formatPeriodShort('2027-01')).toBe('ene 2027');
+    expect(() => formatPeriodShort('2026-13')).toThrow(RangeError);
   });
 });

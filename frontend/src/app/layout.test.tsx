@@ -9,6 +9,8 @@ jest.mock('next/font/google', () => ({
   Atkinson_Hyperlegible: () => ({ className: 'atkinson', variable: 'var-atkinson' }),
 }));
 
+jest.mock('@/components/features/shell/session-bar', () => ({ SessionBar: () => null }));
+
 describe('RootLayout (RF-000-16)', () => {
   const html = renderToStaticMarkup(
     <RootLayout>

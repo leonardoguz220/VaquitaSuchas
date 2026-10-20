@@ -1,4 +1,11 @@
-import { formatBs, formatUsd, parse, parseBsToCents } from './money';
+import {
+  formatSignedBs,
+  formatAmountInput,
+  formatBs,
+  formatUsd,
+  parse,
+  parseBsToCents,
+} from './money';
 
 describe('formatBs (RF-000-17)', () => {
   it('CA-000-11 formatea 250050 centavos como Bs 2.500,50', () => {
@@ -106,5 +113,25 @@ describe('parseBsToCents', () => {
 
   it('RF-000-17 exporta parse como alias de parseBsToCents (plan §6)', () => {
     expect(parse).toBe(parseBsToCents);
+  });
+});
+
+describe('formatAmountInput (RF-001-05)', () => {
+  it('propone el precio sin prefijo y en un formato que parseBsToCents vuelve a leer', () => {
+    expect(formatAmountInput(1466)).toBe('14,66');
+    expect(formatAmountInput(146600)).toBe('1.466,00');
+    expect(parseBsToCents(formatAmountInput(146600))).toBe(146600);
+  });
+});
+
+describe('formatSignedBs (spec 006)', () => {
+  it('CA-006-21: un ahorro negativo lleva el signo menos delante de Bs', () => {
+    expect(formatSignedBs(-1250)).toBe('−Bs 12,50');
+    expect(formatSignedBs(4960)).toBe('Bs 49,60');
+    expect(formatSignedBs(0)).toBe('Bs 0,00');
+  });
+
+  it('CA-006-21: rechaza montos que no son centavos enteros', () => {
+    expect(() => formatSignedBs(1.5)).toThrow(RangeError);
   });
 });

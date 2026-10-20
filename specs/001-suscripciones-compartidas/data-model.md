@@ -2,7 +2,7 @@
 
 - **Responsable:** Camila Fuentes (Base de datos)
 - **Migraciones:** `0030` a `0033`
-- **Estado:** propuesto; se congela al aprobar el plan
+- **Estado:** congelado (plan aprobado); cambios aprobados el 2026-10-18 en el PR #43 (H2, H3, M1–M3, M5, C1–C3)
 - En el código, el grupo de una suscripción compartida se llama `group` (tabla `groups`). Las cuotas **no se guardan**: se calculan al consultar a partir del total y del número de miembros (RF-001-12); solo los cobros y ciclos (spec 002) guardan una copia.
 
 ## 1. Tablas
@@ -56,6 +56,8 @@ INDEX groups_owner_active_idx (owner_id) WHERE status = 'activo'
 
 `created_at` cuenta como el **corte inicial** del grupo (spec 001, sección 11).
 
+**Vigencia de `billing_day`** (PR #43, M5): no hay columna de vigencia. El corte vigente se deriva del último `billing_cycles.cut_date` del grupo (spec 002): un cambio de `billing_day` rige desde el siguiente corte posterior al último ciclo generado, así nunca salen dos cortes en el mismo período.
+
 ### `group_members` — `0031_group_members.sql`
 
 Una fila por **estadía** de una persona en el grupo; el titular tiene una fila con `role = 'titular'`.
@@ -68,10 +70,11 @@ group_members
 - role: text (NOT NULL)                                              CHECK IN ('titular','miembro')
 - joined_at: timestamptz (NOT NULL, default now())
 - join_source: text (NOT NULL)                                       CHECK IN ('creacion','solicitud')
-- join_request_id: uuid (NULL)                                       la FK a join_requests la agrega la spec 010
+- join_request_id: uuid (NULL)                                       la FK a join_requests y el CHECK ((join_source = 'solicitud') = (join_request_id IS NOT NULL)) los agrega la spec 010 (0055, T006)
 - left_at: timestamptz (NULL)
 - left_reason: text (NULL)                                           CHECK IN ('abandono','quitado','mora','baneo')
 CHECK ((left_at IS NULL) = (left_reason IS NULL))
+- created_at, updated_at                                             (PR #43, H2: convención de la spec 000)
 UNIQUE INDEX group_members_active_uq (group_id, user_id) WHERE left_at IS NULL     RN-001-05
 UNIQUE INDEX group_members_owner_uq (group_id) WHERE role = 'titular' AND left_at IS NULL   un solo titular activo (RN-001-01)
 INDEX group_members_user_idx (user_id) WHERE left_at IS NULL                 "mis grupos" (RF-001-19)
@@ -87,11 +90,12 @@ Una **transferencia de titularidad** no cierra filas: se cambia el `role` de las
 | Disparador (`0032_group_triggers.sql`) | Qué impone | Criterio |
 |---|---|---|
 | `groups_owner_member_consistency` (constraint trigger diferido, en `groups` y `group_members`) | Al confirmar la transacción: el `owner_id` del grupo tiene exactamente una fila activa con `role = 'titular'`, y toda otra fila activa tiene `role = 'miembro'`. | RN-001-01 |
-| `group_members_capacity` (antes de `INSERT` o de reactivar en `group_members`) | Toma `FOR UPDATE` de la fila del grupo y rechaza si las filas activas ya igualan `total_slots`. | RN-001-09, CA-001-07, CA-001-19 |
+| `group_members_capacity` (antes de `INSERT` en `group_members`) | Toma `FOR UPDATE` de la fila del grupo y rechaza si el grupo no está `activo`, si está congelado (`frozen_at IS NOT NULL`) o si las filas activas ya igualan `total_slots`. | RN-001-09, CA-001-07, CA-001-19, CA-001-16 |
+| `group_members_left_immutable` (antes de `UPDATE` en `group_members`) | Una vez fijados, `left_at` y `left_reason` no cambian: una estadía cerrada no se reabre (volver al grupo es una fila nueva). | RN-001-05 |
 | `groups_slots_not_below_members` (antes de `UPDATE OF total_slots`) | `total_slots >= miembros activos`. | RF-001-14 |
 | `groups_max_active_owned` (antes de `INSERT` o de `UPDATE OF status, owner_id`) | Con `pg_advisory_xact_lock(hashtext(owner_id::text))`: un titular no pasa de 5 grupos con `status = 'activo'`. | RN-001-14, CA-001-28 |
-| `groups_immutable_snapshots` (antes de `UPDATE`) | Las columnas `*_snapshot` y `catalog_plan_id` no cambian después de crear. | RN-001-12 |
-| `groups_closed_readonly` (antes de `UPDATE`) | Un grupo `cerrado` no admite cambios salvo `updated_at`. | RN-001-07, CA-001-16 |
+| `groups_immutable_snapshots` (antes de `UPDATE`) | Las columnas `*_snapshot` y `catalog_plan_id` no cambian después de crear (se comparan solo esas columnas, no la generada `total_bs_cents`). | RN-001-12 |
+| `groups_closed_readonly` (antes de `UPDATE`) | Un grupo `cerrado` no admite cambios salvo `updated_at`, `frozen_at` y `frozen_reason` (el baneo del titular puede congelar un grupo cerrado, spec 009). | RN-001-07, CA-001-16 |
 
 El backend repite las validaciones para dar mensajes claros; la base garantiza que una carrera entre dos peticiones no rompa la regla.
 
@@ -121,3 +125,6 @@ El backend repite las validaciones para dar mensajes claros; la base garantiza q
 | Editar una columna `*_snapshot` falla | RN-001-12 |
 | Editar un grupo `cerrado` falla | CA-001-16 |
 | `total_slots` mayor al `plan_max_slots_snapshot` falla | RN-001-13 |
+| Insertar un miembro en un grupo `cerrado` o congelado falla; congelar un grupo cerrado pasa | CA-001-16, RF-009-22 |
+| Reabrir una estadía (`left_at` a NULL) o cambiar su `left_reason` falla | RN-001-05 |
+| `group_members` tiene `created_at`/`updated_at` con `set_updated_at` | convención spec 000 |

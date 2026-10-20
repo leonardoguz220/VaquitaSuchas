@@ -12,3 +12,5 @@ export { Card, type CardProps } from './card';
 export { Field, type FieldProps } from './field';
 export { Modal, type ModalProps } from './modal';
 export { Select, type SelectProps } from './select';
+export { Switch, type SwitchProps } from './switch';
+export { Textarea, type TextareaProps } from './textarea';

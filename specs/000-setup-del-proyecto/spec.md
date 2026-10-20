@@ -40,7 +40,7 @@ Esta spec es **técnica** (no tiene usuarios finales), pero se redacta igual con
 
 ### Estructura y repositorio
 - **RF-000-01:** El repositorio contiene las carpetas `database/`, `backend/`, `frontend/`, `specs/`, `context/`, `ia/` y `.claude/`, y los archivos `CLAUDE.md`, `CONTRIBUTING.md` y `.github/`. El código de `backend/`, `frontend/` y `database/` sigue la estructura por capas de `context/arquitectura.md`.
-- **RF-000-02:** `main` está protegida: no se permite push directo y los merges exigen al menos 1 aprobación y CI en verde.
+- **RF-000-02:** `main`, `qa` y `dev` están protegidas: no se permite push directo y los merges pasan por PR con el check `flow` y la CI en verde. No se exige aprobación humana (decisión del 2026-10-18). El flujo es de trabajo a `dev`, de `dev` a `qa` y de `qa` a `main`, y nada llega a `main` si no viene de `qa`.
 - **RF-000-03:** Existe `.env.example` en `backend/` y `frontend/` con todas las variables necesarias, sin valores reales. Los archivos `.env` están en `.gitignore`.
 
 ### Base de datos (Camila)

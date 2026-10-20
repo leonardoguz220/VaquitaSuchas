@@ -36,7 +36,7 @@ Esta spec define el ciclo de vida de un **cobro mensual**: su generación autom�
 
 | Actor | Puede | No puede |
 |---|---|---|
-| Miembro | Ver sus cobros; subir/reemplazar comprobante mientras el cobro esté `pendiente` o `atrasado`; ver estado e historial del grupo | Confirmar su propio pago; ver comprobantes de otros |
+| Miembro | Ver sus cobros; subir comprobante mientras el cobro esté `pendiente` o `atrasado`, y reemplazarlo mientras esté `en_revision` (RF-002-08); ver estado e historial del grupo | Confirmar su propio pago; ver comprobantes de otros |
 | Titular | Ver todos los cobros del grupo y sus comprobantes; confirmar o rechazar; cancelar un cobro; registrar un pago manual (efectivo) | Confirmar cobros de un grupo ajeno; modificar montos de cobros ya generados |
 | Sistema | Generar cobros, marcar atrasos | — |
 

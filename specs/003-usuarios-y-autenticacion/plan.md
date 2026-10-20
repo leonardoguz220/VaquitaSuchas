@@ -152,6 +152,10 @@ backend/src/modules/
 
 **Tarea `auth.purge_unverified`** (cada hora, idempotente): `DELETE FROM users WHERE verified_at IS NULL AND created_at < now() - interval '24 hours'` (los tokens se van en cascada).
 
+**Tarea `auth.retry_mail`** (cada 60 segundos; implementada): los correos de la cuenta (enlace de recuperación, aviso de cambio de contraseña) se envían con `MailOutbox` después de confirmar la transacción. Si el envío falla, el mensaje queda **en memoria** y la tarea lo reintenta hasta **3 intentos en total** (`MAX_MAIL_ATTEMPTS`). Se pierde si el proceso se reinicia: la persona puede pedir otro enlace. El registro solo guarda el nombre del error, nunca la dirección ni el mensaje.
+
+**Límites exactos implementados** (funciones puras en `auth/domain` y `users/domain`): CI solo dígitos, 5 a 10 (`normalizeCi`); contraseña de al menos 10 caracteres, con una letra y un número, distinta del correo (`PASSWORD_MIN_LENGTH = 10`); bloqueo del inicio de sesión con 5 fallos en 15 minutos por correo (`LOGIN_MAX_FAILURES = 5`) y 20 por IP (`LOGIN_IP_MAX_FAILURES = 20`).
+
 **CLI `seed:admin`** (`backend/src/cli/seed-admin.ts`): lee `SEED_ADMIN_EMAIL`, `SEED_ADMIN_NAME`, `SEED_ADMIN_PASSWORD`; si faltan, falla con un mensaje. Crea un usuario `admin` verificado sin celular ni Telegram (permitido por el `CHECK`). Como `ci_encrypted` y `ci_fingerprint` son obligatorios, se guarda una CI sintética `ADMIN-<uuid>` (cifrada y con su huella); no cumple el formato de CI de usuarios, así que no puede chocar con una persona real. Es idempotente por correo. En `NODE_ENV=production` solo corre si se pasa `--allow-production` (spec 009, RF-009-02, CA-009-20).
 
 ## 6. Interfaz de usuario — _Adrian (Frontend)_
