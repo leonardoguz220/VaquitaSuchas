@@ -214,7 +214,7 @@ export interface DecisionActionsProps extends DecisionCallbacks {
  * frontend no decide quién puede hacerlo: el backend responde `403` o `409` si no corresponde.
  */
 export function DecisionActions({ request, onChanged, onStale }: DecisionActionsProps) {
-  const [openModal, setOpenModal] = useState<'reject' | 'cash' | 'cancel' | null>(null);
+  const [openModal, setOpenModal] = useState<'reject' | 'cash' | 'cancel' | 'confirm' | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const confirm = useConfirmJoinRequest(request.id);
   const cash = useCashPayment(request.id);
@@ -261,7 +261,12 @@ export function DecisionActions({ request, onChanged, onStale }: DecisionActions
         </Alert>
       )}
       {can('confirm') && (
-        <Button onClick={() => void handleConfirm()} loading={confirm.isSubmitting}>
+        <Button
+          onClick={() =>
+            request.source === 'publicacion' ? setOpenModal('confirm') : void handleConfirm()
+          }
+          loading={confirm.isSubmitting}
+        >
           Confirmar ingreso
         </Button>
       )}
@@ -287,6 +292,23 @@ export function DecisionActions({ request, onChanged, onStale }: DecisionActions
           onClose={close}
           onChanged={onChanged}
           onStale={onStale}
+        />
+      )}
+      {can('confirm') && request.source === 'publicacion' && (
+        <ConfirmActionModal
+          request={request}
+          open={openModal === 'confirm'}
+          onClose={close}
+          onChanged={onChanged}
+          onStale={onStale}
+          title="Confirmar ingreso"
+          description={`Aceptar a ${name} cambia la cuota de todos los miembros desde el siguiente cobro. La cuota nueva será de ${formatBs(request.estimatedShareCents)} por persona (estimada).`}
+          confirmLabel="Confirmar ingreso"
+          variant="primary"
+          isSubmitting={confirm.isSubmitting}
+          onConfirm={() =>
+            runInModal(confirm.submit, decisionMessage('confirm', name), REQUEST_MESSAGES.hostOnly)
+          }
         />
       )}
       {can('cashPayment') && (
