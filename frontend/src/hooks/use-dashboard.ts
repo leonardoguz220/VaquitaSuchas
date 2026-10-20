@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { saveBlob } from '@/lib/download';
 import type { ApiDownload } from '@/services/reports';
 import {
@@ -41,7 +41,9 @@ export function useDashboard({ month, groupId }: DashboardFilters) {
       }),
     [month, groupId],
   );
-  return useApiResource(load);
+  const resource = useApiResource(load);
+  useRefreshWhenVisible(resource.refresh);
+  return resource;
 }
 
 /**
@@ -54,7 +56,28 @@ export function useDashboardList(list: DashboardListName) {
       listDashboard({ list, limit: DASHBOARD_LIST_PAGE_SIZE, ...(cursor ? { cursor } : {}) }),
     [list],
   );
-  return usePaginatedResource(loadPage);
+  const resource = usePaginatedResource(loadPage);
+  useRefreshWhenVisible(resource.refresh);
+  return resource;
+}
+
+/**
+ * Vuelve a pedir los datos cuando la pestaña vuelve a estar visible (RF-006-01, RNF-006-02). No
+ * hay sondeo: solo se pide al volver.
+ */
+function useRefreshWhenVisible(refresh: () => Promise<void>) {
+  const refreshRef = useRef(refresh);
+  useEffect(() => {
+    refreshRef.current = refresh;
+  }, [refresh]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') void refreshRef.current();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
 }
 
 /**
