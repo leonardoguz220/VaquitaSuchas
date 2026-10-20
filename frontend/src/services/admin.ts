@@ -1,12 +1,13 @@
 /**
  * Cliente de los endpoints de administración (spec 009, `contracts/api.md`). Una función por
  * endpoint y tipos del contrato. Todas las rutas exigen rol `admin` en el servidor (RNF-009-01).
- * Por ahora las funciones responden con datos simulados de `admin.mock.ts`; al conectar el
- * backend (T018 y T021) solo cambia el cuerpo por `apiRequest`. Las pantallas no calculan cifras
- * ni estados: muestran lo que llega.
+ * Conectadas al backend: usuarios, suspensión, baneo, reversión del baneo y roles (T018). Las
+ * habilitaciones, las estadísticas y la transferencia siguen con datos simulados de `admin.mock.ts`
+ * hasta sus tareas. Las pantallas no calculan cifras ni estados: muestran lo que llega.
  */
+import { apiRequest } from './http';
 import * as mock from './admin.mock';
-import type { Rating } from './reputation';
+import type { Rating, RatingLevel } from './reputation';
 
 /** Motivo obligatorio de las acciones sensibles: de 10 a 300 caracteres (RF-009-10, RF-009-19). */
 export const ADMIN_REASON_MIN = 10;
@@ -19,8 +20,8 @@ export type AdminUserStatus = 'activo' | 'suspendido' | 'baneado';
 export interface AdminUserRow {
   id: string;
   fullName: string;
-  /** `"+59171234567"`. */
-  phone: string;
+  /** `"+59171234567"`. La lista del backend todavía no lo trae: la pantalla muestra «—». */
+  phone?: string | null;
   role: AdminRole;
   status: AdminUserStatus;
   /** ISO 8601 en UTC. */
@@ -47,7 +48,10 @@ export interface AdminUserReputation extends Rating {
 }
 
 export interface AdminBanInfo {
+  /** Id del baneo: lo usa `POST /admin/bans/:banId/revoke`. */
+  id: string;
   reason: string;
+  /** Id de quien baneó (el backend no envía el nombre). */
   by: string;
   at: string;
 }
@@ -65,6 +69,7 @@ export interface AdminHostEnablementInfo {
 
 /** Ficha de un usuario (`GET /admin/users/:userId`, RF-009-09). Nunca trae CI en claro. */
 export interface AdminUserDetail extends AdminUserRow {
+  phone: string | null;
   email: string;
   /** `"*****123"`: solo los últimos 3 dígitos. */
   ciMasked: string;
@@ -108,38 +113,134 @@ export interface AdminStats {
   disputesOpen: number;
 }
 
+/** Ficha tal como la envía `GET /admin/users/:userId` (`AdminUserView` del backend). */
+interface ApiAdminUserView {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  ciMasked: string;
+  role: AdminRole;
+  status: AdminUserStatus;
+  createdAt: string;
+  lastLoginAt: string | null;
+  groupsAsHost: number;
+  groupsAsMember: number;
+  reputation: { level: string | null; stars: number | null; consideredCharges: number };
+  reportsReceived: number;
+  ban: {
+    id: string;
+    reason: string;
+    source: string;
+    disputeId: string | null;
+    bannedBy: string;
+    bannedAt: string;
+  } | null;
+  suspension: { reason: string; suspendedBy: string; suspendedAt: string } | null;
+  hostEnablement: { reason: string; enabledBy: string; enabledAt: string } | null;
+}
+
+/**
+ * Traduce la ficha del backend a la forma de la pantalla: solo renombra campos. Sin reputación el
+ * backend manda `level: null`; la spec 007 llama «Nuevo» a esa situación (RF-007-02), igual que el
+ * ranking.
+ */
+function toUserDetail(view: ApiAdminUserView): AdminUserDetail {
+  const { ban, suspension, hostEnablement, reputation, ...rest } = view;
+  return {
+    ...rest,
+    reputation: {
+      level: (reputation.level ?? 'Nuevo') as RatingLevel,
+      stars: reputation.stars,
+      starsLabel: null,
+      consideredCharges: reputation.consideredCharges,
+    },
+    ban: ban ? { id: ban.id, reason: ban.reason, by: ban.bannedBy, at: ban.bannedAt } : null,
+    suspension: suspension ? { reason: suspension.reason, at: suspension.suspendedAt } : null,
+    hostEnablement: hostEnablement
+      ? {
+          reason: hostEnablement.reason,
+          by: hostEnablement.enabledBy,
+          at: hostEnablement.enabledAt,
+        }
+      : null,
+  };
+}
+
 /** `GET /admin/users` (RF-009-08, CA-009-07). */
-export function listAdminUsers(params: ListAdminUsersParams = {}): Promise<AdminUsersPage> {
-  return mock.listUsers(params);
+export async function listAdminUsers(params: ListAdminUsersParams = {}): Promise<AdminUsersPage> {
+  const query = new URLSearchParams();
+  if (params.q) query.set('q', params.q);
+  if (params.status) query.set('status', params.status);
+  if (params.role) query.set('role', params.role);
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.cursor) query.set('cursor', params.cursor);
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  return apiRequest<AdminUsersPage>(`/api/admin/users${suffix}`);
 }
 
 /** `GET /admin/users/:userId` (RF-009-09, CA-009-08). */
-export function getAdminUser(userId: string): Promise<AdminUserDetail> {
-  return mock.getUser(userId);
+export async function getAdminUser(userId: string): Promise<AdminUserDetail> {
+  const view = await apiRequest<ApiAdminUserView>(usersPath(userId));
+  return toUserDetail(view);
 }
 
 /** `POST /admin/users/:userId/suspend` (RF-009-10, CA-009-09). */
-export function suspendAdminUser(userId: string, reason: string): Promise<AdminUserDetail> {
-  return mock.suspend(userId, reason);
+export async function suspendAdminUser(userId: string, reason: string): Promise<AdminUserDetail> {
+  const view = await apiRequest<ApiAdminUserView>(usersPath(userId, '/suspend'), {
+    method: 'POST',
+    body: { reason },
+  });
+  return toUserDetail(view);
 }
 
 /** `POST /admin/users/:userId/reactivate` (CA-009-11). El motivo es opcional. */
-export function reactivateAdminUser(userId: string, reason?: string): Promise<AdminUserDetail> {
-  return mock.reactivate(userId, reason);
+export async function reactivateAdminUser(
+  userId: string,
+  reason?: string,
+): Promise<AdminUserDetail> {
+  const view = await apiRequest<ApiAdminUserView>(usersPath(userId, '/reactivate'), {
+    method: 'POST',
+    body: reason ? { reason } : {},
+  });
+  return toUserDetail(view);
 }
 
-/** `POST /admin/users/:userId/ban` (RF-009-19, CA-009-22). */
-export function banAdminUser(userId: string, reason: string): Promise<AdminUserDetail> {
-  return mock.ban(userId, reason);
+/**
+ * `POST /admin/users/:userId/ban` (RF-009-19, CA-009-22). El backend responde `{ banId, user }`;
+ * la pantalla recibe la ficha nueva.
+ */
+export async function banAdminUser(userId: string, reason: string): Promise<AdminUserDetail> {
+  const { user } = await apiRequest<{ banId: string; user: ApiAdminUserView }>(
+    usersPath(userId, '/ban'),
+    { method: 'POST', body: { reason } },
+  );
+  return toUserDetail(user);
+}
+
+/** `POST /admin/bans/:banId/revoke` (RF-009-23, CA-009-34). Lo hace otra persona administradora. */
+export function revokeAdminBan(banId: string, reason: string): Promise<void> {
+  return apiRequest<void>(`/api/admin/bans/${encodeURIComponent(banId)}/revoke`, {
+    method: 'POST',
+    body: { reason },
+  });
 }
 
 /** `POST /admin/users/:userId/role` (RF-009-03, CA-009-12). */
-export function setAdminUserRole(
+export async function setAdminUserRole(
   userId: string,
   role: AdminRole,
   reason: string,
 ): Promise<AdminUserDetail> {
-  return mock.changeRole(userId, role, reason);
+  const view = await apiRequest<ApiAdminUserView>(usersPath(userId, '/role'), {
+    method: 'POST',
+    body: { role, reason },
+  });
+  return toUserDetail(view);
+}
+
+function usersPath(userId: string, suffix = ''): string {
+  return `/api/admin/users/${encodeURIComponent(userId)}${suffix}`;
 }
 
 /** `GET /admin/host-enablements?active=true` (RF-009-21, CA-009-28). */

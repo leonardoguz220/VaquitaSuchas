@@ -91,7 +91,7 @@
 - [x] T037 [P] [US6] [BE] `backend/test/disputes.e2e-spec.ts`: CA-010-27 (reclamo por pago sin ingreso), CA-010-28 (sin pago informado, reclamo repetido o más de 7 días), CA-010-46 (imagen mayor de 5 MB o tipo no permitido), respuesta única; y `disputes.admin.e2e-spec.ts`: CA-010-29 (evidencia con auditoría; usuario normal `403`), CA-010-30 (estafa confirmada → baneo y bloqueo), CA-010-31 (`sin_falta`), CA-010-43 (comprobante falso → baneo del solicitante) — Depende: T012, spec 009 (núcleo `BanPort` y `AuditPort`) · Cubre: CA-010-27, CA-010-28, CA-010-29, CA-010-30, CA-010-31, CA-010-43, CA-010-46
 - [x] T038 [US6] [BE] `services/disputes.service.ts` (`open`, `respond`, `list` para las partes; `getEvidence(adminId, disputeId)` y `resolve(adminId, disputeId, result, reason)` para administración; `estafa_confirmada` llama a `BanPort.ban` y todo registra en `AuditPort` en la misma transacción) y `controllers/disputes.controller.ts` (`POST/GET /join-requests/:id/disputes`, `POST …/response`) — Depende: T037, T029 · Cubre: RF-010-21, RF-010-22, RF-010-23, RF-010-24, RN-010-07, RN-010-08, RNF-010-08
 - [x] T039 [P] [US6] [FE] Reclamos en `/solicitudes/[id]` con mock: botón «Abrir reclamo» si `canOpenDispute`, formulario con descripción e imagen, respuesta de la otra parte y decisión visible — Depende: T022 · Cubre: RF-010-21, RF-010-22, RF-010-25
-- [ ] T040 [US6] [FE] Conectar los reclamos con el backend — Depende: T038, T039 · Cubre: RF-010-21, RF-010-22
+- [x] T040 [US6] [FE] Conectar los reclamos con el backend — Depende: T038, T039 · Cubre: RF-010-21, RF-010-22
 
 ## Fase 9: US7 — Vencimientos, eventos y retención (Prioridad: P0)
 

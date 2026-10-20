@@ -5,6 +5,7 @@ import {
   banAdminUser,
   getAdminUser,
   reactivateAdminUser,
+  revokeAdminBan,
   setAdminUserRole,
   suspendAdminUser,
   type AdminRole,
@@ -18,6 +19,7 @@ export type AdminUserAction =
   | { type: 'suspend'; reason: string }
   | { type: 'reactivate'; reason?: string }
   | { type: 'ban'; reason: string }
+  | { type: 'unban'; banId: string; reason: string }
   | { type: 'role'; role: AdminRole; reason: string };
 
 /**
@@ -40,6 +42,9 @@ export function useAdminUser(userId: string) {
           return banAdminUser(userId, action.reason);
         case 'role':
           return setAdminUserRole(userId, action.role, action.reason);
+        case 'unban':
+          // La reversión devuelve solo 200: la ficha se vuelve a leer para mostrar el estado nuevo.
+          return revokeAdminBan(action.banId, action.reason).then(() => getAdminUser(userId));
       }
     },
     [userId],

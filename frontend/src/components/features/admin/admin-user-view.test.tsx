@@ -69,7 +69,12 @@ describe('AdminUserView (spec 009 T017)', () => {
     getMock.mockResolvedValue(
       detail({
         status: 'baneado',
-        ban: { reason: 'Estafa confirmada', by: 'Camila Fuentes', at: '2026-08-15T16:00:00Z' },
+        ban: {
+          id: 'mock-ban-1',
+          reason: 'Estafa confirmada',
+          by: 'Camila Fuentes',
+          at: '2026-08-15T16:00:00Z',
+        },
       }),
     );
     render(<AdminUserView userId="u-ana" />);

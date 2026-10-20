@@ -133,6 +133,7 @@ function seedUsers(): MockUser[] {
       createdAt: '2026-07-01T12:00:00Z',
       status: 'baneado',
       ban: {
+        id: 'mock-ban-raul',
         reason: 'Estafa confirmada en reclamo de pago.',
         by: 'Camila Fuentes',
         at: '2026-08-15T16:00:00Z',
@@ -214,7 +215,7 @@ function toRow(item: MockUser): AdminUserRow {
   return {
     id: item.id,
     fullName: item.fullName,
-    phone: item.phone,
+    phone: item.phone ?? null,
     role: item.role,
     status: item.status,
     createdAt: item.createdAt,
@@ -224,6 +225,7 @@ function toRow(item: MockUser): AdminUserRow {
 function toDetail(item: MockUser): AdminUserDetail {
   return {
     ...toRow(item),
+    phone: item.phone ?? null,
     email: item.email,
     ciMasked: item.ciMasked,
     lastLoginAt: item.lastLoginAt,
@@ -318,7 +320,12 @@ export function ban(userId: string, reason: string): Promise<AdminUserDetail> {
     }
     target.status = 'baneado';
     target.suspension = null;
-    target.ban = { reason: text, by: 'Camila Fuentes', at: new Date().toISOString() };
+    target.ban = {
+      id: `mock-ban-${target.id}`,
+      reason: text,
+      by: 'Camila Fuentes',
+      at: new Date().toISOString(),
+    };
     return toDetail(target);
   });
 }
