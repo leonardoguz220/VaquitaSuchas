@@ -2,7 +2,7 @@ import request from 'supertest';
 import { BillingHarness } from './support/billing-harness.js';
 
 // Adaptador real de HostEligibilityPort (spec 001 T013) sobre host_enablements (spec 009, 0091).
-// Mientras no exista la reputación (spec 007), la vía por calificación responde «no habilitado».
+// La vía por calificación (spec 007) se prueba en reputation.adapters.e2e-spec.ts.
 describe('Elegibilidad para ser titular (adaptador real)', () => {
   const harness = new BillingHarness();
 
@@ -50,7 +50,7 @@ describe('Elegibilidad para ser titular (adaptador real)', () => {
       maxActiveGroups: 5,
       canCreateMore: true,
       requirement: { minStars: 4.5, minConsideredCharges: 6, windowMonths: 12 },
-      current: { stars: null, consideredCharges: 0, level: null },
+      current: { stars: null, consideredCharges: 0, level: 'Nuevo' },
     });
     const created = await createGroup(user).expect(422);
     expect(created.body).toMatchObject({

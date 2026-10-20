@@ -13,11 +13,12 @@ import { UnsubscribeLinksService } from './unsubscribe-links.service.js';
 
 export interface PreferencesView {
   email: CategorySwitches;
-  telegram: CategorySwitches;
+  /** `blocked`: el usuario bloqueó el bot de Telegram (RF-005-28). */
+  telegram: CategorySwitches & { blocked: boolean };
   /** Correo con rebote permanente: se dejó de enviar (RF-005-17). */
-  emailBouncedAt: string | null;
-  /** El usuario bloqueó el bot de Telegram (RF-005-28). */
-  telegramBlockedAt: string | null;
+  emailProblem: boolean;
+  /** Informativo: los correos de seguridad no se desactivan (RF-005-17). */
+  securityEmailsAlwaysOn: true;
 }
 
 /** Preferencias de aviso del usuario y desactivación desde el correo (RF-005-17, RF-005-18). */
@@ -63,9 +64,9 @@ export class PreferencesService {
     const prefs = await this.repository.get(this.db, userId);
     return {
       email: prefs.email,
-      telegram: prefs.telegram,
-      emailBouncedAt: prefs.emailBouncedAt?.toISOString() ?? null,
-      telegramBlockedAt: prefs.telegramBlockedAt?.toISOString() ?? null,
+      telegram: { ...prefs.telegram, blocked: prefs.telegramBlockedAt !== null },
+      emailProblem: prefs.emailBouncedAt !== null,
+      securityEmailsAlwaysOn: true,
     };
   }
 }

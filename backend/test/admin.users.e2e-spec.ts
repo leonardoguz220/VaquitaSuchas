@@ -100,7 +100,7 @@ describe('Usuarios en administración (spec 009)', () => {
       role: 'usuario',
       groupsAsHost: 1,
       groupsAsMember: 1,
-      reputation: { level: null, stars: null, consideredCharges: 0 },
+      reputation: { level: 'Nuevo', stars: null, consideredCharges: 0 },
       reportsReceived: 0,
       ban: null,
       suspension: null,

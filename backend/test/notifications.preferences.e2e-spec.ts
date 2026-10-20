@@ -74,9 +74,9 @@ describe('Preferencias de avisos (spec 005)', () => {
     const on = { recordatorios: true, resoluciones: true, titular: true, grupo: true };
     expect(res.body).toEqual({
       email: on,
-      telegram: on,
-      emailBouncedAt: null,
-      telegramBlockedAt: null,
+      telegram: { ...on, blocked: false },
+      emailProblem: false,
+      securityEmailsAlwaysOn: true,
     });
   });
 

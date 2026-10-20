@@ -25,7 +25,9 @@ export class PreferencesController {
   @ApiBearerAuth()
   @ApiUnauthorizedResponse({ description: 'UNAUTHENTICATED: sin sesión válida.' })
   @ApiOperation({ summary: 'Mis interruptores de correo y Telegram por categoría (RF-005-17)' })
-  @ApiOkResponse({ description: '{ email, telegram, emailBouncedAt, telegramBlockedAt }' })
+  @ApiOkResponse({
+    description: '{ email, telegram (con blocked), emailProblem, securityEmailsAlwaysOn }',
+  })
   get(@Req() request: AuthenticatedRequest): Promise<PreferencesView> {
     return this.preferences.get(requireUserId(request));
   }

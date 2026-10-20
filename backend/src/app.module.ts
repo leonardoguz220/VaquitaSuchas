@@ -7,6 +7,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ReputationModule } from './modules/reputation/reputation.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
 import { JoinRequestsModule } from './modules/join-requests/join-requests.module.js';
+import { ListingsModule } from './modules/listings/listings.module.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module.js';
 import { TelegramModule } from './modules/telegram/telegram.module.js';
@@ -50,6 +51,7 @@ import { StorageModule } from './shared/storage/storage.module.js';
     SubscriptionsModule,
     BillingModule,
     JoinRequestsModule,
+    ListingsModule,
     NotificationsModule,
     AuthModule,
     UsersModule,
