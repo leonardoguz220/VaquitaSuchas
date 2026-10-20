@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Clock } from '../../../shared/clock/clock.js';
-import { DbService } from '../../../shared/db/db.service.js';
+import { DbService, type Queryable } from '../../../shared/db/db.service.js';
 import { DomainError } from '../../../shared/errors/domain-error.js';
 import { DEFAULT_MESSAGES, ErrorCode } from '../../../shared/errors/error-codes.js';
 import { entryWindow } from '../../subscriptions/domain/entry-window.js';
@@ -29,6 +29,14 @@ export interface SearchQuery extends SearchFilters {
   sort?: ListingSort;
   limit?: number;
   cursor?: string;
+}
+
+interface ViewContext {
+  myRequest: { id: string; status: string } | null;
+  openCharges: number;
+  activeTotal: number;
+  restricted: boolean;
+  level: OwnerLevel;
 }
 
 const LEVELS: readonly OwnerLevel[] = ['Nuevo', 'En riesgo', 'Regular', 'Bueno', 'Excelente'];
@@ -123,52 +131,72 @@ export class ListingsSearchService {
       this.search.accountStatus(this.db, userId),
       this.reputation.getMany(this.db, [...new Set(rows.map((row) => row.ownerId))]),
     ]);
-    return rows.map((row) => {
-      const window = entryWindow(
-        { billingDay: row.billingDay, createdAt: row.groupCreatedAt },
-        now,
-      );
-      const myRequest = mine.get(row.groupId) ?? null;
-      const eligibility = requestEligibility({
-        accountRestricted: status !== 'activo',
-        // La consulta ya exige grupo activo, sin congelar y que recibe miembros.
-        group: { status: 'activo', frozen: false, acceptingMembers: true },
-        windowOpen: window.isOpen,
-        availableSlots: row.offered,
-        isMember: false,
-        openChargesInGroup: charges.get(row.groupId) ?? 0,
-        activeRequestsInGroup: myRequest ? 1 : 0,
-        activeRequestsTotal: activeTotal,
-      });
-      return {
-        id: row.id,
-        service: {
-          name: row.serviceName,
-          planName: row.planName,
-          logoUrl: row.logoUrl,
-          brandColor: row.brandColor,
-          category: row.category,
-        },
-        slotsOffered: row.offered,
-        estimatedShareCents: estimatedShare(row.totalBsCents, row.members, row.offered),
-        estimatedShareLabel: 'estimada',
-        billingDay: row.billingDay,
-        owner: {
-          fullName: row.ownerName,
-          level: toLevel(reputation.get(row.ownerId)?.level ?? null),
-        },
-        description: row.description,
-        conditions: row.conditions,
-        publishedAt: row.publishedAt.toISOString(),
-        expiresAt: row.expiresAt.toISOString(),
-        entryWindow: {
-          isOpen: window.isOpen,
-          opensAt: window.opensAt?.toISOString() ?? null,
-          closesAt: window.closesAt?.toISOString() ?? null,
-        },
-        myRequest,
-        ...eligibility,
-      };
+    return rows.map((row) =>
+      this.buildView(row, now, {
+        myRequest: mine.get(row.groupId) ?? null,
+        openCharges: charges.get(row.groupId) ?? 0,
+        activeTotal,
+        restricted: status !== 'activo',
+        level: toLevel(reputation.get(row.ownerId)?.level ?? null),
+      }),
+    );
+  }
+
+  /**
+   * Cómo ve la publicación una persona cualquiera (vista previa del titular, `OwnerListing.preview`):
+   * sin solicitudes ni cobros propios. `null` si no está `activa` y vigente.
+   */
+  async previewOf(q: Queryable, listingId: string, now: Date): Promise<ListingView | null> {
+    const row = await this.search.findForPreview(q, listingId, now);
+    if (!row) return null;
+    const reputation = await this.reputation.getMany(q, [row.ownerId]);
+    return this.buildView(row, now, {
+      myRequest: null,
+      openCharges: 0,
+      activeTotal: 0,
+      restricted: false,
+      level: toLevel(reputation.get(row.ownerId)?.level ?? null),
     });
+  }
+
+  private buildView(row: ListingSearchRow, now: Date, ctx: ViewContext): ListingView {
+    const window = entryWindow({ billingDay: row.billingDay, createdAt: row.groupCreatedAt }, now);
+    const eligibility = requestEligibility({
+      accountRestricted: ctx.restricted,
+      // La consulta ya exige grupo activo, sin congelar y que recibe miembros.
+      group: { status: 'activo', frozen: false, acceptingMembers: true },
+      windowOpen: window.isOpen,
+      availableSlots: row.offered,
+      isMember: false,
+      openChargesInGroup: ctx.openCharges,
+      activeRequestsInGroup: ctx.myRequest ? 1 : 0,
+      activeRequestsTotal: ctx.activeTotal,
+    });
+    return {
+      id: row.id,
+      service: {
+        name: row.serviceName,
+        planName: row.planName,
+        logoUrl: row.logoUrl,
+        brandColor: row.brandColor,
+        category: row.category,
+      },
+      slotsOffered: row.offered,
+      estimatedShareCents: estimatedShare(row.totalBsCents, row.members, row.offered),
+      estimatedShareLabel: 'estimada',
+      billingDay: row.billingDay,
+      owner: { fullName: row.ownerName, level: ctx.level },
+      description: row.description,
+      conditions: row.conditions,
+      publishedAt: row.publishedAt.toISOString(),
+      expiresAt: row.expiresAt.toISOString(),
+      entryWindow: {
+        isOpen: window.isOpen,
+        opensAt: window.opensAt?.toISOString() ?? null,
+        closesAt: window.closesAt?.toISOString() ?? null,
+      },
+      myRequest: ctx.myRequest,
+      ...eligibility,
+    };
   }
 }

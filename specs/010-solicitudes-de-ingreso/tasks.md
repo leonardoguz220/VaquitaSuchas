@@ -81,7 +81,7 @@
 
 ## Fase 7: Integración con la spec 008 (cupos libres)
 
-- [ ] T036 [BE] Cambios que pide la spec 008: `ports/listing-quota.port.ts` (`ListingQuotaPort.remainingOffered(tx, listingId)`, implementado por `listings` en `app-adapters/`), `JoinRequestsService.openFromListing(userId, listing, message)` (abre la solicitud desde una publicación con la misma lógica que `open`), `rejectOpenForListing(tx, listingId, reason)` (rechaza las solicitudes `abierta` de una publicación cerrada u ocultada), evento `JoinRequestAccepted{listingId?}` y validación de que aceptar no supera `slots_offered`; pruebas en `join-requests.listing.e2e-spec.ts` — Depende: T029, spec 008 · Cubre: RF-010-20, CA-010-06 (coherencia con cupos ofrecidos)
+- [x] T036 [BE] Cambios que pide la spec 008: `ports/listing-quota.port.ts` (`ListingQuotaPort.remainingOffered(tx, listingId)`, implementado por `listings` en `app-adapters/`), `JoinRequestsService.openFromListing(userId, listing, message)` (abre la solicitud desde una publicación con la misma lógica que `open`), `rejectOpenForListing(tx, listingId, reason)` (rechaza las solicitudes `abierta` de una publicación cerrada u ocultada), evento `JoinRequestAccepted{listingId?}` y validación de que aceptar no supera `slots_offered`; pruebas en `join-requests.listing.e2e-spec.ts` — Depende: T029, spec 008 · Cubre: RF-010-20, CA-010-06 (coherencia con cupos ofrecidos)
 
 ## Fase 8: US6 — Reclamos y sanción (Prioridad: P1 con núcleo en el MVP)
 

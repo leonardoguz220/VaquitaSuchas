@@ -1,9 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Clock } from '../../../shared/clock/clock.js';
-import { DbService, type Queryable } from '../../../shared/db/db.service.js';
+import { DbService, type DbTransaction, type Queryable } from '../../../shared/db/db.service.js';
 import { DomainError } from '../../../shared/errors/domain-error.js';
 import { DEFAULT_MESSAGES, ErrorCode } from '../../../shared/errors/error-codes.js';
-import type { JoinRequestOpened } from '../../../shared/events/join-request-events.js';
+import type {
+  JoinRequestOpened,
+  JoinRequestRejected,
+} from '../../../shared/events/join-request-events.js';
 import { TxEventBus } from '../../../shared/events/tx-event-bus.js';
 import { toLaPazParts } from '../../../shared/domain/la-paz.js';
 import { lastCutAtOrBefore, periodOf } from '../../subscriptions/domain/billing-calendar.js';
@@ -24,6 +27,7 @@ import { openRequestError } from '../domain/open-request-errors.js';
 import { decodeCursor, encodeCursor } from '../domain/page-cursor.js';
 import { transition, type RequestStatus } from '../domain/request-state.js';
 import { availableSlots } from '../domain/slots.js';
+import { LISTING_QUOTA_PORT, type ListingQuotaPort } from '../ports/listing-quota.port.js';
 import { RequestEventsRepository } from '../repositories/events.repository.js';
 import { MessagesRepository } from '../repositories/messages.repository.js';
 import {
@@ -31,7 +35,7 @@ import {
   type JoinRequestRecord,
   type ListScope,
 } from '../repositories/requests.repository.js';
-import { RequestLifecycle } from './request-lifecycle.js';
+import { currentDeadline, RequestLifecycle } from './request-lifecycle.js';
 import { RequestViewService } from './request-view.service.js';
 import type {
   GroupJoinRequestsPage,
@@ -56,6 +60,12 @@ export interface RequestAccess {
   record: JoinRequestRecord;
   group: GroupRow;
   role: 'solicitante' | 'titular';
+}
+
+/** Publicación de origen de una solicitud (spec 008): lo mínimo que necesita `openFromListing`. */
+export interface ListingRef {
+  id: string;
+  groupId: string;
 }
 
 const notFound = (): DomainError =>
@@ -103,6 +113,7 @@ export class JoinRequestsService {
     private readonly lifecycle: RequestLifecycle,
     private readonly views: RequestViewService,
     @Inject(OPEN_CHARGES_PORT) private readonly openCharges: OpenChargesPort,
+    @Inject(LISTING_QUOTA_PORT) private readonly listingQuota: ListingQuotaPort,
   ) {}
 
   /**
@@ -112,13 +123,89 @@ export class JoinRequestsService {
    */
   async open(userId: string, code: string): Promise<JoinRequestView> {
     const resolved = await this.invites.resolve(userId, code);
+    return this.openIn(userId, resolved.id, { listingId: null, message: null });
+  }
+
+  /**
+   * Abre una solicitud desde una publicación (spec 008, RF-008-10): igual que `open` pero sin
+   * código; la publicación identifica el grupo. Guarda `source = 'publicacion'`, `listing_id` y,
+   * si hay mensaje, la primera línea del chat. El mensaje llega ya validado y normalizado.
+   */
+  async openFromListing(
+    userId: string,
+    listing: ListingRef,
+    message: string | null,
+  ): Promise<JoinRequestView> {
+    return this.openIn(userId, listing.groupId, { listingId: listing.id, message });
+  }
+
+  /**
+   * Rechaza las solicitudes `abierta` de una publicación cerrada u ocultada (RN-010-05, CA-008-11).
+   * Las que ya están en pago siguen su curso. Corre en la transacción de quien llama; es
+   * idempotente (solo toca solicitudes todavía `abierta`).
+   */
+  async rejectOpenForListing(
+    tx: DbTransaction,
+    listingId: string,
+    reason: 'sin_cupo',
+  ): Promise<number> {
+    const now = this.clock.now();
+    let rejected = 0;
+    for (const locked of await this.requests.listOpenByListingForUpdate(tx, listingId)) {
+      const record = await this.lifecycle.expireIfDue(tx, locked, now);
+      if (record.status !== 'abierta') continue;
+      transition(record.status, 'systemReject', {
+        now,
+        windowOpen: true,
+        slotAvailable: true,
+        deadlineAt: currentDeadline(record),
+      });
+      await this.requests.recordSystemRejection(tx, record.id, record.status, reason, now);
+      await this.events.insert(tx, {
+        requestId: record.id,
+        type: 'rechazada',
+        actorId: null,
+        fromStatus: record.status,
+        toStatus: 'rechazada',
+        reason,
+        occurredAt: now,
+      });
+      const group = (await this.groups.findById(tx, record.groupId)) as GroupRow;
+      const event: JoinRequestRejected = {
+        type: 'join-requests.rejected',
+        requestId: record.id,
+        groupId: record.groupId,
+        applicantId: record.applicantId,
+        hostId: group.owner_id,
+        reason,
+        byHost: false,
+        rejectedAsFalse: false,
+      };
+      await this.bus.publish(tx, event);
+      rejected += 1;
+    }
+    return rejected;
+  }
+
+  /** Apertura común (RF-010-01 a RF-010-04); `origin.listingId` la marca como de una publicación. */
+  private async openIn(
+    userId: string,
+    groupId: string,
+    origin: { listingId: string | null; message: string | null },
+  ): Promise<JoinRequestView> {
     return this.db.withTransaction(async (tx) => {
       const now = this.clock.now();
       // Primero se persisten los vencimientos (R1) para que una vencida no ocupe el índice único.
       for (const active of await this.requests.listActiveByApplicantForUpdate(tx, userId)) {
         await this.lifecycle.expireIfDue(tx, active, now);
       }
-      const group = (await this.groups.findById(tx, resolved.id)) as GroupRow;
+      if (
+        origin.listingId !== null &&
+        (await this.listingQuota.remainingOffered(tx, origin.listingId)) < 1
+      ) {
+        throw new DomainError('LISTING_NOT_FOUND', 404, 'No se encontró la publicación.');
+      }
+      const group = (await this.groups.findById(tx, groupId)) as GroupRow;
       const window = entryWindow(
         { billingDay: group.billing_day, createdAt: group.created_at },
         now,
@@ -164,7 +251,8 @@ export class JoinRequestsService {
         record = await this.requests.insert(tx, {
           groupId: group.id,
           applicantId: userId,
-          source: 'codigo',
+          source: origin.listingId === null ? 'codigo' : 'publicacion',
+          listingId: origin.listingId,
           openedAt: now,
           openDeadlineAt: deadlines.openDeadlineAt as Date,
         });
@@ -185,9 +273,16 @@ export class JoinRequestsService {
         groupId: group.id,
         applicantId: userId,
         hostId: group.owner_id,
-        source: 'codigo',
-        listingId: null,
+        source: origin.listingId === null ? 'codigo' : 'publicacion',
+        listingId: origin.listingId,
       };
+      if (origin.message !== null) {
+        await this.messages.insert(tx, {
+          requestId: record.id,
+          senderId: userId,
+          body: origin.message,
+        });
+      }
       await this.bus.publish(tx, event);
       return this.viewOne(tx, record, userId, now);
     });
