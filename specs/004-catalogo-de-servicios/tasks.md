@@ -57,7 +57,7 @@
 
 ## Fase 5: Cierre
 
-- [ ] T020 [BD] Verificar en staging que la extensión `unaccent` está disponible en el PostgreSQL gestionado (primera migración de staging); si no lo estuviera, aplicar el plan B del plan (normalizar en el backend) — Depende: spec 000 T051 · Cubre: riesgo `unaccent` (plan §9)
+- [x] T020 [BD] Verificar en staging que la extensión `unaccent` está disponible en el PostgreSQL gestionado (primera migración de staging); si no lo estuviera, aplicar el plan B del plan (normalizar en el backend) — Depende: spec 000 T051 · Cubre: riesgo `unaccent` (plan §9)
 - [ ] T021 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado y marcar las tareas hechas — Depende: T017, T019 · Cubre: —
 
 ## Dependencias y orden de ejecución
