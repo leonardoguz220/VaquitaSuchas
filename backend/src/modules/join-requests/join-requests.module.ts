@@ -8,6 +8,7 @@ import { AuthModule } from '../auth/auth.module.js';
 import { BillingModule } from '../billing/billing.module.js';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module.js';
 import { RateLimitRepository } from '../auth/repositories/rate-limit.repository.js';
+import { AdminDisputesController, DisputesController } from './controllers/disputes.controller.js';
 import { ChatController } from './controllers/chat.controller.js';
 import {
   HostRequestsController,
@@ -20,6 +21,7 @@ import { RequestsRepository } from './repositories/requests.repository.js';
 import { JoinRequestsRetentionJob, JoinRequestsSweepJob } from './jobs/join-requests-jobs.js';
 import { RESERVED_SLOTS_QUERY } from './ports/reserved-slots.query.js';
 import { ChatService } from './services/chat.service.js';
+import { DisputesService } from './services/disputes.service.js';
 import { EntryPaymentService } from './services/entry-payment.service.js';
 import { GroupEventsHandlers } from './services/group-events.handlers.js';
 import { JoinRequestsService } from './services/join-requests.service.js';
@@ -33,7 +35,13 @@ import { RequestViewService } from './services/request-view.service.js';
 // auditoría y calificación (adaptadores nulos hasta las specs 009 y 007), de `AdaptersModule`.
 @Module({
   imports: [SubscriptionsModule, AuthModule, BillingModule, AdaptersModule],
-  controllers: [JoinRequestsController, HostRequestsController, ChatController],
+  controllers: [
+    JoinRequestsController,
+    HostRequestsController,
+    ChatController,
+    DisputesController,
+    AdminDisputesController,
+  ],
   providers: [
     RateLimitRepository,
     RequestsRepository,
@@ -45,6 +53,7 @@ import { RequestViewService } from './services/request-view.service.js';
     JoinRequestsService,
     EntryPaymentService,
     ChatService,
+    DisputesService,
     RequestSweeper,
     JoinRequestsRetentionService,
     GroupEventsHandlers,
@@ -55,6 +64,7 @@ import { RequestViewService } from './services/request-view.service.js';
     JoinRequestsService,
     EntryPaymentService,
     ChatService,
+    DisputesService,
     RequestLifecycle,
     RESERVED_SLOTS_QUERY,
   ],

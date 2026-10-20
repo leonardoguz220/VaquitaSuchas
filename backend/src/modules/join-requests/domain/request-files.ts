@@ -20,3 +20,7 @@ export const paymentQrKeyOf = (i: KeyInput): string =>
 /** Clave de una imagen del chat (RF-010-05): generada por el servidor, sin el nombre original. */
 export const chatImageKeyOf = (i: KeyInput): string =>
   `join-requests/${i.groupId}/${i.requestId}/chat-${i.fileId}.${EXTENSION[i.type]}`;
+
+/** Clave de una imagen de evidencia de un reclamo (RF-010-21): generada por el servidor. */
+export const disputeEvidenceKeyOf = (i: KeyInput): string =>
+  `join-requests/${i.groupId}/${i.requestId}/dispute-${i.fileId}.${EXTENSION[i.type]}`;
