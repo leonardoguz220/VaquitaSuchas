@@ -4,7 +4,18 @@
  * son centavos de Bs calculados por el backend: el frontend no suma, no resta ni calcula
  * porcentajes (plan 006 §6).
  */
+import { apiRequest } from './http';
 import * as mock from './reports.mock';
+
+/** Query string sin los valores vacíos; `''` si no queda ninguno. */
+function buildQuery(params: Record<string, string | number | undefined>): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') query.set(key, String(value));
+  }
+  const text = query.toString();
+  return text ? `?${text}` : '';
+}
 
 /** Archivo descargado de la API (CSV): contenido y nombre que propone el servidor. */
 export interface ApiDownload {
@@ -100,7 +111,9 @@ export interface DashboardParams {
  * `isEmpty: true`, no con un error. `400` mes inválido, `404` `groupId` ajeno (CA-006-18).
  */
 export function getDashboard(params: DashboardParams = {}): Promise<DashboardSummary> {
-  return mock.getDashboard(params);
+  return apiRequest<DashboardSummary>(
+    `/api/me/dashboard${buildQuery({ month: params.month, groupId: params.groupId })}`,
+  );
 }
 
 export type DashboardListName = 'debts' | 'in_review' | 'owed';
@@ -139,7 +152,14 @@ export interface DashboardListParams {
  * todos los períodos; `owed` responde `403` a quien no es titular de ningún grupo.
  */
 export function listDashboard(params: DashboardListParams): Promise<ChargeLinesPage> {
-  return mock.listDashboard(params);
+  return apiRequest<ChargeLinesPage>(
+    `/api/me/dashboard/lists${buildQuery({
+      list: params.list,
+      groupId: params.groupId,
+      limit: params.limit,
+      cursor: params.cursor,
+    })}`,
+  );
 }
 
 export type CollectionMemberStatus =
@@ -164,7 +184,9 @@ export interface GroupCollection extends CollectionSummary {
  * miembro y `404` si el grupo es ajeno.
  */
 export function getGroupCollection(groupId: string, period?: string): Promise<GroupCollection> {
-  return mock.getGroupCollection(groupId, period);
+  return apiRequest<GroupCollection>(
+    `/api/groups/${encodeURIComponent(groupId)}/collection${buildQuery({ period })}`,
+  );
 }
 
 /** Series de los gráficos del panel (RF-006-07 a RF-006-10). Montos en centavos de Bs. */
@@ -182,7 +204,9 @@ export interface DashboardCharts {
  * Cada serie trae todos los valores para la tabla alternativa.
  */
 export function getDashboardCharts(params: DashboardParams = {}): Promise<DashboardCharts> {
-  return mock.getDashboardCharts(params);
+  return apiRequest<DashboardCharts>(
+    `/api/me/dashboard/charts${buildQuery({ month: params.month, groupId: params.groupId })}`,
+  );
 }
 
 /** Evento del calendario (RF-006-11, RF-006-12). `date` es `YYYY-MM-DD` de La Paz. */
