@@ -119,6 +119,36 @@ export class DisputesRepository {
     return row ? toRecord(row) : null;
   }
 
+  async findById(
+    q: Queryable,
+    disputeId: string,
+    forUpdate = false,
+  ): Promise<DisputeRecord | null> {
+    const result = await q.query<Row>(
+      `SELECT ${COLUMNS} FROM join_disputes WHERE id = $1${forUpdate ? ' FOR UPDATE' : ''}`,
+      [disputeId],
+    );
+    const row = result.rows[0];
+    return row ? toRecord(row) : null;
+  }
+
+  /** Titular actual del grupo (el acusado de un `pago_sin_ingreso`). */
+  async hostOf(q: Queryable, groupId: string): Promise<string> {
+    const result = await q.query<{ owner_id: string }>(
+      'SELECT owner_id FROM groups WHERE id = $1',
+      [groupId],
+    );
+    return (result.rows[0] as { owner_id: string }).owner_id;
+  }
+
+  async namesOf(q: Queryable, userIds: readonly string[]): Promise<Map<string, string>> {
+    const result = await q.query<{ id: string; full_name: string }>(
+      'SELECT id, full_name FROM users WHERE id = ANY($1::uuid[])',
+      [userIds],
+    );
+    return new Map(result.rows.map((r) => [r.id, r.full_name]));
+  }
+
   async listByRequest(q: Queryable, requestId: string): Promise<DisputeRecord[]> {
     const result = await q.query<Row>(
       `SELECT ${COLUMNS} FROM join_disputes WHERE request_id = $1 ORDER BY opened_at, id`,

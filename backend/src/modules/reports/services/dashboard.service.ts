@@ -4,7 +4,8 @@ import { DbService } from '../../../shared/db/db.service.js';
 import { DomainError } from '../../../shared/errors/domain-error.js';
 import { DEFAULT_MESSAGES, ErrorCode } from '../../../shared/errors/error-codes.js';
 import { toLaPazParts } from '../../../shared/domain/la-paz.js';
-import { lastPayDay } from '../domain/calendar-events.js';
+import { daysLate, lastPayDay } from '../domain/calendar-events.js';
+import { percentCollected } from '../domain/collection.js';
 import { decodeListCursor, encodeListCursor } from '../domain/list-cursor.js';
 import { savingsForLine, summarizeSavings } from '../domain/savings.js';
 import {
@@ -16,6 +17,7 @@ import {
   type ChargeLineRow,
   type ChargeListKind,
   type CollectionRow,
+  type LateMemberRow,
 } from '../repositories/reports.repository.js';
 
 export const DEFAULT_LIST_SIZE = 20;
@@ -99,6 +101,17 @@ export interface ChargeLinesPage {
   nextCursor: string | null;
 }
 
+export interface GroupCollection extends CollectionSummary {
+  availablePeriods: string[];
+  members: {
+    userId: string;
+    fullName: string;
+    chargeId: string;
+    amountCents: number;
+    status: string;
+  }[];
+}
+
 const notFound = (): DomainError =>
   new DomainError(ErrorCode.NOT_FOUND, 404, DEFAULT_MESSAGES.NOT_FOUND);
 
@@ -134,12 +147,24 @@ export class DashboardService {
     const groupId = options.groupId ?? null;
     await this.assertGroupVisible(userId, groupId);
 
-    const [groupIds, spendRows, availableMonths, debtTotals] = await Promise.all([
+    const [groupIds, spendRows, availableMonths, debtTotals, isOwner] = await Promise.all([
       this.membership.groupIdsOf(this.db, userId),
       this.reports.spendLines(this.db, userId, month, groupId),
       this.reports.availableMonths(this.db, userId),
       this.reports.debtTotals(this.db, userId),
+      this.reports.isOwnerOfAnyGroup(this.db, userId),
     ]);
+    const [owedGroups, collectionRows] = isOwner
+      ? await Promise.all([
+          this.reports.owedByGroup(this.db, userId),
+          this.reports.collectionForOwner(this.db, userId, month, groupId),
+        ])
+      : [[], []];
+    const late = await this.reports.lateMembers(
+      this.db,
+      collectionRows.map((r) => r.groupId),
+      month,
+    );
 
     const lines: SpendLine[] = spendRows.map((r) => ({
       groupId: r.groupId,
@@ -199,10 +224,68 @@ export class DashboardService {
         inReviewCents: debtTotals.inReviewCents,
         inReviewCount: debtTotals.inReviewCount,
       },
-      // «Me deben» y cobranza del titular llegan con la tarea T011.
-      owed: null,
-      collection: [],
+      owed: isOwner
+        ? {
+            totalCents: owedGroups.reduce((sum, g) => sum + g.totalCents, 0),
+            count: owedGroups.reduce((sum, g) => sum + g.count, 0),
+            groups: owedGroups,
+          }
+        : null,
+      collection: collectionRows.map((row) => this.toCollectionSummary(row, late)),
     };
+  }
+
+  private toCollectionSummary(
+    row: CollectionRow,
+    late: readonly LateMemberRow[],
+  ): CollectionSummary {
+    const now = this.clock.now();
+    return {
+      ...row,
+      percentCollected: percentCollected(row.collectedCents, row.expectedCents),
+      lateMembers: late
+        .filter((m) => m.groupId === row.groupId)
+        .map((m) => ({
+          userId: m.userId,
+          fullName: m.fullName,
+          chargeId: m.chargeId,
+          amountCents: m.amountCents,
+          dueDate: lastPayDay(m.dueAt),
+          daysLate: daysLate(m.dueAt, now),
+        })),
+    };
+  }
+
+  /** `GET /groups/:groupId/collection` (RF-006-06): solo el titular; `403` miembro, `404` ajeno. */
+  async groupCollection(
+    userId: string,
+    groupId: string,
+    period: string | null,
+  ): Promise<GroupCollection> {
+    const groupIds = await this.membership.groupIdsOf(this.db, userId);
+    if (!groupIds.includes(groupId)) throw notFound();
+    if (!(await this.membership.isOwner(this.db, userId, groupId))) {
+      throw new DomainError(ErrorCode.FORBIDDEN, 403, DEFAULT_MESSAGES.FORBIDDEN);
+    }
+    const month = period ?? this.currentMonth();
+    const [rows, late, availablePeriods, members, brief] = await Promise.all([
+      this.reports.collectionForOwner(this.db, userId, month, groupId),
+      this.reports.lateMembers(this.db, [groupId], month),
+      this.reports.availablePeriodsOfGroup(this.db, groupId),
+      this.reports.memberCharges(this.db, groupId, month),
+      this.reports.groupBrief(this.db, groupId),
+    ]);
+    if (!brief) throw notFound();
+    // Sin ciclo en el período todo es cero (no un error).
+    const row: CollectionRow = rows[0] ?? {
+      ...brief,
+      period: month,
+      expectedCents: 0,
+      collectedCents: 0,
+      inReviewCents: 0,
+      pendingCents: 0,
+    };
+    return { ...this.toCollectionSummary(row, late), availablePeriods, members };
   }
 
   /** `GET /me/dashboard/lists` (RF-006-04, 05): páginas por cursor de `debts`, `in_review` y `owed`. */
