@@ -2,14 +2,21 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { AdminBansController } from './controllers/admin-bans.controller.js';
+import { AdminCatalogController } from './controllers/admin-catalog.controller.js';
+import { AdminStatsController } from './controllers/admin-stats.controller.js';
 import { AdminHostsController } from './controllers/admin-hosts.controller.js';
 import { AdminUsersController } from './controllers/admin-users.controller.js';
 import { AdminAuditController } from './controllers/admin-audit.controller.js';
+import { CatalogAdminRepository } from './repositories/catalog-admin.repository.js';
+import { StatsRepository } from './repositories/stats.repository.js';
 import { AuditRepository } from './repositories/audit.repository.js';
 import { BansRepository } from './repositories/bans.repository.js';
 import { HostEnablementsRepository } from './repositories/host-enablements.repository.js';
 import { SuspensionsRepository } from './repositories/suspensions.repository.js';
 import { UsersAdminRepository } from './repositories/users-admin.repository.js';
+import { CatalogAdminService } from './services/catalog-admin.service.js';
+import { CatalogImportService } from './services/catalog-import.service.js';
+import { StatsService } from './services/stats.service.js';
 import { AuditService } from './services/audit.service.js';
 import { HostEnablementService } from './services/host-enablement.service.js';
 import { BanService } from './services/ban.service.js';
@@ -25,6 +32,8 @@ import { UsersAdminService } from './services/users-admin.service.js';
     AdminUsersController,
     AdminBansController,
     AdminHostsController,
+    AdminCatalogController,
+    AdminStatsController,
   ],
   providers: [
     AuditRepository,
@@ -32,7 +41,12 @@ import { UsersAdminService } from './services/users-admin.service.js';
     HostEnablementsRepository,
     SuspensionsRepository,
     UsersAdminRepository,
+    CatalogAdminRepository,
+    StatsRepository,
     AuditService,
+    CatalogAdminService,
+    CatalogImportService,
+    StatsService,
     UsersAdminService,
     BanService,
     HostEnablementService,
