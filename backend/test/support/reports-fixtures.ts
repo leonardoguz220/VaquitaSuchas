@@ -45,7 +45,7 @@ export class ReportsFixtures {
         `INSERT INTO groups (owner_id, name, service_name_snapshot, price_cents, currency,
                              billing_day, total_slots, invite_code,
                              individual_price_cents_snapshot, individual_price_currency_snapshot)
-         VALUES ($1, $2, $3, $4, 'BS', $5, 5, $6, $7, $8) RETURNING id`,
+         VALUES ($1, $2, $3, $4, 'BS', $5, 12, $6, $7, $8) RETURNING id`,
         [
           options.ownerId,
           options.name ?? 'Grupo',

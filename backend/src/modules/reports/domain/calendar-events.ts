@@ -16,12 +16,13 @@ export interface CalendarGroup {
 }
 
 export interface CalendarCharge {
-  chargeId: string;
+  /** `null` para la cuota de referencia del titular (un ciclo, no un cobro). */
+  chargeId: string | null;
   groupId: string;
   /** `AAAA-MM` del corte. */
   period: string;
   amountCents: number;
-  status: string;
+  status: string | null;
   dueAt: Date;
 }
 
@@ -99,7 +100,7 @@ export function calendarEventsFor(
   }
 
   for (const charge of charges) {
-    if (!OPEN_STATUSES.has(charge.status)) continue;
+    if (charge.status === null || !OPEN_STATUSES.has(charge.status)) continue;
     const group = byGroup.get(charge.groupId);
     if (!group) continue;
     const date = lastPayDay(charge.dueAt);
