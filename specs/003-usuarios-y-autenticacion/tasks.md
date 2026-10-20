@@ -49,7 +49,7 @@
 - [x] T023 [P] [US1] [FE] Pantalla `/registro` (`features/auth/`: `AuthShell`, `PasswordRules` con lista de reglas en vivo, `PolicyModal`) con datos simulados (mock): nombre, correo, CI, contraseña y confirmación, casilla de la política; estados de carga, error y éxito — Depende: spec 000 T036, T037 · Cubre: RF-003-01, RF-003-03, RF-003-23, RNF-003-04
 - [x] T024 [US1] [FE] Pantalla `/registro/verificar` (`TelegramVerifyCard`: botón **Abrir Telegram**, código QR con alternativa en texto, cuenta regresiva de 10 minutos, sondeo cada 2 s; estados esperando, vencido con «Pedir un enlace nuevo», rechazado por `code` —el bloqueo muestra el mensaje genérico— y verificado que redirige a `/`) y pantalla de desarrollo `/dev/telegram` (solo con `NEXT_PUBLIC_TELEGRAM_MODE=dev`) — Depende: T023 · Cubre: RF-003-21, RNF-003-04
 - [x] T025 [US1] [FE] Conectar `/registro` y `/registro/verificar` con el backend real (`services/auth.ts`); la cookie de sesión `vq_reg` y la de sesión final las maneja el proxy — Depende: T020, T024, spec 000 T038 · Cubre: RF-003-01, RF-003-06
-- [x] T026 [US1] [FE] E2E `frontend/e2e/register.spec.ts` (CA-003-27: registro completo con el bot simulado desde `/dev/telegram`) — Depende: T025 · Cubre: CA-003-27
+- [ ] T026 [US1] [FE] E2E `frontend/e2e/register.spec.ts` (CA-003-27: registro completo con el bot simulado desde `/dev/telegram`) — Depende: T025 · Cubre: CA-003-27
 
 **Punto de control:** US1 es funcional y probable por sí sola con el bot simulado (I3 parcial).
 
@@ -81,7 +81,7 @@
 - [x] T033 [P] [US3] [BE] `backend/test/auth.password.e2e-spec.ts`: CA-003-09 (respuesta idéntica exista o no la cuenta), CA-003-10 (reset válido: nueva contraseña, enlace muerto, otras sesiones cerradas), CA-003-11 (enlace de más de 30 min), CA-003-12 (dos enlaces seguidos: el primero muere), CA-003-13 (límite de 3 por hora), CA-003-16 (cambio autenticado con aviso en Mailpit) — Depende: T013 · Cubre: CA-003-09, CA-003-10, CA-003-11, CA-003-12, CA-003-13, CA-003-16
 - [x] T034 [US3] [BE] `auth/services/password.service.ts`, `password.controller.ts` y `reset-tokens.repository.ts`: `POST /auth/password/forgot` (cuenta un evento `reset:email` por correo escrito, 3 por hora; si la cuenta existe, está activa y verificada invalida los tokens anteriores con `used_at = now()` y crea uno nuevo de 32 bytes con vigencia de 30 min, guarda su hash y envía el correo con `MailService` después de confirmar la transacción; respuesta siempre igual), `POST /auth/password/reset` (valida la política, marca el token usado, cambia el hash, incrementa `session_version`, envía el aviso de cambio) y la tarea `auth.retry_mail` (hasta 3 reintentos si falla el envío) — Depende: T013, T007, T010, spec 000 T025, T033 · Cubre: RF-003-10, RF-003-11, RF-003-12, RF-003-13, RF-003-18, CA-003-09, CA-003-10, CA-003-11, CA-003-12, CA-003-13
 - [x] T035 [P] [US3] [FE] Pantallas `/recuperar` (mismo mensaje de éxito siempre) y `/recuperar/[token]` (nueva contraseña y confirmación con reglas en vivo; token inválido con botón para pedir otro) con mock — Depende: spec 000 T036, T023 · Cubre: RF-003-10, RF-003-12, RNF-003-04
-- [x] T036 [US3] [FE] Conectar `/recuperar` y `/recuperar/[token]` con `forgot` y `reset` — Depende: T034, T035 · Cubre: RF-003-10, RF-003-12
+- [ ] T036 [US3] [FE] Conectar `/recuperar` y `/recuperar/[token]` con `forgot` y `reset` — Depende: T034, T035 · Cubre: RF-003-10, RF-003-12
 
 ## Fase 6: US4 — Perfil, cambio de celular y de contraseña (Prioridad: P0)
 
