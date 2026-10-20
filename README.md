@@ -37,7 +37,7 @@ Los pasos completos y lo que debe verse en cada uno están en [`specs/000-setup-
 ```bash
 git clone https://github.com/leonardoguz220/VaquitaSuchas.git && cd VaquitaSuchas
 cp backend/.env.example backend/.env       # completar solo las variables marcadas con TODO
-cp frontend/.env.example frontend/.env.local
+cp frontend/.env.example frontend/.env.local # completar BACKEND_URL=http://localhost:3001
 npm install                                # instala los tres paquetes (workspaces)
 npm run db:up                              # PostgreSQL y Mailpit con docker compose
 npm run db:migrate && npm run db:seed
