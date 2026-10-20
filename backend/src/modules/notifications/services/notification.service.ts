@@ -3,10 +3,18 @@ import { Clock } from '../../../shared/clock/clock.js';
 import { DbService, type DbTransaction } from '../../../shared/db/db.service.js';
 import { DomainError } from '../../../shared/errors/domain-error.js';
 import { DEFAULT_MESSAGES, ErrorCode } from '../../../shared/errors/error-codes.js';
-import { categoryFor, type NotificationType, type RecipientRole } from '../domain/catalog.js';
+import {
+  categoryFor,
+  NOTIFICATION_CATALOG,
+  type NotificationType,
+  type RecipientRole,
+} from '../domain/catalog.js';
+import { deliveryPlan } from '../domain/delivery-rules.js';
 import { dedupeKey } from '../domain/dedupe.js';
 import { decodeNotificationCursor } from '../domain/notification-cursor.js';
 import { render, type NotificationData } from '../domain/templates.js';
+import { DeliveriesRepository } from '../repositories/deliveries.repository.js';
+import { PreferencesRepository } from '../repositories/preferences.repository.js';
 import {
   NotificationsRepository,
   type NotificationRecord,
@@ -59,7 +67,9 @@ const toView = (r: NotificationRecord): NotificationView => ({
 /**
  * Avisos dentro de la app (spec 005, parte A). `notify` y `cancelForEntity` reciben la transacción
  * del hecho que los origina: si el hecho se revierte, el aviso también (RF-005-01).
- * Los envíos por correo y Telegram (partes B y C) se agregan aquí sin cambiar esta firma.
+ * Los envíos por correo se deciden aquí según las preferencias y se guardan en el buzón de salida
+ * (`notification_deliveries`) en la misma transacción; los manda la tarea `notifications.deliver`,
+ * así una caída del proveedor nunca afecta la operación del usuario (RNF-005-04).
  */
 @Injectable()
 export class NotificationService {
@@ -67,6 +77,8 @@ export class NotificationService {
     private readonly repository: NotificationsRepository,
     private readonly db: DbService,
     private readonly clock: Clock,
+    private readonly preferences: PreferencesRepository,
+    private readonly deliveries: DeliveriesRepository,
   ) {}
 
   /** Crea el aviso con su clave; si ya existía no hace nada más. `true` si lo creó (RNF-005-01). */
@@ -86,7 +98,19 @@ export class NotificationService {
       dedupeKey: dedupeKey(input.type, input.entity, input.period, input.n, input.userId),
       createdAt: this.clock.now(),
     });
-    return id !== null;
+    if (id === null) return false;
+
+    const now = this.clock.now();
+    const account = await this.preferences.ensureAndGet(tx, input.userId);
+    if (account) {
+      const plan = deliveryPlan(
+        { category, timing: NOTIFICATION_CATALOG[input.type].timing },
+        account.prefs,
+        { status: account.userStatus },
+      );
+      await this.deliveries.insertPlan(tx, id, plan, now);
+    }
+    return true;
   }
 
   /** RN-005-02: cancela los envíos pendientes de esos tipos para la entidad (pago o cancelación). */

@@ -26,26 +26,43 @@ import type {
   PaymentDataSent,
   ProofSubmitted,
 } from '../../shared/events/join-request-events.js';
+import { JobRegistry } from '../../shared/jobs/job-registry.js';
 import { TxEventBus } from '../../shared/events/tx-event-bus.js';
 import type { UserSuspended } from '../../shared/events/user-events.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { NotificationsController } from './controllers/notifications.controller.js';
+import { PreferencesController } from './controllers/preferences.controller.js';
+import { NotificationsDeliverJob, NotificationsScheduleJob } from './jobs/notifications-jobs.js';
+import { DeliveriesRepository } from './repositories/deliveries.repository.js';
+import { PreferencesRepository } from './repositories/preferences.repository.js';
+import { ScheduleRepository } from './repositories/schedule.repository.js';
 import { NotificationFactsRepository } from './repositories/notification-facts.repository.js';
 import { NotificationsRepository } from './repositories/notifications.repository.js';
 import { BillingNotificationHandlers } from './services/handlers/billing.handlers.js';
 import { GroupNotificationHandlers } from './services/handlers/groups.handlers.js';
 import { JoinRequestNotificationHandlers } from './services/handlers/join-requests.handlers.js';
+import { DeliveryService } from './services/delivery.service.js';
 import { NotificationService } from './services/notification.service.js';
+import { PreferencesService } from './services/preferences.service.js';
+import { ScheduleService } from './services/schedule.service.js';
+import { UnsubscribeLinksService } from './services/unsubscribe-links.service.js';
 
 // DbService y Clock llegan de módulos globales. AuthModule aporta AUTH_SESSION_PORT para AuthGuard.
 // NotificationService se exporta para los manejadores de eventos de las specs 001, 002, 009 y 010.
 // Los manejadores de avisos se suscriben al bus al arrancar (quien reacciona depende del evento).
 @Module({
   imports: [AuthModule],
-  controllers: [NotificationsController],
+  controllers: [NotificationsController, PreferencesController],
   providers: [
     NotificationsRepository,
     NotificationFactsRepository,
+    PreferencesRepository,
+    DeliveriesRepository,
+    ScheduleRepository,
+    UnsubscribeLinksService,
+    PreferencesService,
+    DeliveryService,
+    ScheduleService,
     NotificationService,
     BillingNotificationHandlers,
     GroupNotificationHandlers,
@@ -59,9 +76,15 @@ export class NotificationsModule implements OnModuleInit {
     private readonly billing: BillingNotificationHandlers,
     private readonly groups: GroupNotificationHandlers,
     private readonly requests: JoinRequestNotificationHandlers,
+    private readonly registry: JobRegistry,
+    private readonly schedule: ScheduleService,
+    private readonly delivery: DeliveryService,
   ) {}
 
   onModuleInit(): void {
+    this.registry.register(new NotificationsScheduleJob(this.schedule));
+    this.registry.register(new NotificationsDeliverJob(this.delivery));
+
     const b = this.billing;
     this.bus.register<ChargeGenerated>('billing.charge-generated', (tx, e) =>
       b.onChargeGenerated(tx, e),
