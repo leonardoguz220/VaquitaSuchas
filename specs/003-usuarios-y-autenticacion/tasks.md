@@ -100,7 +100,7 @@
 - [x] T043 [FE] Ajustes de accesibilidad de las pantallas de `features/auth/` (etiquetas asociadas, errores con `aria-live`, QR con alternativa en texto) y revisión móvil primero — Depende: T040 · Cubre: RNF-003-04
 - [x] T044 [BD] Revisar con Camila que `users` no reciba columnas de otras specs (preferencias en `notification_preferences` `0071`; baneos en `bans` `0090`) y que la FK `banned_identities.ban_ref → bans` la agregue la spec 009 — Depende: T005 · Cubre: RF-003-19
 - [x] T046 [P] [BE] `backend/src/cli/seed-dev-users.ts` (`npm run seed:dev-users -w backend`): crea, solo si `NODE_ENV` no es `production`, cuatro usuarios de prueba verificados (un titular y tres miembros) con correos fijos `titular@dev.vaquita`, `miembro1@dev.vaquita`…, celular y Telegram ficticios, CI sintética cifrada y la contraseña de `SEED_DEV_PASSWORD` (nunca en el repositorio); idempotente por correo. El seed de BD de la spec 001 (T005) los referencia por correo (spec 001, PR #43 C2) — Depende: T022 · Cubre: RF-000-06
-- [ ] T045 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (CI aceptada solo dígitos 5 a 10, límites exactos, `auth.retry_mail`) y marcar las tareas hechas — Depende: T043, T044 · Cubre: —
+- [x] T045 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (CI aceptada solo dígitos 5 a 10, límites exactos, `auth.retry_mail`) y marcar las tareas hechas — Depende: T043, T044 · Cubre: —
 
 ## Dependencias y orden de ejecución
 
