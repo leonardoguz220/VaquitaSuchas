@@ -75,6 +75,40 @@ export interface ChargeLineRow {
   dueAt: Date;
 }
 
+export interface GroupBrief {
+  groupId: string;
+  groupName: string;
+  serviceName: string;
+}
+
+export interface GroupMemberChargeRow {
+  userId: string;
+  fullName: string;
+  chargeId: string;
+  amountCents: number;
+  status: string;
+}
+
+export interface CalendarGroupRow {
+  groupId: string;
+  groupName: string;
+  serviceName: string;
+  role: 'miembro' | 'titular';
+  billingDay: number;
+  closed: boolean;
+  memberCount: number;
+  totalBsCents: number;
+}
+
+export interface CalendarChargeRow {
+  chargeId: string | null;
+  groupId: string;
+  period: string;
+  amountCents: number;
+  status: string | null;
+  dueAt: Date;
+}
+
 export interface ListChargesQuery {
   kind: ChargeListKind;
   userId: string;
@@ -375,6 +409,148 @@ export class ReportsRepository {
       amountCents: num(r.amount_cents),
       status: r.status,
       dueAt: r.due_at,
+    }));
+  }
+
+  async groupBrief(q: Queryable, groupId: string): Promise<GroupBrief | null> {
+    const result = await q.query<{ id: string; name: string; service_name_snapshot: string }>(
+      `SELECT id, name, service_name_snapshot FROM groups WHERE id = $1`,
+      [groupId],
+    );
+    const row = result.rows[0];
+    return row
+      ? { groupId: row.id, groupName: row.name, serviceName: row.service_name_snapshot }
+      : null;
+  }
+
+  /** Períodos con ciclo del grupo, del más reciente al más antiguo. */
+  async availablePeriodsOfGroup(q: Queryable, groupId: string): Promise<string[]> {
+    const result = await q.query<{ period: string }>(
+      `SELECT period FROM billing_cycles WHERE group_id = $1 ORDER BY period DESC`,
+      [groupId],
+    );
+    return result.rows.map((r) => r.period);
+  }
+
+  /** Cobros no cancelados del grupo en el período; sin comprobantes ni referencias (RNF-006-03). */
+  async memberCharges(
+    q: Queryable,
+    groupId: string,
+    period: string,
+  ): Promise<GroupMemberChargeRow[]> {
+    const result = await q.query<{
+      user_id: string;
+      full_name: string;
+      id: string;
+      amount_cents: string;
+      status: string;
+    }>(
+      `SELECT c.user_id, u.full_name, c.id, c.amount_cents, c.status
+         FROM charges c JOIN users u ON u.id = c.user_id
+        WHERE c.group_id = $1 AND c.period = $2 AND c.status <> 'cancelado'
+        ORDER BY u.full_name, c.id`,
+      [groupId, period],
+    );
+    return result.rows.map((r) => ({
+      userId: r.user_id,
+      fullName: r.full_name,
+      chargeId: r.id,
+      amountCents: num(r.amount_cents),
+      status: r.status,
+    }));
+  }
+
+  /** Grupos del calendario: donde es miembro activo o donde tiene ciclos o cobros (cerrados incluidos). */
+  async calendarGroups(q: Queryable, userId: string): Promise<CalendarGroupRow[]> {
+    const result = await q.query<{
+      id: string;
+      name: string;
+      service_name_snapshot: string;
+      owner_id: string;
+      billing_day: number;
+      status: string;
+      members: string;
+      total_bs_cents: string;
+    }>(
+      `SELECT g.id, g.name, g.service_name_snapshot, g.owner_id, g.billing_day, g.status,
+              g.total_bs_cents,
+              (SELECT count(*) FROM group_members m
+                WHERE m.group_id = g.id AND m.left_at IS NULL) AS members
+         FROM groups g
+        WHERE EXISTS (SELECT 1 FROM group_members m
+                       WHERE m.group_id = g.id AND m.user_id = $1 AND m.left_at IS NULL)
+           OR EXISTS (SELECT 1 FROM charges c WHERE c.group_id = g.id AND c.user_id = $1)
+           OR EXISTS (SELECT 1 FROM billing_cycles bc WHERE bc.group_id = g.id AND bc.owner_id = $1)
+        ORDER BY g.service_name_snapshot, g.name, g.id`,
+      [userId],
+    );
+    return result.rows.map((r) => ({
+      groupId: r.id,
+      groupName: r.name,
+      serviceName: r.service_name_snapshot,
+      role: r.owner_id === userId ? 'titular' : 'miembro',
+      billingDay: r.billing_day,
+      closed: r.status === 'cerrado',
+      memberCount: num(r.members),
+      totalBsCents: num(r.total_bs_cents),
+    }));
+  }
+
+  /** Cobros propios de los períodos dados y todos los abiertos (para los vencimientos). */
+  async calendarCharges(
+    q: Queryable,
+    userId: string,
+    periods: readonly string[],
+  ): Promise<CalendarChargeRow[]> {
+    const result = await q.query<{
+      id: string;
+      group_id: string;
+      period: string;
+      amount_cents: string;
+      status: string;
+      due_at: Date;
+    }>(
+      `SELECT id, group_id, period, amount_cents, status, due_at
+         FROM charges
+        WHERE user_id = $1 AND status <> 'cancelado'
+          AND (period = ANY($2::text[]) OR status IN ('pendiente', 'atrasado'))
+        ORDER BY due_at, id`,
+      [userId, [...periods]],
+    );
+    return result.rows.map((r) => ({
+      chargeId: r.id,
+      groupId: r.group_id,
+      period: r.period,
+      amountCents: num(r.amount_cents),
+      status: r.status,
+      dueAt: r.due_at,
+    }));
+  }
+
+  /** Ciclos de los períodos dados donde la persona era titular: su cuota de referencia no es un cobro. */
+  async ownerCycles(
+    q: Queryable,
+    userId: string,
+    periods: readonly string[],
+  ): Promise<CalendarChargeRow[]> {
+    const result = await q.query<{
+      group_id: string;
+      period: string;
+      owner_share_cents: string;
+      due_date: string;
+    }>(
+      `SELECT group_id, period, owner_share_cents, due_date::text AS due_date
+         FROM billing_cycles
+        WHERE owner_id = $1 AND period = ANY($2::text[])`,
+      [userId, [...periods]],
+    );
+    return result.rows.map((r) => ({
+      chargeId: null,
+      groupId: r.group_id,
+      period: r.period,
+      amountCents: num(r.owner_share_cents),
+      status: null,
+      dueAt: new Date(`${r.due_date}T00:00:00Z`),
     }));
   }
 }

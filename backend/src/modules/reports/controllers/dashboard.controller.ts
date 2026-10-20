@@ -16,6 +16,7 @@ import {
   type DashboardSummary,
 } from '../services/dashboard.service.js';
 import { DashboardListQueryDto, DashboardQueryDto } from './dashboard.dto.js';
+import { ChartsService, type ChartsResponse } from '../services/charts.service.js';
 
 /** Panel del usuario (spec 006). Solo traduce HTTP; las respuestas no se guardan en caché (RNF-006-02). */
 @ApiTags('reports')
@@ -24,7 +25,10 @@ import { DashboardListQueryDto, DashboardQueryDto } from './dashboard.dto.js';
 @UseGuards(AuthGuard)
 @Controller('me/dashboard')
 export class DashboardController {
-  constructor(private readonly dashboard: DashboardService) {}
+  constructor(
+    private readonly dashboard: DashboardService,
+    private readonly charts: ChartsService,
+  ) {}
 
   @Get()
   @Header('Cache-Control', 'private, no-store')
@@ -54,6 +58,20 @@ export class DashboardController {
       groupId: query.groupId ?? null,
       limit: query.limit ?? null,
       cursor: query.cursor ?? null,
+    });
+  }
+
+  @Get('charts')
+  @Header('Cache-Control', 'private, no-store')
+  @ApiOperation({ summary: 'Series de los gráficos (RF-006-07 a 10)' })
+  @ApiNotFoundResponse({ description: 'NOT_FOUND: el grupo no es del usuario.' })
+  chartSeries(
+    @Req() request: AuthenticatedRequest,
+    @Query() query: DashboardQueryDto,
+  ): Promise<ChartsResponse> {
+    return this.charts.charts(requireUserId(request), {
+      month: query.month ?? null,
+      groupId: query.groupId ?? null,
     });
   }
 }

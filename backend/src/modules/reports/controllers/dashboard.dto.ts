@@ -41,3 +41,32 @@ export class DashboardListQueryDto {
   @IsString()
   cursor?: string;
 }
+
+/** Query de `GET /groups/:groupId/collection`. */
+export class CollectionQueryDto {
+  @ApiPropertyOptional({ example: '2026-10' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-(0[1-9]|1[0-2])$/)
+  period?: string;
+}
+
+/** Query de `GET /me/calendar`. */
+export class CalendarQueryDto {
+  @ApiPropertyOptional({ example: '2026-10' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{4}-(0[1-9]|1[0-2])$/)
+  month?: string;
+}
+
+/** Query de `GET /me/calendar/upcoming`. */
+export class UpcomingQueryDto {
+  @ApiPropertyOptional({ minimum: 1, maximum: 90, default: 30 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(90)
+  days?: number;
+}
