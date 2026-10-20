@@ -69,9 +69,9 @@
 **Meta:** el equipo gestiona servicios y planes sin tocar la base; la importación es todo o nada con vista previa.
 **Prueba independiente:** importar un CSV con una fila inválida muestra el error de esa fila y no cambia nada hasta aplicar.
 
-- [ ] T026 [P] [US5] [BE] `domain/catalog-validation.ts` (`validateCatalogRows`: `slug` único, cupos 2–20, montos positivos, errores por fila) y `csv-parse.ts` con `catalog-validation.spec.ts` — Depende: T007 · Cubre: RF-009-06, RF-009-07, CA-009-03
-- [ ] T027 [P] [US5] [BE] `backend/test/admin.catalog.e2e-spec.ts` (CA-009-02 crear servicio y plan, CA-009-03 `slug` repetido, CA-009-04 cambiar precio no afecta suscripciones, CA-009-05 plan desactivado no se ofrece) y `admin.catalog-import.e2e-spec.ts` (CA-009-06 fila inválida) — Depende: T011, spec 004 T007 · Cubre: CA-009-02, CA-009-03, CA-009-04, CA-009-05, CA-009-06
-- [ ] T028 [US5] [BE] `services/catalog-admin.service.ts` y `controllers/admin-catalog.controller.ts` (`POST/PATCH /admin/catalog/services`, `…/plans`, `activate|deactivate`; reemplazan el stub de la spec 004) y `services/catalog-import.service.ts` (`POST /admin/catalog/import/preview` con token de 15 minutos en memoria y `POST …/apply` en una transacción) — Depende: T026, T027 · Cubre: RF-009-04, RF-009-05, RF-009-06, RF-009-07, CA-009-02 a 06, RN-009-05
+- [x] T026 [P] [US5] [BE] `domain/catalog-validation.ts` (`validateCatalogRows`: `slug` único, cupos 2–20, montos positivos, errores por fila) y `csv-parse.ts` con `catalog-validation.spec.ts` — Depende: T007 · Cubre: RF-009-06, RF-009-07, CA-009-03
+- [x] T027 [P] [US5] [BE] `backend/test/admin.catalog.e2e-spec.ts` (CA-009-02 crear servicio y plan, CA-009-03 `slug` repetido, CA-009-04 cambiar precio no afecta suscripciones, CA-009-05 plan desactivado no se ofrece) y `admin.catalog-import.e2e-spec.ts` (CA-009-06 fila inválida) — Depende: T011, spec 004 T007 · Cubre: CA-009-02, CA-009-03, CA-009-04, CA-009-05, CA-009-06
+- [x] T028 [US5] [BE] `services/catalog-admin.service.ts` y `controllers/admin-catalog.controller.ts` (`POST/PATCH /admin/catalog/services`, `…/plans`, `activate|deactivate`; reemplazan el stub de la spec 004) y `services/catalog-import.service.ts` (`POST /admin/catalog/import/preview` con token de 15 minutos en memoria y `POST …/apply` en una transacción) — Depende: T026, T027 · Cubre: RF-009-04, RF-009-05, RF-009-06, RF-009-07, CA-009-02 a 06, RN-009-05
 - [ ] T029 [P] [US5] [FE] `/admin/catalogo` (servicios y planes: crear, editar con el aviso de que no cambia suscripciones existentes, activar y desactivar; importación con vista previa y errores por fila) con mock, conectado al terminar T028 — Depende: T017 · Cubre: RF-009-04, RF-009-06
 
 ## Fase 7: US6 — Moderación de cupos (Prioridad: P2)
@@ -82,8 +82,8 @@
 
 ## Fase 8: US7 — Estadísticas (Prioridad: P2)
 
-- [ ] T033 [P] [US7] [BE] `backend/test/admin.stats.e2e-spec.ts` (CA-009-16 totales por estado coinciden, CA-009-17 solo agregados) y `admin.stats.perf-spec.ts` (CA-009-21: tablero con 10.000 usuarios en menos de 2 s) — Depende: T011 · Cubre: CA-009-16, CA-009-17, CA-009-21
-- [ ] T034 [US7] [BE] `services/stats.service.ts`, `repositories/stats.repository.ts` (consultas agregadas con caché en memoria de 5 minutos) y `controllers/admin-stats.controller.ts` `GET /admin/stats` — Depende: T033 · Cubre: RF-009-15, RF-009-16, RF-009-17, CA-009-16, CA-009-17, CA-009-21, RN-009-06, RNF-009-04
+- [x] T033 [P] [US7] [BE] `backend/test/admin.stats.e2e-spec.ts` (CA-009-16 totales por estado coinciden, CA-009-17 solo agregados) y `admin.stats.perf-spec.ts` (CA-009-21: tablero con 10.000 usuarios en menos de 2 s) — Depende: T011 · Cubre: CA-009-16, CA-009-17, CA-009-21
+- [x] T034 [US7] [BE] `services/stats.service.ts`, `repositories/stats.repository.ts` (consultas agregadas con caché en memoria de 5 minutos) y `controllers/admin-stats.controller.ts` `GET /admin/stats` — Depende: T033 · Cubre: RF-009-15, RF-009-16, RF-009-17, CA-009-16, CA-009-17, CA-009-21, RN-009-06, RNF-009-04
 - [x] T035 [P] [US7] [FE] `/admin` (tarjetas y tablas de estadísticas con alternativa en tabla, sin depender del color) con mock, conectado al terminar T034 — Depende: T017 · Cubre: RF-009-15, RNF-009-02
 
 ## Fase 9: Cierre
@@ -123,5 +123,6 @@
 
 | Fecha | Situación | Decisión | ¿Cambió la spec o el contrato? |
 |---|---|---|---|
+| 2026-10-20 | Catálogo e importación: rutas con `:id` UUID (el stub de la 004 usaba `:slug`); el slug no se edita; alta de plan en `POST /admin/catalog/plans` con `serviceId`; la vista previa recibe JSON `{ format, content }` (no multipart) y solo entrega token si no hay errores (15 min, en memoria, de un solo uso y ligado al administrador); estadísticas: `punctualityRate` = suma de puntuales entre suma de considerados de `user_reputation` (entero, mitad hacia arriba), `managedCents` = cobros no cancelados del mes en La Paz | Aplicado | Por confirmar en `contracts/api.md` |
 | 2026-10-18 | Revertir un baneo | Aprobado: se descongelan los grupos que congeló (CA-009-37) | Sí: RF-009-23 en `spec.md` |
 | 2026-10-18 | Correo de apelación (`APPEAL_EMAIL`) y proveedor de correo | Resend con dominio gratis o Brevo con remitente único (spec 000 R4); el correo de apelación se configura por variable de entorno | No |
