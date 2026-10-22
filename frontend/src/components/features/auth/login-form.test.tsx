@@ -41,6 +41,14 @@ beforeEach(() => {
 
 afterEach(() => jest.useRealTimers());
 
+describe('LoginForm: botón Ingresar amarillo', () => {
+  it('el botón Ingresar usa fondo amarillo con texto oscuro (no blanco)', () => {
+    render(<LoginForm redirectTo="/" forgotHref="/recuperar" />);
+
+    expect(submitButton()).toHaveClass('bg-yellow-400!', 'hover:bg-yellow-500!', 'text-gray-900!');
+  });
+});
+
 describe('LoginForm: espera tras RATE_LIMITED (T032)', () => {
   it('CA-003-06 / RNF-003-04: RATE_LIMITED con retryAfterSeconds 90 muestra el tiempo y deshabilita el botón', async () => {
     await submitWith(new ApiError(429, 'RATE_LIMITED', 'x', { retryAfterSeconds: 90 }));
