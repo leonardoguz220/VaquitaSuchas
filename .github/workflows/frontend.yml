@@ -3,6 +3,8 @@
 name: Frontend
 
 on:
+  # Lo reutiliza deploy-frontend.yml: prueba antes de pedir el despliegue.
+  workflow_call:
   pull_request:
     branches: [main, qa, dev]
     paths: ['frontend/**', 'package.json', 'package-lock.json', '.github/workflows/frontend.yml']
