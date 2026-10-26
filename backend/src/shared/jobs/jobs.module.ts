@@ -1,6 +1,7 @@
-import { Global, Module, type OnModuleInit } from '@nestjs/common';
+import { Global, Module, Optional, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { FileStorage } from '../ports/file-storage.js';
 import { isInProcessEnabled } from './domain/job-rules.js';
 import { JobRegistry } from './job-registry.js';
 import { JobRunner } from './job-runner.js';
@@ -33,10 +34,11 @@ export class JobsModule implements OnModuleInit {
   constructor(
     private readonly registry: JobRegistry,
     private readonly cleanupRepository: MaintenanceCleanupRepository,
+    @Optional() private readonly storage?: FileStorage,
   ) {}
 
   onModuleInit(): void {
     this.registry.register(new ExampleNoopJob());
-    this.registry.register(new MaintenanceCleanupJob(this.cleanupRepository));
+    this.registry.register(new MaintenanceCleanupJob(this.cleanupRepository, this.storage));
   }
 }

@@ -6,9 +6,8 @@ import { DbService } from '../db/db.service.js';
  * por el dominio con el `Clock`) y devuelve cuántas filas borró. Las columnas de corte salen de
  * las migraciones 0002, 0003 y 0004.
  *
- * Pendiente (T033): `rate_limit_events` tiene el disparador `forbid_update_delete`, que hoy hace
- * fallar el DELETE de cualquier fila; hasta que la migración acordada con Camila lo permita, ese
- * borrado lanza `restrict_violation` (23001).
+ * `rate_limit_events` es de solo anexado, pero la migración 0005 deja borrar sus filas de más de
+ * 24 horas (T033); un corte más reciente haría fallar el DELETE con `restrict_violation` (23001).
  */
 @Injectable()
 export class MaintenanceCleanupRepository {
