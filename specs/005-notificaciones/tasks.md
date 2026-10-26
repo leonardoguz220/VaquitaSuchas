@@ -77,7 +77,7 @@
 - [x] T031 [BE] Revisión de seguridad y privacidad: correos y Telegram sin comprobantes ni datos de otras personas distintos del nombre y lo necesario, enlaces internos que empiezan con `/`, token de desactivación sin datos, usuarios suspendidos sin correos, registros sin texto de avisos — Depende: T027, T030 · Cubre: RNF-005-02, RN-005-04
 - [x] T032 [BD] Revisar con Camila los planes de consulta de la lista de avisos, el contador de no leídas y la entrega por lotes con datos del seed — Depende: T017 · Cubre: RNF-005-05
 - [x] T033 [FE] Accesibilidad de la campana, el contador y los estados leído/no leído (número, texto o icono, no solo color) y móvil primero de `/notificaciones` — Depende: T024, T028 · Cubre: RNF-005-06
-- [ ] T034 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (catálogo de avisos con `publicacion_transferida`) y marcar las tareas hechas — Depende: T031, T032, T033 · Cubre: —
+- [x] T034 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (catálogo de avisos con `publicacion_transferida`) y marcar las tareas hechas — Depende: T031, T032, T033 · Cubre: —
 
 ## Dependencias y orden de ejecución
 
@@ -112,3 +112,4 @@
 |---|---|---|---|
 | 2026-10-18 | Proveedor de correo y dominio de envío (spec 000 R4) | Resend con dominio gratis; si no, Brevo con remitente único | No |
 | — | Cómo recibe el backend los mensajes del bot con el servicio gratuito de Render (spec 000) | Confirmar antes de T030 | No |
+| 2026-10-26 | Converge (T034): contraste de `spec.md`, `plan.md` y `contracts/api.md` con el código | Los 34 `CA-005-xx` de la spec aparecen citados en tests (`backend/test`, `backend/src`, `database/tests` o `frontend`) y los 11 endpoints del contrato tienen ruta en un controlador; las decisiones de esta tabla ya están reflejadas en la spec y el plan | No |

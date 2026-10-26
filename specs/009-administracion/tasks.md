@@ -91,7 +91,7 @@
 - [x] T036 [BE] Revisión de seguridad: `AdminGuard` en todo el módulo, el administrador no ve contraseñas, CI completa, comprobantes ni chats fuera de un reclamo, sin exportaciones masivas, log de solo anexado, CLI del primer administrador exige `--allow-production` — Depende: T023, T031 · Cubre: RNF-009-01, RN-009-08, CA-009-20, RF-009-02
 - [x] T037 [BD] Revisar con Camila los planes de consulta de la búsqueda de usuarios, el log de auditoría y las estadísticas con 10.000 usuarios de prueba — Depende: T034 · Cubre: CA-009-21
 - [x] T038 [FE] Accesibilidad y móvil primero de las pantallas de administración (confirmación explícita en acciones sensibles, tarjetas en lugar de tablas anchas) — Depende: T025, T035 · Cubre: RNF-009-02, RNF-009-06
-- [ ] T039 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (reversión del baneo, estadísticas) y marcar las tareas hechas — Depende: T036, T037, T038 · Cubre: —
+- [x] T039 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (reversión del baneo, estadísticas) y marcar las tareas hechas — Depende: T036, T037, T038 · Cubre: —
 
 ## Dependencias y orden de ejecución
 
@@ -128,3 +128,4 @@
 | 2026-10-20 | Catálogo e importación: rutas con `:id` UUID (el stub de la 004 usaba `:slug`); el slug no se edita; alta de plan en `POST /admin/catalog/plans` con `serviceId`; la vista previa recibe JSON `{ format, content }` (no multipart) y solo entrega token si no hay errores (15 min, en memoria, de un solo uso y ligado al administrador); estadísticas: `punctualityRate` = suma de puntuales entre suma de considerados de `user_reputation` (entero, mitad hacia arriba), `managedCents` = cobros no cancelados del mes en La Paz | Aplicado | Por confirmar en `contracts/api.md` |
 | 2026-10-18 | Revertir un baneo | Aprobado: se descongelan los grupos que congeló (CA-009-37) | Sí: RF-009-23 en `spec.md` |
 | 2026-10-18 | Correo de apelación (`APPEAL_EMAIL`) y proveedor de correo | Resend con dominio gratis o Brevo con remitente único (spec 000 R4); el correo de apelación se configura por variable de entorno | No |
+| 2026-10-26 | Converge (T039): contraste de `spec.md`, `plan.md` y `contracts/api.md` con el código | Los 37 `CA-009-xx` de la spec aparecen citados en tests (`backend/test`, `backend/src`, `database/tests` o `frontend`) y los 23 endpoints del contrato tienen ruta en un controlador; las decisiones de esta tabla ya están reflejadas en la spec y el plan | No |

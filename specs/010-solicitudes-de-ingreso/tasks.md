@@ -109,7 +109,7 @@
 - [x] T046 [FE] E2E `frontend/e2e/join-request.spec.ts` (chat en ≤ 10 s, `<script>` como texto: CA-010-19, CA-010-22) y flujo feliz `mvp-flow.spec.ts` del MVP (CA-010-36), coordinado con las specs 001 y 002 — Depende: T031, T035, spec 002 T043 · Cubre: CA-010-19, CA-010-22, CA-010-36
 - [x] T047 [FE] Accesibilidad y móvil primero de `/unirse`, `/solicitudes` y `/solicitudes/[id]` (cuenta regresiva legible, acciones en barra fija, estados con color y texto) — Depende: T031, T035 · Cubre: RNF-010-06
 - [x] T048 [BD] Revisar con Camila los índices con los planes de consulta de «Mis solicitudes» (50 solicitudes en menos de 500 ms), `afterSeq` del chat y el barrido de vencimientos con datos del seed — Depende: T007 · Cubre: RNF-010-07
-- [ ] T049 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md`, `plan.md` y `research.md` con lo implementado (R6, cambios de 008) y marcar las tareas hechas — Depende: T046, T047, T048 · Cubre: —
+- [x] T049 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md`, `plan.md` y `research.md` con lo implementado (R6, cambios de 008) y marcar las tareas hechas — Depende: T046, T047, T048 · Cubre: —
 
 ## Dependencias y orden de ejecución
 
@@ -146,3 +146,4 @@
 |---|---|---|---|
 | 2026-10-18 | RN-010-13 ampliada a cualquier cobro abierto (R6) | Aprobado | Sí: `spec.md` |
 | 2026-10-18 | Puertos nuevos por la spec 008 (T036) | Aplicados en `contracts/api.md` y `plan.md` | Sí: contrato |
+| 2026-10-26 | Converge (T049): contraste de `spec.md`, `plan.md` y `contracts/api.md` con el código | Los 47 `CA-010-xx` de la spec aparecen citados en tests (`backend/test`, `backend/src`, `database/tests` o `frontend`) y los 21 endpoints del contrato tienen ruta en un controlador; las decisiones de esta tabla ya están reflejadas en la spec y el plan | No |
