@@ -43,4 +43,9 @@ export interface RunAllOptions {
   readonly job?: string;
   /** Ignora `intervalSeconds` (p. ej. una ejecución pedida a mano). Por omisión no se ignora. */
   readonly ignoreInterval?: boolean;
+  /**
+   * Fecha simulada: es la `ctx.now` que ven las tareas (`?now=` del tick, solo fuera de producción).
+   * Implica ignorar `intervalSeconds`; `job_runs` sigue guardando la hora real.
+   */
+  readonly now?: Date;
 }

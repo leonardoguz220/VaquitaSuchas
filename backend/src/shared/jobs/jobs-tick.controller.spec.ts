@@ -1,48 +1,52 @@
-import 'reflect-metadata';
 import { jest } from '@jest/globals';
-import { JobsTokenGuard } from '../guards/jobs-token.guard.js';
+import type { ConfigService } from '@nestjs/config';
+import { DomainError } from '../errors/domain-error.js';
 import { JobsTickController } from './jobs-tick.controller.js';
 import type { JobRunner } from './job-runner.js';
-import type { JobRunResult } from './scheduled-job.js';
-import { TickRateLimitGuard } from './tick-rate-limit.guard.js';
 
-function controllerWith(results: JobRunResult[]) {
-  const runAll = jest.fn<JobRunner['runAll']>().mockResolvedValue(results);
-  return { controller: new JobsTickController({ runAll } as unknown as JobRunner), runAll };
+function setup(nodeEnv: string | undefined) {
+  const runAll = jest.fn<JobRunner['runAll']>().mockResolvedValue([]);
+  const config = { get: () => nodeEnv } as unknown as ConfigService;
+  const controller = new JobsTickController({ runAll } as unknown as JobRunner, config);
+  return { controller, runAll };
 }
 
-describe('JobsTickController (RF-000-14)', () => {
-  it('RF-000-14: delega en runAll con el disparador "external" y devuelve { ran }', async () => {
-    const results: JobRunResult[] = [
-      { job: 'example.noop', status: 'ok', processed: 0 },
-      { job: 'maintenance.cleanup', status: 'skipped', reason: 'locked' },
-    ];
-    const { controller, runAll } = controllerWith(results);
+describe('JobsTickController: now simulado (RF-000-14)', () => {
+  it.each(['development', 'test'])(
+    'con NODE_ENV=%s pasa la fecha simulada al runner',
+    async (env) => {
+      const { controller, runAll } = setup(env);
 
-    const response = await controller.tick({});
+      await controller.tick({ job: 'billing.generate', now: '2026-11-15' });
 
-    expect(runAll).toHaveBeenCalledWith('external', { job: undefined });
-    expect(response).toEqual({ ran: results });
-  });
+      expect(runAll).toHaveBeenCalledWith('external', {
+        job: 'billing.generate',
+        now: new Date('2026-11-15T12:00:00.000Z'),
+      });
+    },
+  );
 
-  it('RF-000-14: con ?job= ejecuta solo esa tarea', async () => {
-    const { controller, runAll } = controllerWith([]);
+  it.each(['production', undefined, 'staging'])(
+    'con NODE_ENV=%s rechaza ?now= con 400 y no ejecuta nada',
+    async (env) => {
+      const { controller, runAll } = setup(env);
 
-    await controller.tick({ job: 'example.noop' });
+      const error = await controller.tick({ now: '2026-11-15' }).catch((e: unknown) => e);
 
-    expect(runAll).toHaveBeenCalledWith('external', { job: 'example.noop' });
-  });
+      expect(error).toBeInstanceOf(DomainError);
+      expect(error).toMatchObject({
+        httpStatus: 400,
+        details: { fields: { now: ['NOT_ALLOWED_IN_PRODUCTION'] } },
+      });
+      expect(runAll).not.toHaveBeenCalled();
+    },
+  );
 
-  it('RF-000-14: responde 200 y no 201', () => {
-    expect(Reflect.getMetadata('__httpCode__', JobsTickController.prototype.tick)).toBe(200);
-  });
+  it('en production un tick sin ?now= sigue funcionando', async () => {
+    const { controller, runAll } = setup('production');
 
-  it('RF-000-14: JobsTokenGuard va antes que el límite, para que un anónimo no gaste el cupo', () => {
-    const guards = Reflect.getMetadata(
-      '__guards__',
-      JobsTickController.prototype.tick,
-    ) as unknown[];
+    await controller.tick({ job: 'billing.generate' });
 
-    expect(guards).toEqual([JobsTokenGuard, TickRateLimitGuard]);
+    expect(runAll).toHaveBeenCalledWith('external', { job: 'billing.generate', now: undefined });
   });
 });

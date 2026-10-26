@@ -241,6 +241,47 @@ describe('POST /internal/jobs/tick contra PostgreSQL real', () => {
     });
   });
 
+  it('RF-000-14: ?now= (test) entrega la fecha simulada a las tareas y las ejecuta aunque no toque el intervalo', async () => {
+    const seen: Date[] = [];
+    app.get(JobRegistry).register({
+      name: 'sim.probe',
+      intervalSeconds: 3600,
+      run: (ctx) => {
+        seen.push(ctx.now);
+        return Promise.resolve(1);
+      },
+    });
+
+    await tick('?job=sim.probe');
+    nextWindow();
+    const res = await tick('?job=sim.probe&now=2026-11-15');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ran: [{ job: 'sim.probe', status: 'ok', processed: 1 }] });
+    expect(seen.map((date) => date.toISOString())).toEqual([NOW, '2026-11-15T12:00:00.000Z']);
+  });
+
+  it.each(['ayer', '2026-02-30', '2026-11-15T10:00:00', ''])(
+    'RF-000-14: ?now=%p responde 400 VALIDATION_ERROR con INVALID_SIMULATED_NOW',
+    async (value) => {
+      const res = await tick(`?now=${encodeURIComponent(value)}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({
+        code: 'VALIDATION_ERROR',
+        details: { fields: { now: ['INVALID_SIMULATED_NOW'] } },
+      });
+      expect(await jobRuns()).toEqual([]);
+    },
+  );
+
+  it('RF-000-14: ?now= sin X-Jobs-Token sigue dando 401 y no ejecuta nada', async () => {
+    const res = await http().post('/internal/jobs/tick?now=2026-11-15');
+
+    expect(res.status).toBe(401);
+    expect(await jobRuns()).toEqual([]);
+  });
+
   it('RF-000-14: es idempotente: un segundo tick tras 1 s omite example.noop por intervalo y no duplica efectos', async () => {
     const first = await tick('?job=example.noop');
     nextWindow();
