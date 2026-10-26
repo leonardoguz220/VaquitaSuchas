@@ -136,7 +136,7 @@ describe('/cobros/[id] (T018, plan 002 §6)', () => {
       render(<ChargeDetailView chargeId="abc" />);
       await act(() => jest.advanceTimersByTimeAsync(400));
       const section = screen.getByRole('region', { name: 'Vencimiento' });
-      expect(section).toHaveTextContent('Vence el 21 oct 2026, 23:59');
+      expect(section).toHaveTextContent('Vence el 21 oct 2026');
       expect(within(section).getByRole('timer')).toHaveTextContent('2 días y 12 horas');
     } finally {
       jest.useRealTimers();
@@ -166,7 +166,7 @@ describe('/cobros/[id] (T018, plan 002 §6)', () => {
       ),
     ).toBeVisible();
     expect(screen.getByRole('region', { name: 'Vencimiento' })).toHaveTextContent(
-      'Venció el 21 oct 2026, 23:59',
+      'Venció el 21 oct 2026',
     );
     expect(screen.queryByRole('link', { name: 'Ver el grupo' })).not.toBeInTheDocument();
   });
