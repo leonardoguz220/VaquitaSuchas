@@ -19,7 +19,7 @@ const list = listAuditLog as jest.MockedFunction<typeof listAuditLog>;
 
 const ban: AuditEntry = {
   id: 'aud-1',
-  adminName: 'Administradora Demo',
+  adminId: 'aaaaaaaa-0000-4000-8000-000000000001',
   action: 'usuario_banear',
   targetType: 'user',
   targetId: 'obj-100',
@@ -29,7 +29,7 @@ const ban: AuditEntry = {
 
 const evidence: AuditEntry = {
   id: 'aud-2',
-  adminName: 'Administrador Demo',
+  adminId: 'bbbbbbbb-0000-4000-8000-000000000002',
   action: 'reclamo_abrir_evidencia',
   targetType: 'join_dispute',
   targetId: null,
@@ -52,7 +52,7 @@ describe('AdminAuditView (spec 009 T024, RF-009-18)', () => {
 
     const table = await screen.findByRole('table');
     const row = within(table).getAllByRole('row')[1];
-    expect(within(row).getByText('Administradora Demo')).toBeVisible();
+    expect(within(row).getByText('Admin aaaaaaaa')).toBeVisible();
     expect(within(row).getByText('Banear usuario')).toBeVisible();
     expect(within(row).getByText(formatDateTimeLaPaz(ban.occurredAt))).toBeVisible();
     expect(within(row).getByText('Usuario')).toBeVisible();

@@ -169,7 +169,9 @@ function AuditRow({ entry }: { entry: AuditEntry }) {
       <td className="px-3 py-3 whitespace-nowrap">
         <time dateTime={entry.occurredAt}>{formatDateTimeLaPaz(entry.occurredAt)}</time>
       </td>
-      <td className="px-3 py-3">{entry.adminName}</td>
+      <td className="px-3 py-3">
+        <span title={entry.adminId}>Admin {entry.adminId.slice(0, 8)}</span>
+      </td>
       <td className="px-3 py-3 font-bold">{AUDIT_ACTION_LABEL[entry.action]}</td>
       <td className="px-3 py-3">
         {AUDIT_TARGET_LABEL[entry.targetType]}
