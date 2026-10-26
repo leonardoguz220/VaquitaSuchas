@@ -131,7 +131,7 @@ Un cambio posterior a una migración ya fusionada usa el siguiente número libre
 
 ## R7. Estrategia de pruebas de integración
 
-- Las pruebas de integración usan **PostgreSQL real** (servicio `db-test` en `docker-compose.yml`, servicio de contenedor en GitHub Actions), no mocks.
+- Las pruebas de integración usan **PostgreSQL real** (la base `vaquita_test` vive en el mismo contenedor `db` de `docker-compose.yml`, creada por `database/docker/init/01-create-test-db.sql`; servicio de contenedor en GitHub Actions), no mocks.
 - Antes de cada archivo de pruebas se aplica `db:migrate` sobre una base limpia y entre pruebas se hace `TRUNCATE … RESTART IDENTITY CASCADE` de las tablas de datos (no de `schema_migrations`).
 - El **reloj** es una dependencia inyectable (`Clock`); las pruebas de plazos lo adelantan sin esperas reales.
 - Las pruebas de integridad de la base viven en `database/tests/` y se ejecutan con `node:test` + `pg` (sin depender del backend).

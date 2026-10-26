@@ -58,7 +58,7 @@
 ## Fase 5: Cierre
 
 - [x] T020 [BD] Verificar en staging que la extensión `unaccent` está disponible en el PostgreSQL gestionado (primera migración de staging); si no lo estuviera, aplicar el plan B del plan (normalizar en el backend) — Depende: spec 000 T051 · Cubre: riesgo `unaccent` (plan §9)
-- [ ] T021 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado y marcar las tareas hechas — Depende: T017, T019 · Cubre: —
+- [x] T021 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado y marcar las tareas hechas — Depende: T017, T019 · Cubre: —
 
 ## Dependencias y orden de ejecución
 
@@ -90,3 +90,4 @@
 | Fecha | Situación | Decisión | ¿Cambió la spec o el contrato? |
 |---|---|---|---|
 | — | La verificación de precios con fuentes oficiales depende de Camila (RN-004-06) | Empezar T005 con las cinco plataformas principales | No |
+| 2026-10-26 | Converge (T021): contraste de `spec.md`, `plan.md` y `contracts/api.md` con el código | Los 12 `CA-004-xx` de la spec aparecen citados en tests (`backend/test`, `backend/src`, `database/tests` o `frontend`) y los 7 endpoints del contrato tienen ruta en un controlador; las decisiones de esta tabla ya están reflejadas en la spec y el plan | No |

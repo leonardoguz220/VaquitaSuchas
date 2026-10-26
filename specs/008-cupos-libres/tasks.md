@@ -73,7 +73,7 @@
 - [x] T026 [BE] Revisión de seguridad: lista blanca de campos de `ListingView`, solo el titular publica y acepta, cuentas restringidas sin publicar ni solicitar, texto libre sin HTML, límites de solicitudes (spec 010) y reportes, orden de bloqueos solicitud → grupo → publicación — Depende: T018, T022, T025 · Cubre: RNF-008-01, RNF-008-03, RNF-008-04, RNF-008-06
 - [x] T027 [BD] Revisar con Camila los planes de consulta de la búsqueda con 5.000 publicaciones (p95 < 500 ms) y del barrido diario con datos del seed — Depende: T014 · Cubre: RNF-008-02
 - [x] T028 [FE] Accesibilidad y móvil primero de `/cupos`, `/cupos/[id]` y la pestaña **Publicar cupos** (esqueletos de carga, botón sin duplicados, cuota siempre «estimada») — Depende: T016, T020, T023 · Cubre: RNF-008-05
-- [ ] T029 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (puertos con la spec 010, decisiones del plan) y marcar las tareas hechas — Depende: T026, T027, T028 · Cubre: —
+- [x] T029 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (puertos con la spec 010, decisiones del plan) y marcar las tareas hechas — Depende: T026, T027, T028 · Cubre: —
 
 ## Dependencias y orden de ejecución
 
@@ -108,3 +108,4 @@
 |---|---|---|---|
 | 2026-10-18 | Cambios a la spec 010 (`openFromListing`, `rejectOpenForListing`, `ListingQuotaPort`, evento con `listingId`) | Aplicados en la spec 010 | Sí: spec 010 |
 | 2026-10-18 | Tope de cupos ofrecidos, límite de 10 reportes por día y descripción opcional | Aprobado | No |
+| 2026-10-26 | Converge (T029): contraste de `spec.md`, `plan.md` y `contracts/api.md` con el código | Los 24 `CA-008-xx` de la spec aparecen citados en tests (`backend/test`, `backend/src`, `database/tests` o `frontend`) y los 12 endpoints del contrato tienen ruta en un controlador; las decisiones de esta tabla ya están reflejadas en la spec y el plan | No |
