@@ -157,6 +157,20 @@ describe('JobRunner.runAll', () => {
     });
   });
 
+  it('RF-000-14: con now simulado la tarea lo recibe, ignora el intervalo y job_runs guarda la hora real', async () => {
+    const { registry, runs, runner } = setup();
+    const billing = job('billing.generate', () => Promise.resolve(1), 3600);
+    registry.register(billing);
+    await runner.runAll('external');
+
+    const simulated = new Date('2026-11-15T12:00:00.000Z');
+    const results = await runner.runAll('external', { now: simulated });
+
+    expect(results).toEqual([{ job: 'billing.generate', status: 'ok', processed: 1 }]);
+    expect(billing.run.mock.calls[1]?.[0].now).toEqual(simulated);
+    expect(runs.rows[1]?.startedAt).toEqual(new Date('2026-03-10T12:00:00.000Z'));
+  });
+
   it('RF-000-14: si una tarea lanza, queda en error, la siguiente corre y runAll no lanza', async () => {
     const { registry, runs, runner } = setup();
     const failing = job('billing.generate', () =>
