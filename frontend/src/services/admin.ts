@@ -1,12 +1,11 @@
 /**
  * Cliente de los endpoints de administración (spec 009, `contracts/api.md`). Una función por
  * endpoint y tipos del contrato. Todas las rutas exigen rol `admin` en el servidor (RNF-009-01).
- * Conectadas al backend: usuarios, suspensión, baneo, reversión del baneo y roles (T018). Las
- * habilitaciones, las estadísticas y la transferencia siguen con datos simulados de `admin.mock.ts`
- * hasta sus tareas. Las pantallas no calculan cifras ni estados: muestran lo que llega.
+ * Conectadas al backend: usuarios, suspensión, baneo, reversión del baneo y roles (T018),
+ * habilitaciones de titular (T021), estadísticas y transferencia de titularidad (T035). Las
+ * pantallas no calculan cifras ni estados: muestran lo que llega.
  */
 import { apiRequest } from './http';
-import * as mock from './admin.mock';
 import type { Rating, RatingLevel } from './reputation';
 
 /** Motivo obligatorio de las acciones sensibles: de 10 a 300 caracteres (RF-009-10, RF-009-19). */
@@ -105,8 +104,8 @@ export interface AdminStats {
     /** Monto administrado en centavos. */
     managedCents: number;
   };
-  /** Proporción de 0 a 1. */
-  punctualityRate: number;
+  /** Proporción de 0 a 1; `null` si el período aún no tiene cobros que medir. */
+  punctualityRate: number | null;
   topServices: { name: string; groups: number }[];
   listings: { active: number };
   joinRequestsThisMonth: number;
@@ -243,31 +242,76 @@ function usersPath(userId: string, suffix = ''): string {
   return `/api/admin/users/${encodeURIComponent(userId)}${suffix}`;
 }
 
+/** Habilitación tal como la envía el backend (`HostEnablementView`): no trae el nombre. */
+interface ApiHostEnablementView {
+  id: string;
+  userId: string;
+  reason: string;
+  enabledBy: string;
+  enabledAt: string;
+  revokedAt: string | null;
+  revokedBy: string | null;
+  revokeReason: string | null;
+}
+
+/** La lista del backend no trae el nombre: se completa con la ficha (si falla, queda el id). */
+async function toHostRow(view: ApiHostEnablementView): Promise<HostEnablementRow> {
+  let fullName = view.userId;
+  try {
+    fullName = (await getAdminUser(view.userId)).fullName;
+  } catch {
+    // La fila se muestra igual; el nombre es solo informativo.
+  }
+  return {
+    userId: view.userId,
+    fullName,
+    reason: view.reason,
+    grantedBy: view.enabledBy,
+    grantedAt: view.enabledAt,
+  };
+}
+
 /** `GET /admin/host-enablements?active=true` (RF-009-21, CA-009-28). */
-export function listHostEnablements(): Promise<HostEnablementRow[]> {
-  return mock.listHostEnablements();
+export async function listHostEnablements(): Promise<HostEnablementRow[]> {
+  const { items } = await apiRequest<{ items: ApiHostEnablementView[] }>(
+    '/api/admin/host-enablements?active=true',
+  );
+  return Promise.all(items.map(toHostRow));
 }
 
 /** `POST /admin/users/:userId/host-enablement` (RF-009-21, CA-009-28). */
-export function grantHostEnablement(userId: string, reason: string): Promise<HostEnablementRow> {
-  return mock.grantHostEnablement(userId, reason);
+export async function grantHostEnablement(
+  userId: string,
+  reason: string,
+): Promise<HostEnablementRow> {
+  const view = await apiRequest<ApiHostEnablementView>(usersPath(userId, '/host-enablement'), {
+    method: 'POST',
+    body: { reason },
+  });
+  return toHostRow(view);
 }
 
 /** `POST /admin/users/:userId/host-enablement/revoke` (RF-009-21, CA-009-28). */
-export function revokeHostEnablement(userId: string, reason: string): Promise<void> {
-  return mock.revokeHostEnablement(userId, reason);
+export async function revokeHostEnablement(userId: string, reason: string): Promise<void> {
+  await apiRequest<unknown>(usersPath(userId, '/host-enablement/revoke'), {
+    method: 'POST',
+    body: { reason },
+  });
 }
 
 /** `GET /admin/stats` (RF-009-15 a RF-009-17, CA-009-16). */
 export function getAdminStats(): Promise<AdminStats> {
-  return mock.getStats();
+  return apiRequest<AdminStats>('/api/admin/stats');
 }
 
 /** `POST /admin/groups/:groupId/transfer-ownership` (RF-009-24, CA-009-35). */
-export function transferGroupOwnership(
+export async function transferGroupOwnership(
   groupId: string,
   toUserId: string,
   reason: string,
 ): Promise<void> {
-  return mock.transferOwnership(groupId, toUserId, reason);
+  await apiRequest<unknown>(`/api/admin/groups/${encodeURIComponent(groupId)}/transfer-ownership`, {
+    method: 'POST',
+    body: { toUserId, reason },
+  });
 }
