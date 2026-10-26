@@ -18,7 +18,7 @@ export function AdminUserPicker({
   onSelect: (user: AdminUserRow) => void;
 }) {
   const [text, setText] = useState('');
-  const { data, status, error, search, reload } = useAdminUserSearch();
+  const { data, status, error, search, reload, term } = useAdminUserSearch();
   const items = data?.items ?? [];
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -67,7 +67,7 @@ export function AdminUserPicker({
           </Button>
         </div>
       )}
-      {status === 'success' && items.length === 0 && (
+      {status === 'success' && term.length >= 2 && items.length === 0 && (
         <p className="text-sm text-muted">No encontramos a nadie con esa búsqueda.</p>
       )}
       {status === 'success' && items.length > 0 && (
