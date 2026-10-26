@@ -104,7 +104,7 @@
 - [x] T044 [FE] Accesibilidad de los estados de cobro (color y texto) y revisión móvil primero de las pantallas de cobros — Depende: T038 · Cubre: RNF-002-06
 - [x] T047 [BD] Seed de desarrollo `seeds/0040_billing_dev.sql`: un ciclo regular y cobros en los estados no finales (`pendiente`, `en_revision` con su comprobante, `atrasado` con el miembro retirado por `mora`) sobre los grupos de `seeds/0030_groups_dev.sql`; idempotente con `WHERE NOT EXISTS` (M3) — Depende: T004, T005, T006, spec 001 T005 · Cubre: RF-002-01
 - [x] T045 [BD] Revisar con Camila los índices con los planes de consulta de «Mis cobros», resumen del mes y barrido de atrasos con datos del seed — Depende: T006, T047 · Cubre: RNF-002-05
-- [ ] T046 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md`, `plan.md` y `research.md` con lo implementado (R1, R5, ciclo inicial, `due_at`) y marcar las tareas hechas — Depende: T043, T044, T045 · Cubre: —
+- [x] T046 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md`, `plan.md` y `research.md` con lo implementado (R1, R5, ciclo inicial, `due_at`) y marcar las tareas hechas — Depende: T043, T044, T045 · Cubre: —
 
 ## Dependencias y orden de ejecución
 
@@ -140,3 +140,4 @@
 | 2026-10-18 | Caída larga del servicio y emisión tardía (R1) | Aprobado: solo el último período y `due_at = max(inicio del día corte+4, emisión + 3 días)` | Sí: RF-002-03 en `spec.md` |
 | 2026-10-18 | Grupos cerrados y congelados (R5) | Aprobado: cobros existentes se pueden saldar, sin atrasos ni retiros; congelados, todo quieto | No |
 | 2026-10-18 | 006 lee vistas de la base (excepción a BillingReadService) | Aprobado, solo lectura | Sí: `data-model.md` §2 |
+| 2026-10-26 | Converge (T046): contraste de `spec.md`, `plan.md` y `contracts/api.md` con el código | Los 33 `CA-002-xx` de la spec aparecen citados en tests (`backend/test`, `backend/src`, `database/tests` o `frontend`) y los 10 endpoints del contrato tienen ruta en un controlador; las decisiones de esta tabla ya están reflejadas en la spec y el plan | No |

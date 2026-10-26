@@ -134,3 +134,4 @@
 |---|---|---|---|
 | 2026-10-18 | CI aceptada: solo dígitos de 5 a 10 (plan §2) | Aprobado | No |
 | — | Proveedor de correo (spec 000 R-02) condiciona CA-003-09 a CA-003-13 en producción | Decidir en spec 000 T050 | No |
+| 2026-10-26 | Converge: contraste de `spec.md`, `plan.md` y `contracts/api.md` con el código | Los 35 `CA-003-xx` de la spec aparecen citados en tests y los 13 endpoints del contrato tienen ruta en un controlador | No |

@@ -11,7 +11,7 @@ Esta spec no tiene entidades de negocio. Define las convenciones que **todas** l
 | Tema | Regla |
 |---|---|
 | Nombres | Tablas en plural y columnas en `snake_case`, en inglés (`billing_cycles`, `paid_at`). Los valores de dominio de los estados son los de la spec, en español (`pendiente`, `en_revision`, `esperando_pago`). |
-| Claves primarias | `id uuid PRIMARY KEY DEFAULT gen_random_uuid()`. Excepción: tablas de configuración de clave natural (`schema_migrations`). |
+| Claves primarias | `id uuid PRIMARY KEY DEFAULT gen_random_uuid()`. Excepción: tablas de configuración de clave natural (`schema_migrations`, `telegram_updates.update_id`). |
 | Fechas | `timestamptz` guardado en UTC. Nunca `timestamp` sin zona. La conversión a America/La_Paz ocurre solo al mostrar. |
 | Dinero | `bigint` en centavos de Bs con `CHECK (… >= 0)`; la columna se llama `…_cents`. Nunca `float`, `real`, `double precision` ni `numeric` sin escala. |
 | Tipo de cambio | `numeric(10,4)` con `CHECK (> 0)`. |
@@ -22,7 +22,7 @@ Esta spec no tiene entidades de negocio. Define las convenciones que **todas** l
 | Índices | Uno por cada consulta frecuente que el plan de cada spec menciona; se justifica con la consulta. |
 | Texto sensible | Nada de contraseñas, tokens, CI ni correos en claro fuera de `users`; tokens solo como hash. |
 
-**Excepción documentada:** `schema_migrations` la crea y mantiene el ejecutor de migraciones y usa `applied_at` en lugar de `created_at`/`updated_at`.
+**Excepción documentada:** `telegram_updates` usa su `update_id` natural como clave primaria (§3; `schema.conventions.test.ts` exime una lista explícita de claves naturales). `schema_migrations` la crea y mantiene el ejecutor de migraciones y usa `applied_at` en lugar de `created_at`/`updated_at`.
 
 ## 2. Extensiones y funciones (`0001_init.sql`)
 
@@ -69,7 +69,7 @@ INDEX job_runs_name_started_idx (job_name, started_at DESC)
 
 Retención: se borran las ejecuciones con más de 30 días (tarea `maintenance.cleanup`).
 
-### `rate_limit_events` — `0003_rate_limit_events.sql`
+### `rate_limit_events` — `0003_rate_limit_events.sql` (retención en `0005_rate_limit_events_retention.sql`)
 
 Límites por ventana de tiempo compartidos por varias specs: intentos de inicio de sesión (003, RF-003-17), recuperación de contraseña (RF-003-18), tokens de verificación (RF-003-21), intentos de código de invitación (001, RNF-001-02), mensajes de chat (010, RF-010-10), registro por IP (003).
 
@@ -105,5 +105,5 @@ Se limpian los de más de 7 días.
 | `migrations.idempotent` | `db:migrate` dos veces no cambia nada (CA-000-03). |
 | `migrations.atomic` | Una migración con error deja la base sin cambios parciales (CA-000-04, usa una migración de prueba que falla a la mitad). |
 | `schema.conventions` | Toda tabla (salvo `schema_migrations`) tiene `id uuid`, `created_at`, `updated_at`; ninguna columna es `float`/`real`/`double precision`/`timestamp without time zone` (RF-000-07). |
-| `append_only.triggers` | `UPDATE` y `DELETE` sobre `rate_limit_events` fallan. |
+| `append_only.triggers` | `UPDATE` sobre `rate_limit_events` falla y `DELETE` solo se permite para filas de más de 24 horas (migración 0005, T033). |
 | `numbering.check` | Prefijos únicos y sin editar migraciones ya fusionadas (sección 8 de la spec). |

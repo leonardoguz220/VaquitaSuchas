@@ -70,7 +70,7 @@
 - [x] T028 [BE] Revisión de seguridad: ningún identificador de usuario del cuerpo o la ruta, el titular no ve comprobantes en lo que exporta, límites de exportación, CSV con escape de fórmulas, caché sin datos de otras personas — Depende: T011, T025 · Cubre: RNF-006-03, RNF-006-04
 - [x] T029 [BD] Revisar con Camila los planes de consulta de las vistas con el seed de 20 suscripciones × 12 meses (p95 < 1 s) y decidir si hace falta el rol de lectura de T003 — Depende: T010 · Cubre: RNF-006-01
 - [x] T030 [FE] Accesibilidad y móvil primero de panel, gráficos, calendario e historial (tarjetas apiladas, tablas alternativas, patrones además del color, porcentajes en texto) — Depende: T019, T023, T027 · Cubre: RNF-006-05
-- [ ] T031 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (excepción de lectura de vistas, decisiones del panel) y marcar las tareas hechas — Depende: T028, T029, T030 · Cubre: —
+- [x] T031 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (excepción de lectura de vistas, decisiones del panel) y marcar las tareas hechas — Depende: T028, T029, T030 · Cubre: —
 
 ## Dependencias y orden de ejecución
 
@@ -106,3 +106,4 @@
 | 2026-10-18 | `reports` lee vistas de la base (excepción a la regla de la spec 002) | Aprobado, solo lectura | Sí: spec 002 `data-model.md` §2 |
 | 2026-10-20 | T028 revisión de seguridad: ningún `userId` sale del cuerpo ni de la ruta (el del token manda; `userId` del export de grupo es solo un filtro dentro de un grupo del titular), consultas y CSV sin comprobantes, referencias, celulares ni CI, CSV con escape de fórmulas, todas las respuestas `private, no-store` | Revisado | No |
 | 2026-10-18 | «Debo» en todos los períodos, titular sin «pagado», «sin dato», límites de exportación | Aprobado | No |
+| 2026-10-26 | Converge (T031): contraste de `spec.md`, `plan.md` y `contracts/api.md` con el código | Los 22 `CA-006-xx` de la spec aparecen citados en tests (`backend/test`, `backend/src`, `database/tests` o `frontend`) y los 9 endpoints del contrato tienen ruta en un controlador; las decisiones de esta tabla ya están reflejadas en la spec y el plan | No |
