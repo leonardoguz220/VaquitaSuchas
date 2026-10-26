@@ -29,7 +29,7 @@ function runDecision(decision: ModerationDecision): Promise<ListingModerationRes
 
 /**
  * Cola de moderación (`GET /admin/listings/reports`, RF-009-12). Al decidir sobre una publicación,
- * la cola se vuelve a pedir para que la pantalla muestre lo que quedó pendiente.
+ * la cola se vuelve a pedir: cada fila refleja lo que devuelve el servidor.
  */
 export function useAdminModeration() {
   const resource = useApiResource(listReportedListings);

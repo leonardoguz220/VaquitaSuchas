@@ -26,7 +26,7 @@ const DECISION: Record<
       'Vuelve a aparecer en Cupos libres. Queda registrado quién la restauró y por qué. Se avisa al titular.',
     confirmLabel: 'Restaurar',
     danger: false,
-    notice: 'La publicación volvió a Cupos libres.',
+    notice: 'La publicación volvió a Cupos libres. Se notificó al titular.',
   },
   eliminar: {
     title: '¿Eliminar la publicación?',
@@ -34,7 +34,7 @@ const DECISION: Record<
       'Es un cierre definitivo. Se avisa al titular de la decisión y el motivo queda en auditoría.',
     confirmLabel: 'Eliminar',
     danger: true,
-    notice: 'La publicación se eliminó.',
+    notice: 'La publicación se eliminó. Se notificó al titular.',
   },
   eliminar_y_suspender: {
     title: '¿Eliminar la publicación y suspender al titular?',
@@ -42,7 +42,7 @@ const DECISION: Record<
       'Además de eliminarla, se suspende al titular: se cierran sus sesiones y no podrá ingresar. Se avisa al titular con el motivo.',
     confirmLabel: 'Eliminar y suspender',
     danger: true,
-    notice: 'La publicación se eliminó y el titular quedó suspendido.',
+    notice: 'La publicación se eliminó y el titular quedó suspendido. Se notificó al titular.',
   },
 };
 
@@ -95,23 +95,26 @@ export function AdminModerationView() {
 
       <ul className="flex flex-col gap-4" aria-label="Publicaciones por revisar">
         {items.map((listing) => (
-          <li key={listing.id}>
+          <li key={listing.listingId}>
             <Card as="article" className="flex flex-col gap-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-lg font-bold">{listing.title}</h2>
+                <h2 className="text-lg font-bold">
+                  {listing.serviceName} · {listing.groupName}
+                </h2>
                 {listing.status === 'oculta' ? (
-                  <Badge variant="danger">⛔ Oculta · {listing.reports.length} reportes</Badge>
+                  <Badge variant="danger">⛔ Oculta · {listing.reportCount} reportes</Badge>
                 ) : (
                   <Badge variant="warning">
-                    ! Visible · {listing.reports.length}{' '}
-                    {listing.reports.length === 1 ? 'reporte' : 'reportes'}
+                    ! Visible · {listing.reportCount}{' '}
+                    {listing.reportCount === 1 ? 'reporte' : 'reportes'}
                   </Badge>
                 )}
               </div>
               <p className="text-sm text-muted">
-                Titular: {listing.ownerName} · publicada el {formatDateLaPaz(listing.publishedAt)}
+                {listing.slotsOffered} {listing.slotsOffered === 1 ? 'cupo' : 'cupos'} · publicada
+                el {formatDateLaPaz(listing.publishedAt)}
               </p>
-              <p className="text-sm">{listing.description}</p>
+              {listing.description && <p className="text-sm">{listing.description}</p>}
               <ul className="flex flex-col gap-1 text-sm">
                 {listing.reports.map((report) => (
                   <li key={`${report.createdAt}-${report.reason}`}>
@@ -154,7 +157,7 @@ export function AdminModerationView() {
           onConfirm={async (reason) => {
             const outcome = await queue.decide({
               type: pending.kind,
-              listingId: pending.listing.id,
+              listingId: pending.listing.listingId,
               reason,
             });
             if (outcome?.ok) setNotice(DECISION[pending.kind].notice);
