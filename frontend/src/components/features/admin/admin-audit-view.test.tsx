@@ -47,11 +47,11 @@ beforeEach(() => {
 });
 
 describe('AdminAuditView (spec 009 T024, RF-009-18)', () => {
-  it('CA-009-18: la tabla muestra autor, acción, fecha en La Paz, objeto y motivo', async () => {
+  it('CA-009-18: la lista de tarjetas muestra autor, acción, fecha en La Paz, objeto y motivo', async () => {
     render(<AdminAuditView />);
 
-    const table = await screen.findByRole('table');
-    const row = within(table).getAllByRole('row')[1];
+    const list = await screen.findByRole('list', { name: /Acciones de administración/ });
+    const row = within(list).getAllByRole('listitem')[0];
     expect(within(row).getByText('Admin aaaaaaaa')).toBeVisible();
     expect(within(row).getByText('Banear usuario')).toBeVisible();
     expect(within(row).getByText(formatDateTimeLaPaz(ban.occurredAt))).toBeVisible();
@@ -61,13 +61,13 @@ describe('AdminAuditView (spec 009 T024, RF-009-18)', () => {
 
   it('CA-009-18: una acción sin motivo lo dice', async () => {
     render(<AdminAuditView />);
-    await screen.findByRole('table');
+    await screen.findByRole('list', { name: /Acciones de administración/ });
     expect(screen.getByText('Sin motivo')).toBeVisible();
   });
 
   it('CA-009-19: no hay controles para editar ni borrar el registro', async () => {
     render(<AdminAuditView />);
-    await screen.findByRole('table');
+    await screen.findByRole('list', { name: /Acciones de administración/ });
     expect(screen.getByText(/no se puede editar ni borrar/)).toBeVisible();
     expect(
       screen.queryByRole('button', { name: /editar|borrar|eliminar/i }),
@@ -77,7 +77,7 @@ describe('AdminAuditView (spec 009 T024, RF-009-18)', () => {
   it('RF-009-18: elegir una acción pide el registro filtrado', async () => {
     const user = userEvent.setup();
     render(<AdminAuditView />);
-    await screen.findByRole('table');
+    await screen.findByRole('list', { name: /Acciones de administración/ });
 
     await user.selectOptions(screen.getByRole('combobox', { name: 'Acción' }), 'usuario_banear');
     expect(list).toHaveBeenLastCalledWith(expect.objectContaining({ action: 'usuario_banear' }));
@@ -85,7 +85,7 @@ describe('AdminAuditView (spec 009 T024, RF-009-18)', () => {
 
   it('RF-009-18: el rango de fechas se envía como AAAA-MM-DD', async () => {
     render(<AdminAuditView />);
-    await screen.findByRole('table');
+    await screen.findByRole('list', { name: /Acciones de administración/ });
 
     fireEvent.change(screen.getByLabelText('Desde'), { target: { value: '2026-10-01' } });
     expect(list).toHaveBeenLastCalledWith(expect.objectContaining({ from: '2026-10-01' }));
@@ -95,7 +95,7 @@ describe('AdminAuditView (spec 009 T024, RF-009-18)', () => {
     const user = userEvent.setup();
     list.mockResolvedValueOnce(page([ban], 'c1'));
     render(<AdminAuditView />);
-    await screen.findByRole('table');
+    await screen.findByRole('list', { name: /Acciones de administración/ });
 
     expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Siguiente' }));
@@ -112,7 +112,7 @@ describe('AdminAuditView (spec 009 T024, RF-009-18)', () => {
     const user = userEvent.setup();
     list.mockResolvedValueOnce(page([ban], 'c1'));
     render(<AdminAuditView />);
-    await screen.findByRole('table');
+    await screen.findByRole('list', { name: /Acciones de administración/ });
     await user.click(screen.getByRole('button', { name: 'Siguiente' }));
     expect(await screen.findByText('Página 2')).toBeVisible();
 
@@ -136,6 +136,6 @@ describe('AdminAuditView (spec 009 T024, RF-009-18)', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Fallo del servidor.');
     await user.click(screen.getByRole('button', { name: 'Reintentar' }));
-    expect(await screen.findByRole('table')).toBeVisible();
+    expect(await screen.findByRole('list', { name: /Acciones de administración/ })).toBeVisible();
   });
 });

@@ -90,7 +90,7 @@
 
 - [x] T036 [BE] Revisión de seguridad: `AdminGuard` en todo el módulo, el administrador no ve contraseñas, CI completa, comprobantes ni chats fuera de un reclamo, sin exportaciones masivas, log de solo anexado, CLI del primer administrador exige `--allow-production` — Depende: T023, T031 · Cubre: RNF-009-01, RN-009-08, CA-009-20, RF-009-02
 - [x] T037 [BD] Revisar con Camila los planes de consulta de la búsqueda de usuarios, el log de auditoría y las estadísticas con 10.000 usuarios de prueba — Depende: T034 · Cubre: CA-009-21
-- [ ] T038 [FE] Accesibilidad y móvil primero de las pantallas de administración (confirmación explícita en acciones sensibles, tarjetas en lugar de tablas anchas) — Depende: T025, T035 · Cubre: RNF-009-02, RNF-009-06
+- [x] T038 [FE] Accesibilidad y móvil primero de las pantallas de administración (confirmación explícita en acciones sensibles, tarjetas en lugar de tablas anchas) — Depende: T025, T035 · Cubre: RNF-009-02, RNF-009-06
 - [ ] T039 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (reversión del baneo, estadísticas) y marcar las tareas hechas — Depende: T036, T037, T038 · Cubre: —
 
 ## Dependencias y orden de ejecución
