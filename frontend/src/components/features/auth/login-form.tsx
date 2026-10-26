@@ -244,7 +244,6 @@ export function LoginForm({ redirectTo, forgotHref }: LoginFormProps) {
         disabled={cooling}
         aria-disabled={cooling || undefined}
         fullWidth
-        className="bg-yellow-400! text-gray-900! hover:bg-yellow-500! disabled:hover:bg-yellow-400!"
       >
         Ingresar
       </Button>
