@@ -97,6 +97,7 @@ Este archivo tiene dos partes: (A) las **convenciones de contrato** que valen pa
 - **Auth:** `X-Jobs-Token` (variable `JOBS_TOKEN`); no usa sesión de usuario.
 - **Request:** sin cuerpo. Parámetro opcional `?job=<nombre>` para ejecutar una sola tarea.
 - **`?now=<fecha>` (solo `NODE_ENV` `development` o `test`):** fecha simulada que las tareas reciben como "ahora" (`YYYY-MM-DD`, tomada a las 12:00 UTC, o fecha y hora ISO con `Z` o desfase). Sirve para generar el siguiente ciclo de cobro en local y en E2E. Ignora el intervalo mínimo de la tarea y `job_runs` conserva la hora real. Formato inválido → `400 VALIDATION_ERROR` con `details.fields.now = ["INVALID_SIMULATED_NOW"]`. Con cualquier otro `NODE_ENV` (producción) se rechaza con `400` y `details.fields.now = ["NOT_ALLOWED_IN_PRODUCTION"]`, sin ejecutar nada. Sigue exigiendo `X-Jobs-Token`.
+- **Cobros emitidos con `?now=` (solo `development`/`test`):** un cobro generado con fecha simulada futura tiene `issued_at` posterior a la hora real. Para que el titular pueda revisarlo, `POST /charges/:id/confirm`, `/reject` y `/manual-payment` usan `max(hora real, issued_at)` como instante de la acción (`paidAt`, fecha del evento). No hay parámetro ni encabezado nuevo: el front solo llama al endpoint de siempre. Con cualquier otro `NODE_ENV` (producción) se usa siempre la hora real y no cambia nada.
 - **Response 200:**
   ```json
   { "ran": [ { "job": "billing.generate", "status": "ok", "processed": 3 },
