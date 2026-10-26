@@ -1,5 +1,5 @@
 /**
- * E2E del flujo feliz del MVP (spec 002 T043, spec 010 T046; CA-002-04, CA-010-36; CA-002-06 pendiente).
+ * E2E del flujo feliz del MVP (spec 002 T043, spec 010 T046; CA-002-04, CA-002-06, CA-010-36).
  *
  * Crear grupo → invitar (solicitud por código) → ingreso confirmado → cobrar → pagar → confirmar.
  * Usa los usuarios del seed de desarrollo (`npm run seed:dev-users -w backend`). La contraseña sale
@@ -19,8 +19,8 @@ const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:3001';
 /**
  * Corre `billing.generate` con una fecha simulada (el día 2 del mes siguiente) para que el grupo
  * tenga su siguiente cobro. `now` solo se acepta fuera de producción. Reintenta si el disparador
- * responde 429. El cobro nace con esa fecha de emisión, posterior a la hora real: por eso el
- * servidor no deja confirmarlo todavía (`paid_at` no puede ser anterior a `issued_at`).
+ * responde 429. El cobro nace con esa fecha de emisión, posterior a la hora real; fuera de
+ * producción el servidor confirma con `max(hora real, issued_at)`, sin parámetros extra.
  */
 async function generateNextCycle(request: APIRequestContext) {
   const today = new Date();
@@ -44,7 +44,7 @@ test.describe('flujo feliz del MVP', () => {
   test.skip(!process.env.JOBS_TOKEN, 'Falta JOBS_TOKEN en el entorno');
   test.setTimeout(180_000);
 
-  test('CA-002-04 y CA-010-36: crear → invitar → cobrar → pagar → confirmar', async ({
+  test('CA-002-04, CA-002-06 y CA-010-36: crear → invitar → cobrar → pagar → confirmar', async ({
     browser,
   }) => {
     const titularContext = await browser.newContext();
@@ -136,10 +136,12 @@ test.describe('flujo feliz del MVP', () => {
       await member.getByRole('button', { name: 'Enviar', exact: true }).click();
       await expect(member.getByText('En revisión').first()).toBeVisible();
 
-      // 6. El titular recibe el cobro en revisión con la acción de confirmar a la mano. Confirmarlo
-      // (CA-002-06) necesita un reloj del servidor que ya pase de la emisión simulada.
+      // 6. El titular recibe el cobro en revisión y lo confirma: queda pagado (CA-002-06).
       await titular.goto(member.url());
-      await expect(titular.getByRole('button', { name: 'Confirmar pago' })).toBeVisible();
+      await titular.getByRole('button', { name: 'Confirmar pago' }).click();
+      await titular.getByRole('dialog').getByRole('button', { name: 'Confirmar pago' }).click();
+      await expect(titular.getByRole('button', { name: 'Confirmar pago' })).toHaveCount(0);
+      await expect(titular.getByText('Pagado').first()).toBeVisible();
       await memberContext.close();
     } finally {
       if (groupId) {
@@ -150,9 +152,4 @@ test.describe('flujo feliz del MVP', () => {
       await titularContext.close();
     }
   });
-
-  // El servidor confirma con la hora real y no acepta un pago anterior a la emisión del cobro; con
-  // la fecha simulada del ciclo siguiente la confirmación responde 500. Falta un reloj de pruebas
-  // que también cubra `confirm`.
-  test.fixme('CA-002-06: el titular confirma el cobro en revisión y queda pagado', async () => {});
 });
