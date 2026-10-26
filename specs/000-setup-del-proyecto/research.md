@@ -92,7 +92,9 @@ El proveedor se elige con `STORAGE_DRIVER`. La subida pasa **siempre por el back
 
 ## R5. Hash de contraseñas: argon2id
 
-La spec admite `argon2id` o `bcrypt` con costo ≥ 12 (RNF-003-01). El servicio gratuito de Render tiene una fracción de CPU; bcrypt con costo 12 puede tardar varios segundos y rompería RNF-003-06 (menos de 1 s). Se usa **argon2id** (paquete `argon2`, parámetros mínimos recomendados por OWASP: 19 MiB, 2 iteraciones, 1 hilo). Se mide en el servicio desplegado; si tarda más de 800 ms se ajusta el costo. `context/stack.md` menciona bcrypt: se actualiza en el mismo PR.
+La spec admite `argon2id` o `bcrypt` con costo ≥ 12 (RNF-003-01). El servicio gratuito de Render tiene una fracción de CPU; bcrypt con costo 12 puede tardar varios segundos y rompería RNF-003-06 (menos de 1 s). Se usa **argon2id** (paquete `argon2`, parámetros mínimos recomendados por OWASP: 19 MiB, 2 iteraciones, 1 hilo). Se mide en el servicio desplegado; si tarda más de 800 ms se ajusta el costo.
+
+**Medición en staging (2026-10-26, T053).** Cinco llamadas a `POST /auth/login` con un correo inexistente (el backend calcula el hash igual) desde Bolivia al servicio gratuito de Render, tiempo total de la petición incluyendo red y TLS: 786, 468, 485, 830 y 468 ms (mediana 485 ms). Ninguna llega a 1 s (RNF-003-06) y el valor típico queda bajo 500 ms aun con la red incluida, así que el cálculo del hash es menor. **No se ajustan los parámetros** (19 MiB, 2 iteraciones, 1 hilo). Los picos de unos 800 ms se atribuyen a la CPU compartida del plan gratuito. `context/stack.md` menciona bcrypt: se actualiza en el mismo PR.
 
 ---
 
