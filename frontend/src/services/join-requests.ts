@@ -4,9 +4,9 @@
  * plazos ni estados: usa `quote.amountCents`, `phase` y `allowedActions` del backend, y dibuja la
  * cuenta regresiva con `deadlineAt` y `serverNow`.
  *
- * Conectadas al backend (T018, T023, T027): apertura, listados, detalle, datos de pago, prórroga,
- * comprobante, enlaces firmados, resumen de la barra y reclamos (T040). Las decisiones del titular
- * (T031) y el chat (T035) siguen con datos simulados de `join-requests.mock.ts` hasta sus tareas.
+ * Conectadas al backend (T018, T023, T027, T031, T035, T040): apertura, listados, detalle, datos de
+ * pago, prórroga, comprobante, enlaces firmados, resumen de la barra, decisiones del titular, chat y
+ * reclamos.
  */
 import { apiRequest } from './http';
 

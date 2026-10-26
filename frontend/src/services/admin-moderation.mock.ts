@@ -4,10 +4,13 @@
  * motivo imitan lo que respondería el servidor. Nombres y textos inventados.
  */
 import { ApiError } from './http';
-import type { ListingModerationResult, ReportedListing } from './admin-moderation';
+import type {
+  ListingModerationAction,
+  ListingModerationResult,
+  ReportedListing,
+} from './admin-moderation';
 
 const LATENCY_MS = 350;
-const DECIDED_BY = 'Camila Fuentes';
 const REASON_MIN = 10;
 const REASON_MAX = 300;
 
@@ -26,10 +29,14 @@ function delay<T>(value: () => T): Promise<T> {
 function seedListings(): ReportedListing[] {
   return [
     {
-      id: 'cupo-netflix-premium',
-      title: 'Netflix · Premium · 1 cupo',
+      listingId: 'cupo-netflix-premium',
+      groupId: 'g-netflix',
+      groupName: 'Netflix de la oficina',
+      serviceName: 'Netflix',
       status: 'oculta',
-      ownerName: 'Sofía Mamani',
+      slotsOffered: 1,
+      hiddenAt: '2026-10-17T09:00:00Z',
+      reportCount: 3,
       description: 'Cupo barato, escríbeme por WhatsApp al número de mi perfil para pagar directo.',
       publishedAt: '2026-10-10T12:00:00Z',
       reports: [
@@ -47,10 +54,14 @@ function seedListings(): ReportedListing[] {
       ],
     },
     {
-      id: 'cupo-youtube-familiar',
-      title: 'YouTube Premium · Familiar · 3 cupos',
-      status: 'visible',
-      ownerName: 'Marco Vargas',
+      listingId: 'cupo-youtube-familiar',
+      groupId: 'g-youtube',
+      groupName: 'Familia Vargas',
+      serviceName: 'YouTube Premium',
+      status: 'activa',
+      slotsOffered: 3,
+      hiddenAt: null,
+      reportCount: 1,
       description: 'Grupo de la familia Vargas. Cobro el día 1, pago por QR.',
       publishedAt: '2026-10-02T12:00:00Z',
       reports: [
@@ -77,7 +88,7 @@ export function listReports(): Promise<ReportedListing[]> {
 
 export function decide(
   listingId: string,
-  action: ListingModerationResult['action'],
+  decision: ListingModerationAction,
   reason: string,
 ): Promise<ListingModerationResult> {
   return delay(() => {
@@ -89,17 +100,10 @@ export function decide(
         `El motivo va de ${REASON_MIN} a ${REASON_MAX} caracteres.`,
       );
     }
-    const found = listings.find((item) => item.id === listingId);
+    const found = listings.find((item) => item.listingId === listingId);
     if (!found) throw new ApiError(404, 'NOT_FOUND', 'Publicación no encontrada.');
     // La decisión cierra la cola de esa publicación.
-    listings = listings.filter((item) => item.id !== listingId);
-    return {
-      listingId,
-      action,
-      reason: trimmed,
-      decidedBy: DECIDED_BY,
-      decidedAt: new Date().toISOString(),
-      ownerNotified: true,
-    };
+    listings = listings.filter((item) => item.listingId !== listingId);
+    return { listingId, decision, status: decision === 'restore' ? 'activa' : 'cerrada' };
   });
 }
