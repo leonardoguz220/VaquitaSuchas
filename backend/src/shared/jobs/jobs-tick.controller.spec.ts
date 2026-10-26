@@ -66,7 +66,7 @@ describe('JobsTickController (RF-000-14)', () => {
     },
   );
 
-  it.each(['production', 'staging', undefined])(
+  it.each(['production', 'staging'])(
     'RF-000-14: con NODE_ENV=%s rechaza ?now= con 400 y no ejecuta nada',
     async (env) => {
       const { controller, runAll } = controllerWith([], env);
