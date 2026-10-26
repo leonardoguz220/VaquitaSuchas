@@ -69,9 +69,9 @@ export function AdminDisputeView({ disputeId }: { disputeId: string }) {
         <p className="text-muted">
           Abrió <strong className="text-ink">{dispute.requesterName}</strong> (solicitante) contra{' '}
           <strong className="text-ink">{dispute.accusedName}</strong> (acusado) ·{' '}
-          {dispute.groupName}
-          {' · '}
-          {formatDateTimeLaPaz(dispute.createdAt)} · Cuota {formatBs(dispute.quoteCents)}
+          {dispute.groupName ? `${dispute.groupName} · ` : ''}
+          {formatDateTimeLaPaz(dispute.createdAt)}
+          {dispute.quoteCents !== null ? ` · Cuota ${formatBs(dispute.quoteCents)}` : ''}
           {dispute.reference ? ` · Ref. ${dispute.reference}` : ''}
         </p>
       </div>

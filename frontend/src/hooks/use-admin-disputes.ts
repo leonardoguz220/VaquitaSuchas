@@ -8,6 +8,7 @@ import {
   resolveAdminDispute,
   type AdminDisputeResult,
 } from '@/services/admin-disputes';
+import { ApiError } from '@/services/http';
 import { useApiResource } from './use-api-resource';
 import { useApiSubmit } from './use-api-submit';
 
@@ -29,7 +30,7 @@ export interface ResolveInput {
 export function useAdminDispute(disputeId: string) {
   const loadDispute = useCallback(() => getAdminDispute(disputeId), [disputeId]);
   const dispute = useApiResource(loadDispute);
-  const { replace } = dispute;
+  const { replace, reload } = dispute;
 
   const [evidenceRequested, setEvidenceRequested] = useState(false);
   const loadEvidence = useCallback(() => getAdminDisputeEvidence(disputeId), [disputeId]);
@@ -46,9 +47,21 @@ export function useAdminDispute(disputeId: string) {
     async (input: ResolveInput) => {
       const outcome = await submit(input);
       if (outcome?.ok) replace(outcome.data);
+      // Ya lo resolvió otra persona: se recarga la ficha para mostrar el estado real.
+      if (outcome && !outcome.ok && outcome.error.code === 'INVALID_TRANSITION') {
+        reload();
+        return {
+          ok: false as const,
+          error: new ApiError(
+            409,
+            'INVALID_TRANSITION',
+            'Este reclamo ya fue resuelto. Actualizamos la pantalla con su estado.',
+          ),
+        };
+      }
       return outcome;
     },
-    [submit, replace],
+    [submit, replace, reload],
   );
 
   return {
