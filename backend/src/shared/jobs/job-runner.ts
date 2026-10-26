@@ -37,7 +37,7 @@ export class JobRunner {
       .filter((job) => options.job === undefined || job.name === options.job);
     const results: JobRunResult[] = [];
     for (const job of jobs) {
-      results.push(await this.runOne(job, trigger, options.ignoreInterval === true));
+      results.push(await this.runOne(job, trigger, options));
     }
     return results;
   }
@@ -45,11 +45,11 @@ export class JobRunner {
   private async runOne(
     job: ScheduledJob,
     trigger: JobTrigger,
-    ignoreInterval: boolean,
+    options: RunAllOptions,
   ): Promise<JobRunResult> {
     try {
       const locked = await this.db.withAdvisoryLock(job.name, () =>
-        this.runLocked(job, trigger, ignoreInterval),
+        this.runLocked(job, trigger, options),
       );
       return locked.acquired
         ? locked.value
@@ -63,9 +63,13 @@ export class JobRunner {
   private async runLocked(
     job: ScheduledJob,
     trigger: JobTrigger,
-    ignoreInterval: boolean,
+    options: RunAllOptions,
   ): Promise<JobRunResult> {
     const startedAt = this.clock.now();
+    // Con fecha simulada la tarea ve esa fecha, pero la fila de `job_runs` y el freno de cadencia
+    // usan la hora real: una fecha futura no debe bloquear los ticks reales que vengan después.
+    const taskNow = options.now ?? startedAt;
+    const ignoreInterval = options.ignoreInterval === true || options.now !== undefined;
 
     if (!ignoreInterval && job.intervalSeconds > 0) {
       const lastOk = await this.runs.findLastOkStartedAt(job.name);
@@ -79,7 +83,7 @@ export class JobRunner {
     let outcome: JobRunOutcome;
     let result: JobRunResult;
     try {
-      const processed = await job.run({ now: startedAt, trigger, db: this.db });
+      const processed = await job.run({ now: taskNow, trigger, db: this.db });
       if (!Number.isSafeInteger(processed) || processed < 0) {
         throw new TypeError('La tarea debe devolver un entero mayor o igual a 0.');
       }

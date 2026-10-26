@@ -96,12 +96,13 @@ Este archivo tiene dos partes: (A) las **convenciones de contrato** que valen pa
 ### `POST /internal/jobs/tick` (RF-000-14)
 - **Auth:** `X-Jobs-Token` (variable `JOBS_TOKEN`); no usa sesión de usuario.
 - **Request:** sin cuerpo. Parámetro opcional `?job=<nombre>` para ejecutar una sola tarea.
+- **`?now=<fecha>` (solo `NODE_ENV` `development` o `test`):** fecha simulada que las tareas reciben como "ahora" (`YYYY-MM-DD`, tomada a las 12:00 UTC, o fecha y hora ISO con `Z` o desfase). Sirve para generar el siguiente ciclo de cobro en local y en E2E. Ignora el intervalo mínimo de la tarea y `job_runs` conserva la hora real. Formato inválido → `400 VALIDATION_ERROR` con `details.fields.now = ["INVALID_SIMULATED_NOW"]`. Con cualquier otro `NODE_ENV` (producción) se rechaza con `400` y `details.fields.now = ["NOT_ALLOWED_IN_PRODUCTION"]`, sin ejecutar nada. Sigue exigiendo `X-Jobs-Token`.
 - **Response 200:**
   ```json
   { "ran": [ { "job": "billing.generate", "status": "ok", "processed": 3 },
              { "job": "billing.overdue", "status": "skipped", "reason": "locked" } ] }
   ```
-- **Errores:** `401 UNAUTHENTICATED` (token incorrecto o ausente).
+- **Errores:** `400 VALIDATION_ERROR` (`job` o `now` inválidos, o `now` en producción), `401 UNAUTHENTICATED` (token incorrecto o ausente).
 - Cada tarea toma `pg_try_advisory_lock(hashtext(job_name))`; si otra ejecución la tiene, responde `skipped`. Se registra una fila en `job_runs`.
 - En el MVP el endpoint corre la lista de tareas registradas por las specs 002, 005 y 010. La spec 000 incluye una tarea de ejemplo, `example.noop`, y la tarea `maintenance.cleanup` (limpieza de `job_runs`, `rate_limit_events` y `telegram_updates`).
 

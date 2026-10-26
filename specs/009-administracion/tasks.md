@@ -60,7 +60,7 @@
 - [x] T022 [P] [US4] [BE] `backend/test/admin.disputes.e2e-spec.ts`: CA-009-25 (estafa confirmada: titular baneado), CA-009-26 (sin falta: nada cambia), CA-009-27 (evidencia con auditoría; sin reclamo abierto `403`), CA-009-30 (comprobante falso: solicitante baneado), `DISPUTE_NOT_OPEN` — Depende: T014, spec 010 T038 · Cubre: CA-009-25, CA-009-26, CA-009-27, CA-009-30, RN-009-08, RF-009-20, RF-010-23, RF-010-24
 - [x] T023 [US4] [BE] `controllers/admin-disputes.controller.ts`: `GET /admin/disputes?status=abierto`, `GET /admin/disputes/:disputeId/evidence` (audita **antes** de devolver; no hay ruta de chat para el administrador) y `POST /admin/disputes/:disputeId/resolve` (llama a `DisputesService.getEvidence` y `resolve`, spec 010; `estafa_confirmada` usa `BanService`) — Depende: T022, spec 010 T038 · Cubre: RF-009-20, RF-010-23, RF-010-24, RN-009-08, CA-009-25, CA-009-26, CA-009-27, CA-009-30, RN-009-09
 - [x] T024 [P] [US4] [FE] `/admin/reclamos` (cola con abiertos primero) y `/admin/reclamos/[id]` («Ver evidencia» con el aviso «Esta apertura queda registrada», línea de tiempo, chat de solo lectura, comprobante, descripciones y respuestas; **Resolver** con resultado y motivo) con mock y `/admin/auditoria` (tabla con filtros y paginación) — Depende: T017 · Cubre: RF-009-18, RF-009-20, RNF-009-02
-- [ ] T025 [US4] [FE] Conectar reclamos y auditoría con `GET /admin/disputes…`, `…/evidence`, `…/resolve` y `GET /admin/audit-log` — Depende: T011, T023, T024 · Cubre: RF-009-18, RF-009-20
+- [x] T025 [US4] [FE] Conectar reclamos y auditoría con `GET /admin/disputes…`, `…/evidence`, `…/resolve` y `GET /admin/audit-log` — Depende: T011, T023, T024 · Cubre: RF-009-18, RF-009-20
 
 **Punto de control (I2):** el núcleo de la spec 009 está listo para las specs 001, 003 y 010 y para el hito MVP.
 
@@ -90,7 +90,7 @@
 
 - [x] T036 [BE] Revisión de seguridad: `AdminGuard` en todo el módulo, el administrador no ve contraseñas, CI completa, comprobantes ni chats fuera de un reclamo, sin exportaciones masivas, log de solo anexado, CLI del primer administrador exige `--allow-production` — Depende: T023, T031 · Cubre: RNF-009-01, RN-009-08, CA-009-20, RF-009-02
 - [x] T037 [BD] Revisar con Camila los planes de consulta de la búsqueda de usuarios, el log de auditoría y las estadísticas con 10.000 usuarios de prueba — Depende: T034 · Cubre: CA-009-21
-- [ ] T038 [FE] Accesibilidad y móvil primero de las pantallas de administración (confirmación explícita en acciones sensibles, tarjetas en lugar de tablas anchas) — Depende: T025, T035 · Cubre: RNF-009-02, RNF-009-06
+- [x] T038 [FE] Accesibilidad y móvil primero de las pantallas de administración (confirmación explícita en acciones sensibles, tarjetas en lugar de tablas anchas) — Depende: T025, T035 · Cubre: RNF-009-02, RNF-009-06
 - [ ] T039 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado (reversión del baneo, estadísticas) y marcar las tareas hechas — Depende: T036, T037, T038 · Cubre: —
 
 ## Dependencias y orden de ejecución

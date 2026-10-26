@@ -1,13 +1,11 @@
 /**
  * Cliente del log de auditoría (spec 009, `contracts/api.md`, Auditoría: `GET /admin/audit-log`).
  * Solo lectura: el contrato no tiene `PUT`, `PATCH` ni `DELETE` sobre el log (CA-009-19).
- * Por ahora responde con datos simulados de `admin-audit.mock.ts`; al conectar el backend solo
- * cambia el cuerpo de `listAuditLog` por `apiRequest`.
  *
- * Pendiente de confirmar con backend: el contrato no define la forma de `AuditEntry`. Se toma de
- * las columnas de `admin_audit_log` (data-model.md), con `adminName` ya resuelto para mostrarlo.
+ * Conectado a `GET /admin/audit-log` (spec 009 T025). La API entrega `adminId` y no el nombre del
+ * administrador: la pantalla muestra el identificador. Mejora futura para backend: resolver el nombre.
  */
-import * as mock from './admin-audit.mock';
+import { apiRequest } from './http';
 
 /** Acciones que admite `admin_audit_log.action` (data-model.md, spec 009). */
 export const AUDIT_ACTIONS = [
@@ -50,7 +48,8 @@ export type AuditTargetType = (typeof AUDIT_TARGET_TYPES)[number];
 /** Una entrada del log (`AuditEntry`). Solo anexado: nunca cambia después de escribirse. */
 export interface AuditEntry {
   id: string;
-  adminName: string;
+  /** Administrador que hizo la acción (la API no envía su nombre). */
+  adminId: string;
   action: AuditAction;
   targetType: AuditTargetType;
   targetId: string | null;
@@ -65,7 +64,7 @@ export interface AuditLogPage {
   nextCursor: string | null;
 }
 
-/** Filtros de `GET /admin/audit-log`. Las fechas van como `AAAA-MM-DD` (a confirmar con backend). */
+/** Filtros de `GET /admin/audit-log`. Las fechas van como `AAAA-MM-DD` (día en La Paz). */
 export interface ListAuditLogParams {
   /** Administrador que hizo la acción (contrato 009: `adminId`). La pantalla aún no lo ofrece. */
   adminId?: string;
@@ -79,7 +78,23 @@ export interface ListAuditLogParams {
   cursor?: string;
 }
 
+const LA_PAZ_OFFSET = '-04:00';
+
+/** El backend exige ISO 8601: el día `from` empieza y el día `to` termina en hora de La Paz. */
+const startOfDay = (day: string) => `${day}T00:00:00${LA_PAZ_OFFSET}`;
+const endOfDay = (day: string) => `${day}T23:59:59.999${LA_PAZ_OFFSET}`;
+
 /** `GET /admin/audit-log` (RF-009-18, CA-009-18). Va de la entrada más reciente a la más antigua. */
 export function listAuditLog(params: ListAuditLogParams = {}): Promise<AuditLogPage> {
-  return mock.listAuditLog(params);
+  const query = new URLSearchParams();
+  if (params.adminId) query.set('adminId', params.adminId);
+  if (params.action) query.set('action', params.action);
+  if (params.targetType) query.set('targetType', params.targetType);
+  if (params.targetId) query.set('targetId', params.targetId);
+  if (params.from) query.set('from', startOfDay(params.from));
+  if (params.to) query.set('to', endOfDay(params.to));
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.cursor) query.set('cursor', params.cursor);
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  return apiRequest<AuditLogPage>(`/api/admin/audit-log${suffix}`);
 }

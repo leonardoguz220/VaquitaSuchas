@@ -72,7 +72,8 @@ function DisputeRow({ dispute }: { dispute: AdminDispute }) {
           )}
         </div>
         <p className="text-sm text-muted">
-          {dispute.requesterName} contra {dispute.accusedName} · {dispute.groupName}
+          {dispute.requesterName} contra {dispute.accusedName}
+          {dispute.groupName ? ` · ${dispute.groupName}` : ''}
         </p>
         <p className="text-sm text-muted">{formatDateLaPaz(dispute.createdAt)}</p>
       </Card>

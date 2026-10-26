@@ -3,8 +3,10 @@ import userEvent from '@testing-library/user-event';
 import {
   getAdminDispute,
   getAdminDisputeEvidence,
+  resolveAdminDispute,
   type AdminDispute,
 } from '@/services/admin-disputes';
+import { ApiError } from '@/services/http';
 import { AdminDisputeView } from './admin-dispute-view';
 
 jest.mock('next/navigation', () => ({
@@ -92,5 +94,21 @@ describe('AdminDisputeView (spec 009 T024)', () => {
 
     expect(await screen.findByText(/ya está resuelto/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Resolver reclamo' })).not.toBeInTheDocument();
+  });
+
+  it('CA-009-25: si ya estaba resuelto (409 INVALID_TRANSITION) avisa y recarga la ficha', async () => {
+    (resolveAdminDispute as jest.Mock).mockRejectedValue(
+      new ApiError(409, 'INVALID_TRANSITION', 'ya'),
+    );
+    const user = userEvent.setup();
+    render(<AdminDisputeView disputeId="rec-1" />);
+
+    await user.click(await screen.findByRole('radio', { name: /Sin falta/ }));
+    await user.click(screen.getByRole('button', { name: 'Resolver reclamo' }));
+    await user.type(await screen.findByLabelText(/Motivo/), 'Motivo suficientemente largo.');
+    await user.click(screen.getAllByRole('button', { name: 'Resolver reclamo' }).at(-1)!);
+
+    expect(await screen.findByText(/ya fue resuelto/)).toBeInTheDocument();
+    expect(getDispute).toHaveBeenCalledTimes(2);
   });
 });

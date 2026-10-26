@@ -1,43 +1,64 @@
 import * as audit from './admin-audit';
 import { listAuditLog } from './admin-audit';
-import { resetAuditMock } from './admin-audit.mock';
+import { apiRequest } from './http';
 
-async function run<T>(promise: Promise<T>): Promise<T> {
-  const pending = promise;
-  await jest.advanceTimersByTimeAsync(400);
-  return pending;
-}
+jest.mock('./http', () => ({ apiRequest: jest.fn() }));
 
-describe('services/admin-audit.ts (spec 009 T024)', () => {
+const mockedRequest = jest.mocked(apiRequest);
+
+describe('services/admin-audit.ts conectado al backend (spec 009 T025)', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
-    resetAuditMock();
+    mockedRequest.mockReset();
+    mockedRequest.mockResolvedValue({ items: [], nextCursor: null });
   });
 
-  afterEach(() => {
-    jest.useRealTimers();
+  it('CA-009-18: pide el log sin filtros a GET /api/admin/audit-log y devuelve la página tal cual', async () => {
+    const page = {
+      items: [
+        {
+          id: 'a1',
+          adminId: 'u1',
+          action: 'usuario_banear',
+          targetType: 'user',
+          targetId: 'u2',
+          reason: 'Estafa comprobada.',
+          occurredAt: '2026-10-19T14:00:00Z',
+        },
+      ],
+      nextCursor: 'c1',
+    };
+    mockedRequest.mockResolvedValueOnce(page);
+
+    await expect(listAuditLog()).resolves.toEqual(page);
+    expect(mockedRequest).toHaveBeenCalledWith('/api/admin/audit-log');
   });
 
-  it('CA-009-18: cada entrada trae autor, acción, fecha y motivo cuando la acción lo exige', async () => {
-    const page = await run(listAuditLog({ limit: 50 }));
-
-    for (const entry of page.items) {
-      expect(entry.adminName).not.toBe('');
-      expect(entry.occurredAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-      expect(entry.action).toBeTruthy();
-    }
-    const ban = page.items.find((entry) => entry.action === 'usuario_banear');
-    expect(ban?.reason).toEqual(expect.any(String));
-    const resolved = page.items.find((entry) => entry.action === 'reclamo_abrir_evidencia');
-    expect(resolved?.reason).toBeNull();
+  it('RF-009-18: envía acción, tipo, objeto, límite y cursor como query', async () => {
+    await listAuditLog({
+      action: 'reclamo_resolver',
+      targetType: 'join_dispute',
+      targetId: 'd1',
+      adminId: 'u1',
+      limit: 10,
+      cursor: 'c1',
+    });
+    const url = new URL(String(mockedRequest.mock.calls[0][0]), 'http://x');
+    expect(url.pathname).toBe('/api/admin/audit-log');
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      action: 'reclamo_resolver',
+      targetType: 'join_dispute',
+      targetId: 'd1',
+      adminId: 'u1',
+      limit: '10',
+      cursor: 'c1',
+    });
   });
 
-  it('CA-009-18: va de la entrada más reciente a la más antigua', async () => {
-    const page = await run(listAuditLog({ limit: 50 }));
-    const times = page.items.map((entry) => Date.parse(entry.occurredAt));
-    for (let index = 1; index < times.length; index += 1) {
-      expect(times[index]).toBeLessThan(times[index - 1]);
-    }
+  it('RF-009-18: el rango de días se envía en ISO 8601 con hora de La Paz', async () => {
+    await listAuditLog({ from: '2026-10-19', to: '2026-10-19' });
+    const url = new URL(String(mockedRequest.mock.calls[0][0]), 'http://x');
+    expect(url.searchParams.get('from')).toBe('2026-10-19T00:00:00-04:00');
+    expect(url.searchParams.get('to')).toBe('2026-10-19T23:59:59.999-04:00');
   });
 
   it('CA-009-19: el módulo no ofrece ninguna operación para editar ni borrar el log', () => {
@@ -48,31 +69,5 @@ describe('services/admin-audit.ts (spec 009 T024)', () => {
     expect(
       functions.filter((name) => /edit|update|patch|put|delete|borr|elimin|remove/i.test(name)),
     ).toEqual([]);
-  });
-
-  it('RF-009-18: filtra por acción', async () => {
-    const page = await run(listAuditLog({ action: 'reclamo_resolver', limit: 50 }));
-    expect(page.items).toHaveLength(2);
-    expect(page.items.every((entry) => entry.action === 'reclamo_resolver')).toBe(true);
-  });
-
-  it('RF-009-18: filtra por rango de días en hora de La Paz', async () => {
-    const page = await run(listAuditLog({ from: '2026-10-19', to: '2026-10-19', limit: 50 }));
-    expect(page.items.map((entry) => entry.id)).toEqual(['aud-001', 'aud-002']);
-  });
-
-  it('RF-009-18: pagina con cursor y termina con nextCursor en null', async () => {
-    const first = await run(listAuditLog({ limit: 10 }));
-    expect(first.items).toHaveLength(10);
-    expect(first.nextCursor).toBe('10');
-
-    const second = await run(listAuditLog({ limit: 10, cursor: first.nextCursor ?? undefined }));
-    expect(second.items).toHaveLength(10);
-    expect(second.items[0].id).toBe('aud-011');
-    expect(second.nextCursor).toBe('20');
-
-    const last = await run(listAuditLog({ limit: 10, cursor: second.nextCursor ?? undefined }));
-    expect(last.items).toHaveLength(4);
-    expect(last.nextCursor).toBeNull();
   });
 });

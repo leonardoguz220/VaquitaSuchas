@@ -17,8 +17,8 @@ const INPUT =
 
 /**
  * `/admin/auditoria` (spec 009 T024, plan §6, RF-009-18): tabla del log de solo lectura con
- * filtros por acción, tipo de objeto y rango de fechas, y paginación. La tabla se desplaza en
- * horizontal en celular; cada fila dice la acción con texto, no solo con color (RNF-009-02).
+ * filtros por acción, tipo de objeto y rango de fechas, y paginación. Cada acción es una tarjeta
+ * (sin tabla ancha en celular); cada una dice la acción con texto, no solo con color (RNF-009-02).
  */
 export function AdminAuditView() {
   const audit = useAdminAudit();
@@ -116,37 +116,14 @@ export function AdminAuditView() {
 
       {resource.status === 'success' && items.length > 0 && (
         <>
-          <div className="overflow-x-auto rounded-card border border-line bg-surface">
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <caption className="sr-only">
-                Acciones de administración, de la más reciente a la más antigua
-              </caption>
-              <thead className="border-b border-line text-muted">
-                <tr>
-                  <th scope="col" className="px-3 py-3 font-bold">
-                    Cuándo
-                  </th>
-                  <th scope="col" className="px-3 py-3 font-bold">
-                    Quién
-                  </th>
-                  <th scope="col" className="px-3 py-3 font-bold">
-                    Acción
-                  </th>
-                  <th scope="col" className="px-3 py-3 font-bold">
-                    Sobre
-                  </th>
-                  <th scope="col" className="px-3 py-3 font-bold">
-                    Motivo
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((entry) => (
-                  <AuditRow key={entry.id} entry={entry} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul
+            aria-label="Acciones de administración, de la más reciente a la más antigua"
+            className="flex flex-col gap-3"
+          >
+            {items.map((entry) => (
+              <AuditRow key={entry.id} entry={entry} />
+            ))}
+          </ul>
 
           <nav aria-label="Paginación" className="flex items-center justify-between gap-3">
             <Button variant="secondary" onClick={audit.previous} disabled={!audit.hasPrevious}>
@@ -165,19 +142,24 @@ export function AdminAuditView() {
 
 function AuditRow({ entry }: { entry: AuditEntry }) {
   return (
-    <tr className="border-t border-line align-top">
-      <td className="px-3 py-3 whitespace-nowrap">
-        <time dateTime={entry.occurredAt}>{formatDateTimeLaPaz(entry.occurredAt)}</time>
-      </td>
-      <td className="px-3 py-3">{entry.adminName}</td>
-      <td className="px-3 py-3 font-bold">{AUDIT_ACTION_LABEL[entry.action]}</td>
-      <td className="px-3 py-3">
-        {AUDIT_TARGET_LABEL[entry.targetType]}
-        {entry.targetId && <span className="block text-xs text-muted">{entry.targetId}</span>}
-      </td>
-      <td className="px-3 py-3">
-        {entry.reason ?? <span className="text-muted">Sin motivo</span>}
-      </td>
-    </tr>
+    <li className="flex flex-col gap-2 rounded-card border border-line bg-surface p-4 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <strong className="text-base">{AUDIT_ACTION_LABEL[entry.action]}</strong>
+        <time dateTime={entry.occurredAt} className="text-muted">
+          {formatDateTimeLaPaz(entry.occurredAt)}
+        </time>
+      </div>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+        <dt className="text-muted">Quién</dt>
+        <dd title={entry.adminId}>Admin {entry.adminId.slice(0, 8)}</dd>
+        <dt className="text-muted">Sobre</dt>
+        <dd className="break-all">
+          {AUDIT_TARGET_LABEL[entry.targetType]}
+          {entry.targetId && <span className="block text-xs text-muted">{entry.targetId}</span>}
+        </dd>
+        <dt className="text-muted">Motivo</dt>
+        <dd>{entry.reason ?? <span className="text-muted">Sin motivo</span>}</dd>
+      </dl>
+    </li>
   );
 }
