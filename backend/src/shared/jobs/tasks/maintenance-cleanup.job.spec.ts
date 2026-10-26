@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import type { FileStorage } from '../../ports/file-storage.js';
 import type { DbService } from '../../db/db.service.js';
 import type { MaintenanceCleanupRepository } from '../maintenance-cleanup.repository.js';
 import type { JobContext } from '../scheduled-job.js';
@@ -71,5 +72,19 @@ describe('ExampleNoopJob', () => {
 
     expect(job.name).toBe('example.noop');
     await expect(job.run()).resolves.toBe(0);
+  });
+
+  it('T049 (MaintenanceCleanupJob): con almacén hace una lectura de mantenimiento y un fallo del almacén no rompe la limpieza', async () => {
+    const repo = fakeRepository([1, 1, 1]);
+    const exists = jest.fn<(key: string) => Promise<boolean>>(() =>
+      Promise.reject(new Error('storage down')),
+    );
+    const storage = { exists } as unknown as FileStorage;
+    const now = new Date('2026-06-15T12:00:00.000Z');
+
+    const total = await new MaintenanceCleanupJob(repo.asRepository(), storage).run(ctx(now));
+
+    expect(total).toBe(3);
+    expect(exists).toHaveBeenCalledTimes(1);
   });
 });

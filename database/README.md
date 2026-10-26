@@ -167,3 +167,21 @@ Qué no hace el seed:
 - **El puerto 5432 está ocupado** por otro PostgreSQL: levanta la base en otro puerto del host con `DB_PORT=5435 npm run db:up` y usa ese mismo puerto en `DATABASE_URL` y `TEST_DATABASE_URL` de `database/.env`. `docker compose` no lee `database/.env`; toma `DB_PORT` del entorno o del `.env` de la raíz.
 - **No existe `vaquita_test`**: se crea en el mismo contenedor con `docker/init/01-create-test-db.sql`, que PostgreSQL ejecuta una sola vez al inicializar un volumen vacío. Si el volumen se creó antes de ese script, recréalo con `docker compose down -v && npm run db:up` (borra los datos locales).
 - **`db:reset` solo se usa contra la base local.**
+
+## 8. Rol de aplicación (T033, RNF-000-02)
+
+Las migraciones corren con el rol dueño del esquema; el backend se conecta con un rol que solo hace DML (sin `DROP`, `ALTER`, `TRUNCATE` ni `CREATE EXTENSION`). La limpieza de `maintenance.cleanup` funciona con ese rol: `rate_limit_events` permite `DELETE` solo de filas de más de 24 horas (migración `0005`) y `telegram_updates` no tiene restricción de borrado. `tests/app_role.privileges.test.ts` comprueba estos permisos.
+
+```sql
+-- Con el rol dueño; cambia la contraseña y el nombre de la base.
+CREATE ROLE vaquita_app LOGIN PASSWORD '<contraseña>' NOSUPERUSER NOCREATEDB NOCREATEROLE;
+GRANT CONNECT ON DATABASE vaquita TO vaquita_app;
+GRANT USAGE ON SCHEMA public TO vaquita_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO vaquita_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO vaquita_app;
+-- Tablas que creen migraciones futuras:
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO vaquita_app;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO vaquita_app;
+```
+
+`DATABASE_URL` del backend usa `vaquita_app`; el workflow `Migrate staging` y `db:migrate` usan el dueño. **Limitación en Render (plan gratuito):** la base trae un solo usuario, así que ahí el backend usa el mismo usuario hasta crear este rol a mano.

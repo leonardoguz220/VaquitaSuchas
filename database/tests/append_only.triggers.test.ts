@@ -1,6 +1,7 @@
 // RF-000-07 (data-model.md §1 "Tablas de solo anexado" y §4 `append_only.triggers`): las tablas de
 // solo anexado llevan el disparador forbid_update_delete() y rechazan UPDATE y DELETE con
-// 'append-only table' (restrict_violation, 23001). Hoy son rate_limit_events (spec 000),
+// 'append-only table' (restrict_violation, 23001). Hoy son rate_limit_events (spec 000; su DELETE
+// se permite solo para filas de más de 24 horas, 0005),
 // charge_events (spec 002, RNF-002-04), join_request_events (spec 010), listing_reports
 // (spec 008, RNF-008-06) y admin_audit_log (spec 009, CA-009-19).
 import assert from 'node:assert/strict';
@@ -84,6 +85,44 @@ test('RF-000-07: UPDATE y DELETE sobre rate_limit_events fallan y la fila queda 
   assert.deepEqual(rows, [inserted]);
 });
 
+test('RF-000-07 / T033: rate_limit_events solo permite borrar filas de más de 24 horas y nunca UPDATE', async () => {
+  const [recent] = await queryRows<EventRow>(
+    db.connectionString,
+    `INSERT INTO rate_limit_events (bucket, key_hash, occurred_at)
+     VALUES ('login_fail:ip', $1, now() - interval '23 hours') RETURNING *`,
+    [keyHash],
+  );
+  const [old] = await queryRows<EventRow>(
+    db.connectionString,
+    `INSERT INTO rate_limit_events (bucket, key_hash, occurred_at)
+     VALUES ('login_fail:ip', $1, now() - interval '25 hours') RETURNING *`,
+    [keyHash],
+  );
+  assert.ok(recent && old);
+
+  await assert.rejects(
+    queryRows(db.connectionString, 'DELETE FROM rate_limit_events WHERE id = $1', [recent.id]),
+    appendOnlyError,
+  );
+  await assert.rejects(
+    queryRows(db.connectionString, `UPDATE rate_limit_events SET bucket = 'x' WHERE id = $1`, [
+      old.id,
+    ]),
+    appendOnlyError,
+  );
+  await queryRows(db.connectionString, 'DELETE FROM rate_limit_events WHERE id = $1', [old.id]);
+
+  const left = await queryRows<EventRow>(
+    db.connectionString,
+    'SELECT id FROM rate_limit_events WHERE id = ANY($1)',
+    [[recent.id, old.id]],
+  );
+  assert.deepEqual(
+    left.map((r) => r.id),
+    [recent.id],
+  );
+});
+
 test('RF-000-07: toda tabla con forbid_update_delete lo tiene BEFORE UPDATE OR DELETE FOR EACH ROW y activo', async () => {
   const triggers = await queryRows<{ table_name: string; tgtype: number; tgenabled: string }>(
     db.connectionString,
@@ -114,7 +153,11 @@ test('RF-000-07: toda tabla con forbid_update_delete lo tiene BEFORE UPDATE OR D
     assert.ok(has(TRIGGER_ROW), `${table_name}: el disparador debe ser FOR EACH ROW`);
     assert.ok(has(TRIGGER_BEFORE), `${table_name}: el disparador debe ser BEFORE`);
     assert.ok(has(TRIGGER_UPDATE), `${table_name}: el disparador debe cubrir UPDATE`);
-    assert.ok(has(TRIGGER_DELETE), `${table_name}: el disparador debe cubrir DELETE`);
+    // rate_limit_events solo prohíbe UPDATE aquí: su DELETE lo gobierna rate_limit_events_guard_delete
+    // (0005), que permite borrar solo filas de más de 24 horas.
+    if (table_name !== 'rate_limit_events') {
+      assert.ok(has(TRIGGER_DELETE), `${table_name}: el disparador debe cubrir DELETE`);
+    }
     assert.notEqual(tgenabled, 'D', `${table_name}: el disparador no debe estar desactivado`);
   }
 });
