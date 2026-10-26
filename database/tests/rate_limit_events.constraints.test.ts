@@ -87,6 +87,10 @@ test('RF-000-07: los disparadores de solo anexado y updated_at están instalados
   );
   assert.deepEqual(
     rows.map((row) => row.tgname),
-    ['rate_limit_events_forbid_update_delete', 'rate_limit_events_set_updated_at'],
+    [
+      'rate_limit_events_forbid_update',
+      'rate_limit_events_guard_delete',
+      'rate_limit_events_set_updated_at',
+    ],
   );
 });

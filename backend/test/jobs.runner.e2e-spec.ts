@@ -96,13 +96,6 @@ describe('JobRunner contra PostgreSQL real', () => {
     for (const file of files) {
       await inspect.query(readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8'));
     }
-    // 0003 deja rate_limit_events como solo anexado y bloquea todo DELETE (pendiente T033 con
-    // Camila). Aquí se quita el disparador, en esta base temporal, para comprobar la lógica de la
-    // limpieza; cuando la migración de T033 resuelva el permiso, esta línea ya no hará falta.
-    await inspect.query(
-      'DROP TRIGGER IF EXISTS rate_limit_events_forbid_update_delete ON rate_limit_events',
-    );
-
     // ConfigService da prioridad a process.env: se apunta a la base temporal y sin cron interno.
     process.env.DATABASE_URL = databaseUrl;
     process.env.JOBS_INPROCESS = 'false';
@@ -342,12 +335,22 @@ describe('JobRunner contra PostgreSQL real', () => {
     expect(updates.rows.map((row) => Number(row.update_id))).toEqual([2]);
   });
 
-  // Hoy el esquema íntegro de la spec 000 (0003) bloquea todo DELETE de rate_limit_events con 23001,
-  // así que con filas de más de 24 horas la tarea termina en error. No se fija ese fallo en un test
-  // para no poner en rojo el PR de base de datos que lo corrija; queda como pendiente documentado.
-  it.todo(
-    'RF-000-14: con el esquema íntegro (sin DROP TRIGGER), maintenance.cleanup borra también rate_limit_events viejo y termina en ok (pendiente de la migración 0005, T033)',
-  );
+  it('RF-000-14 / T033: con el esquema íntegro (migración 0005) maintenance.cleanup borra rate_limit_events viejo, conserva el reciente y termina en ok', async () => {
+    await inspect.query('DELETE FROM rate_limit_events');
+    await inspect.query(
+      `INSERT INTO rate_limit_events (bucket, key_hash, occurred_at) VALUES
+         ('login_fail:email', 'old', $1), ('login_fail:email', 'recent', $2)`,
+      [ago(25 * HOUR_MS), ago(23 * HOUR_MS)],
+    );
+
+    const results = await runner.runAll('external', { job: 'maintenance.cleanup' });
+
+    expect(results).toEqual([{ job: 'maintenance.cleanup', status: 'ok', processed: 1 }]);
+    const limits = await inspect.query<{ key_hash: string }>(
+      'SELECT key_hash FROM rate_limit_events',
+    );
+    expect(limits.rows.map((row) => row.key_hash)).toEqual(['recent']);
+  });
 
   it('RF-000-14: maintenance.cleanup es idempotente: una segunda pasada no borra nada más', async () => {
     await inspect.query(`INSERT INTO telegram_updates (update_id, received_at) VALUES (10, $1)`, [
