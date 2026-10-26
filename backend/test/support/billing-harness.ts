@@ -140,6 +140,7 @@ export interface TestChargeOptions {
   status?: 'pendiente' | 'en_revision' | 'atrasado';
   period?: string;
   dueAt?: string;
+  issuedAt?: string;
 }
 
 /**
@@ -331,9 +332,16 @@ export class BillingHarness {
       `INSERT INTO charges (group_id, user_id, cycle_id, period, origin, status, amount_cents,
                             price_cents, currency, total_bs_cents, member_count, issued_at, due_at)
        VALUES ($1, $2, $3, $4, 'ciclo', 'pendiente', 3333, 10001, 'BS', 10001, 3,
-               '2026-10-15T04:00:00Z', $5)
+               $6, $5)
        RETURNING id`,
-      [group.id, userId, cycleId, period, options.dueAt ?? DUE_AT],
+      [
+        group.id,
+        userId,
+        cycleId,
+        period,
+        options.dueAt ?? DUE_AT,
+        options.issuedAt ?? '2026-10-15T04:00:00Z',
+      ],
     );
     const id = (result.rows[0] as { id: string }).id;
     if (options.status && options.status !== 'pendiente') {

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Clock } from '../../../shared/clock/clock.js';
 import { DbService, type DbTransaction } from '../../../shared/db/db.service.js';
 import { DomainError } from '../../../shared/errors/domain-error.js';
@@ -11,6 +12,7 @@ import { TxEventBus } from '../../../shared/events/tx-event-bus.js';
 import { transition, type ChargeAction, type ChargeStatus } from '../domain/charge-state.js';
 import { entryChargeDraft, type EntrySnapshot } from '../domain/entry-charge.js';
 import { resolveManualPaidAt } from '../domain/manual-payment.js';
+import { isSimulationAllowed, resolveReviewInstant } from '../domain/review-instant.js';
 import { GroupsRepository } from '../../subscriptions/repositories/groups.repository.js';
 import { ChargesRepository, type ChargeRecord } from '../repositories/charges.repository.js';
 import { CyclesRepository } from '../repositories/cycles.repository.js';
@@ -98,6 +100,7 @@ export class ChargesService {
   constructor(
     private readonly db: DbService,
     private readonly clock: Clock,
+    private readonly config: ConfigService,
     private readonly bus: TxEventBus,
     private readonly access: ChargeAccessService,
     private readonly charges: ChargesRepository,
@@ -198,7 +201,7 @@ export class ChargesService {
   async confirm(userId: string, chargeId: string, input: ReviewInput): Promise<ChargeView> {
     await this.db.withTransaction(async (tx) => {
       const { charge } = await this.open(tx, userId, chargeId);
-      const now = this.clock.now();
+      const now = this.reviewInstant(charge.issuedAt);
       const to = this.apply(charge, 'confirm', now, input.version);
       const receipt = await this.receipts.findActiveByCharge(tx, charge.id);
       if (receipt) await this.receipts.setStatus(tx, receipt.id, 'confirmado');
@@ -234,7 +237,7 @@ export class ChargesService {
   async reject(userId: string, chargeId: string, input: RejectInput): Promise<ChargeView> {
     await this.db.withTransaction(async (tx) => {
       const { charge } = await this.open(tx, userId, chargeId);
-      const now = this.clock.now();
+      const now = this.reviewInstant(charge.issuedAt);
       const to = this.apply(charge, 'reject', now, input.version);
       const receipt = await this.receipts.findActiveByCharge(tx, charge.id);
       if (receipt) {
@@ -280,7 +283,7 @@ export class ChargesService {
   ): Promise<ChargeView> {
     await this.db.withTransaction(async (tx) => {
       const { charge } = await this.open(tx, userId, chargeId);
-      const now = this.clock.now();
+      const now = this.reviewInstant(charge.issuedAt);
       const to = this.apply(charge, 'manualPayment', now, input.version);
       const paidAt = resolveManualPaidAt({ now, issuedAt: charge.issuedAt, paidAt: input.paidAt });
       await this.charges.updateStatus(tx, charge.id, to, {
@@ -362,6 +365,15 @@ export class ChargesService {
     if (context.access !== 'titular') throw forbidden();
     if (context.group.frozen_at !== null) throw groupFrozen();
     return context;
+  }
+
+  /** Hora de la revisión del titular; solo fuera de producción tolera cobros de fecha simulada. */
+  private reviewInstant(issuedAt: Date): Date {
+    return resolveReviewInstant({
+      now: this.clock.now(),
+      issuedAt,
+      simulationAllowed: isSimulationAllowed(this.config.get<string>('NODE_ENV')),
+    });
   }
 
   /** Transición del dominio y, después, control de versión: un estado final siempre dice 409 INVALID. */
