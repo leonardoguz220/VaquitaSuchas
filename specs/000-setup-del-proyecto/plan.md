@@ -68,10 +68,10 @@ Un repositorio con tres paquetes (`database`, `backend`, `frontend`) coordinados
 Detalle completo en [`data-model.md`](data-model.md). Resumen:
 
 - **Convenciones** para todas las migraciones (RF-000-07): `uuid`, `timestamptz` UTC, dinero `bigint` en centavos, `snake_case` en inglés, `created_at`/`updated_at` con disparador, tablas de solo anexado con `forbid_update_delete()`, claves foráneas con `RESTRICT`.
-- **Migraciones 0001–0004:** extensión `unaccent` y funciones auxiliares; `job_runs`; `rate_limit_events`; `telegram_updates`. `schema_migrations` la crea el ejecutor.
+- **Migraciones 0001–0005:** extensión `unaccent` y funciones auxiliares; `job_runs`; `rate_limit_events`; `telegram_updates`; `0005` cambia el disparador de `rate_limit_events` para que `maintenance.cleanup` pueda borrar filas de más de 24 horas (UPDATE sigue prohibido; un disparador `BEFORE DELETE` rechaza con `restrict_violation` las más recientes; descartada la función `SECURITY DEFINER` por ser más compleja sin más garantía). `schema_migrations` la crea el ejecutor.
 - **Rangos de numeración** por spec (en `research.md` R6): 0010 usuarios, 0020 catálogo, 0030 grupos, 0040 cobros, 0050 solicitudes, 0060 reputación, 0070 notificaciones, 0080 cupos, 0090 administración, 0100 reportes.
 - **Seed:** `database/seeds/` tiene el catálogo (spec 004) y datos de prueba. El administrador se crea con `npm run seed:admin -w backend` (reutiliza el hash y la normalización del backend) solo si existen `SEED_ADMIN_EMAIL` y `SEED_ADMIN_PASSWORD`; en producción solo con `--allow-production` (spec 003 T022). No hay contraseña en el repositorio (RF-009-02).
-- **Respaldo:** `npm run db:dump` y `db:restore` (envoltorios de `pg_dump`/`psql`).
+- **Respaldo:** `npm run db:dump` y `db:restore` (envoltorios de `pg_dump`/`psql`). `db:restore` se niega contra un host no local salvo `--allow-remote` explícito, que usa una persona a mano; `db:reset` solo corre en local.
 
 ## 4. Contratos de API — _Leonardo (Backend)_
 
@@ -122,7 +122,7 @@ backend/
   2. Inserta una fila `running` en `job_runs`, ejecuta `run()`, y cierra la fila con `ok` o `error` (el mensaje de error se recorta y no incluye datos personales).
   3. Libera el bloqueo siempre (`finally`).
   - Se dispara por `@Cron('* * * * *')` (si `JOBS_INPROCESS=true`) y por `POST /internal/jobs/tick`. Una tarea siempre debe ser **idempotente**: calcula qué falta por hacer según el estado actual de la base, no según "cuánto pasó desde la última vez".
-  - Tarea de ejemplo `example.noop` (RF-000-14) y `maintenance.cleanup`: borra `job_runs` > 30 días, `rate_limit_events` y `telegram_updates` viejos.
+  - Tarea de ejemplo `example.noop` (RF-000-14) y `maintenance.cleanup`: borra `job_runs` > 30 días, `rate_limit_events` > 24 horas y `telegram_updates` > 7 días, y hace una lectura barata al almacén para que el proyecto gratuito de Supabase no se pause por inactividad (T049).
 - **Webhook de Telegram (R2):** valida el secreto con `crypto.timingSafeEqual`, inserta `update_id` en `telegram_updates` (`ON CONFLICT DO NOTHING`; si ya existía, responde `200` sin procesar), y entrega el `Update` al despachador que registra la spec 003.
 - **`Clock`:** `now(): Date`. En pruebas, `FakeClock.advance(ms)`.
 
@@ -182,7 +182,7 @@ frontend/
 - **Swagger** solo en `development` y `test`.
 - **Cabeceras:** `helmet` en el backend; CORS cerrado (solo el origen del frontend, aunque el navegador no llama al backend directamente). Implementación (T024): `configureApp` aplica, en este orden, `X-Request-Id`, `helmet`, CORS y Swagger. CORS queda **totalmente cerrado** si no se define la variable **opcional** `FRONTEND_ORIGIN` (`http(s)://host[:puerto]`, sin ruta ni barra final; no entra en la lista de obligatorias de §5); con ella, solo ese origen exacto, nunca `*` ni `credentials`. Swagger solo se monta en `development` y `test`; en cualquier otro `NODE_ENV` `/api/docs` responde `404` en el formato de error uniforme. La CSP de helmet es estricta en todo el backend salvo que, con Swagger montado, `/api/docs` omite `upgrade-insecure-requests` para que la interfaz cargue por http en desarrollo.
 - **Datos personales en logs:** prohibidos (RF-000-13); una prueba de integración comprueba que un registro con contraseña y CI no deja esos valores en la salida del log.
-- **Privilegios de la base:** el backend se conecta con un rol de aplicación sin permiso de `DROP` ni `CREATE EXTENSION`; las migraciones corren con el rol dueño del esquema (en Render, el usuario único; se documenta como limitación).
+- **Privilegios de la base:** el backend se conecta con un rol de aplicación sin permiso de `DROP` ni `CREATE EXTENSION`; las migraciones corren con el rol dueño del esquema (en Render, el usuario único; se documenta como limitación). El rol, sus permisos y la prueba `tests/app_role.privileges.test.ts` están en `database/README.md` §8 (T033).
 
 ## 8. Estrategia de pruebas
 

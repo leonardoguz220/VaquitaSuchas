@@ -78,6 +78,8 @@ Seed de desarrollo: dos grupos de ejemplo con un titular habilitado y tres miemb
 
 **Si se aprueba:** actualizar `data-model.md` §1, §2 y §4, las tareas T001–T005 y T041 (y agregar la tarea [BE] de `seed:dev-users` en la spec 003), y avisar a la spec 010 (H3) y a la 009 (C3, M3).
 
+**Estado tras la implementación (converge 2026-10-26):** verificados contra las migraciones y el código: H2 (`created_at`/`updated_at` en `group_members`, 0031), H3 (la FK `group_members.join_request_id` la agrega la 0055 de la spec 010), M1 y M3 (la capacidad rechaza grupos no activos o congelados y `groups_closed_readonly` exceptúa `frozen_at` y `frozen_reason`, 0032), M5 (sin columna de vigencia: se deriva del último `billing_cycles.cut_date`, `data-model.md` §1) y C2 (`seed:dev-users` en `backend/src/cli/`). Los demás hallazgos de esta tabla no se revisaron uno por uno en esta pasada.
+
 ## 4. Contratos de API — _Leonardo (Backend)_
 
 Detalle en [`contracts/api.md`](contracts/api.md): `GET /users/me/host-eligibility`, `POST /groups/quote`, `POST /groups`, `GET /groups`, `GET /groups/:id`, `PATCH /groups/:id`, `PUT /groups/:id/payment-info`, `POST /groups/:id/invite-code/regenerate`, `DELETE /groups/:id/members/:userId`, `POST /groups/:id/leave`, `POST /groups/:id/transfer-ownership`, `POST /groups/:id/close`.

@@ -77,7 +77,7 @@ El sondeo, en una transacción, haría: buscar el usuario por el hash del secret
 
 **Alternativa mínima.** Dejar el modelo de tokens como está, agregar `phone_verification_tokens.secret_redeemed_at timestamptz NULL`, cambiar el plan y T020 para marcar esa columna en lugar de borrar el hash, y copiar el hash al token nuevo en `POST /auth/register/link` (sin `UNIQUE` en el hash, con un índice parcial `WHERE used_at IS NULL`). Cambia menos, pero duplica el secreto en cada token.
 
-**Propuesta pendiente (2026-10-18, revisión de cierre del PR #42):** `phone_verification_tokens.outcome` tiene un solo valor `rechazado_duplicado`, pero `GET /auth/register/status` distingue `PHONE_ALREADY_REGISTERED` y `TELEGRAM_ALREADY_REGISTERED` (`contracts/api.md`), y `rechazado_contacto_ajeno` no tiene `code`. Opciones: (a) separar el outcome en `rechazado_celular_duplicado` y `rechazado_telegram_duplicado` (migración nueva del rango 0014–0019) y agregar un `code` para el contacto ajeno, o (b) unificar el código del contrato. Lo decide backend (dueño del contrato) con BD; hasta entonces el modelo no cambia.
+**Resuelto en la implementación (converge 2026-10-26):** `phone_verification_tokens.outcome` conserva el valor único `rechazado_duplicado` y el modelo no cambió. El backend (`auth/domain/register-status.ts`) distingue `PHONE_ALREADY_REGISTERED` de `TELEGRAM_ALREADY_REGISTERED` consultando cuál de los dos datos ya está en uso, así que se cumple el contrato sin migración nueva (opción b).
 
 **Al aprobarse (hecho):** actualizar `data-model.md` §1 y §4, las tareas T001 (pruebas nuevas: vigencia del secreto y un solo canje), T002 o T003 y T020, y avisar a frontend (el contrato no cambia).
 

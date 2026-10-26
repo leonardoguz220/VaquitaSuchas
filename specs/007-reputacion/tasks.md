@@ -76,7 +76,7 @@
 - [x] T034 [BE] Revisión de seguridad: fechas solo del servidor, la calificación de una persona nunca depende de datos de otra, sin `GET /users/:id/reputation` abierto, ranking sin montos y suspendidos conservan su calificación sin aparecer en búsquedas nuevas — Depende: T025, T030 · Cubre: RNF-007-04, RNF-007-05, RN-007-08
 - [x] T035 [BD] Revisar con Camila los planes de consulta de `getRatings` por lote, `ChargeFactsPort` (12 meses) y la conciliación diaria con datos del seed — Depende: T013 · Cubre: RNF-007-03
 - [x] T036 [FE] Accesibilidad de estrellas, niveles e insignias (texto, icono y valor numérico) — Depende: T022, T027 · Cubre: RNF-007-06
-- [ ] T037 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado y marcar las tareas hechas — Depende: T033, T034, T035, T036 · Cubre: —
+- [x] T037 [BE] Ejecutar `/speckit-converge`: actualizar `spec.md` y `plan.md` con lo implementado y marcar las tareas hechas — Depende: T033, T034, T035, T036 · Cubre: —
 
 ## Dependencias y orden de ejecución
 
@@ -111,3 +111,4 @@
 | 2026-10-20 | T034 revisión de seguridad: los únicos cuerpos son textos de reporte y exclusión (10–300); todas las fechas salen del `Clock` del servidor; no existe `GET /users/:id/reputation` (404); el ranking no trae montos ni comprobantes; suspendidos conservan su fila de `user_reputation` | Revisado | No |
 | 2026-10-20 | Insignias: se otorgan en cada recálculo y en la conciliación diaria, sin una tarea `reputation.badges` aparte. «Grupo completo» queda fuera del catálogo (depende de pagos de otras personas, choca con RN-007-08); «Sin atrasos 6 meses» = al menos 3 cobros en los últimos 6 meses y ninguno tardío | Aplicado | Por confirmar (catálogo de RF-007-06) |
 | — | `ChargeFactsPort` depende de que 002 guarde `first_submitted_at` y el rechazo «inválido» en `charge_events.metadata` | Verificar con Leonardo al terminar spec 002 T017 | No |
+| 2026-10-26 | Converge (T037): contraste de `spec.md`, `plan.md` y `contracts/api.md` con el código | Los 25 `CA-007-xx` de la spec aparecen citados en tests (`backend/test`, `backend/src`, `database/tests` o `frontend`) y los 5 endpoints del contrato tienen ruta en un controlador; las decisiones de esta tabla ya están reflejadas en la spec y el plan | No |
