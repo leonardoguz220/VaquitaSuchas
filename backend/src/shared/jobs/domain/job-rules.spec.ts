@@ -5,6 +5,7 @@ import {
   isValidIntervalSeconds,
   isValidJobName,
   MAX_ERROR_MESSAGE_LENGTH,
+  parseSimulatedNow,
 } from './job-rules.js';
 
 describe('isJobDue', () => {
@@ -109,4 +110,31 @@ describe('isInProcessEnabled', () => {
       expect(isInProcessEnabled(value)).toBe(false);
     },
   );
+});
+
+describe('parseSimulatedNow', () => {
+  it('RF-000-14: una fecha sin hora se toma a las 12:00 UTC', () => {
+    expect(parseSimulatedNow('2026-11-15')).toEqual(new Date('2026-11-15T12:00:00.000Z'));
+  });
+
+  it('RF-000-14: una fecha y hora ISO con zona se respeta', () => {
+    expect(parseSimulatedNow('2026-11-15T03:30:00Z')).toEqual(new Date('2026-11-15T03:30:00.000Z'));
+    expect(parseSimulatedNow('2026-11-15T08:00:00-04:00')).toEqual(
+      new Date('2026-11-15T12:00:00.000Z'),
+    );
+  });
+
+  it.each([
+    undefined,
+    '',
+    'ayer',
+    '2026-13-01',
+    '2026-02-30',
+    '2026-11-15T10:00:00',
+    '15/11/2026',
+    '2026-11-15 10:00',
+    20261115,
+  ])('RF-000-14: %p no es una fecha simulada válida', (value) => {
+    expect(parseSimulatedNow(value)).toBeNull();
+  });
 });

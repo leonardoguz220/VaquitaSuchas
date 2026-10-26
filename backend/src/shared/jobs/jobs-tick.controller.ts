@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { Controller, HttpCode, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -9,7 +10,10 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { DomainError } from '../errors/domain-error.js';
+import { DEFAULT_MESSAGES, ErrorCode } from '../errors/error-codes.js';
 import { JobsTokenGuard } from '../guards/jobs-token.guard.js';
+import { parseSimulatedNow } from './domain/job-rules.js';
 import { JobRunner } from './job-runner.js';
 import type { JobRunResult } from './scheduled-job.js';
 import { TickQueryDto } from './tick-query.dto.js';
@@ -27,7 +31,10 @@ export interface TickResponse {
 @ApiTags('internal')
 @Controller('internal/jobs')
 export class JobsTickController {
-  constructor(private readonly runner: JobRunner) {}
+  constructor(
+    private readonly runner: JobRunner,
+    private readonly config: ConfigService,
+  ) {}
 
   // El orden de los guards importa: el límite de 1 llamada por segundo va DESPUÉS del token, para
   // que quien no tiene el token no pueda gastar el cupo y dejar fuera al cron legítimo.
@@ -47,8 +54,17 @@ export class JobsTickController {
     description: 'Ejecuta solo la tarea con este nombre (por ejemplo, example.noop).',
     example: 'example.noop',
   })
+  @ApiQuery({
+    name: 'now',
+    required: false,
+    description:
+      'Fecha simulada (YYYY-MM-DD o ISO con zona) que ven las tareas como "ahora". Solo en ' +
+      'development y test; en production responde 400. Ignora el intervalo de la tarea.',
+    example: '2026-11-15',
+  })
   @ApiBadRequestResponse({
-    description: 'VALIDATION_ERROR: `job` no tiene un nombre de tarea válido (details.fields.job).',
+    description:
+      'VALIDATION_ERROR: `job` o `now` inválidos (details.fields), o `now` en production.',
   })
   @ApiUnauthorizedResponse({
     description: 'UNAUTHENTICATED: falta X-Jobs-Token o no coincide con JOBS_TOKEN.',
@@ -60,6 +76,22 @@ export class JobsTickController {
   })
   async tick(@Query() query: TickQueryDto): Promise<TickResponse> {
     // Un nombre con formato válido pero sin tarea registrada devuelve `ran: []`.
-    return { ran: await this.runner.runAll('external', { job: query.job }) };
+    const now = this.simulatedNow(query.now);
+    return { ran: await this.runner.runAll('external', { job: query.job, now }) };
+  }
+
+  // Falla cerrado: la fecha simulada solo se acepta con NODE_ENV development o test. Se rechaza
+  // (no se ignora) para que nadie crea que simuló un ciclo cuando el servidor corrió con la real.
+  private simulatedNow(raw: string | undefined): Date | undefined {
+    if (raw === undefined) {
+      return undefined;
+    }
+    const env = this.config.get<string>('NODE_ENV');
+    if (env !== 'development' && env !== 'test') {
+      throw new DomainError(ErrorCode.VALIDATION_ERROR, 400, DEFAULT_MESSAGES.VALIDATION_ERROR, {
+        fields: { now: ['NOT_ALLOWED_IN_PRODUCTION'] },
+      });
+    }
+    return parseSimulatedNow(raw) ?? undefined;
   }
 }

@@ -59,3 +59,30 @@ export function describeJobError(error: unknown): string {
 export function isInProcessEnabled(value: unknown): boolean {
   return value === true || value === 'true';
 }
+
+// Fecha simulada del tick (`?now=`): `YYYY-MM-DD` o fecha y hora ISO con `Z`/desfase explícito.
+const SIMULATED_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const SIMULATED_DATETIME_PATTERN =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})$/;
+
+/**
+ * Interpreta el `now` simulado del tick. Una fecha sin hora se toma a las 12:00 UTC (08:00 en
+ * America/La_Paz), así cae en ese mismo día en ambas zonas. Devuelve `null` si el formato no es
+ * válido o la fecha no existe (por ejemplo, 2026-02-30).
+ */
+export function parseSimulatedNow(value: unknown): Date | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const dateOnly = SIMULATED_DATE_PATTERN.test(value);
+  if (!dateOnly && !SIMULATED_DATETIME_PATTERN.test(value)) {
+    return null;
+  }
+  const parsed = new Date(dateOnly ? `${value}T12:00:00.000Z` : value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  // Rechaza días inexistentes que `Date` corrige solo (2026-02-30 -> 2026-03-02).
+  const datePart = value.slice(0, 10);
+  return dateOnly && parsed.toISOString().slice(0, 10) !== datePart ? null : parsed;
+}
