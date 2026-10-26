@@ -11,7 +11,7 @@ npm run test -w backend -- billing.generate
 
 En vivo: `curl -X POST -H "X-Jobs-Token: $JOBS_TOKEN" "$API/internal/jobs/tick?job=billing.generate"` dos veces; `GET /groups/<id>/billing/summary` muestra un solo cobro por miembro.
 
-Para generar el ciclo siguiente en local o en E2E (solo `NODE_ENV` `development`/`test`; en producción responde 400): `curl -X POST -H "X-Jobs-Token: $JOBS_TOKEN" "$API/internal/jobs/tick?job=billing.generate&now=2026-11-15"`. Contrato: `specs/000-setup-del-proyecto/contracts/api.md`.
+Para generar el ciclo siguiente en local o en E2E (solo `NODE_ENV` `development`/`test`; en producción responde 400): `curl -X POST -H "X-Jobs-Token: $JOBS_TOKEN" "$API/internal/jobs/tick?job=billing.generate&now=2026-11-15"`. Después, confirmar, rechazar o registrar pago manual de ese cobro funciona igual (el servidor usa `issued_at` como hora mínima fuera de producción). Contrato: `specs/000-setup-del-proyecto/contracts/api.md`.
 
 ## 2. Pagar y confirmar (CA-002-04 a 08, 26, 27)
 
