@@ -20,6 +20,7 @@ const CHECK_VIOLATION = '23514';
 const UNIQUE_VIOLATION = '23505';
 const NOT_NULL_VIOLATION = '23502';
 const FK_VIOLATION = '23503';
+const RESTRICT_VIOLATION = '23001';
 
 const FAKE_HASH = '$argon2id$v=19$m=19456,t=2,p=1$dGVzdA$ZmFrZQ';
 const POLICY_VERSION = '2026-10-18';
@@ -1050,6 +1051,61 @@ test('RN-001-05: cambiar left_reason o left_at de una estadía cerrada falla', a
     ),
   );
   assert.deepEqual(await memberRow(rowId), before);
+});
+
+// group_members_identity_immutable (0033): la capacidad, el grupo cerrado y el congelado se
+// controlan al insertar, así que una estadía no puede cambiar de grupo ni de persona después.
+test('CA-001-07, CA-001-16: mover una estadía a un grupo lleno o cerrado con UPDATE de group_id falla', async () => {
+  const full = await createGroup({ total_slots: 2 });
+  await addMember(full.id);
+  const closed = await createGroup({ total_slots: 5 });
+  await run(`UPDATE groups SET status = 'cerrado', closed_at = now() WHERE id = $1`, [closed.id]);
+  const origin = await createGroup({ total_slots: 5 });
+  const rowId = await addMember(origin.id);
+  const before = await memberRow(rowId);
+
+  for (const target of [full.id, closed.id]) {
+    await rejectsWith(
+      run('UPDATE group_members SET group_id = $2 WHERE id = $1', [rowId, target]),
+      { code: RESTRICT_VIOLATION },
+    );
+  }
+  assert.equal(await activeMembers(full.id), 2);
+  assert.equal(await activeMembers(closed.id), 1);
+  assert.deepEqual(await memberRow(rowId), before);
+});
+
+test('RN-001-05: cambiar user_id, join_source, join_request_id o joined_at de una estadía falla', async () => {
+  const group = await createGroup({ total_slots: 5 });
+  const rowId = await addMember(group.id);
+  const otherUserId = await newUserId();
+  const before = await memberRow(rowId);
+
+  for (const [sql, params] of [
+    ['UPDATE group_members SET user_id = $2 WHERE id = $1', [rowId, otherUserId]],
+    [
+      `UPDATE group_members SET join_source = 'creacion', join_request_id = NULL WHERE id = $1`,
+      [rowId],
+    ],
+    [
+      'UPDATE group_members SET join_request_id = $2 WHERE id = $1',
+      [rowId, await newJoinRequest(group.id, otherUserId)],
+    ],
+    [`UPDATE group_members SET joined_at = joined_at - interval '1 day' WHERE id = $1`, [rowId]],
+  ] as const) {
+    await rejectsWith(run(sql, [...params]), { code: RESTRICT_VIOLATION });
+  }
+  assert.deepEqual(await memberRow(rowId), before);
+});
+
+test('RN-001-05: cerrar una estadía (left_at y left_reason) sigue permitido', async () => {
+  const group = await createGroup({ total_slots: 5 });
+  const rowId = await addMember(group.id);
+  await run(`UPDATE group_members SET left_at = now(), left_reason = 'abandono' WHERE id = $1`, [
+    rowId,
+  ]);
+  const after = await memberRow(rowId);
+  assert.equal(after?.left_reason, 'abandono');
 });
 
 test('RN-001-05: role, join_source y left_reason fuera de los valores de la spec fallan', async () => {
