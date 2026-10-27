@@ -19,7 +19,10 @@ interface NavItem {
   label: string;
 }
 
+const GROUPS_PATH = '/grupos';
+
 const USER_ITEMS: NavItem[] = [
+  { href: GROUPS_PATH, label: 'Mis suscripciones' },
   { href: PANEL_PATH, label: 'Panel' },
   { href: CHARGES_PATH, label: 'Cobros' },
   { href: LISTINGS_PATH, label: 'Cupos' },
