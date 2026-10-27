@@ -1,7 +1,7 @@
 # Modelo de datos — Spec 005: Notificaciones
 
 - **Responsable:** Camila Fuentes (Base de datos)
-- **Migraciones:** `0070` a `0074` (rango de la spec 005)
+- **Migraciones:** `0070` a `0075` (rango de la spec 005)
 - **Estado:** propuesto; se congela al aprobar el plan
 - **Entrega:** `notifications` (0070) forma parte del **núcleo del MVP** (RF-010-04 pide un aviso dentro de la app al titular; CA-002-28 y CA-010-14 verifican avisos). El resto (0071 a 0074) es P1.
 - Convenciones de `specs/000-setup-del-proyecto/data-model.md`. La spec 003 reservó `notification_preferences` (0071).
@@ -20,7 +20,7 @@ notifications
 - category: text (NOT NULL)                        CHECK IN ('recordatorios','resoluciones','titular','grupo')   (RF-005-17)
 - title: text (NOT NULL)                           CHECK char_length(title) BETWEEN 1 AND 120
 - body: text (NOT NULL)                            CHECK char_length(body) <= 500
-- link: text (NULL)                                ruta interna de la app, p. ej. /cobros/<id>; CHECK link ~ '^/[^/]'
+- link: text (NULL)                                ruta interna de la app, p. ej. /cobros/<id>; CHECK link ~ '^(/[A-Za-z0-9_-]+)+$' (0075: el '^/[^/]' de 0070 dejaba pasar '/\evil.example', que el navegador abre como //evil.example)
 - entity_type: text (NULL), entity_id: uuid (NULL) para cancelar avisos pendientes de un cobro o grupo (RN-005-02)
 - dedupe_key: text (NOT NULL)                      UNIQUE: tipo + entidad + período + n.º de recordatorio (RNF-005-01)
 - read_at: timestamptz (NULL)
@@ -120,4 +120,5 @@ El límite de 10 invitaciones por hora por titular usa `rate_limit_events` (spec
 | Un envío `sent`, `failed` o `skipped` no vuelve a `pending` | RNF-005-01 |
 | 5 intentos fallan | RF-005-20 |
 | `link` que no empiece con `/` falla (evita enlaces externos) | RNF-005-02 |
+| `link` con barra invertida (`/\evil.example`), `%`, `:`, espacios o segmentos vacíos falla; `/grupos`, `/cupos`, `/cobros/<id>`, `/grupos/<id>` y `/solicitudes/<id>` pasan | RNF-005-02 |
 | Una fila de preferencias por usuario | RF-005-17 |
