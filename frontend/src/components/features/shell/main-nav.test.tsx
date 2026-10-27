@@ -30,7 +30,7 @@ describe('MainNav (QA-02)', () => {
     expect(button).toHaveAttribute('aria-expanded', 'true');
     const nav = screen.getByRole('navigation', { name: 'Principal' });
     const hrefs = Array.from(nav.querySelectorAll('a')).map((a) => a.getAttribute('href'));
-    expect(hrefs).toEqual(['/panel', '/cobros', '/cupos', '/perfil', '/ajustes/avisos']);
+    expect(hrefs).toEqual(['/grupos', '/panel', '/cobros', '/cupos', '/perfil', '/ajustes/avisos']);
     expect(screen.queryByRole('link', { name: 'Administración' })).not.toBeInTheDocument();
   });
 
@@ -51,6 +51,17 @@ describe('MainNav (QA-02)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Menú' }));
     expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Panel' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('marca «Mis suscripciones» como activa en /grupos/[id]', async () => {
+    pathname = '/grupos/g1';
+    render(<MainNav />);
+    await userEvent.click(screen.getByRole('button', { name: 'Menú' }));
+    expect(screen.getByRole('link', { name: 'Mis suscripciones' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(screen.getAllByRole('link')[0]).toHaveTextContent('Mis suscripciones');
   });
 
   it('Escape cierra el menú y devuelve el foco al botón', async () => {
