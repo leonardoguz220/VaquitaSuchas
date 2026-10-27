@@ -266,7 +266,13 @@ function DashboardContent({
       <ChargeLinesSection list="in_review" />
       {data.owed && <ChargeLinesSection list="owed" />}
 
-      <DashboardCharts filters={filters} month={data.month} />
+      <DashboardCharts
+        filters={filters}
+        month={data.month}
+        groupNames={Object.fromEntries(
+          data.spend.lines.map((line) => [line.groupId, line.groupName]),
+        )}
+      />
     </>
   );
 }

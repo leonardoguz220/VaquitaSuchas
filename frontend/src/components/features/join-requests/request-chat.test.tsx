@@ -105,6 +105,13 @@ describe('RequestChat (spec 010 T034): estados', () => {
     expect(await screen.findByText(/Todavía no hay mensajes\. Saluda/)).toBeVisible();
   });
 
+  it('QA-08: el campo de mensaje tiene ancho mínimo y la fila se parte en vez de aplastarlo', async () => {
+    renderChat();
+    const textarea = await screen.findByRole('textbox', { name: /Mensaje para/ });
+    expect(textarea).toHaveClass('min-w-40', 'flex-1');
+    expect(textarea.parentElement).toHaveClass('flex-wrap');
+  });
+
   it('RF-010-05: con un error muestra Reintentar y vuelve a cargar', async () => {
     mockedList.mockRejectedValueOnce(new ApiError(503, 'SERVICE_UNAVAILABLE', 'x'));
     const actor = renderChat();

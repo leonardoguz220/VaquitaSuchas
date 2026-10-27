@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui';
 import { useCountdown } from '@/hooks/use-countdown';
-import { formatDateLaPaz, formatDateTimeLaPaz, formatRemaining } from '@/lib/dates';
+import { formatDateTimeLaPaz, formatDueDateLaPaz, formatRemaining } from '@/lib/dates';
 import type { Charge } from '@/services/charges';
 
 function Countdown({ dueAt }: { dueAt: string }) {
@@ -34,7 +34,7 @@ function settledText(charge: Charge): string | null {
  * El reloj solo informa: llegar a 0 no cambia el estado, eso lo decide el servidor.
  */
 export function ChargeDue({ charge }: { charge: Charge }) {
-  const due = formatDateTimeLaPaz(charge.dueAt);
+  const due = formatDueDateLaPaz(charge.dueAt);
   return (
     <Card as="section" aria-labelledby="charge-due" className="flex flex-col gap-2">
       <h2 id="charge-due" className="font-display text-xl font-bold">
@@ -66,7 +66,7 @@ export function ChargeDue({ charge }: { charge: Charge }) {
       )}
       {charge.status === 'cancelado' && (
         <>
-          <p className="font-bold">{`Cancelado · vencía el ${formatDateLaPaz(charge.dueAt)}`}</p>
+          <p className="font-bold">{`Cancelado · vencía el ${formatDueDateLaPaz(charge.dueAt)}`}</p>
           {charge.cancelReason && (
             <p className="text-[15px] break-words">{`Motivo: ${charge.cancelReason}`}</p>
           )}

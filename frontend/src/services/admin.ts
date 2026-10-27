@@ -104,7 +104,7 @@ export interface AdminStats {
     /** Monto administrado en centavos. */
     managedCents: number;
   };
-  /** Proporción de 0 a 1; `null` si el período aún no tiene cobros que medir. */
+  /** Porcentaje entero de 0 a 100; `null` si el período aún no tiene cobros que medir. */
   punctualityRate: number | null;
   topServices: { name: string; groups: number }[];
   listings: { active: number };

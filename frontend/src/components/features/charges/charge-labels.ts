@@ -1,4 +1,4 @@
-import { formatDateLaPaz } from '@/lib/dates';
+import { formatDateLaPaz, formatDueDateLaPaz } from '@/lib/dates';
 import type { Charge, ChargeEventType, ChargeStatus, MyCharge } from '@/services/charges';
 
 export const CHARGES_PATH = '/cobros';
@@ -46,11 +46,11 @@ export function dueLine(charge: Pick<Charge, 'status' | 'origin' | 'dueAt' | 'pa
       if (charge.origin === 'ingreso') return 'Pago de ingreso';
       return charge.paidAt ? `Pagado el ${formatDateLaPaz(charge.paidAt)}` : 'Pagado';
     case 'atrasado':
-      return `Venció el ${formatDateLaPaz(charge.dueAt)}`;
+      return `Venció el ${formatDueDateLaPaz(charge.dueAt)}`;
     case 'cancelado':
-      return `Cancelado · vencía el ${formatDateLaPaz(charge.dueAt)}`;
+      return `Cancelado · vencía el ${formatDueDateLaPaz(charge.dueAt)}`;
     default:
-      return `Vence el ${formatDateLaPaz(charge.dueAt)}`;
+      return `Vence el ${formatDueDateLaPaz(charge.dueAt)}`;
   }
 }
 

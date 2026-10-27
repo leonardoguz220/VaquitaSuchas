@@ -10,7 +10,7 @@ export interface ListingOwnerPreviewProps {
   ownerName: string;
   billingDay: number;
   values: ListingFormValues;
-  /** Cuota estimada que entregó la API; `null` si todavía no hay publicación. */
+  /** Cuota estimada que entregó la API; `null` si todavía no hay publicación (no se muestra la línea). */
   estimatedShareCents: number | null;
   /** Fin de la publicación que entregó la API; `null` si todavía no hay publicación. */
   expiresAt: string | null;
@@ -47,13 +47,12 @@ export function ListingOwnerPreview({
           {Number.isInteger(slots) && slots > 0 ? slotsText(slots) : 'Cupos por definir'} ·{' '}
           {billingDayText(billingDay)}
         </p>
-        <p className="text-[15px]">
-          Cuota{' '}
-          <span className="font-bold">
-            {estimatedShareCents === null ? 'al publicar' : formatBs(estimatedShareCents)}
-          </span>{' '}
-          <span className="text-muted">estimada</span>
-        </p>
+        {estimatedShareCents !== null && (
+          <p className="text-[15px]">
+            Cuota <span className="font-bold">{formatBs(estimatedShareCents)}</span>{' '}
+            <span className="text-muted">estimada</span>
+          </p>
+        )}
         <p className="text-[15px] text-muted">Titular: {ownerName}</p>
         {description && <p className="text-[15px] whitespace-pre-line">{description}</p>}
         {conditions && <p className="text-[15px] whitespace-pre-line text-muted">{conditions}</p>}

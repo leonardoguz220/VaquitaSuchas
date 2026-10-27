@@ -14,7 +14,14 @@ const REASONS: ListingReportReason[] = ['spam', 'datos_falsos', 'conducta_indebi
  * opcional de hasta 300 caracteres. Al enviar con éxito, cierra el modal y deja el aviso. El
  * servidor valida el motivo, el largo y las reglas; aquí solo se ayuda a la persona.
  */
-export function ListingReportPanel({ listingId }: { listingId: string }) {
+export function ListingReportPanel({
+  listingId,
+  hideSent = false,
+}: {
+  listingId: string;
+  /** Oculta el aviso de «Reporte enviado» mientras la persona hace otra acción en la pantalla. */
+  hideSent?: boolean;
+}) {
   const formId = useId();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<ListingReportReason | ''>('');
@@ -60,9 +67,11 @@ export function ListingReportPanel({ listingId }: { listingId: string }) {
   return (
     <div className="flex flex-col gap-4 border-t border-line pt-6">
       {sent ? (
-        <Alert variant="success" title={REPORT_MESSAGES.sentTitle}>
-          {REPORT_MESSAGES.sentBody}
-        </Alert>
+        hideSent ? null : (
+          <Alert variant="success" title={REPORT_MESSAGES.sentTitle}>
+            {REPORT_MESSAGES.sentBody}
+          </Alert>
+        )
       ) : (
         <Button variant="secondary" onClick={openModal} className="self-start">
           {REPORT_MESSAGES.report}
