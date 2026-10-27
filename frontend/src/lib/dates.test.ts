@@ -1,6 +1,7 @@
 import {
   formatCalendarDayLaPaz,
   formatDateLaPaz,
+  formatDueDateLaPaz,
   formatDateTimeLaPaz,
   formatPeriod,
   formatClock,
@@ -58,6 +59,13 @@ describe('formatDateTimeLaPaz (RF-000-17)', () => {
     expect(() => formatDateTimeLaPaz('')).toThrow(RangeError);
     expect(() => formatDateTimeLaPaz('2026-13-01T00:00:00Z')).toThrow(RangeError);
     expect(() => formatDateTimeLaPaz(new Date(Number.NaN))).toThrow(RangeError);
+  });
+});
+
+describe('formatDueDateLaPaz', () => {
+  it('QA-05: dueAt es el fin del día de vencimiento, así que muestra ese día sin hora', () => {
+    expect(formatDueDateLaPaz('2026-10-09T04:00:00.000Z')).toBe('8 oct 2026');
+    expect(formatDueDateLaPaz('2026-03-01T04:00:00Z')).toBe('28 feb 2026');
   });
 });
 

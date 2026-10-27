@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiError } from '@/services/http';
-import { getListing, type ListingView } from '@/services/listings';
+import { getListing, reportListing, type ListingView } from '@/services/listings';
 import { ListingDetailView } from './listing-detail-view';
 
 jest.mock('next/navigation', () => ({
@@ -11,6 +11,7 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/services/listings', () => ({
   ...jest.requireActual('@/services/listings'),
   getListing: jest.fn(),
+  reportListing: jest.fn(),
 }));
 
 const mockedGet = jest.mocked(getListing);
@@ -42,7 +43,10 @@ function listing(overrides: Partial<ListingView> = {}): ListingView {
   };
 }
 
-beforeEach(() => mockedGet.mockReset());
+beforeEach(() => {
+  mockedGet.mockReset();
+  jest.mocked(reportListing).mockReset();
+});
 
 describe('/cupos/[id] detalle de un cupo (spec 008 T015)', () => {
   it('RF-008-07: mientras carga muestra el esqueleto', () => {
@@ -108,6 +112,21 @@ describe('/cupos/[id] detalle de un cupo (spec 008 T015)', () => {
     await screen.findByRole('heading', { level: 1 });
     expect(screen.getByRole('button', { name: 'Solicitar' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Reportar' })).toBeEnabled();
+  });
+
+  it('QA-10: al pedir el cupo después de reportar ya no queda el aviso «Reporte enviado»', async () => {
+    mockedGet.mockResolvedValue(listing());
+    jest.mocked(reportListing).mockResolvedValue(undefined as never);
+    render(<ListingDetailView listingId="l1" />);
+    await screen.findByRole('heading', { level: 1 });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Reportar' }));
+    await userEvent.selectOptions(screen.getByLabelText('Motivo'), 'spam');
+    await userEvent.click(screen.getByRole('button', { name: 'Enviar reporte' }));
+    expect(await screen.findByText('Reporte enviado')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Solicitar' }));
+    expect(screen.queryByText('Reporte enviado')).not.toBeInTheDocument();
   });
 
   it('RF-008-07: un 404 muestra que la publicación ya no existe, con volver a la lista', async () => {

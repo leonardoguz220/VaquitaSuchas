@@ -279,7 +279,7 @@ export function RequestChat({ request, meId, onStale }: RequestChatProps) {
           )}
           {imageError && <FieldError id={imageErrorId}>{imageError}</FieldError>}
           {formError && <Alert variant="error">{formError}</Alert>}
-          <div className="flex items-end gap-2">
+          <div className="flex flex-wrap items-end gap-2">
             <input
               id={imageInputId}
               type="file"
@@ -309,7 +309,7 @@ export function RequestChat({ request, meId, onStale }: RequestChatProps) {
               placeholder={`Mensaje para ${otherFirst}`}
               onChange={(event) => setText(event.target.value)}
               onKeyDown={handleKeyDown}
-              className="min-h-12 flex-1 resize-none rounded-field border-[1.5px] border-field-border bg-surface px-3 py-2.5 text-body focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary"
+              className="min-h-12 min-w-40 flex-1 resize-none rounded-field border-[1.5px] border-field-border bg-surface px-3 py-2.5 text-body focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-primary"
             />
             <Button type="submit" loading={chat.isSending}>
               Enviar

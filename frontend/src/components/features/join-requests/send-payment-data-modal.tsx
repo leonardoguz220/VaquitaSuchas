@@ -125,7 +125,10 @@ export function SendPaymentDataModal({
                 name="payment-source"
                 value={item.value}
                 checked={source === item.value}
-                onChange={() => setSource(item.value)}
+                onChange={() => {
+                  setSource(item.value);
+                  setFormError(null);
+                }}
                 className="mt-1 size-4 accent-primary"
               />
               <span className="flex flex-col">

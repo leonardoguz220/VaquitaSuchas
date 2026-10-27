@@ -50,6 +50,20 @@ describe('AdminUsersView (spec 009 T017)', () => {
     expect(cards[0]).toHaveAttribute('href', '/admin/usuarios/u-kevin');
   });
 
+  it('QA-04: no muestra «Celular —» cuando el listado no trae el celular', async () => {
+    listMock.mockResolvedValue({
+      items: [{ ...rows[0]!, phone: undefined }, rows[1]!],
+      nextCursor: null,
+    });
+    render(<AdminUsersView />);
+
+    const cards = within(
+      await screen.findByRole('list', { name: 'Lista de usuarios' }),
+    ).getAllByRole('link');
+    expect(within(cards[0]!).queryByText('Celular')).not.toBeInTheDocument();
+    expect(within(cards[1]!).getByText('+59177001122')).toBeInTheDocument();
+  });
+
   it('CA-009-07: sin resultados muestra un mensaje de lista vacía', async () => {
     listMock.mockResolvedValue({ items: [], nextCursor: null });
     render(<AdminUsersView />);

@@ -4,6 +4,9 @@ import { SessionBar } from './session-bar';
 
 let pathname = '/grupos';
 jest.mock('next/navigation', () => ({ usePathname: () => pathname }));
+jest.mock('@/hooks/use-me', () => ({
+  useMe: () => ({ status: 'success', user: { role: 'usuario' }, error: null }),
+}));
 jest.mock('@/services/notifications', () => ({
   ...jest.requireActual('@/services/notifications'),
   getUnreadCount: jest.fn(),
@@ -22,6 +25,13 @@ describe('SessionBar (spec 005 T012)', () => {
     render(<SessionBar />);
     expect(screen.getByRole('banner')).toBeVisible();
     expect(await screen.findByRole('button', { name: /3/ })).toBeVisible();
+  });
+
+  it('QA-02: incluye el menú de navegación principal junto a Solicitudes y la campana', () => {
+    pathname = '/grupos';
+    render(<SessionBar />);
+    expect(screen.getByRole('button', { name: 'Menú' })).toBeVisible();
+    expect(screen.getByRole('link', { name: /Solicitudes/ })).toBeVisible();
   });
 
   it.each(['/', '/ingresar', '/registro/verificar', '/avisos/desactivar'])(

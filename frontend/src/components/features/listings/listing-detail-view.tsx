@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { ServiceLogo } from '@/components/features/catalog/ServiceLogo';
 import { RatingBadge } from '@/components/features/reputation/rating-badge';
 import { Alert, Badge, Button } from '@/components/ui';
@@ -68,6 +69,7 @@ function ListingDetail({ listing }: { listing: ListingView }) {
   const { service, owner, slotsOffered, estimatedShareCents, estimatedShareLabel, billingDay } =
     listing;
   const windowInfo = windowStatus(listing.entryWindow);
+  const [requesting, setRequesting] = useState(false);
 
   return (
     <article
@@ -128,8 +130,8 @@ function ListingDetail({ listing }: { listing: ListingView }) {
         text={listing.conditions}
         empty={LISTING_MESSAGES.noConditions}
       />
-      <ListingRequestPanel listing={listing} />
-      <ListingReportPanel listingId={listing.id} />
+      <ListingRequestPanel listing={listing} onActivity={() => setRequesting(true)} />
+      <ListingReportPanel listingId={listing.id} hideSent={requesting} />
     </article>
   );
 }

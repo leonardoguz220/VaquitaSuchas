@@ -75,6 +75,15 @@ export function formatDateLaPaz(iso: string | Date): string {
 }
 
 /**
+ * Día de vencimiento de un cobro a partir de su `dueAt`, que la API entrega como el fin de ese
+ * día (00:00 del día siguiente en La Paz): `formatDueDateLaPaz('2026-10-09T04:00:00Z')` →
+ * `8 oct 2026`, el mismo día que `dueDate` en el panel y el calendario. No muestra la hora.
+ */
+export function formatDueDateLaPaz(dueAt: string | Date): string {
+  return formatDateLaPaz(new Date(new Date(dueAt).getTime() - 1));
+}
+
+/**
  * Día calendario en La Paz como `YYYY-MM-DD`: `lapazDayOf('2026-03-01T02:00:00Z')` → `2026-02-28`.
  * Sirve para agrupar o comparar por día; no calcula vencimientos (eso lo hace el backend).
  * Lanza `RangeError` si la fecha es inválida.

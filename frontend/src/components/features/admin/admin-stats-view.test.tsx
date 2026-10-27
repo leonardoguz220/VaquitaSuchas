@@ -21,7 +21,7 @@ const stats: AdminStats = {
     byStatus: { pendiente: 14, en_revision: 9, pagado: 61, atrasado: 3, cancelado: 2 },
     managedCents: 1842500,
   },
-  punctualityRate: 0.93,
+  punctualityRate: 93,
   topServices: [{ name: 'Netflix', groups: 7 }],
   listings: { active: 5 },
   joinRequestsThisMonth: 31,
@@ -45,6 +45,14 @@ describe('AdminStatsView (spec 009 T035)', () => {
     expect(fila).not.toBeNull();
     expect(within(fila as HTMLElement).getByText('61')).toBeInTheDocument();
     expect(within(tabla).getByText('! Atrasados')).toBeInTheDocument();
+  });
+
+  it('QA-01: la puntualidad llega como porcentaje entero y se muestra sin multiplicarla', async () => {
+    statsMock.mockResolvedValue({ ...stats, punctualityRate: 86 });
+    render(<AdminStatsView />);
+
+    expect(await screen.findByText('86 %')).toBeInTheDocument();
+    expect(screen.queryByText('8600 %')).not.toBeInTheDocument();
   });
 
   it('CA-009-16: al fallar la carga ofrece Reintentar', async () => {

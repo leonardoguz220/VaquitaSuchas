@@ -72,7 +72,8 @@ export function PaymentInfoCard({ request, viewer }: PaymentInfoCardProps) {
             <span className="text-[15px] text-muted">Cuota fijada al enviar los datos</span>
             <span className="font-display text-3xl font-bold">{formatBs(quote.amountCents)}</span>
             <span className="text-[15px] text-muted">
-              {formatBs(quote.totalBsCents)} del mes entre {quote.memberCount} miembros
+              {formatBs(quote.totalBsCents)} del mes entre {quote.memberCount}{' '}
+              {quote.memberCount === 1 ? 'miembro' : 'miembros'}
               {viewer === 'solicitante' ? ', contándote' : ''}
             </span>
           </div>

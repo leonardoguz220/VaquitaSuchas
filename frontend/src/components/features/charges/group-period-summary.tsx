@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Card, Select } from '@/components/ui';
-import { formatCalendarDayLaPaz, formatDateLaPaz, formatPeriod } from '@/lib/dates';
+import { formatCalendarDayLaPaz, formatDueDateLaPaz, formatPeriod } from '@/lib/dates';
 import { formatBs } from '@/lib/money';
 import type { BillingSummary } from '@/services/charges';
 import { ChargeRowContent } from './group-charge-parts';
@@ -79,7 +79,7 @@ export function PeriodSummaryView({
       <Card as="div" className="flex flex-col gap-3">
         <dl aria-label="Datos del ciclo" className="flex flex-col gap-2 text-[15px]">
           <Fact term="Fecha de corte" value={formatCalendarDayLaPaz(summary.cutDate)} />
-          <Fact term="Vence el" value={formatDateLaPaz(summary.dueAt)} />
+          <Fact term="Vence el" value={formatDueDateLaPaz(summary.dueAt)} />
           <Fact term="Total del mes" value={formatBs(summary.totalBsCents)} />
           <Fact term="Cuota por miembro" value={formatBs(summary.baseShareCents)} />
           <Fact term="Cuota del titular (referencia)" value={formatBs(summary.ownerShareCents)} />
