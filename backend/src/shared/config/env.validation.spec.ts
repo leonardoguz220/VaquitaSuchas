@@ -31,6 +31,7 @@ function prodEnv(): RawEnv {
     MAIL_FROM: 'Vaquita <no-reply@vaquita.test>',
     TELEGRAM_BOT_TOKEN: 'telegram-test-token',
     TELEGRAM_WEBHOOK_SECRET: 'telegram-test-secret',
+    TELEGRAM_BOT_USERNAME: 'VaquitaTestBot',
     SUPABASE_URL: 'https://example.supabase.co',
     SUPABASE_SERVICE_KEY: 'supabase-test-key',
     SUPABASE_BUCKET: 'receipts',
@@ -171,6 +172,7 @@ describe('validateEnv', () => {
 
       expect(message).toContain('TELEGRAM_BOT_TOKEN');
       expect(message).toContain('TELEGRAM_WEBHOOK_SECRET');
+      expect(message).toContain('TELEGRAM_BOT_USERNAME');
       expect(message).not.toContain('RESEND_API_KEY');
     });
 
@@ -189,6 +191,7 @@ describe('validateEnv', () => {
         'MAIL_FROM',
         'TELEGRAM_BOT_TOKEN',
         'TELEGRAM_WEBHOOK_SECRET',
+        'TELEGRAM_BOT_USERNAME',
         'SUPABASE_URL',
         'SUPABASE_SERVICE_KEY',
         'SUPABASE_BUCKET',
