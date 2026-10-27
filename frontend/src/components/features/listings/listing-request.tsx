@@ -49,7 +49,14 @@ function blockedCause(listing: ListingView): Cause {
  * con mensaje opcional de hasta 200 caracteres. Si no, el botón va desactivado (`disabled`) con la
  * causa debajo. El contador y el largo son solo ayuda: el servidor valida el mensaje.
  */
-export function ListingRequestPanel({ listing }: { listing: ListingView }) {
+export function ListingRequestPanel({
+  listing,
+  onActivity,
+}: {
+  listing: ListingView;
+  /** Se llama al abrir el formulario y al enviar la solicitud (la pantalla limpia otros avisos). */
+  onActivity?: () => void;
+}) {
   const headingId = useId();
   const causeId = useId();
   const [formOpen, setFormOpen] = useState(false);
@@ -66,6 +73,7 @@ export function ListingRequestPanel({ listing }: { listing: ListingView }) {
     if (!outcome) return;
     if (outcome.ok) {
       setSent(outcome.data);
+      onActivity?.();
       setErrorText(null);
     } else {
       setErrorText(requestErrorText(outcome.error));
@@ -136,7 +144,13 @@ export function ListingRequestPanel({ listing }: { listing: ListingView }) {
         <h2 id={headingId} className="text-lg font-bold">
           {REQUEST_MESSAGES.request}
         </h2>
-        <Button onClick={() => setFormOpen(true)} className="self-start">
+        <Button
+          onClick={() => {
+            setFormOpen(true);
+            onActivity?.();
+          }}
+          className="self-start"
+        >
           {REQUEST_MESSAGES.request}
         </Button>
       </section>

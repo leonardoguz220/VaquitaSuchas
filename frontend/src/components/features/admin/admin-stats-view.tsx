@@ -123,9 +123,7 @@ function StatsContent({ stats }: { stats: AdminStats }) {
           <p className="text-sm text-muted">
             Cobros pagados a tiempo:{' '}
             <strong className="text-ink">
-              {stats.punctualityRate === null
-                ? '—'
-                : `${Math.round(stats.punctualityRate * 100)} %`}
+              {stats.punctualityRate === null ? '—' : `${stats.punctualityRate} %`}
             </strong>
           </p>
         </section>

@@ -6,11 +6,12 @@ import { Logo } from '@/components/features/brand/logo';
 import { RequestsNavLink } from '@/components/features/join-requests/requests-nav-link';
 import { NotificationBell } from '@/components/features/notifications/notification-bell';
 import { isPublicPath } from '@/lib/routes';
+import { MainNav } from './main-nav';
 
 /**
  * Barra superior de las pantallas con sesión: logo que lleva al inicio y la campana de
- * notificaciones (spec 005 T012). En las rutas públicas y en `/` (que solo redirige) no se
- * muestra, para no pedir avisos sin sesión. La navegación principal se suma aquí más adelante.
+ * notificaciones (spec 005 T012), más el menú de navegación principal. En las rutas públicas y en
+ * `/` (que solo redirige) no se muestra, para no pedir avisos sin sesión.
  */
 export function SessionBar() {
   const pathname = usePathname() ?? '/';
@@ -28,6 +29,7 @@ export function SessionBar() {
         <div className="flex items-center gap-1">
           <RequestsNavLink />
           <NotificationBell />
+          <MainNav />
         </div>
       </div>
     </header>

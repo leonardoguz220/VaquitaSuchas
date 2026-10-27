@@ -410,7 +410,7 @@ export function getStats(): Promise<AdminStats> {
       byStatus: { pendiente: 14, en_revision: 9, pagado: 61, atrasado: 3, cancelado: 2 },
       managedCents: 1842500,
     },
-    punctualityRate: 0.93,
+    punctualityRate: 93,
     topServices: [
       { name: 'Netflix', groups: 7 },
       { name: 'Spotify Familiar', groups: 5 },

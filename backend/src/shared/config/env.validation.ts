@@ -65,6 +65,7 @@ const REQUIRED_WHEN: Readonly<Record<string, string>> = {
   MAIL_FROM: 'MAIL_MODE=prod',
   TELEGRAM_BOT_TOKEN: 'TELEGRAM_MODE=prod',
   TELEGRAM_WEBHOOK_SECRET: 'TELEGRAM_MODE=prod',
+  TELEGRAM_BOT_USERNAME: 'TELEGRAM_MODE=prod',
   SUPABASE_URL: 'STORAGE_DRIVER=supabase',
   SUPABASE_SERVICE_KEY: 'STORAGE_DRIVER=supabase',
   SUPABASE_BUCKET: 'STORAGE_DRIVER=supabase',
@@ -177,6 +178,12 @@ export class EnvVars {
   @IsString()
   @IsNotEmpty()
   TELEGRAM_WEBHOOK_SECRET?: string;
+
+  @Transform(blankToUndefined)
+  @ValidateIf(isTelegramProd)
+  @IsString()
+  @IsNotEmpty()
+  TELEGRAM_BOT_USERNAME?: string;
 
   // --- Solo STORAGE_DRIVER=supabase ---
   @Transform(blankToUndefined)

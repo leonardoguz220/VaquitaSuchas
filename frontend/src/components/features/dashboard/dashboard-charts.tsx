@@ -139,8 +139,37 @@ function DataTable({
   );
 }
 
-function ChartsContent({ data, month }: { data: ChartsData; month: string }) {
+/**
+ * Si dos suscripciones comparten el nombre del servicio, añade el nombre del grupo para poder
+ * distinguirlas en «Gasto por servicio». Los nombres de grupo vienen del resto del panel.
+ */
+export function labelServicesByGroup(
+  byService: ChartsData['byService'],
+  groupNames: Record<string, string>,
+): ChartsData['byService'] {
+  const counts = new Map<string, number>();
+  for (const item of byService) {
+    counts.set(item.serviceName, (counts.get(item.serviceName) ?? 0) + 1);
+  }
+  return byService.map((item) => {
+    const groupName = groupNames[item.groupId];
+    return (counts.get(item.serviceName) ?? 0) > 1 && groupName
+      ? { ...item, serviceName: `${item.serviceName} · ${groupName}` }
+      : item;
+  });
+}
+
+function ChartsContent({
+  data,
+  month,
+  groupNames,
+}: {
+  data: ChartsData;
+  month: string;
+  groupNames: Record<string, string>;
+}) {
   const monthName = formatPeriod(month);
+  const byService = labelServicesByGroup(data.byService, groupNames);
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <div className="lg:col-span-2">
@@ -168,13 +197,13 @@ function ChartsContent({ data, month }: { data: ChartsData; month: string }) {
       <ChartCard
         title="Gasto por servicio"
         description={`Lo que gastas en cada servicio en ${monthName}.`}
-        empty={data.byService.length === 0 ? `No hay gasto en ${monthName}.` : null}
-        chart={<ServiceSpendChart data={data.byService} />}
+        empty={byService.length === 0 ? `No hay gasto en ${monthName}.` : null}
+        chart={<ServiceSpendChart data={byService} />}
         table={
           <DataTable
             caption={`Gasto por servicio en ${monthName}`}
             headers={['Servicio', 'Gasto']}
-            rows={data.byService.map((item) => ({
+            rows={byService.map((item) => ({
               key: item.groupId,
               cells: [item.serviceName, formatBs(item.costCents)],
             }))}
@@ -212,7 +241,16 @@ function ChartsContent({ data, month }: { data: ChartsData; month: string }) {
  * servicio y ahorro acumulado, cada uno con «Ver tabla». Usa el mismo mes y suscripción que el
  * resto del panel. Cubre cargando, error, vacío y con datos.
  */
-export function DashboardCharts({ filters, month }: { filters: DashboardFilters; month: string }) {
+export function DashboardCharts({
+  filters,
+  month,
+  groupNames = {},
+}: {
+  filters: DashboardFilters;
+  month: string;
+  /** Nombre de cada grupo por id, para distinguir servicios repetidos en «Gasto por servicio». */
+  groupNames?: Record<string, string>;
+}) {
   const { status, data, error, reload } = useDashboardCharts(filters);
   return (
     <section aria-labelledby="charts-title" className="flex flex-col gap-3">
@@ -233,7 +271,9 @@ export function DashboardCharts({ filters, month }: { filters: DashboardFilters;
           {dashboardErrorMessage(error)}
         </Alert>
       )}
-      {status === 'success' && data && <ChartsContent data={data} month={month} />}
+      {status === 'success' && data && (
+        <ChartsContent data={data} month={month} groupNames={groupNames} />
+      )}
     </section>
   );
 }
