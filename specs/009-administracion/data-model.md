@@ -118,3 +118,13 @@ UNIQUE INDEX user_suspensions_open_uq (user_id) WHERE reactivated_at IS NULL
 | `UPDATE` y `DELETE` en `admin_audit_log` fallan; `action` fuera de la lista falla | CA-009-19 |
 | Dos habilitaciones manuales vigentes del mismo usuario fallan | RF-009-21 |
 | Una suspensión abierta por usuario; reactivar permite otra | RF-009-10 |
+
+## 4. Revisión QA de la base (2026-10-27, `0096_admin_history_integrity.sql`)
+
+| Regla nueva | Qué impone | Bug |
+|---|---|---|
+| `users_admin_not_banned` (en `users`, antes de `UPDATE OF role`) | No se promueve a `admin` a alguien con baneo o suspensión vigente. | BUG-009 |
+| `user_suspensions_immutable_fields` y `host_enablements_immutable_fields` (antes de `UPDATE`) | Como en `bans`: solo se fija el cierre (`reactivated_*` / `revoked_*`) y una vez; después no cambian. | BUG-011 |
+| `bans_revoked_after_banned_check`, `host_enablements_revoked_after_enabled_check`, `user_suspensions_reactivated_after_suspended_check` | El cierre no es anterior al inicio (un minuto de tolerancia por el reloj del backend, como `charges_paid_at_check`). | BUG-017 |
+
+Pendientes, sin migración (requieren acuerdo con backend): borrar al último administrador con `DELETE` (BUG-010; las pruebas del backend limpian con `DELETE FROM users`) y la coherencia de `users.status` con `bans` y `user_suspensions` (BUG-012).
