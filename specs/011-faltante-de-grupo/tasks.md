@@ -31,7 +31,7 @@
 - [x] T013 [FE] `services/shortfalls.ts` + test (una función por endpoint) — Depende: contrato
 - [x] T014 [FE] `components/features/shortfalls/*` y ruta `/grupos/[id]/faltante`: cotización y aviso del titular, respuesta del miembro, pago adicional y devolución, estados de carga, vacío y error — Depende: T013
 - [x] T015 [FE] Enlace «Ver faltante» en el resumen del grupo — Depende: T014
-- [ ] T016 [FE] Test E2E (Playwright) del flujo feliz — Depende: T014
+- [x] T016 [FE] Test E2E (Playwright) del flujo feliz — Depende: T014
 
 ## Cierre
 
