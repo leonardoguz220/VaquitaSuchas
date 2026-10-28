@@ -292,6 +292,38 @@ test('RNF-005-02: un link interno o NULL pasa', async () => {
   await insertNotification({ ...defaultNotification(userId), link: null });
 });
 
+// El navegador lee «\» como «/»: «/\evil.example» abre //evil.example (enlace a otro sitio).
+test('RNF-005-02: un link con barra invertida, segmentos vacíos u otros caracteres falla', async () => {
+  const userId = await newUserId();
+  for (const link of [
+    '/\\evil.example/login',
+    '/\\\\evil.example',
+    '/%5Cevil.example',
+    '/cobros//x',
+    '/cobros/a b',
+    '/cobros:443',
+    '/',
+  ]) {
+    await rejectsWith(insertNotification({ ...defaultNotification(userId), link }), {
+      code: CHECK_VIOLATION,
+      constraint: 'notifications_link_check',
+    });
+  }
+});
+
+test('RNF-005-02: las rutas que arma el backend pasan', async () => {
+  const userId = await newUserId();
+  for (const link of [
+    '/grupos',
+    '/cupos',
+    `/cobros/${randomUUID()}`,
+    `/grupos/${randomUUID()}`,
+    `/solicitudes/${randomUUID()}`,
+  ]) {
+    await insertNotification({ ...defaultNotification(userId), link });
+  }
+});
+
 // ---------------------------------------------------------------- category, title, body
 
 test('RF-005-17: category fuera de los cuatro valores falla', async () => {

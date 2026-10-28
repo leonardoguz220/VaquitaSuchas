@@ -56,7 +56,10 @@ describe('Avisos programados (spec 005)', () => {
       [chargeId, owner.id],
     );
   const putInReview = async (chargeId: string, uploadedAt: string): Promise<void> => {
-    await t.db.query(`UPDATE charges SET status = 'en_revision' WHERE id = $1`, [chargeId]);
+    await t.db.query(
+      `UPDATE charges SET status = 'en_revision', first_submitted_at = $2 WHERE id = $1`,
+      [chargeId, uploadedAt],
+    );
     await t.db.query(
       `INSERT INTO receipts (charge_id, uploaded_by, uploaded_at, file_key, mime, size_bytes, method, reference)
        VALUES ($1, $2, $3, 'k/' || gen_random_uuid()::text, 'image/png', 10, 'qr', 'ref1')`,

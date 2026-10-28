@@ -96,6 +96,7 @@ Una **transferencia de titularidad** no cierra filas: se cambia el `role` de las
 | `groups_max_active_owned` (antes de `INSERT` o de `UPDATE OF status, owner_id`) | Con `pg_advisory_xact_lock(hashtext(owner_id::text))`: un titular no pasa de 5 grupos con `status = 'activo'`. | RN-001-14, CA-001-28 |
 | `groups_immutable_snapshots` (antes de `UPDATE`) | Las columnas `*_snapshot` y `catalog_plan_id` no cambian después de crear (se comparan solo esas columnas, no la generada `total_bs_cents`). | RN-001-12 |
 | `groups_closed_readonly` (antes de `UPDATE`) | Un grupo `cerrado` no admite cambios salvo `updated_at`, `frozen_at` y `frozen_reason` (el baneo del titular puede congelar un grupo cerrado, spec 009). | RN-001-07, CA-001-16 |
+| `group_members_identity_immutable` (antes de `UPDATE`, `0033_group_members_identity_immutable.sql`) | Una estadía no cambia de grupo ni de persona: `group_id`, `user_id`, `join_source`, `join_request_id`, `joined_at` y `created_at` son fijos; solo cambian `role`, `left_at`, `left_reason` y `updated_at`. Sin esto, un `UPDATE` de `group_id` saltaba la capacidad y el grupo cerrado, que se controlan al insertar. | RN-001-05, RN-001-09, CA-001-07, CA-001-16 |
 
 El backend repite las validaciones para dar mensajes claros; la base garantiza que una carrera entre dos peticiones no rompa la regla.
 
@@ -127,4 +128,5 @@ El backend repite las validaciones para dar mensajes claros; la base garantiza q
 | `total_slots` mayor al `plan_max_slots_snapshot` falla | RN-001-13 |
 | Insertar un miembro en un grupo `cerrado` o congelado falla; congelar un grupo cerrado pasa | CA-001-16, RF-009-22 |
 | Reabrir una estadía (`left_at` a NULL) o cambiar su `left_reason` falla | RN-001-05 |
+| Mover una estadía a un grupo lleno o cerrado con `UPDATE` de `group_id`, o cambiar `user_id`, `join_source`, `join_request_id` o `joined_at`, falla | CA-001-07, CA-001-16, RN-001-05 |
 | `group_members` tiene `created_at`/`updated_at` con `set_updated_at` | convención spec 000 |

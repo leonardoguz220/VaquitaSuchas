@@ -62,7 +62,8 @@ export async function seedRequest(
   if (state === 'rechazada') {
     await harness.pool.query(
       `UPDATE join_requests SET status = 'rechazada', final_at = $2, final_reason = 'rechazo_titular',
-              reject_reason = 'Sin cupo para ti', version = version + 1 WHERE id = $1`,
+              reject_reason = 'Sin cupo para ti',
+              decided_by = (SELECT owner_id FROM groups WHERE id = join_requests.group_id), version = version + 1 WHERE id = $1`,
       [id, openedAt],
     );
     return id;

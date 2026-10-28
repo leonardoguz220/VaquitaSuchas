@@ -125,6 +125,7 @@ async function withRunner(
   tool: string,
 ): Promise<BackupRunner> {
   if (choice === 'docker') {
+    await assertDockerTarget(connectionString);
     await docker();
     return 'docker';
   }
@@ -146,6 +147,7 @@ async function withRunner(
     );
   }
   try {
+    await assertDockerTarget(connectionString);
     await docker();
   } catch (error) {
     if (error instanceof CommandNotFound) {
@@ -157,6 +159,57 @@ async function withRunner(
     throw error;
   }
   return 'docker';
+}
+
+export class BackupTargetMismatchError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'BackupTargetMismatchError';
+  }
+}
+
+// `docker compose port db 5432` imprime la dirección publicada, p. ej. «0.0.0.0:5435» o
+// «[::]:5435». Devuelve si alguna línea publica el puerto de la URL.
+export function publishedPortMatches(urlPort: string, composePortOutput: string): boolean {
+  return composePortOutput
+    .split(/\r?\n/)
+    .map((line) => line.trim().match(/:(\d+)$/)?.[1])
+    .some((published) => published === urlPort);
+}
+
+function capture(command: string, args: string[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd: repoRoot(),
+      shell: false,
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    let stdout = '';
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (chunk: string) => {
+      stdout += chunk;
+    });
+    child.on('error', (error: NodeJS.ErrnoException) => {
+      reject(error.code === 'ENOENT' ? new CommandNotFound(command) : error);
+    });
+    child.on('close', () => resolve(stdout));
+  });
+}
+
+// El contenedor `db` del proyecto de docker-compose solo es la base de la URL si publica su
+// puerto. Sin esta comprobación, `docker compose exec db` ignoraba host y puerto y respaldaba (o
+// restauraba sobre) la base de otro servidor local (revisión QA, BUG-020).
+async function assertDockerTarget(connectionString: string): Promise<void> {
+  const { port } = connectionParts(connectionString);
+  const output = await capture('docker', ['compose', 'port', 'db', '5432']);
+  if (!publishedPortMatches(port, output)) {
+    throw new BackupTargetMismatchError(
+      `La URL apunta al puerto ${port}, pero el contenedor db de docker-compose publica ` +
+        `${output.trim() || 'ningún puerto (¿está levantado?)'}. No se usa el contenedor para no ` +
+        'tocar otra base: instala el cliente de PostgreSQL o corrige DB_PORT/DATABASE_URL.',
+    );
+  }
 }
 
 function dockerArgs(connectionString: string, tool: string, extra: string[]): string[] {
