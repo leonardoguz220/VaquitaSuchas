@@ -182,3 +182,4 @@ Nadie puede ver las notificaciones de otra persona.
 | 2026-10-17 | Ronda 2 de decisiones: el atraso pasa a retiro del grupo y se eliminan los recordatorios repetidos (RF-005-07, 09, 13, RN-005-06), el celular siempre existe (RF-005-16), canal opcional de Telegram en P1 (RF-005-26 a 28, CA-005-30 a 34); se aceptan las propuestas de la sección 11 | Equipo |
 | 2026-10-18 | La cuenta de Telegram se vincula en el registro por la verificación del celular (RF-005-26 a 28, CA-005-30, 31 y 33) | Equipo |
 | 2026-10-18 | Spec aprobada por las tres capas (BD, Backend y Frontend) | Equipo |
+| 2026-10-28 | Spec 011 agrega 7 tipos de aviso de avisos de grupo (faltante abierto, pago informado, pago resuelto, faltante cerrado, devolución pendiente, registrada y resuelta); mismos canales e interruptores que RF-005-17 y sin montos en Telegram (RF-005-27) | Leonardo |

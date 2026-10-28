@@ -1,4 +1,4 @@
-import { Alert, Badge, Card } from '@/components/ui';
+import { Alert, Badge, Button, Card } from '@/components/ui';
 import { formatDateLaPaz, formatDateTimeLaPaz } from '@/lib/dates';
 import { formatExchangeRate } from '@/lib/exchange-rate';
 import { formatBs, formatUsd } from '@/lib/money';
@@ -79,6 +79,24 @@ function EntryWindowSection({ entry }: { entry: EntryWindow }) {
   );
 }
 
+function ShortfallLinkSection({ groupId, isOwner }: { groupId: string; isOwner: boolean }) {
+  return (
+    <Card as="section" aria-labelledby="group-shortfall" className="flex flex-col gap-3">
+      <h2 id="group-shortfall" className="font-display text-xl font-bold">
+        Faltante del grupo
+      </h2>
+      <p className="text-[15px] text-muted">
+        {isOwner
+          ? 'Si alguien se fue después de que el grupo pagó, avisa a los miembros para repartir lo que falta o registrar sus devoluciones.'
+          : 'Aquí ves si el titular pidió cubrir lo que falta y puedes elegir pagar tu parte o pedir tu devolución.'}
+      </p>
+      <Button variant="secondary" href={`/grupos/${groupId}/faltante`}>
+        Ver faltante
+      </Button>
+    </Card>
+  );
+}
+
 function PaymentInfoSection({
   paymentInfo,
   isOwner,
@@ -149,6 +167,7 @@ export function GroupSummaryTab({ group }: { group: GroupDetail }) {
         </p>
       </Card>
       <EntryWindowSection entry={group.entryWindow} />
+      <ShortfallLinkSection groupId={group.id} isOwner={isOwner} />
       <PaymentInfoSection
         paymentInfo={group.paymentInfo}
         isOwner={isOwner}
