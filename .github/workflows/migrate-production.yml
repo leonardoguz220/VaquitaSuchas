@@ -35,6 +35,9 @@ jobs:
     if: github.ref == 'refs/heads/main' && inputs.confirm == 'production'
     environment: production
     timeout-minutes: 10
+    env:
+      # La base de producción exige TLS ("SSL/TLS required"); lo respetan pg y pg_dump/psql.
+      PGSSLMODE: require
     steps:
       - uses: actions/checkout@v4
         with:
