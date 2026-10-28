@@ -9,13 +9,15 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import {
   adaptDumpToServer,
+  BackupTargetMismatchError,
   dump,
+  publishedPortMatches,
   restore,
   RestoreRefusedError,
   type RunnerChoice,
 } from '../src/backup.ts';
 import { testDatabaseUrl } from '../src/config.ts';
-import { isLocalDatabaseUrl } from '../src/cli-support.ts';
+import { connectionParts, isLocalDatabaseUrl } from '../src/cli-support.ts';
 import { migrate } from '../src/migrate.ts';
 import { createTempDatabase, queryRows, schemaMigrations } from './helpers/temp-db.ts';
 
@@ -32,9 +34,23 @@ function succeeds(command: string, args: string[], needsOutput = false): boolean
 
 const hasNativeTools = succeeds('pg_dump', ['--version']) && succeeds('psql', ['--version']);
 // El respaldo por docker solo sirve si la base de pruebas es la del contenedor `db` local.
+const composeDbRunning = succeeds(
+  'docker',
+  ['compose', 'ps', '--status', 'running', '--quiet', 'db'],
+  true,
+);
+// Además, el contenedor tiene que publicar el puerto de la base de pruebas (BUG-020).
 const hasDockerDb =
   isLocalDatabaseUrl(testDatabaseUrl()) &&
-  succeeds('docker', ['compose', 'ps', '--status', 'running', '--quiet', 'db'], true);
+  composeDbRunning &&
+  publishedPortMatches(
+    connectionParts(testDatabaseUrl()).port,
+    spawnSync('docker', ['compose', 'port', 'db', '5432'], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      windowsHide: true,
+    }).stdout ?? '',
+  );
 
 async function tempDir(t: test.TestContext): Promise<string> {
   const dir = await mkdtemp(path.join(tmpdir(), 'vaquita-backup-'));
@@ -91,7 +107,9 @@ test(
 test(
   'RF-000-06: el respaldo con pg_dump y psql del contenedor db funciona sin cliente local',
   {
-    skip: hasDockerDb ? false : 'El contenedor db de docker-compose no está en marcha.',
+    skip: hasDockerDb
+      ? false
+      : 'El contenedor db de docker-compose no está en marcha o no publica el puerto de la base de pruebas.',
   },
   (t) => roundTrip(t, 'docker'),
 );
@@ -152,3 +170,32 @@ test('RF-000-06: el respaldo de pg_dump 17+ se adapta a un destino PostgreSQL 16
   );
   assert.equal(adaptDumpToServer(sql, 170000), sql);
 });
+
+// BUG-020: sin pg_dump, el respaldo usaba el contenedor db aunque la URL apuntara a otro puerto y
+// respaldaba (o restauraba sobre) otra base.
+test('RF-000-06, BUG-020: la dirección publicada por docker compose port se compara con el puerto de la URL', () => {
+  assert.equal(publishedPortMatches('5432', '0.0.0.0:5432\n'), true);
+  assert.equal(publishedPortMatches('5435', '0.0.0.0:5435\n[::]:5435\n'), true);
+  assert.equal(publishedPortMatches('5439', '0.0.0.0:5432\n'), false);
+  assert.equal(publishedPortMatches('5432', ''), false);
+  assert.equal(publishedPortMatches('543', '0.0.0.0:5432'), false);
+});
+
+test(
+  'RF-000-06, BUG-020: con el contenedor db publicando otro puerto, el respaldo por docker se niega',
+  { skip: composeDbRunning ? false : 'El contenedor db de docker-compose no está en marcha.' },
+  async (t) => {
+    const file = path.join(await tempDir(t), 'otro-puerto.sql');
+    // El puerto 1 nunca es el que publica el contenedor db.
+    await assert.rejects(
+      dump({ connectionString: 'postgres://u:p@localhost:1/vaquita', file, runner: 'docker' }),
+      (error: unknown) => {
+        assert.ok(error instanceof BackupTargetMismatchError);
+        assert.match(error.message, /puerto 1,/);
+        assert.doesNotMatch(error.message, /u:p@/);
+        return true;
+      },
+    );
+    await assert.rejects(readFile(file, 'utf8'));
+  },
+);

@@ -36,7 +36,8 @@ describe('Reclamos en administración (spec 009)', () => {
     const requestId = await openJoinRequest(t, groupId, applicant.id);
     await t.db.query(
       `UPDATE join_requests SET status = 'rechazada', final_at = now(), final_reason = 'rechazo_titular',
-              reject_reason = 'No recibí el pago', version = version + 1 WHERE id = $1`,
+              reject_reason = 'No recibí el pago',
+              decided_by = (SELECT owner_id FROM groups WHERE id = join_requests.group_id), version = version + 1 WHERE id = $1`,
       [requestId],
     );
     const openedBy = kind === 'pago_sin_ingreso' ? applicant.id : host.id;

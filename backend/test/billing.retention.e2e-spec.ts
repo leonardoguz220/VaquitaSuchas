@@ -152,6 +152,8 @@ describe('Retención de comprobantes', () => {
   async function setChargeStatus(chargeId: string, status: string): Promise<void> {
     await harness.pool.query(
       `UPDATE charges SET status = $2,
+              first_submitted_at = CASE WHEN $2 = 'en_revision' THEN $3::timestamptz
+                                        ELSE first_submitted_at END,
               paid_at = CASE WHEN $2 = 'pagado' THEN $3::timestamptz END,
               settled_by = CASE WHEN $2 = 'pagado' THEN user_id END,
               settlement = CASE WHEN $2 = 'pagado' THEN 'manual' END,

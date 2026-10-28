@@ -181,7 +181,8 @@ const LOAD_SQL = `
   -- cada 25 cancelado.
   INSERT INTO charges (group_id, user_id, cycle_id, period, origin, status, amount_cents,
                        price_cents, currency, total_bs_cents, member_count, issued_at, due_at,
-                       paid_at, settled_by, settlement, cancelled_at, cancelled_by, cancel_reason)
+                       paid_at, settled_by, settlement, cancelled_at, cancelled_by, cancel_reason,
+                       first_submitted_at)
   SELECT gr.id, usr.id, gen_random_uuid(), to_char(c.cut, 'YYYY-MM'), 'ciclo', st.status, 1500,
          6000, 'BS', 6000, 4, c.cut, c.cut + interval '4 days',
          CASE WHEN st.status = 'pagado' THEN c.cut + interval '1 day' END,
@@ -189,7 +190,9 @@ const LOAD_SQL = `
          CASE WHEN st.status = 'pagado' THEN 'manual' END,
          CASE WHEN st.status = 'cancelado' THEN c.cut + interval '2 days' END,
          CASE WHEN st.status = 'cancelado' THEN gr.owner_id END,
-         CASE WHEN st.status = 'cancelado' THEN 'Cobro duplicado' END
+         CASE WHEN st.status = 'cancelado' THEN 'Cobro duplicado' END,
+         -- en_revision exige el comprobante subido (0045, BUG-015).
+         CASE WHEN st.status = 'en_revision' THEN c.cut + interval '1 day' END
     FROM gr
     CROSS JOIN generate_series(1, 3) AS k
     JOIN usr ON usr.n = ${GROUPS} + 1 + ((gr.gn * 3 + k) % (${USERS} - ${ADMINS} - ${GROUPS}))
