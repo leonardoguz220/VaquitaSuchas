@@ -167,10 +167,10 @@ Qué no hace el seed:
 Workflow manual `Migrate production` (`.github/workflows/migrate-production.yml`). Solo corre desde `main`.
 
 1. **Una vez, en GitHub:** crear el entorno `production` (Settings → Environments) con revisores obligatorios y agregarle el secreto `PRODUCTION_DATABASE_URL` (URL externa de PostgreSQL de producción, con el usuario dueño del esquema).
-2. **Respaldo previo (obligatorio):** en tu terminal, con la `DATABASE_URL` de producción solo en el entorno de la terminal, correr `npm run db:dump`. Guardar el archivo fuera del repositorio.
-3. Fusionar la migración a `main` (flujo `dev → qa → main`).
-4. Actions → `Migrate production` → Run workflow sobre `main`, escribir `production` en `confirm` y aprobar el entorno.
-5. Si algo falla, restaurar con `db:restore -- --allow-remote` desde el respaldo del paso 2.
+2. Fusionar la migración a `main` (flujo `dev → qa → main`).
+3. Actions → `Migrate production` → Run workflow sobre `main`, escribir `production` en `confirm` y aprobar el entorno.
+4. **Respaldo automático:** antes de migrar, el workflow hace `db:dump` de producción (instala el `pg_dump` de la versión del servidor si hace falta), comprueba que el archivo esté completo y lo sube como artefacto `respaldo-produccion-<run>` con **retención de 7 días**. Si el respaldo o la subida fallan, la migración no corre. La URL de producción nunca sale de GitHub Actions.
+5. Si algo falla, descargar el artefacto desde la página de la ejecución (Artifacts) y restaurar con `db:restore -- --allow-remote`, con la `DATABASE_URL` de producción solo en el entorno de tu terminal. El artefacto contiene datos de usuarios: si lo guardas más de 7 días, que sea fuera del repositorio, y bórralo después.
 
 ## 7. Problemas frecuentes
 
