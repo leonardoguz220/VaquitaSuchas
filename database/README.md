@@ -162,6 +162,16 @@ Qué no hace el seed:
 - `db:restore` se niega contra un host que no es local. Staging lo restaura a mano una persona del equipo: exporta la `DATABASE_URL` de staging solo en su terminal (nunca en el repositorio) y agrega `--allow-remote`.
 - Si `pg_dump` o `psql` no están en el PATH y la base es local, se usan los del contenedor `db` (`docker compose exec -T db ...`), que respaldan y restauran la base de ese contenedor.
 
+### Migrar producción
+
+Workflow manual `Migrate production` (`.github/workflows/migrate-production.yml`). Solo corre desde `main`.
+
+1. **Una vez, en GitHub:** crear el entorno `production` (Settings → Environments) con revisores obligatorios y agregarle el secreto `PRODUCTION_DATABASE_URL` (URL externa de PostgreSQL de producción, con el usuario dueño del esquema).
+2. **Respaldo previo (obligatorio):** en tu terminal, con la `DATABASE_URL` de producción solo en el entorno de la terminal, correr `npm run db:dump`. Guardar el archivo fuera del repositorio.
+3. Fusionar la migración a `main` (flujo `dev → qa → main`).
+4. Actions → `Migrate production` → Run workflow sobre `main`, escribir `production` en `confirm` y aprobar el entorno.
+5. Si algo falla, restaurar con `db:restore -- --allow-remote` desde el respaldo del paso 2.
+
 ## 7. Problemas frecuentes
 
 - **El puerto 5432 está ocupado** por otro PostgreSQL: levanta la base en otro puerto del host con `DB_PORT=5435 npm run db:up` y usa ese mismo puerto en `DATABASE_URL` y `TEST_DATABASE_URL` de `database/.env`. `docker compose` no lee `database/.env`; toma `DB_PORT` del entorno o del `.env` de la raíz.
