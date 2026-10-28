@@ -55,6 +55,11 @@ ShortfallRow {
 
 Las acciones responden con la `ShortfallRow` actualizada (la creación, con el `ShortfallRound`).
 
+## Administración: devoluciones disputadas (RF-011-16)
+
+`GET /admin/shortfall-disputes` (solo `role = admin`, `403` en otro caso). Responde `{ items: DisputedRefund[] }`, las más antiguas primero (máximo 100):
+`{ rowId, groupId, groupName, period, memberName, hostName, refundAmountCents, refundMethod | null, refundReference | null, disputeReason, disputedAt }`. Solo lectura: no cambia el estado de la fila.
+
 ## Errores propios
 
 `NO_SHORTFALL` (422) · `ROUND_ALREADY_OPEN` (422) · `ROUND_LIMIT_REACHED` (422) · `ROUND_HAS_RESPONSES` (422) · `DEADLINE_PASSED` (422) · `GROUP_CLOSED` / `GROUP_FROZEN` (422) · `INVALID_TRANSITION` (409) · `STALE_STATE` (409) · `FORBIDDEN` (403) · `NOT_FOUND` (404).

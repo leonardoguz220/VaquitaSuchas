@@ -229,6 +229,9 @@ export function adminDisputePath(disputeId: string): string {
   return `${ADMIN_DISPUTES_PATH}/${encodeURIComponent(disputeId)}`;
 }
 
+/** Devoluciones disputadas del faltante de grupo, solo lectura (spec 011, T017). */
+export const ADMIN_REFUND_DISPUTES_PATH = '/admin/devoluciones';
+
 /** Catálogo de servicios y planes (spec 009, RF-009-04). */
 export const ADMIN_CATALOG_PATH = '/admin/catalogo';
 

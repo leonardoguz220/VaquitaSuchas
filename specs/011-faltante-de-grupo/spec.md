@@ -1,8 +1,8 @@
 # Spec 011 — Faltante de grupo (cubrir la diferencia o pedir devolución)
 
-- **Estado:** propuesta (pendiente de aprobación de las tres capas)
+- **Estado:** aprobada por el líder (decisiones de la sección 10 tomadas el 2026-10-28; BD y Frontend pueden objetarlas por PR)
 - **Líder de la spec:** Leonardo Guzman (Backend)
-- **Revisión por capa:** Camila Fuentes (BD): pendiente · Adrian Vargas (Frontend): pendiente · Leonardo Guzman (Backend): pendiente
+- **Revisión por capa:** Camila Fuentes (BD): pendiente · Adrian Vargas (Frontend): pendiente · Leonardo Guzman (Backend): aprobada
 - **Prioridad:** P1
 - **Depende de:** 001 (grupos y miembros), 002 (cobros y ciclos), 005 (avisos), 010 (reclamos entre pares)
 - **Última actualización:** 2026-10-28
@@ -58,7 +58,7 @@ Vaquita no custodia dinero (spec 002 §3, spec 010 §3). La devolución es entre
 ### Ronda
 - **RF-011-04:** El titular **abre** una ronda: el servidor fija la cotización (inmutable mientras está abierta), crea una fila por afectado y avisa a cada uno. Plazo para responder: 48 horas; plazo para pagar: hasta 48 horas después de responder, con tope en 96 horas desde la apertura (valores de configuración).
 - **RF-011-05:** Hay a lo más una ronda abierta por grupo y a lo más 2 rondas por período.
-- **RF-011-06:** El titular puede **cancelar** la ronda mientras ningún afectado haya respondido.
+- **RF-011-06:** El titular puede **cancelar** la ronda mientras ningún afectado haya respondido. Cancelar es la forma de **absorber** la diferencia: el titular la asume, nadie paga más y el grupo sigue con la cuota original (sección 10).
 - **RF-011-07:** Un grupo cerrado o congelado no admite abrir ni avanzar rondas (`GROUP_CLOSED`, `GROUP_FROZEN`).
 
 ### Respuesta del miembro
@@ -74,6 +74,7 @@ Vaquita no custodia dinero (spec 002 §3, spec 010 §3). La devolución es entre
 ### Cierre
 - **RF-011-14:** La ronda se **cierra** cuando todas las filas están resueltas (pago adicional confirmado o devolución abierta) y vencieron los plazos pendientes; al cerrarse se avisa a todos.
 - **RF-011-15:** Toda acción queda en una línea de tiempo de solo anexado, con autor, fecha y motivo.
+- **RF-011-16:** Las devoluciones disputadas aparecen en una cola de solo lectura para el administrador (`GET /admin/shortfall-disputes`, pantalla `/admin/devoluciones`), con grupo, período, personas, monto, método, referencia y motivo. Vaquita no mueve dinero: el administrador consulta el caso y lo media fuera de la app, sin cambiar el estado de la fila.
 
 ## 7. Reglas de negocio
 
@@ -124,16 +125,23 @@ Vaquita no custodia dinero (spec 002 §3, spec 010 §3). La devolución es entre
 - **CA-011-13:** Un miembro no afectado, ajeno al grupo o que no es el titular no puede ver ni accionar sobre filas ajenas (`403`/`404`).
 - **CA-011-14:** Un grupo cerrado o congelado no admite abrir ni avanzar rondas.
 - **CA-011-15:** Cualquier transición no listada en las máquinas de estado se rechaza.
+- **CA-011-16:** Dada una devolución disputada, cuando un administrador pide la cola, entonces la ve con grupo, monto, método, referencia y motivo; una persona que no es administradora recibe `403`.
 
-## 10. Supuestos tomados (a confirmar por el equipo al aprobar la spec)
+## 10. Decisiones tomadas
 
-- [SUPUESTO 2026-10-28] El silencio equivale a devolución y salida del grupo (RN-011-04).
-- [SUPUESTO 2026-10-28] El titular entra en el reparto del faltante (`m'` lo incluye).
-- [SUPUESTO 2026-10-28] Una sola ronda abierta por grupo; hasta 2 por período.
-- [SUPUESTO 2026-10-28] El pago adicional y la devolución se registran con referencia, sin archivo (sección 3).
+Leonardo (líder de la spec) las confirmó el 2026-10-28 eligiendo siempre la opción más simple. Si BD o Frontend objetan alguna, se cambia por PR.
+
+- **Silencio:** quien no responde a tiempo, o no paga el extra a tiempo, equivale a devolución y sale del grupo (RN-011-04).
+- **Reparto:** el titular entra en el reparto del faltante (`m'` lo incluye).
+- **Rondas:** una sola ronda abierta por grupo y hasta 2 por período.
+- **Plazos:** 48 h para responder, 48 h para pagar tras elegir (tope de 96 h desde la apertura) y 5 días para disputar una devolución sin registro.
+- **Comprobantes:** el pago adicional y la devolución se registran con método y referencia, sin archivo (sección 3).
+- **Disputas:** llegan al administrador como cola de solo lectura (RF-011-16), sin cambiar el modelo de la cola de reclamos de la spec 009, que sigue siendo solo de ingresos.
+- **Absorber:** no hay un estado nuevo. El titular absorbe la diferencia cancelando la ronda (RF-011-06) mientras nadie haya respondido; después de la primera respuesta ya no se puede. Cerrar el grupo sigue siendo la acción de la spec 001.
 
 ## 11. Historial de cambios
 
 | Fecha | Cambio | Quién |
 |---|---|---|
 | 2026-10-28 | Primera versión | Leonardo (con Claude) |
+| 2026-10-28 | Se confirman las decisiones de la sección 10; se agregan la cola de devoluciones disputadas (RF-011-16, CA-011-16) y la aclaración de «absorber» (RF-011-06) | Leonardo (con Claude) |

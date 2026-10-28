@@ -352,6 +352,34 @@ describe('Faltante de grupo (spec 011)', () => {
       );
     });
 
+    it('CA-011-16: el administrador ve la devolución disputada y los demás no acceden', async () => {
+      const { rows } = await openRound();
+      await post(a, `/shortfall-rows/${rows[a]}/respond`, { choice: 'devolucion' }).expect(200);
+      await post(group.ownerId, `/shortfall-rows/${rows[a]}/refund`, {
+        method: 'qr',
+        reference: 'DEV-3',
+      }).expect(200);
+      await post(a, `/shortfall-rows/${rows[a]}/refund/dispute`, { reason: 'No me llegó' }).expect(
+        200,
+      );
+      await harness.pool.query(`UPDATE users SET role = 'admin' WHERE id = $1`, [c]);
+
+      await get(a, '/admin/shortfall-disputes').expect(403);
+      await get(group.ownerId, '/admin/shortfall-disputes').expect(403);
+      const queue = await get(c, '/admin/shortfall-disputes').expect(200);
+
+      const item = queue.body.items.find((i: { rowId: string }) => i.rowId === rows[a]);
+      expect(item).toMatchObject({
+        rowId: rows[a],
+        groupId: group.id,
+        period: '2026-11',
+        refundAmountCents: 2500,
+        refundMethod: 'qr',
+        refundReference: 'DEV-3',
+        disputeReason: 'No me llegó',
+      });
+    });
+
     it('una versión vieja responde 409 STALE_STATE', async () => {
       const { rows } = await openRound();
 

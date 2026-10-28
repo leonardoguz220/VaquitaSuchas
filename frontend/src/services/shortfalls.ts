@@ -191,3 +191,24 @@ export function disputeShortfallRefund(
 ): Promise<ShortfallRow> {
   return apiRequest<ShortfallRow>(`${rowPath(rowId)}/refund/dispute`, { method: 'POST', body });
 }
+
+/** Una devolución disputada en la cola de administración (spec 011, T017). */
+export interface DisputedRefund {
+  rowId: string;
+  groupId: string;
+  groupName: string;
+  period: string;
+  memberName: string;
+  hostName: string;
+  refundAmountCents: number;
+  refundMethod: RefundMethod | null;
+  refundReference: string | null;
+  disputeReason: string;
+  disputedAt: string;
+}
+
+/** `GET /admin/shortfall-disputes` (solo administración; las más antiguas primero). */
+export async function listDisputedRefunds(): Promise<DisputedRefund[]> {
+  const { items } = await apiRequest<{ items: DisputedRefund[] }>('/api/admin/shortfall-disputes');
+  return items;
+}

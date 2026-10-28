@@ -35,7 +35,10 @@
 
 ## Cierre
 
-- [ ] T017 [Todos] `/speckit-converge`: confirmar los supuestos de la spec §10, integrar la disputa a la cola de reclamos (spec 009) y decidir si el titular necesita el cierre «absorber» o «cerrar el grupo» — Depende: T016
+- [x] T017 [Todos] `/speckit-converge`: supuestos de la spec §10 confirmados como decisiones; disputa integrada como cola de solo lectura de administración (T018 a T020); «absorber» = cancelar la ronda (RF-011-06), sin estado nuevo — Depende: T016
+- [x] T018 [BE] `GET /admin/shortfall-disputes` (repositorio, servicio y controlador con `AuthGuard` + `AdminGuard`) + test e2e CA-011-16 — Depende: T017
+- [x] T019 [FE] `listDisputedRefunds` en `services/shortfalls.ts` y pantalla `/admin/devoluciones` con enlace en la barra de administración + test — Depende: T018
+- [x] T020 [Todos] Spec 011 (§10, RF-011-16, CA-011-16), contrato y hoja de ruta actualizados — Depende: T018
 
 ## Puntos de integración
 
