@@ -25,6 +25,7 @@ Mapa de los diez módulos del proyecto hacia specs concretas, en orden de implem
 | 007 | [Reputación (calificación en estrellas, insignias, ranking)](007-reputacion/spec.md) | 8 | P2 (la calificación básica va en P0) | 002 | Camila (BD) | aprobada |
 | 008 | [Cupos libres (publicar y buscar cupos)](008-cupos-libres/spec.md) | 9 | P2 | 001, 010 | Adrian (FE) | aprobada |
 | 009 | [Administración (usuarios, baneos y reclamos, catálogo, estadísticas)](009-administracion/spec.md) | 10 | P2 | 003, 004 | Adrian (FE) | aprobada |
+| 011 | [Faltante de grupo (cubrir la diferencia o pedir devolución)](011-faltante-de-grupo/spec.md) | 5, 6 | P1 | 001, 002, 005, 010 | Leonardo (BE) | aprobada |
 
 Todas las specs y sus planes fueron aprobados por las tres capas (base de datos, backend y frontend) el 2026-10-18. La numeración identifica cada spec y no indica el orden de ejecución, que es el de la tabla de arriba hacia abajo.
 
