@@ -26,6 +26,16 @@ import type {
   PaymentDataSent,
   ProofSubmitted,
 } from '../../shared/events/join-request-events.js';
+import type {
+  ShortfallClosed,
+  ShortfallOpened,
+  ShortfallPaymentConfirmed,
+  ShortfallPaymentInformed,
+  ShortfallPaymentRejected,
+  ShortfallRefundOpened,
+  ShortfallRefundResolved,
+  ShortfallRefundSent,
+} from '../../shared/events/shortfall-events.js';
 import { JobRegistry } from '../../shared/jobs/job-registry.js';
 import { TxEventBus } from '../../shared/events/tx-event-bus.js';
 import type { UserSuspended } from '../../shared/events/user-events.js';
@@ -61,6 +71,7 @@ import { NotificationsRepository } from './repositories/notifications.repository
 import { BillingNotificationHandlers } from './services/handlers/billing.handlers.js';
 import { GroupNotificationHandlers } from './services/handlers/groups.handlers.js';
 import { JoinRequestNotificationHandlers } from './services/handlers/join-requests.handlers.js';
+import { ShortfallNotificationHandlers } from './services/handlers/shortfalls.handlers.js';
 import { DeliveryService } from './services/delivery.service.js';
 import { NotificationService } from './services/notification.service.js';
 import { PreferencesService } from './services/preferences.service.js';
@@ -105,6 +116,7 @@ import { UnsubscribeLinksService } from './services/unsubscribe-links.service.js
     BillingNotificationHandlers,
     GroupNotificationHandlers,
     JoinRequestNotificationHandlers,
+    ShortfallNotificationHandlers,
   ],
   exports: [NotificationService],
 })
@@ -114,6 +126,7 @@ export class NotificationsModule implements OnModuleInit {
     private readonly billing: BillingNotificationHandlers,
     private readonly groups: GroupNotificationHandlers,
     private readonly requests: JoinRequestNotificationHandlers,
+    private readonly shortfalls: ShortfallNotificationHandlers,
     private readonly registry: JobRegistry,
     private readonly schedule: ScheduleService,
     private readonly delivery: DeliveryService,
@@ -185,5 +198,27 @@ export class NotificationsModule implements OnModuleInit {
     this.bus.register<DisputeResolved>('join-requests.dispute-resolved', (tx, e) =>
       r.onDisputeResolved(tx, e),
     );
+
+    const f = this.shortfalls;
+    this.bus.register<ShortfallOpened>('shortfalls.opened', (tx, e) => f.onOpened(tx, e));
+    this.bus.register<ShortfallPaymentInformed>('shortfalls.payment-informed', (tx, e) =>
+      f.onPaymentInformed(tx, e),
+    );
+    this.bus.register<ShortfallPaymentConfirmed>('shortfalls.payment-confirmed', (tx, e) =>
+      f.onPaymentConfirmed(tx, e),
+    );
+    this.bus.register<ShortfallPaymentRejected>('shortfalls.payment-rejected', (tx, e) =>
+      f.onPaymentRejected(tx, e),
+    );
+    this.bus.register<ShortfallRefundOpened>('shortfalls.refund-opened', (tx, e) =>
+      f.onRefundOpened(tx, e),
+    );
+    this.bus.register<ShortfallRefundSent>('shortfalls.refund-sent', (tx, e) =>
+      f.onRefundSent(tx, e),
+    );
+    this.bus.register<ShortfallRefundResolved>('shortfalls.refund-resolved', (tx, e) =>
+      f.onRefundResolved(tx, e),
+    );
+    this.bus.register<ShortfallClosed>('shortfalls.closed', (tx, e) => f.onClosed(tx, e));
   }
 }
