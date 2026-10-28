@@ -93,7 +93,8 @@ describe('Retención del contenido de las solicitudes de ingreso (join_requests.
     await harness.pool.query(
       `UPDATE join_requests SET payment_qr_key = $2, payment_qr_mime = 'image/png', proof_key = $3,
               status = 'rechazada', final_at = $4, final_reason = 'rechazo_titular',
-              reject_reason = 'No recibí el pago'
+              reject_reason = 'No recibí el pago',
+              decided_by = (SELECT owner_id FROM groups WHERE id = join_requests.group_id)
         WHERE id = $1`,
       [id, files.qr, files.proof, finalAt],
     );

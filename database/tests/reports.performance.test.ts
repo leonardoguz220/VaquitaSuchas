@@ -222,12 +222,14 @@ const LOAD_SQL = `
   -- cada diez 'atrasado'.
   INSERT INTO charges (group_id, user_id, cycle_id, period, origin, status, amount_cents,
                        price_cents, currency, total_bs_cents, member_count, issued_at, due_at,
-                       paid_at, settled_by, settlement)
+                       paid_at, settled_by, settlement, first_submitted_at)
   SELECT bc.group_id, m.user_id, bc.id, bc.period, 'ciclo', s.status, 1500, 6000, 'BS', 6000, 4,
          bc.issued_at, bc.cut_date + interval '4 days 4 hours',
          CASE WHEN s.status = 'pagado' THEN bc.issued_at + interval '1 day' END,
          CASE WHEN s.status = 'pagado' THEN bc.owner_id END,
-         CASE WHEN s.status = 'pagado' THEN 'manual' END
+         CASE WHEN s.status = 'pagado' THEN 'manual' END,
+         -- en_revision exige el comprobante subido (0045, BUG-015).
+         CASE WHEN s.status = 'en_revision' THEN bc.issued_at + interval '1 day' END
     FROM billing_cycles bc
     JOIN group_members m ON m.group_id = bc.group_id AND m.role = 'miembro'
     CROSS JOIN LATERAL (

@@ -92,7 +92,7 @@ describe('Textos para WhatsApp (spec 005)', () => {
 
   it('CA-005-18: cobros en revisión, pagados o cancelados responden 422 CHARGE_NOT_COLLECTABLE', async () => {
     const updates: Record<string, string> = {
-      en_revision: "status = 'en_revision'",
+      en_revision: "status = 'en_revision', first_submitted_at = now()",
       pagado: `status = 'pagado', paid_at = issued_at + interval '1 day', settled_by = '${owner.id}', settlement = 'manual'`,
       cancelado: `status = 'cancelado', cancelled_at = now(), cancelled_by = '${owner.id}', cancel_reason = 'Motivo de prueba'`,
     };

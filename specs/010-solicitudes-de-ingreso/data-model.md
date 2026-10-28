@@ -203,3 +203,13 @@ La migración `0055_join_request_links.sql` agrega las claves foráneas pendient
 | Una solicitud que no nace `abierta` falla | RN-010-05 (L1) |
 | Dos lecturas del mismo participante y solicitud fallan; `join_request_reads` y `join_disputes` tienen `id` y marcas de tiempo | convención spec 000 (H2, M1) |
 | Dos cobros de ingreso o dos estadías de la misma solicitud fallan; una estadía `solicitud` sin `join_request_id` (o `creacion` con él) falla | RN-010-03, spec 001 (M2, M3) |
+
+## 4. Revisión QA de la base (2026-10-27, `0056_join_request_coherence.sql`)
+
+| Regla nueva | Qué impone | Bug |
+|---|---|---|
+| `group_members_join_request_matches` (antes de `INSERT`) | Una estadía con `join_request_id` es del mismo grupo y de la misma persona que su solicitud. | BUG-002 |
+| `charges_join_request_matches` (antes de `INSERT`) | El cobro de ingreso es de la persona y del grupo de su solicitud. | BUG-003 |
+| `join_requests_owner_rejection_check` | `final_reason = 'rechazo_titular'` exige `reject_reason` y `decided_by`; los rechazos del sistema no. | BUG-007 |
+| `join_requests_accepted_reason_check` | `aceptada` es `confirmada` con `comprobante` o `efectivo` con `efectivo`. | BUG-018 |
+| `join_requests_entry_charge_matches` (antes de `INSERT` o `UPDATE OF charge_id`) | `charge_id` es el cobro `ingreso` de esta misma solicitud. | BUG-018 |

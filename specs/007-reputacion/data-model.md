@@ -92,3 +92,11 @@ El avance hacia las insignias que faltan se calcula al consultar (no se guarda).
 | Nivel `Nuevo` con 3 o más cobros, o con estrellas, falla; estrellas fuera de 0–10 fallan | RF-007-02 |
 | Dos exclusiones del mismo cobro fallan; dos reportes de la misma persona al mismo cobro fallan | RF-007-14, CA-007 (caso borde «reporte de un cobro ya excluido») |
 | Una insignia repetida del mismo usuario falla | RF-007-08 |
+
+## 5. Revisión QA de la base (2026-10-27, `0064_reputation_ownership.sql`)
+
+| Regla nueva | Qué impone | Bug |
+|---|---|---|
+| `reputation_reports_reporter_is_owner` (antes de `INSERT`) | `reporter_id` es el dueño del cobro (`charges.user_id`). | BUG-013 |
+| `reputation_reports_closed_decided_check` | Un reporte `excluido` o `rechazado` tiene `decided_by`, `decided_at` y `decision_reason`. | BUG-013 |
+| `charge_reputation_exclusions_by_owner` (antes de `INSERT`) | `excluded_by` es el titular del grupo del cobro. | BUG-014 |

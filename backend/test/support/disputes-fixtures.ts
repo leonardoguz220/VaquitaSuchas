@@ -26,7 +26,8 @@ export async function seedFinalRequest(
   } else {
     await harness.pool.query(
       `UPDATE join_requests SET status = 'rechazada', final_at = $2, final_reason = 'rechazo_titular',
-              reject_reason = 'No recibí el pago', rejected_as_false = $3, version = version + 1
+              reject_reason = 'No recibí el pago', rejected_as_false = $3,
+              decided_by = (SELECT owner_id FROM groups WHERE id = join_requests.group_id), version = version + 1
         WHERE id = $1`,
       [id, finalAt, scenario === 'rechazada_falso'],
     );
