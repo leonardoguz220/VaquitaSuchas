@@ -210,3 +210,10 @@ INDEX charge_events_group_idx (group_id, occurred_at DESC)
 | Un cobro `ciclo` que no nace `pendiente`, uno `ingreso` que no nace `pagado`, o con `settlement` incoherente con el origen, falla | RN-002-01, RN-002-10 |
 | Un cobro `ciclo` con copia o monto distintos de su ciclo falla; una copia con moneda inválida o tipo de cambio incoherente falla | constitución II |
 | Cualquier cambio a un cobro `pagado` o `cancelado` falla; `first_submitted_at` no cambia una vez fijado | RN-002-01, RN-002-08 |
+
+## 5. Revisión QA de la base (2026-10-27, `0045_charge_events_group_and_review.sql`)
+
+| Regla nueva | Qué impone | Bug |
+|---|---|---|
+| `charge_events_group_matches_charge` (antes de `INSERT`) | `charge_events.group_id` es el `group_id` de su cobro. | BUG-008 |
+| `charges_in_review_submitted_check` | Un cobro `en_revision` tiene `first_submitted_at` (el dato de puntualidad de la reputación). | BUG-015 |
