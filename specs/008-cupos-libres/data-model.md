@@ -94,3 +94,10 @@ INDEX listing_reports_listing_idx (listing_id, created_at)
 | Transiciones no permitidas (`cerrada → activa`, `retirada → oculta`) fallan | integridad |
 | Un segundo reporte del mismo usuario falla; el titular no puede reportar su publicación; `UPDATE` y `DELETE` de reportes fallan | CA-008-18 |
 | `join_requests.listing_id` apunta a una publicación existente | integridad |
+
+## 4. Revisión QA de la base (2026-10-27, `0083_listings_coherence.sql`)
+
+| Regla nueva | Qué impone | Bug |
+|---|---|---|
+| `join_requests_listing_same_group` (antes de `INSERT` o `UPDATE OF listing_id, group_id`) | Una solicitud `publicacion` apunta a una publicación de su mismo grupo. | BUG-004 |
+| `listings_only_when_group_active` (redefinido: también `UPDATE OF slots_offered`) | Subir `slots_offered` de una publicación activa revisa los cupos libres; bajarlo (ingreso por la publicación) no. | BUG-005 |
