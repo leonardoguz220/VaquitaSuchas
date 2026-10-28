@@ -57,6 +57,13 @@ export const NOTIFICATION_TYPES = [
   'aviso_previo',
   'recordatorio_vencimiento',
   'comprobante_pendiente_48h',
+  'faltante_abierto',
+  'faltante_pago_informado',
+  'faltante_pago_resuelto',
+  'faltante_cerrado',
+  'devolucion_pendiente',
+  'devolucion_registrada',
+  'devolucion_resuelta',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -117,6 +124,13 @@ export const NOTIFICATION_CATALOG: Readonly<Record<NotificationType, CatalogEntr
   aviso_previo: entry('miembro', 'recordatorios', 'B', 'ventana'),
   recordatorio_vencimiento: entry('miembro', 'recordatorios', 'B', 'ventana'),
   comprobante_pendiente_48h: entry('titular', 'titular', 'B', 'ventana'),
+  faltante_abierto: entry('miembro', 'grupo', 'A'),
+  faltante_pago_informado: entry('titular', 'titular', 'A'),
+  faltante_pago_resuelto: entry('miembro', 'resoluciones', 'A'),
+  faltante_cerrado: roleBased('ambas_partes'),
+  devolucion_pendiente: entry('titular', 'titular', 'A'),
+  devolucion_registrada: entry('miembro', 'resoluciones', 'A'),
+  devolucion_resuelta: entry('titular', 'titular', 'A'),
 };
 
 export function isNotificationType(value: string): value is NotificationType {

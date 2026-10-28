@@ -109,6 +109,8 @@ const groupLink = (d: NotificationData, type: string): string =>
   `/grupos/${need(d.groupId, 'groupId', type)}`;
 const requestLink = (d: NotificationData, type: string): string =>
   `/solicitudes/${need(d.requestId, 'requestId', type)}`;
+const shortfallLink = (d: NotificationData, type: string): string =>
+  `/grupos/${need(d.groupId, 'groupId', type)}/faltante`;
 
 function build(type: NotificationType, d: NotificationData): Parts {
   const name = (): string => need(d.personName, 'personName', type);
@@ -317,6 +319,57 @@ function build(type: NotificationType, d: NotificationData): Parts {
         body: `La publicación de ${group()} pasó a ti como nuevo titular.`,
         short: 'Una publicación pasó a tu cuenta.',
         link: '/cupos',
+      };
+    case 'faltante_abierto':
+      return {
+        title: `Falta dinero en ${group()}`,
+        body: `El titular avisó que falta cubrir una parte del servicio. Puedes pagar ${amount()} más o pedir tu devolución antes del ${due()}.`,
+        short: 'El titular de un grupo avisó que falta cubrir una parte del servicio.',
+        link: shortfallLink(d, type),
+      };
+    case 'faltante_pago_informado':
+      return {
+        title: `Pago adicional en ${group()}`,
+        body: `${name()} informó su pago adicional de ${amount()}. Revísalo y confírmalo.`,
+        short: 'Un miembro informó un pago adicional para revisar.',
+        link: shortfallLink(d, type),
+      };
+    case 'faltante_pago_resuelto':
+      return {
+        title: `Tu pago adicional en ${group()}`,
+        body: d.reason
+          ? `El titular rechazó tu pago adicional. Motivo: ${d.reason}. Puedes informarlo de nuevo.`
+          : 'El titular confirmó tu pago adicional.',
+        short: 'El titular resolvió tu pago adicional. Revisa el detalle en la app.',
+        link: shortfallLink(d, type),
+      };
+    case 'faltante_cerrado':
+      return {
+        title: `Se cerró el faltante de ${group()}`,
+        body: `La ronda para cubrir lo que faltaba en ${group()} terminó.`,
+        short: 'Terminó la ronda para cubrir un faltante.',
+        link: shortfallLink(d, type),
+      };
+    case 'devolucion_pendiente':
+      return {
+        title: `Devolución pendiente en ${group()}`,
+        body: `${name()} salió del grupo y le corresponde una devolución de ${amount()}. Regístrala cuando la hagas.`,
+        short: 'Tienes una devolución pendiente de registrar.',
+        link: shortfallLink(d, type),
+      };
+    case 'devolucion_registrada':
+      return {
+        title: `Registraron tu devolución en ${group()}`,
+        body: `El titular registró la devolución de ${amount()}. Confirma si la recibiste o dispútala.`,
+        short: 'El titular registró tu devolución. Confírmala en la app.',
+        link: shortfallLink(d, type),
+      };
+    case 'devolucion_resuelta':
+      return {
+        title: `Devolución ${d.reason ?? 'resuelta'} en ${group()}`,
+        body: `${name()} marcó la devolución como ${d.reason ?? 'resuelta'}.`,
+        short: 'Hay novedades sobre una devolución.',
+        link: shortfallLink(d, type),
       };
     case 'aviso_previo':
       return {
