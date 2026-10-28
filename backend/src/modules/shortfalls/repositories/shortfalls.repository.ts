@@ -57,6 +57,20 @@ export interface RowRecord {
   version: number;
 }
 
+export interface DisputedRefundRecord {
+  rowId: string;
+  groupId: string;
+  groupName: string;
+  period: string;
+  memberName: string;
+  hostName: string;
+  refundAmountCents: number;
+  refundMethod: 'qr' | 'transferencia' | 'efectivo' | null;
+  refundReference: string | null;
+  disputeReason: string;
+  disputedAt: Date;
+}
+
 export interface NewRound {
   groupId: string;
   cycleId: string;
@@ -504,6 +518,49 @@ export class ShortfallsRepository {
       actorName: row.full_name,
       reason: row.reason,
       occurredAt: row.occurred_at,
+    }));
+  }
+
+  /** Devoluciones disputadas, las más antiguas primero (cola de administración, spec 011 T017). */
+  async listDisputedRefunds(q: Queryable, limit: number): Promise<DisputedRefundRecord[]> {
+    const result = await q.query<{
+      id: string;
+      group_id: string;
+      group_name: string;
+      period: string;
+      member_name: string;
+      host_name: string;
+      refund_amount_cents: string;
+      refund_method: 'qr' | 'transferencia' | 'efectivo' | null;
+      refund_reference: string | null;
+      refund_dispute_reason: string;
+      refund_disputed_at: Date;
+    }>(
+      `SELECT s.id, r.group_id, g.name AS group_name, r.period, m.full_name AS member_name,
+              h.full_name AS host_name, s.refund_amount_cents::text AS refund_amount_cents,
+              s.refund_method, s.refund_reference, s.refund_dispute_reason, s.refund_disputed_at
+         FROM shortfall_responses s
+         JOIN shortfall_rounds r ON r.id = s.round_id
+         JOIN groups g ON g.id = r.group_id
+         JOIN users m ON m.id = s.user_id
+         JOIN users h ON h.id = g.owner_id
+        WHERE s.refund_status = 'disputada'
+        ORDER BY s.refund_disputed_at, s.id
+        LIMIT $1`,
+      [limit],
+    );
+    return result.rows.map((row) => ({
+      rowId: row.id,
+      groupId: row.group_id,
+      groupName: row.group_name,
+      period: row.period,
+      memberName: row.member_name,
+      hostName: row.host_name,
+      refundAmountCents: Number(row.refund_amount_cents),
+      refundMethod: row.refund_method,
+      refundReference: row.refund_reference,
+      disputeReason: row.refund_dispute_reason,
+      disputedAt: row.refund_disputed_at,
     }));
   }
 }

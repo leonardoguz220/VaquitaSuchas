@@ -11,6 +11,7 @@ import {
   ADMIN_HOSTS_PATH,
   ADMIN_MODERATION_PATH,
   ADMIN_PATH,
+  ADMIN_REFUND_DISPUTES_PATH,
   ADMIN_USERS_PATH,
 } from '@/lib/routes';
 import { AdminGate } from './admin-gate';
@@ -21,6 +22,7 @@ const SECTIONS = [
   { href: ADMIN_USERS_PATH, label: 'Usuarios' },
   { href: ADMIN_HOSTS_PATH, label: 'Titulares' },
   { href: ADMIN_DISPUTES_PATH, label: 'Reclamos' },
+  { href: ADMIN_REFUND_DISPUTES_PATH, label: 'Devoluciones' },
   { href: ADMIN_CATALOG_PATH, label: 'Catálogo' },
   { href: ADMIN_MODERATION_PATH, label: 'Moderación' },
   { href: ADMIN_AUDIT_PATH, label: 'Auditoría' },
