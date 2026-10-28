@@ -3,7 +3,7 @@
 // 'append-only table' (restrict_violation, 23001). Hoy son rate_limit_events (spec 000; su DELETE
 // se permite solo para filas de más de 24 horas, 0005),
 // charge_events (spec 002, RNF-002-04), join_request_events (spec 010), listing_reports
-// (spec 008, RNF-008-06) y admin_audit_log (spec 009, CA-009-19).
+// (spec 008, RNF-008-06), admin_audit_log (spec 009, CA-009-19) y shortfall_events (spec 011).
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { after, before, test } from 'node:test';
@@ -145,6 +145,7 @@ test('RF-000-07: toda tabla con forbid_update_delete lo tiene BEFORE UPDATE OR D
       'join_request_events',
       'listing_reports',
       'rate_limit_events',
+      'shortfall_events',
     ],
   );
 
@@ -166,7 +167,7 @@ test('RF-000-07: toda tabla con forbid_update_delete lo tiene BEFORE UPDATE OR D
 // con session_replication_role = replica SOLO en esta transacción, lo que omite las FK al insertar.
 // El UPDATE y el DELETE de la prueba siguiente corren con el rol normal: el disparador de solo
 // anexado se verifica igual. Las FK y CHECK de charge_events los cubre billing.integrity.test.ts.
-test('RNF-002-04, CA-010-35, RNF-008-06, CA-009-19: se inserta una fila en charge_events, join_request_events, listing_reports y admin_audit_log para la prueba de solo anexado', async () => {
+test('RNF-002-04, CA-010-35, RNF-008-06, CA-009-19: se inserta una fila en charge_events, join_request_events, listing_reports, admin_audit_log y shortfall_events para la prueba de solo anexado', async () => {
   const client = new pg.Client({ connectionString: db.connectionString });
   await client.connect();
   try {
@@ -191,6 +192,11 @@ test('RNF-002-04, CA-010-35, RNF-008-06, CA-009-19: se inserta una fila en charg
       `INSERT INTO admin_audit_log (admin_id, action, target_type)
        VALUES (gen_random_uuid(), 'usuario_banear', 'user')`,
     );
+    // shortfall_events (spec 011): misma técnica, sin la ronda real.
+    await client.query(
+      `INSERT INTO shortfall_events (round_id, type, actor_kind)
+       VALUES (gen_random_uuid(), 'ronda_abierta', 'sistema')`,
+    );
     await client.query('COMMIT');
   } finally {
     await client.end();
@@ -199,9 +205,10 @@ test('RNF-002-04, CA-010-35, RNF-008-06, CA-009-19: se inserta una fila en charg
     db.connectionString,
     `SELECT (SELECT count(*) FROM charge_events) + (SELECT count(*) FROM join_request_events)
             + (SELECT count(*) FROM listing_reports) + (SELECT count(*) FROM admin_audit_log)
+            + (SELECT count(*) FROM shortfall_events)
             AS count`,
   )) as [{ count: string }];
-  assert.equal(Number(count), 4);
+  assert.equal(Number(count), 5);
 });
 
 // Los disparadores FOR EACH ROW solo se disparan si hay filas: esta prueba usa las que dejan las
