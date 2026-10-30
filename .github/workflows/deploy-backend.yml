@@ -1,4 +1,4 @@
-# Despliegue continuo del backend (Render). Corre cuando cambia backend/, database/ o render.yaml en dev,
+# Despliegue continuo del backend (Render). Corre cuando cambia backend/, database/ o render.yaml en main,
 # que es la rama que sigue el servicio de Render (ver render.yaml). Primero ejecuta las pruebas del backend
 # (backend.yml) y solo si pasan pide el despliegue con un Deploy Hook de Render.
 # Necesita el secreto RENDER_DEPLOY_HOOK_URL (Render > servicio > Settings > Deploy Hook). Sin él, se omite
@@ -8,7 +8,7 @@ name: Deploy backend
 
 on:
   push:
-    branches: [dev]
+    branches: [main]
     paths: ['backend/**', 'database/**', 'render.yaml', '.github/workflows/deploy-backend.yml']
   workflow_dispatch:
 
