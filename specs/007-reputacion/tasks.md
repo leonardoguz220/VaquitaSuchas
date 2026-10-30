@@ -98,9 +98,9 @@
 
 ## Puntos de integración (hitos)
 
-- [ ] **I1:** modelo y funciones puras disponibles (T002, T006)
-- [ ] **I2:** `ReputationQueryPort` disponible para las specs 001, 008, 009 y 010 (T010, T014)
-- [ ] **I3:** frontend conectado al backend real (T016, T022, T027, T033)
+- [x] **I1:** modelo y funciones puras disponibles (T002, T006)
+- [x] **I2:** `ReputationQueryPort` disponible para las specs 001, 008, 009 y 010 (T010, T014)
+- [x] **I3:** frontend conectado al backend real (T016, T022, T027, T033)
 
 ## Bloqueos y decisiones durante la implementación
 
