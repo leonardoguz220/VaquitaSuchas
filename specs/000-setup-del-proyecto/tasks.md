@@ -122,11 +122,11 @@
 
 ## Puntos de integración (hitos)
 
-- [ ] **I1:** migraciones y convenciones disponibles para el backend (T008 a T012)
-- [ ] **I2:** contrato técnico congelado (`contracts/api.md` A, B y C)
-- [ ] **I3:** frontend conectado al backend real (T039, T040)
-- [ ] **I4:** CI obligatorio y `main` protegida (T041, T046)
-- [ ] **I5:** staging con tres capas respondiendo (T052)
+- [x] **I1:** migraciones y convenciones disponibles para el backend (T008 a T012)
+- [x] **I2:** contrato técnico congelado (`contracts/api.md` A, B y C)
+- [x] **I3:** frontend conectado al backend real (T039, T040)
+- [x] **I4:** CI obligatorio y `main` protegida (T041, T046)
+- [x] **I5:** staging con tres capas respondiendo (T052)
 
 ## Bloqueos y decisiones durante la implementación
 
