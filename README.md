@@ -8,24 +8,24 @@ El proyecto se desarrolla con Spec Driven Development: la especificación se esc
 
 ## Estado
 
-Las once specs (000 a 010) están implementadas y desplegadas en staging: la base de datos y el backend en Render, y el frontend en Vercel (enlaces en [Despliegue](#despliegue-staging)). El avance real de cada spec se ve en su `tasks.md` (tareas marcadas `[x]`) y el orden de construcción en [`specs/00-roadmap.md`](specs/00-roadmap.md).
+Las doce specs (000 a 011, incluida la del faltante de grupo) están implementadas y desplegadas en staging: la base de datos y el backend en Render, y el frontend en Vercel (enlaces en [Despliegue](#despliegue-staging)). El avance real de cada spec se ve en su `tasks.md` (tareas marcadas `[x]`) y el orden de construcción en [`specs/00-roadmap.md`](specs/00-roadmap.md).
 
 ## Módulos y cómo funcionan
 
 La app tiene diez módulos de negocio más el setup. Cada uno tiene su spec (qué y por qué), su plan (cómo) y su contrato de API. Las reglas de negocio viven solo en el backend: el frontend muestra lo que el backend calcula y la base de datos refuerza la integridad con restricciones.
 
-| # | Módulo | Qué hace y cómo funciona | Spec |
-| - | ------ | ------------------------ | ---- |
-| 1 | Usuarios y autenticación | Registro, ingreso y recuperación de contraseña con JWT en cookie httpOnly. Hay roles (usuario y administrador) y los datos sensibles nunca salen en logs. | [003](specs/003-usuarios-y-autenticacion/spec.md) |
-| 2 | Catálogo de servicios | Plataformas (Netflix, Spotify, Disney+...) y sus planes con precio en USD. Es la base para crear un grupo; el administrador lo mantiene. | [004](specs/004-catalogo-de-servicios/spec.md) |
-| 3 y 4 | Suscripciones compartidas, división y moneda | Un titular crea un grupo a partir de un plan, define el día de cobro y el tipo de cambio USD a Bs. El backend divide el precio en cuotas enteras en centavos; los centavos sobrantes van al titular y la suma de cuotas es igual al total. El grupo tiene un código de invitación. | [001](specs/001-suscripciones-compartidas/spec.md) |
-| 5 | Cobros y pagos | Cada mes se generan los cobros de cada miembro con copia del precio y del tipo de cambio. El miembro sube su comprobante, el titular lo confirma o lo rechaza. Estados: `pendiente`, `en_revision`, `pagado`, `atrasado`, `cancelado`. Queda un historial exportable. | [002](specs/002-cobros-y-pagos/spec.md) |
-| 3 (ingreso) | Solicitudes de ingreso y chat | Quien quiere entrar abre una solicitud, conversa con el titular en un chat, paga y solo es miembro cuando el titular confirma el pago. Si algo sale mal puede abrir un reclamo. | [010](specs/010-solicitudes-de-ingreso/spec.md) |
-| 6 | Notificaciones | Avisos en la app, por correo (Resend) y por Telegram opcional: recordatorios de cobro, mora, retiros por mora e invitaciones. Los dispara una tarea programada (`/internal/jobs/tick`). | [005](specs/005-notificaciones/spec.md) |
-| 7 | Panel y reportes | Gasto mensual, ahorro frente al precio individual, calendario de cobros y deudas pendientes. | [006](specs/006-panel-y-reportes/spec.md) |
-| 8 | Reputación | Calificación por puntualidad, insignias y ranking. La calificación habilita a un usuario como titular. | [007](specs/007-reputacion/spec.md) |
-| 9 | Cupos libres | Un titular publica cupos disponibles y otros usuarios los buscan y piden entrar. | [008](specs/008-cupos-libres/spec.md) |
-| 10 | Administración | Usuarios, baneos, reclamos en disputa, catálogo, estadísticas y auditoría de acciones. | [009](specs/009-administracion/spec.md) |
+| #           | Módulo                                       | Qué hace y cómo funciona                                                                                                                                                                                                                                                           | Spec                                               |
+| ----------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| 1           | Usuarios y autenticación                     | Registro, ingreso y recuperación de contraseña con JWT en cookie httpOnly. Hay roles (usuario y administrador) y los datos sensibles nunca salen en logs.                                                                                                                          | [003](specs/003-usuarios-y-autenticacion/spec.md)  |
+| 2           | Catálogo de servicios                        | Plataformas (Netflix, Spotify, Disney+...) y sus planes con precio en USD. Es la base para crear un grupo; el administrador lo mantiene.                                                                                                                                           | [004](specs/004-catalogo-de-servicios/spec.md)     |
+| 3 y 4       | Suscripciones compartidas, división y moneda | Un titular crea un grupo a partir de un plan, define el día de cobro y el tipo de cambio USD a Bs. El backend divide el precio en cuotas enteras en centavos; los centavos sobrantes van al titular y la suma de cuotas es igual al total. El grupo tiene un código de invitación. | [001](specs/001-suscripciones-compartidas/spec.md) |
+| 5           | Cobros y pagos                               | Cada mes se generan los cobros de cada miembro con copia del precio y del tipo de cambio. El miembro sube su comprobante, el titular lo confirma o lo rechaza. Estados: `pendiente`, `en_revision`, `pagado`, `atrasado`, `cancelado`. Queda un historial exportable.              | [002](specs/002-cobros-y-pagos/spec.md)            |
+| 3 (ingreso) | Solicitudes de ingreso y chat                | Quien quiere entrar abre una solicitud, conversa con el titular en un chat, paga y solo es miembro cuando el titular confirma el pago. Si algo sale mal puede abrir un reclamo.                                                                                                    | [010](specs/010-solicitudes-de-ingreso/spec.md)    |
+| 6           | Notificaciones                               | Avisos en la app, por correo (Brevo en staging, Resend como alternativa) y por Telegram opcional: recordatorios de cobro, mora, retiros por mora e invitaciones. Los dispara una tarea programada (`/internal/jobs/tick`).                                                         | [005](specs/005-notificaciones/spec.md)            |
+| 7           | Panel y reportes                             | Gasto mensual, ahorro frente al precio individual, calendario de cobros y deudas pendientes.                                                                                                                                                                                       | [006](specs/006-panel-y-reportes/spec.md)          |
+| 8           | Reputación                                   | Calificación por puntualidad, insignias y ranking. La calificación habilita a un usuario como titular.                                                                                                                                                                             | [007](specs/007-reputacion/spec.md)                |
+| 9           | Cupos libres                                 | Un titular publica cupos disponibles y otros usuarios los buscan y piden entrar.                                                                                                                                                                                                   | [008](specs/008-cupos-libres/spec.md)              |
+| 10          | Administración                               | Usuarios, baneos, reclamos en disputa, catálogo, estadísticas y auditoría de acciones.                                                                                                                                                                                             | [009](specs/009-administracion/spec.md)            |
 
 Flujo de punta a punta: el titular crea el grupo, una persona abre una solicitud y paga, el titular confirma y esa persona entra con su cobro de ingreso; cada mes el sistema genera los cobros, avisa a los miembros, ellos suben su comprobante y el titular lo confirma; el panel y la reputación se alimentan de ese historial. El detalle está en [`context/funcionamiento-del-sistema.md`](context/funcionamiento-del-sistema.md).
 
@@ -34,31 +34,31 @@ Flujo de punta a punta: el titular crea el grupo, una persona abre una solicitud
 - **Frontend (Next.js):** pantallas por rol y un proxy `/api` que reenvía al backend con la cookie httpOnly.
 - **Backend (NestJS):** un módulo por área en `backend/src/modules/` con capas `controllers`, `services`, `domain` (funciones puras con tests), `repositories` y `ports`. Documentación Swagger en `/api/docs`.
 - **Base de datos (PostgreSQL):** migraciones SQL numeradas en `database/migrations`, seed del catálogo y pruebas de integridad.
-- **Servicios externos:** Supabase Storage (comprobantes con URL firmada), Resend (correo) y Telegram (opcional).
+- **Servicios externos:** Supabase Storage (comprobantes con URL firmada), Brevo o Resend (correo) y Telegram (opcional).
 
 ## Integración y despliegue continuo
 
 El repositorio es un monorepo y cada capa tiene su propio workflow, además del CI general:
 
-| Workflow | Cuándo corre | Qué hace |
-| -------- | ------------ | -------- |
-| [`backend.yml`](.github/workflows/backend.yml) | PR o push a `main` que toca `backend/` o `database/` | Lint, build y pruebas del backend contra PostgreSQL 16 |
-| [`frontend.yml`](.github/workflows/frontend.yml) | PR o push a `main` que toca `frontend/` | Lint, build y pruebas del frontend |
-| [`ci.yml`](.github/workflows/ci.yml) | Todo PR y push a `main` | lint, build, pruebas de las tres capas, db-check y gitleaks (revisión de secretos) |
-| [`e2e.yml`](.github/workflows/e2e.yml) | PR | Flujo completo en el navegador con Playwright |
-| [`branch-flow.yml`](.github/workflows/branch-flow.yml) y [`auto-merge.yml`](.github/workflows/auto-merge.yml) | PR | Valida el flujo `dev` a `qa` a `main` y fusiona los PR de `dev` cuando pasan |
-| [`deploy-backend.yml`](.github/workflows/deploy-backend.yml) | Push a `main` que toca `backend/`, `database/` o `render.yaml` | Prueba el backend y pide el despliegue a Render (ver [`backend/DEPLOY.md`](backend/DEPLOY.md)) |
-| [`deploy-frontend.yml`](.github/workflows/deploy-frontend.yml) | Push a `main` que toca `frontend/` | Prueba el frontend y pide el despliegue a Vercel (ver [`frontend/DEPLOY.md`](frontend/DEPLOY.md)) |
-| [`migrate-staging.yml`](.github/workflows/migrate-staging.yml) | Manual, solo desde `main` | Aplica las migraciones en la base de staging |
-| [`jobs-tick.yml`](.github/workflows/jobs-tick.yml) | Cada 10 minutos | Respaldo del disparador de tareas programadas |
+| Workflow                                                                                                      | Cuándo corre                                                   | Qué hace                                                                                          |
+| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [`backend.yml`](.github/workflows/backend.yml)                                                                | PR o push a `main` que toca `backend/` o `database/`           | Lint, build y pruebas del backend contra PostgreSQL 16                                            |
+| [`frontend.yml`](.github/workflows/frontend.yml)                                                              | PR o push a `main` que toca `frontend/`                        | Lint, build y pruebas del frontend                                                                |
+| [`ci.yml`](.github/workflows/ci.yml)                                                                          | Todo PR y push a `main`                                        | lint, build, pruebas de las tres capas, db-check y gitleaks (revisión de secretos)                |
+| [`e2e.yml`](.github/workflows/e2e.yml)                                                                        | PR                                                             | Flujo completo en el navegador con Playwright                                                     |
+| [`branch-flow.yml`](.github/workflows/branch-flow.yml) y [`auto-merge.yml`](.github/workflows/auto-merge.yml) | PR                                                             | Valida el flujo `dev` a `qa` a `main` y fusiona los PR de `dev` cuando pasan                      |
+| [`deploy-backend.yml`](.github/workflows/deploy-backend.yml)                                                  | Push a `main` que toca `backend/`, `database/` o `render.yaml` | Prueba el backend y pide el despliegue a Render (ver [`backend/DEPLOY.md`](backend/DEPLOY.md))    |
+| [`deploy-frontend.yml`](.github/workflows/deploy-frontend.yml)                                                | Push a `main` que toca `frontend/`                             | Prueba el frontend y pide el despliegue a Vercel (ver [`frontend/DEPLOY.md`](frontend/DEPLOY.md)) |
+| [`migrate-staging.yml`](.github/workflows/migrate-staging.yml)                                                | Manual, solo desde `main`                                      | Aplica las migraciones en la base de staging                                                      |
+| [`jobs-tick.yml`](.github/workflows/jobs-tick.yml)                                                            | Cada 10 minutos                                                | Respaldo del disparador de tareas programadas                                                     |
 
 ### Despliegue (staging)
 
-| Parte | Dónde | URL | Cómo comprobarlo |
-| ----- | ----- | --- | ---------------- |
-| Frontend | Vercel | https://vaquita-suchas.vercel.app | [`/estado`](https://vaquita-suchas.vercel.app/estado) muestra frontend, backend y base en OK |
-| Backend | Render, servicio web gratuito (`render.yaml`) | https://vaquita-staging-api.onrender.com | [`/health`](https://vaquita-staging-api.onrender.com/health) responde `status: ok` con la base `up` |
-| Base de datos | Render, PostgreSQL 16 gratuito (`render.yaml`) | Solo accesible desde el backend y desde `migrate-staging.yml` | Las migraciones y el catálogo se aplican con el workflow «Migrate staging» |
+| Parte         | Dónde                                          | URL                                                           | Cómo comprobarlo                                                                                    |
+| ------------- | ---------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Frontend      | Vercel                                         | https://vaquita-suchas.vercel.app                             | [`/estado`](https://vaquita-suchas.vercel.app/estado) muestra frontend, backend y base en OK        |
+| Backend       | Render, servicio web gratuito (`render.yaml`)  | https://vaquita-staging-api.onrender.com                      | [`/health`](https://vaquita-staging-api.onrender.com/health) responde `status: ok` con la base `up` |
+| Base de datos | Render, PostgreSQL 16 gratuito (`render.yaml`) | Solo accesible desde el backend y desde `migrate-staging.yml` | Las migraciones y el catálogo se aplican con el workflow «Migrate staging»                          |
 
 El frontend llama al backend a través de su proxy `/api` (variable `BACKEND_URL` en Vercel), así que [`/api/health`](https://vaquita-suchas.vercel.app/api/health) recorre las tres capas. Las migraciones nunca corren al arrancar el backend. El servicio gratuito de Render se duerme tras 15 minutos sin tráfico (la primera petición tarda cerca de un minuto) y la base gratuita caduca a los 30 días de creada (ver `specs/000-setup-del-proyecto/research.md`, R1).
 
@@ -114,11 +114,11 @@ Si el puerto 5432 ya lo usa otro PostgreSQL, levanta la base con otro puerto del
 
 Cada parte documenta sus variables en un archivo `.env.example` sin valores reales. Se copia a un archivo propio y se completa en local. Los archivos `.env*` reales están en `.gitignore`: nunca se suben al repositorio, y gitleaks revisa cada PR en busca de secretos.
 
-| Archivo de ejemplo      | Se copia a            | Contenido                                                                                                                                                                                                                                                                                   |
-| ----------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `backend/.env.example`  | `backend/.env`        | `NODE_ENV`, `PORT`, `DATABASE_URL`, `JWT_SECRET`, `FINGERPRINT_KEY`, `CI_ENCRYPTION_KEY`, `JOBS_TOKEN`, `MAIL_MODE`, `TELEGRAM_MODE` y `STORAGE_DRIVER`; en modo `prod` además `RESEND_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` y las credenciales del almacén de archivos |
-| `frontend/.env.example` | `frontend/.env.local` | `BACKEND_URL`, la dirección del backend a la que el proxy `/api` reenvía las llamadas                                                                                                                                                                                                       |
-| `database/.env.example` | `database/.env`       | `DATABASE_URL` de desarrollo para las migraciones, el seed y el respaldo                                                                                                                                                                                                                    |
+| Archivo de ejemplo      | Se copia a            | Contenido                                                                                                                                                                                                                                                                                                                         |
+| ----------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend/.env.example`  | `backend/.env`        | `NODE_ENV`, `PORT`, `DATABASE_URL`, `JWT_SECRET`, `FINGERPRINT_KEY`, `CI_ENCRYPTION_KEY`, `JOBS_TOKEN`, `MAIL_MODE`, `TELEGRAM_MODE` y `STORAGE_DRIVER`; en modo `prod` además `MAIL_PROVIDER` con `RESEND_API_KEY` o `BREVO_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` y las credenciales del almacén de archivos |
+| `frontend/.env.example` | `frontend/.env.local` | `BACKEND_URL`, la dirección del backend a la que el proxy `/api` reenvía las llamadas                                                                                                                                                                                                                                             |
+| `database/.env.example` | `database/.env`       | `DATABASE_URL` de desarrollo para las migraciones, el seed y el respaldo                                                                                                                                                                                                                                                          |
 
 Si falta una variable obligatoria, el backend no arranca y el mensaje las nombra todas. El detalle de cada variable está en el `.env.example` de la capa y en `specs/000-setup-del-proyecto/plan.md`.
 
