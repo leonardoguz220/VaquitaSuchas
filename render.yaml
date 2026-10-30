@@ -16,7 +16,7 @@ services:
     runtime: node
     plan: free
     region: virginia
-    branch: dev
+    branch: main
     # --include=dev: NODE_ENV=production también rige el build y Nest CLI es dependencia de desarrollo.
     buildCommand: npm ci --include=dev --workspace backend --include-workspace-root && npm run build -w backend
     startCommand: npm run start -w backend
