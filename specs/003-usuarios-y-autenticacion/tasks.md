@@ -123,10 +123,10 @@
 
 ## Puntos de integración (hitos)
 
-- [ ] **I1:** modelo de identidad y `AuthGuard` disponibles para las demás specs (T002, T011, T012, T013)
-- [ ] **I2:** contrato de API congelado (`contracts/api.md`)
-- [ ] **I3:** frontend conectado al backend real (T025, T030)
-- [ ] **I4:** flujo completo de registro con el bot simulado en CI (T026)
+- [x] **I1:** modelo de identidad y `AuthGuard` disponibles para las demás specs (T002, T011, T012, T013)
+- [x] **I2:** contrato de API congelado (`contracts/api.md`)
+- [x] **I3:** frontend conectado al backend real (T025, T030)
+- [x] **I4:** flujo completo de registro con el bot simulado en CI (T026)
 
 ## Bloqueos y decisiones durante la implementación
 

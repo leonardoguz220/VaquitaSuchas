@@ -85,7 +85,18 @@ La revisión de cada una corresponde a Camila para `vaquita-postgres-migrations`
 
 ## 5. MCPs recomendados
 
-Un MCP conecta a Claude con un servicio externo. Ninguno está conectado todavía: cada integrante decide si lo activa, y las credenciales no se comparten por el repositorio (`context/dominio.md`).
+Un MCP conecta a Claude con un servicio externo. Las credenciales no se comparten por el repositorio (`context/dominio.md`).
+
+### Conectados en el proyecto
+
+El archivo `.mcp.json` de la raíz declara dos MCPs que Claude Code ofrece activar al abrir el repositorio:
+
+| MCP | Cómo se activa | Qué se usó |
+|---|---|---|
+| GitHub | Cada integrante define la variable de entorno `GITHUB_PERSONAL_ACCESS_TOKEN` con un token de permisos mínimos (issues y pull requests del repositorio). El token no va en el repo. | Listar y crear issues y PR (los issues #265 a #276 se crearon así) |
+| Context7 | No necesita clave: `npx -y @upstash/context7-mcp` | Consultar documentación de NestJS, Next.js y `pg` |
+
+Los demás MCPs de esta sección siguen siendo recomendaciones: cada integrante decide si los activa.
 
 ### Prioridad alta
 

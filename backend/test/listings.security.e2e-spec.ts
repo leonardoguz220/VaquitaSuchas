@@ -125,6 +125,10 @@ describe('Seguridad de cupos libres (spec 008)', () => {
 
     expect([204, 404]).toContain(report.status);
     expect(job).toMatchObject({ status: 'ok' });
+    // Si el reporte tenía el bloqueo, el barrido salta la publicación (SKIP LOCKED) y la
+    // retoma en el siguiente tick; sin reporte en curso este segundo barrido no cambia nada.
+    const [nextTick] = await runner.runAll('manual', { job: 'listings.expire' });
+    expect(nextTick).toMatchObject({ status: 'ok' });
     const state = await harness.pool.query<{ status: string }>(
       'SELECT status FROM listings WHERE id = $1',
       [seeded.listingId],
