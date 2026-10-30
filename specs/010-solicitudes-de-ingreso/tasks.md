@@ -132,13 +132,13 @@
 
 ## Puntos de integración (hitos)
 
-- [ ] **I1:** modelo de datos disponible (T002 a T006)
-- [ ] **I2:** contrato de API congelado (`contracts/api.md`)
-- [ ] **I3:** frontend conectado al backend real (T018, T023, T027, T031, T035, T040)
-- [ ] **I4:** la aceptación usa `ensureCurrentCycle`, `addMemberTx` y `createEntryCharge` (T029)
-- [ ] **I5:** reclamos conectados con `BanPort` y `AuditPort` de la spec 009 (T038)
-- [ ] **I6:** la spec 008 abre solicitudes con `openFromListing` (T036)
-- [ ] **I7:** avisos de la spec 005 parte A conectados (T044)
+- [x] **I1:** modelo de datos disponible (T002 a T006)
+- [x] **I2:** contrato de API congelado (`contracts/api.md`)
+- [x] **I3:** frontend conectado al backend real (T018, T023, T027, T031, T035, T040)
+- [x] **I4:** la aceptación usa `ensureCurrentCycle`, `addMemberTx` y `createEntryCharge` (T029)
+- [x] **I5:** reclamos conectados con `BanPort` y `AuditPort` de la spec 009 (T038)
+- [x] **I6:** la spec 008 abre solicitudes con `openFromListing` (T036)
+- [x] **I7:** avisos de la spec 005 parte A conectados (T044)
 
 ## Bloqueos y decisiones durante la implementación
 

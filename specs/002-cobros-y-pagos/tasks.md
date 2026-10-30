@@ -126,12 +126,12 @@
 
 ## Puntos de integración (hitos)
 
-- [ ] **I1:** modelo de datos disponible (T002 a T006)
-- [ ] **I2:** contrato de API congelado (`contracts/api.md`)
-- [ ] **I3:** frontend conectado al backend real (T019, T023, T027, T038)
-- [ ] **I4:** la spec 010 usa `ensureCurrentCycle`, `PaymentReferenceService` y `createEntryCharge` (T013, T021, T039)
-- [ ] **I5:** la spec 007 lee los hechos de cobros por `ChargeFactsPort` (T017)
-- [ ] **I6:** avisos de la spec 005 parte A conectados (T041)
+- [x] **I1:** modelo de datos disponible (T002 a T006)
+- [x] **I2:** contrato de API congelado (`contracts/api.md`)
+- [x] **I3:** frontend conectado al backend real (T019, T023, T027, T038)
+- [x] **I4:** la spec 010 usa `ensureCurrentCycle`, `PaymentReferenceService` y `createEntryCharge` (T013, T021, T039)
+- [x] **I5:** la spec 007 lee los hechos de cobros por `ChargeFactsPort` (T017)
+- [x] **I6:** avisos de la spec 005 parte A conectados (T041)
 
 ## Bloqueos y decisiones durante la implementación
 

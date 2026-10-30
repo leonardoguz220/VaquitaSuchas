@@ -80,10 +80,10 @@
 
 ## Puntos de integración (hitos)
 
-- [ ] **I1:** modelo y seed disponibles para el backend (T002 a T005)
-- [ ] **I2:** contrato de API congelado (`contracts/api.md`)
-- [ ] **I3:** frontend conectado al backend real (T012, T016)
-- [ ] **I4:** la spec 001 usa `getActivePlanForSubscription` y copia los datos (T017)
+- [x] **I1:** modelo y seed disponibles para el backend (T002 a T005)
+- [x] **I2:** contrato de API congelado (`contracts/api.md`)
+- [x] **I3:** frontend conectado al backend real (T012, T016)
+- [x] **I4:** la spec 001 usa `getActivePlanForSubscription` y copia los datos (T017)
 
 ## Bloqueos y decisiones durante la implementación
 
