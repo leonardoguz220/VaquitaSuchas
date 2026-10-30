@@ -4,7 +4,7 @@ El backend (NestJS) se despliega en Render con plan gratuito, junto a su base Po
 
 | Qué                                       | Dónde                                                                                                                   |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Configuración de Render (servicio y base) | [`../render.yaml`](../render.yaml): Blueprint, rama `main`, `buildCommand` y `startCommand`                              |
+| Configuración de Render (servicio y base) | [`../render.yaml`](../render.yaml): Blueprint, rama `main`, `buildCommand` y `startCommand`                             |
 | Despliegue continuo                       | [`../.github/workflows/deploy-backend.yml`](../.github/workflows/deploy-backend.yml): prueba y luego pide el despliegue |
 | Pruebas                                   | [`../.github/workflows/backend.yml`](../.github/workflows/backend.yml)                                                  |
 | Migraciones de la base                    | [`../.github/workflows/migrate-staging.yml`](../.github/workflows/migrate-staging.yml), manual y solo desde `main`      |
