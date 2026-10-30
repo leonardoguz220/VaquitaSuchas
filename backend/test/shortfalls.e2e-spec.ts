@@ -216,7 +216,7 @@ describe('Faltante de grupo (spec 011)', () => {
   });
 
   describe('cubrir (CA-011-05, 07 y 12)', () => {
-    it('cubrir, informar, confirmar; con A y B resueltos la ronda se cierra', async () => {
+    it('CA-011-12: cubrir, informar, confirmar; con A y B resueltos la ronda se cierra', async () => {
       const { roundId, rows } = await openRound();
 
       const covered = await post(a, `/shortfall-rows/${rows[a]}/respond`, {
